@@ -8,6 +8,7 @@ const routes = [
       { path: 'artifacts', component: () => import('pages/ArtifactsPage.vue') },
       { path: 'documents', component: () => import('pages/DocumentsPage.vue') },
       { path: 'gallery', component: () => import('pages/GalleryPage.vue') },
+      { path: 'upload', component: () => import('pages/UploadPage.vue') },
     ],
   },
 

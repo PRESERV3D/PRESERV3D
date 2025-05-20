@@ -1,14 +1,49 @@
 <template>
-  <q-page class="flex flex-center">
-    <model-viewer
-      src="https://pub-8c8eb005cca947a7821974e5e66ea477.r2.dev/model.glb"
-      camera-controls
-      auto-rotate
-      style="width: 100%; height: 300px"
-    />
+  <q-page class="q-pa-md">
+    <div class="row q-gutter-md">
+      <div v-for="(model, i) in modelUrls" :key="i" class="card-wrapper">
+        <q-card class="my-card" rounded bordered>
+          <div class="card">
+            <model-viewer
+              :src="model"
+              camera-controls
+              auto-rotate
+              auto-rotate-delay="1000"
+              rotation-per-second="30deg"
+              shadow-intensity="1"
+              class="artifacts"
+              style="width: 300px; height: 300px"
+            />
+          </div>
+          <q-card-actions align="right">
+            <q-btn flat round color="red" icon="favorite" />
+            <q-btn flat round color="teal" icon="bookmark" />
+            <q-btn flat round color="primary" icon="share" />
+          </q-card-actions>
+        </q-card>
+      </div>
+    </div>
   </q-page>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import '@google/model-viewer'
+
+const modelUrls = ref([])
+
+onMounted(async () => {
+  try {
+    const res = await fetch('http://localhost:3000/models')
+    const contentType = res.headers.get('content-type')
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error(`Expected JSON but got ${contentType}`)
+    }
+    const urls = await res.json()
+    modelUrls.value = urls
+  } catch (err) {
+    console.error('Failed to load models:', err)
+  }
+})
 </script>

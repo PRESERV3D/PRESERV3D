@@ -68,6 +68,19 @@
 
               <q-item-section> Gallery </q-item-section>
             </q-item>
+
+            <q-item
+              clickable
+              v-ripple
+              :active="activeItem === 'upload'"
+              @click="setActiveItem('upload')"
+            >
+              <q-item-section avatar>
+                <q-icon name="file_upload" size="md" />
+              </q-item-section>
+
+              <q-item-section> Upload </q-item-section>
+            </q-item>
           </q-list>
           <div class="col" />
         </div>
@@ -107,7 +120,7 @@ onMounted(() => {
     activeItem.value = 'home'
   }
   // Otherwise set active to the current path if it matches a sidebar item
-  else if (['artifacts', 'documents', 'gallery'].includes(currentPath)) {
+  else if (['artifacts', 'documents', 'gallery', 'upload'].includes(currentPath)) {
     activeItem.value = currentPath
   }
 })
