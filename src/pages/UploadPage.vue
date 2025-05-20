@@ -18,7 +18,5 @@ const uploaderRef = ref(null)
 
 function handleUploaded(info) {
   console.log('Upload completed:', info.xhr.response)
-  const response = JSON.parse(info.xhr.response)
-  alert(`Model uploaded! URL: ${response.url}`)
 }
 </script>

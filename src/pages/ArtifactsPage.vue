@@ -1,12 +1,17 @@
 <template>
   <q-page class="q-pa-md">
-    <div class="row q-gutter-md">
+    <div class="page-header">
+      <h2 class="q-mb-sm title">Artifacts</h2>
+      <h5 class="q-mt-xs q-mb-lg">Lorem ipsum dolor sit, amet consectetur adipisicing elit.</h5>
+    </div>
+    <div class="row q-gutter-md q-mt-md">
       <div v-for="(model, i) in modelUrls" :key="i" class="card-wrapper">
         <q-card class="my-card" rounded bordered>
           <div class="card">
             <model-viewer
               :src="model"
               camera-controls
+              loading="lazy"
               auto-rotate
               auto-rotate-delay="1500"
               rotation-per-second="10deg"

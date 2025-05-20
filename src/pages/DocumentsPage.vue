@@ -1,6 +1,9 @@
 <template>
-  <q-page class="flex flex-center">
-    <h1>Documents</h1>
+  <q-page class="q-pa-md">
+    <div class="page-header">
+      <h2 class="q-mb-sm title">Documents</h2>
+      <h5 class="q-mt-xs q-mb-lg">Lorem ipsum dolor sit, amet consectetur adipisicing elit.</h5>
+    </div>
   </q-page>
 </template>
 
