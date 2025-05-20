@@ -8,8 +8,8 @@
               :src="model"
               camera-controls
               auto-rotate
-              auto-rotate-delay="1000"
-              rotation-per-second="30deg"
+              auto-rotate-delay="1500"
+              rotation-per-second="10deg"
               shadow-intensity="1"
               class="artifacts"
               style="width: 300px; height: 300px"

@@ -1,12 +1,14 @@
 <template>
-  <q-uploader
-    ref="uploaderRef"
-    url="http://localhost:3000/upload"
-    label="Upload GLB Model"
-    accept=".glb"
-    field-name="file"
-    @uploaded="handleUploaded"
-  />
+  <q-page class="flex flex-center q-pa-md">
+    <q-uploader
+      ref="uploaderRef"
+      url="http://localhost:3000/upload"
+      label="Upload GLB Model"
+      accept=".glb"
+      field-name="file"
+      @uploaded="handleUploaded"
+    />
+  </q-page>
 </template>
 
 <script setup>
