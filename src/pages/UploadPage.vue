@@ -3,8 +3,8 @@
     <q-uploader
       ref="uploaderRef"
       url="http://localhost:3000/upload"
-      label="Upload GLB Model"
-      accept=".glb"
+      label="Upload GLB Model or PDF"
+      accept=".glb, .pdf"
       field-name="file"
       @uploaded="handleUploaded"
     />

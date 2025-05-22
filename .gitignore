@@ -31,3 +31,7 @@ yarn-error.log*
 
 # local .env files
 .env.local*
+public/unity/Build/UnityPlayer.data
+public/unity/Build/UnityPlayer.framework.js
+public/unity/Build/UnityPlayer.wasm
+public/unity/Build/UnityPlayer.loader.js

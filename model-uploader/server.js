@@ -22,31 +22,51 @@ const s3 = new S3Client({
 })
 
 const BUCKET_NAME = 'preserv3d'
-const PUBLIC_URL = 'https://pub-8c8eb005cca947a7821974e5e66ea477.r2.dev/artifacts/'
+const ARTIFACTS_PUBLIC_URL = 'https://pub-8c8eb005cca947a7821974e5e66ea477.r2.dev/artifacts/'
+const DOCUMENTS_PUBLIC_URL = 'https://pub-8c8eb005cca947a7821974e5e66ea477.r2.dev/documents/'
 
 // Upload route
 app.post('/upload', upload.single('file'), async (req, res) => {
   const file = req.file
 
-  if (!file || !file.originalname.endsWith('.glb')) {
-    return res.status(400).json({ error: 'Only .glb files are allowed.' })
+  if (!file || (!file.originalname.endsWith('.glb') && !file.originalname.endsWith('.pdf'))) {
+    return res.status(400).json({ error: 'Only .glb and .pdf files are allowed.' })
   }
 
-  const key = `artifacts/${file.originalname}`
+  const artifactsKey = `artifacts/${file.originalname}`
+  const documentsKey = `documents/${file.originalname}`
 
   try {
-    const putCommand = new PutObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: key,
-      Body: file.buffer,
-      ContentType: 'model/gltf-binary',
-      ACL: 'public-read',
-    })
+    if (file.originalname.endsWith('.pdf')) {
+      const putCommand = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: documentsKey,
+        Body: file.buffer,
+        ContentType: 'application/pdf',
+        ContentDisposition: 'inline',
+        ACL: 'public-read',
+      })
 
-    await s3.send(putCommand)
+      await s3.send(putCommand)
 
-    const fileUrl = `${PUBLIC_URL}${file.originalname}`
-    res.json({ url: fileUrl })
+      const fileUrl = `${DOCUMENTS_PUBLIC_URL}${file.originalname}`
+      return res.json({ url: fileUrl })
+    }
+
+    if (file.originalname.endsWith('.glb')) {
+      const putCommand = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: artifactsKey,
+        Body: file.buffer,
+        ContentType: 'model/gltf-binary',
+        ACL: 'public-read',
+      })
+
+      await s3.send(putCommand)
+
+      const fileUrl = `${ARTIFACTS_PUBLIC_URL}${file.originalname}`
+      res.json({ url: fileUrl })
+    }
   } catch (err) {
     console.error('Upload error:', err)
     res.status(500).json({ error: 'Upload failed.' })
@@ -65,12 +85,33 @@ app.get('/models', async (req, res) => {
 
     const urls = (data.Contents || [])
       .filter((obj) => obj.Key.endsWith('.glb'))
-      .map((obj) => `${PUBLIC_URL}${obj.Key.replace('artifacts/', '')}`)
+      .map((obj) => `${ARTIFACTS_PUBLIC_URL}${obj.Key.replace('artifacts/', '')}`)
 
     res.json(urls)
   } catch (error) {
     console.error('Error listing models:', error)
     res.status(500).json({ error: 'Failed to list models' })
+  }
+})
+
+// List documents route
+app.get('/documents', async (req, res) => {
+  try {
+    const command = new ListObjectsV2Command({
+      Bucket: BUCKET_NAME,
+      Prefix: 'documents/',
+    })
+
+    const data = await s3.send(command)
+
+    const urls = (data.Contents || [])
+      .filter((obj) => obj.Key.endsWith('.pdf'))
+      .map((obj) => `${DOCUMENTS_PUBLIC_URL}${obj.Key.replace('documents/', '')}`)
+
+    res.json(urls)
+  } catch (error) {
+    console.error('Error listing documents:', error)
+    res.status(500).json({ error: 'Failed to list documents' })
   }
 })
 
