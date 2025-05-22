@@ -5,8 +5,8 @@ export const useModelStore = defineStore('documentsStore', {
     documentsUrls: [],
   }),
   actions: {
-    addDocuments(url) {
-      this.documentsUrls.push(...url)
+    setDocuments(urls) {
+      this.documentsUrls = urls
     },
   },
 })

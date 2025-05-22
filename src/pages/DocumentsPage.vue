@@ -31,7 +31,7 @@ onMounted(async () => {
   try {
     const res = await fetch('http://localhost:3000/documents')
     const urls = await res.json()
-    documentsStore.addDocuments(urls)
+    documentsStore.setDocuments(urls)
   } catch (err) {
     console.error('Failed to load documents', err)
   }
