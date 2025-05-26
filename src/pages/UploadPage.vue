@@ -17,6 +17,11 @@ import { ref } from 'vue'
 const uploaderRef = ref(null)
 
 function handleUploaded(info) {
-  console.log('Upload completed:', info.xhr.response)
+  const response = JSON.parse(info.xhr.response)
+  console.log('File URL:', response.url)
+  console.log('Summary:', response.metadata.summary)
+  console.log('Metadata:', response.metadata)
+  console.log('Tags:', response.metadata.tags)
+  console.log('Categories:', response.metadata.categories)
 }
 </script>
