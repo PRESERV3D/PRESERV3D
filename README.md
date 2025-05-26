@@ -3,6 +3,7 @@
 Information System for PUP Library Archives
 
 ## Install the dependencies
+
 ```bash
 yarn
 # or
@@ -10,31 +11,32 @@ npm install
 ```
 
 ### Start the app in development mode (hot-code reloading, error reporting, etc.)
+
 ```bash
 quasar dev
 ```
 
+### Start the backend server (for display and upload)
 
-### Lint the files
 ```bash
-yarn lint
-# or
-npm run lint
+cd model-uploader
+node server.js
 ```
 
+### Start to rnu NLP (for summary and metadata generation)
 
-### Format the files
 ```bash
-yarn format
-# or
-npm run format
-```
+cd services
 
+# Activate the virtual environment
+.\.venv\Scripts\activate
+
+# Start the NLP service with hot reloading
+uvicorn nlp_service:app --reload --host 0.0.0.0 --port 8000
+```
 
 ### Build the app for production
+
 ```bash
 quasar build
 ```
-
-### Customize the configuration
-See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-js).
