@@ -1,10 +1,11 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
 import fitz  # PyMuPDF
 import spacy
 import re
 from transformers import pipeline
 from keybert import KeyBERT
 from dateutil.parser import parse as date_parse
+import os
 
 app = FastAPI()
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
@@ -12,20 +13,22 @@ kw_model = KeyBERT('all-MiniLM-L6-v2')
 nlp = spacy.load("en_core_web_sm")
 
 @app.post("/process-pdf")
-async def process_pdf(file: UploadFile = File(...)):
+async def process_pdf(file: UploadFile = File(...), filename: str = Form(None)):
     pdf_bytes = await file.read()
     text = extract_text(pdf_bytes)
 
     summary = summarizer(text[:4000])[0]['summary_text']
     keywords = kw_model.extract_keywords(text, top_n=5)
-    metadata = extract_metadata(text)
+    metadata = extract_metadata(text, filename)
     categories = classify_text(text)
 
     return {
-        "raw_data": text[:1000],
+        "file_name": filename or file.filename,
+        "title": metadata.get("title"),
+        "author": metadata.get("author"),
+        "date": metadata.get("date"),
         "summary": summary,
         "keywords": [kw for kw, _ in keywords],
-        "metadata": metadata,
         "categories": categories
     }
 
@@ -36,15 +39,64 @@ def extract_text(pdf_bytes):
         text += page.get_text()
     return text
 
-def extract_metadata(text):
+def extract_metadata(text, filename=None):
     doc = nlp(text)
-    entities = {"PERSON": [], "ORG": [], "DATE": [], "ISBN": []}
+    entities = {"PERSON": [], "DATE": []} 
 
     for ent in doc.ents:
         if ent.label_ in entities:
-            entities[ent.label_].append(ent.text)
+            entities[ent.label_].append(ent.text.strip())
 
-    # Try parsing any valid date
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+
+    skip_patterns = re.compile(r'(conference|isbn|proceedings|journal|issue|vol\.|pp\.|location|city|country|date|span|–|-|,)', re.I)
+    exclusion_patterns = re.compile(r'(compiled|university|institute|department|email|@|abstract|©)', re.I)
+    author_pattern = re.compile(r'^[A-Z][a-z]+(\s[A-Z][a-z]+)*$')
+
+    # Prepare filename words for hinting title start
+    filename_words = []
+    base = ""
+    if filename:
+        base = os.path.splitext(os.path.basename(filename))[0]
+        filename_words = re.split(r'[_\-\s]+', base.lower())
+
+    title_lines = []
+    found_title_start = False
+
+    for line in lines:
+        if not found_title_start:
+            if skip_patterns.search(line):
+                continue
+
+            if author_pattern.match(line) or exclusion_patterns.search(line):
+                continue
+
+            line_lower = line.lower()
+            # Start title if line is long or contains any filename word as hint
+            if len(line) > 10 or any(w in line_lower for w in filename_words):
+                found_title_start = True
+                title_lines.append(line)
+        else:
+            if author_pattern.match(line) or exclusion_patterns.search(line):
+                break
+            if len(line) <= 3:
+                break
+            title_lines.append(line)
+
+    title = ' '.join(title_lines).strip()
+
+    # Fallback to filename if title empty
+    if not title and base:
+        title = base.replace('_', ' ').replace('-', ' ').title()
+
+    if not title:
+        title = "Unknown"
+
+    # Clean up author names
+    authors = [a.replace('\n', ' ').strip() for a in entities["PERSON"]]
+    authors = list(dict.fromkeys(entities["PERSON"]))
+    author_str = ', '.join(authors[:5]) if authors else "Unknown"
+
     date = "Unknown"
     for d in entities["DATE"]:
         try:
@@ -53,32 +105,11 @@ def extract_metadata(text):
         except:
             continue
 
-    # Extract first reasonable author names
-    authors = list(dict.fromkeys(entities["PERSON"]))  # Remove duplicates, preserve order
-    author_str = ', '.join(authors[:5]) if authors else "Unknown"
-
-    # Conference: check ORG entities or fallback to keyword match
-    conference = next((org for org in entities["ORG"] if "conference" in org.lower()), "Unknown")
-
-    # Try to extract ISBN using regex as fallback (NER rarely detects ISBN)
-    isbn_match = re.search(r'ISBN[:\s]*([\d\-Xx]+)', text, re.I)
-    isbn = isbn_match.group(1) if isbn_match else "Unknown"
-
-    # Title approximation: look at first large sentence not containing author/org info
-    title = "Unknown"
-    for sent in doc.sents:
-        if (len(sent.text.split()) > 5 and
-            not any(a in sent.text for a in authors[:3]) and
-            not any(o in sent.text for o in entities["ORG"][:3])):
-            title = sent.text.strip()
-            break
-
     return {
+        "file_name": filename or "Unknown",
         "title": title,
         "author": author_str,
         "date": date,
-        "conference": conference,
-        "isbn": isbn
     }
 
 def classify_text(text):

@@ -75,6 +75,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
           file_url: fileUrl,
           metadata: nlpRes.data,
           uploaded_at: new Date(),
+          updated_at: new Date(),
         },
       ])
 
@@ -157,4 +158,32 @@ app.get('/documents', async (req, res) => {
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`)
+})
+
+app.post('/save-metadata', async (req, res) => {
+  const updatedMetadata = req.body
+
+  if (!updatedMetadata.file_name) {
+    return res.status(400).json({ error: 'file_name is required' })
+  }
+
+  try {
+    // Update the metadata record in Supabase
+    const { error } = await supabase
+      .from('documents_metadata')
+      .update({ metadata: updatedMetadata.metadata, updated_at: new Date() })
+      .eq('file_name', updatedMetadata.file_name)
+
+    if (error) {
+      console.error('Supabase update error:', error)
+      return res
+        .status(500)
+        .json({ error: 'Failed to update metadata', detail: error.message || error })
+    }
+
+    return res.json({ message: 'Metadata updated successfully' })
+  } catch (err) {
+    console.error('Error saving metadata:', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
 })

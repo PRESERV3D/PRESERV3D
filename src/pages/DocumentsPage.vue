@@ -12,9 +12,9 @@
               <PdfPreview :pdfUrl="doc.file_url" class="document" />
             </a>
             <div class="metadata q-px-sm">
-              <h6>{{ doc.metadata.metadata.title }}</h6>
-              <p class="q-mb-sm">Author: {{ doc.metadata.metadata.author }}</p>
-              <p class="q-mb-sm">Date: {{ doc.metadata.metadata.date }}</p>
+              <h6>{{ doc.metadata.title }}</h6>
+              <p class="q-mb-sm">Author: {{ doc.metadata.author }}</p>
+              <p class="q-mb-sm">Date: {{ doc.metadata.date }}</p>
               <h6>Summary:</h6>
               <p>{{ doc.metadata.summary }}</p>
               <h6>Category:</h6>
