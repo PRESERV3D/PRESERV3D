@@ -31,6 +31,9 @@ cd services
 # Activate the virtual environment
 .\.venv\Scripts\activate
 
+# Install the required Python packages
+pip install -r requirements.txt
+
 # Start the NLP service with hot reloading
 uvicorn nlp_service:app --reload --host 0.0.0.0 --port 8000
 ```

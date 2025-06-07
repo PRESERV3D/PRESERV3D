@@ -4,3 +4,4 @@ PyMuPDF
 transformers
 keybert
 sentence-transformers
+spacy
