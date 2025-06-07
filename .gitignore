@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+node_modules
+=======
 .DS_Store
 .thumbs.db
 node_modules
@@ -35,3 +38,4 @@ public/unity/Build/UnityPlayer.data
 public/unity/Build/UnityPlayer.framework.js
 public/unity/Build/UnityPlayer.wasm
 public/unity/Build/UnityPlayer.loader.js
+>>>>>>> 3c225969b13f1f621adbb537bc31460885bb50c0
