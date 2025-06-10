@@ -108,7 +108,8 @@ const setActiveItem = (itemName) => {
   activeItem.value = itemName
 
   // Navigate to the corresponding route
-  router.push(`${itemName}`)
+  const targetRoute = itemName === 'home' ? '/' : `/${itemName}`
+  router.push(targetRoute)
 }
 
 onMounted(() => {
