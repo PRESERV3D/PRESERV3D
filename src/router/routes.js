@@ -9,6 +9,8 @@ const routes = [
       { path: 'documents', component: () => import('pages/DocumentsPage.vue') },
       { path: 'gallery', component: () => import('pages/GalleryPage.vue') },
       { path: 'upload', component: () => import('pages/UploadPage.vue') },
+      { path: 'user-register', component: () => import('pages/UserRegisterPage.vue') },
+      { path: 'user-login', component: () => import('pages/UserLoginPage.vue') },
       {
         path: 'documents/:id',
         name: 'view-document',
