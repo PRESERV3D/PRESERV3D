@@ -2,11 +2,14 @@ import { defineStore } from 'pinia'
 
 export const useModelStore = defineStore('modelStore', {
   state: () => ({
-    modelUrls: [],
+    models: [],
   }),
   actions: {
-    addModel(url) {
-      this.modelUrls.push(url)
+    setModels(mods) {
+      this.models = mods
+    },
+    addModel(model) {
+      this.models.push(model)
     },
   },
 })
