@@ -3,6 +3,7 @@ import cors from 'cors'
 import multer from 'multer'
 import axios from 'axios'
 import FormData from 'form-data'
+import Tesseract from 'tesseract.js'
 import { createClient } from '@supabase/supabase-js'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
@@ -10,12 +11,13 @@ const app = express()
 const port = 3000
 
 app.use(cors())
-app.use(express.json())
+app.use(express.json({ limit: '50mb' }))
+app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
 const upload = multer()
 
 // Initialize Supabase client
-const supabaseUrl = 'https://jruqvzpclhwjkttxhhtt.supabase.co' // Replace with your Supabase URL
+const supabaseUrl = 'https://jruqvzpclhwjkttxhhtt.supabase.co'
 const supabaseKey =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpydXF2enBjbGh3amt0dHhoaHR0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODE3NDQ3NSwiZXhwIjoyMDYzNzUwNDc1fQ.GMZ5LuxejrOCiuqmgDTE3GJZWX1Jjj7ggpodB7UDrQk'
 const supabase = createClient(supabaseUrl, supabaseKey)
@@ -230,5 +232,26 @@ app.post('/save-metadata', async (req, res) => {
   } catch (err) {
     console.error('Error saving metadata:', err)
     res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+app.post('/ocr', async (req, res) => {
+  try {
+    const { image } = req.body
+    if (!image) return res.status(400).json({ error: 'No image provided' })
+
+    const buffer = Buffer.from(image, 'base64')
+
+    const result = await Tesseract.recognize(buffer, 'eng', {
+      logger: (m) => console.log(m),
+      tessedit_char_whitelist:
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,;:!?()[]{}-_"\'',
+    })
+
+    console.log('OCR Result:', result.data.text)
+    res.json({ text: result.data.text })
+  } catch (err) {
+    console.error('OCR Error:', err)
+    res.status(500).json({ error: 'OCR failed' })
   }
 })

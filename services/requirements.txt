@@ -5,3 +5,5 @@ transformers
 keybert
 sentence-transformers
 spacy
+pytesseract
+Pillow
