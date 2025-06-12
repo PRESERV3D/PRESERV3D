@@ -3,6 +3,7 @@ import cors from 'cors'
 import multer from 'multer'
 import axios from 'axios'
 import FormData from 'form-data'
+import bcrypt from 'bcrypt'
 import { createClient } from '@supabase/supabase-js'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
