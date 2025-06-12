@@ -6,7 +6,7 @@
     </div>
     <div class="row q-gutter-md q-mt-md">
       <div v-for="(model, i) in modelStore.models" :key="i" class="card-wrapper">
-        <q-card class="my-card" rounded bordered clickable @click="goToArtifact(model)">
+        <q-card class="my-card" rounded bordered>
           <div class="card">
             <model-viewer
               :src="model.file_url"
@@ -22,6 +22,11 @@
           </div>
           <q-card-section class="q-pa-sm">
             <div class="text-subtitle1">{{ model.metadata?.title || model.file_name }}</div>
+            <router-link
+              :to="{ name: 'view-artifact', params: { id: model.id } }"
+              class="text-primary"
+              >View Artifact</router-link
+            >
           </q-card-section>
         </q-card>
       </div>
@@ -32,15 +37,9 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useModelStore } from 'stores/modelStore'
-import { useRouter } from 'vue-router'
 import '@google/model-viewer'
 
-const router = useRouter()
 const modelStore = useModelStore()
-
-function goToArtifact(model) {
-  router.push({ name: 'view-artifact', params: { id: model.id } })
-}
 
 onMounted(async () => {
   try {
