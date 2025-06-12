@@ -1,11 +1,16 @@
-from fastapi import FastAPI, UploadFile, File, Form
 import fitz  # PyMuPDF
 import spacy
 import re
+import os
+import requests
+import base64
+import io
+from io import BytesIO
+from PIL import Image
+from fastapi import FastAPI, UploadFile, File, Form
 from transformers import pipeline
 from keybert import KeyBERT
 from dateutil.parser import parse as date_parse
-import os
 
 app = FastAPI()
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
@@ -14,10 +19,11 @@ nlp = spacy.load("en_core_web_sm")
 
 @app.post("/process-text")
 async def process_pdf(file: UploadFile = File(...), filename: str = Form(None)):
+    print("Processing file:", file.filename)
     pdf_bytes = await file.read()
     text = extract_text(pdf_bytes)
 
-    summary = summarizer(text[:4000])[0]['summary_text']
+    summary = summarizer(text[:3000])[0]['summary_text']
     keywords = kw_model.extract_keywords(text, top_n=5)
     metadata = extract_metadata(text, filename)
     categories = classify_text(text)
@@ -33,11 +39,37 @@ async def process_pdf(file: UploadFile = File(...), filename: str = Form(None)):
     }
 
 def extract_text(pdf_bytes):
+    print("Extracting text from PDF...")
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
+    full_text = ""
+
+    for page in doc[:2]:  # Limit to first 2 pages for performance
+        text = page.get_text()
+        if text.strip():  # If text exists, use it
+            print(f"Extracted text from page {page.number + 1}")
+            full_text += text
+        else:
+            # Render page to image
+            print(f"Rendering page {page.number + 1} to image...")
+            pix = page.get_pixmap(dpi=300)
+            img = Image.open(io.BytesIO(pix.tobytes("png")))
+
+            buffered = BytesIO()
+            img.save(buffered, format="PNG", optimize=True, quality=85)
+            img_bytes = buffered.getvalue()
+
+            json_data={
+                "image": base64.b64encode(img_bytes).decode("utf-8")
+            }
+
+            # Send image to Node server for OCR
+            response = requests.post("http://localhost:3000/ocr", json=json_data)
+            if response.ok:
+                full_text += response.json().get("text", "")
+            else:
+                print("OCR server error:", response.text)
+
+    return full_text
 
 def extract_metadata(text, filename=None):
     doc = nlp(text)
