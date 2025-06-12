@@ -5,11 +5,11 @@
       <h5 class="q-mt-xs q-mb-lg">Lorem ipsum dolor sit, amet consectetur adipisicing elit.</h5>
     </div>
     <div class="row q-gutter-md q-mt-md">
-      <div v-for="(model, i) in modelUrls" :key="i" class="card-wrapper">
-        <q-card class="my-card" rounded bordered>
+      <div v-for="(model, i) in modelStore.models" :key="i" class="card-wrapper">
+        <q-card class="my-card" rounded bordered clickable @click="goToArtifact(model)">
           <div class="card">
             <model-viewer
-              :src="model"
+              :src="model.file_url"
               camera-controls
               loading="lazy"
               auto-rotate
@@ -20,11 +20,9 @@
               style="width: 300px; height: 300px"
             />
           </div>
-          <q-card-actions align="right">
-            <q-btn flat round color="red" icon="favorite" />
-            <q-btn flat round color="teal" icon="bookmark" />
-            <q-btn flat round color="primary" icon="share" />
-          </q-card-actions>
+          <q-card-section class="q-pa-sm">
+            <div class="text-subtitle1">{{ model.metadata?.title || model.file_name }}</div>
+          </q-card-section>
         </q-card>
       </div>
     </div>
@@ -32,21 +30,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
+import { useModelStore } from 'stores/modelStore'
+import { useRouter } from 'vue-router'
 import '@google/model-viewer'
 
-const modelUrls = ref([])
+const router = useRouter()
+const modelStore = useModelStore()
+
+function goToArtifact(model) {
+  router.push({ name: 'view-artifact', params: { id: model.id } })
+}
 
 onMounted(async () => {
   try {
     const res = await fetch('http://localhost:3000/models')
-    const contentType = res.headers.get('content-type')
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error(`Expected JSON but got ${contentType}`)
-    }
-    const urls = await res.json()
-    modelUrls.value = urls
+    const models = await res.json()
+    modelStore.setModels(models)
   } catch (err) {
     console.error('Failed to load models:', err)
   }

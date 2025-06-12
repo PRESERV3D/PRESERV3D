@@ -108,7 +108,7 @@ const setActiveItem = (itemName) => {
   activeItem.value = itemName
 
   // Navigate to the corresponding route
-  const targetRoute = itemName === 'home' ? '/' : `/${itemName}`
+  const targetRoute = `/${itemName}`
   router.push(targetRoute)
 }
 

@@ -14,6 +14,11 @@ const routes = [
         name: 'view-document',
         component: () => import('pages/ViewDocumentPage.vue'),
       },
+      {
+        path: 'artifacts/:id',
+        name: 'view-artifact',
+        component: () => import('pages/ViewArtifactPage.vue'),
+      },
     ],
   },
 
