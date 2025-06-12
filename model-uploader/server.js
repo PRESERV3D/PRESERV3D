@@ -1,11 +1,10 @@
-const express = require('express')
-const cors = require('cors')
-const multer = require('multer')
-const axios = require('axios')
-const FormData = require('form-data')
-const bcrypt = require('bcrypt')
-const { createClient } = require('@supabase/supabase-js')
-const { S3Client, ListObjectsV2Command, PutObjectCommand } = require('@aws-sdk/client-s3')
+import express from 'express'
+import cors from 'cors'
+import multer from 'multer'
+import axios from 'axios'
+import FormData from 'form-data'
+import { createClient } from '@supabase/supabase-js'
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
 const app = express()
 const port = 3000
@@ -51,7 +50,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       const form = new FormData()
       form.append('file', file.buffer, file.originalname)
 
-      const nlpRes = await axios.post('http://localhost:8000/process-pdf', form, {
+      const nlpRes = await axios.post('http://localhost:8000/process-text', form, {
         headers: form.getHeaders(),
       })
 
@@ -92,26 +91,53 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     }
 
     if (file.originalname.endsWith('.glb')) {
-      const putCommand = new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: artifactsKey,
-        Body: file.buffer,
-        ContentType: 'model/gltf-binary',
-      })
-
-      await s3.send(putCommand)
+      // Upload GLB file to Cloudflare S3
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: artifactsKey,
+          Body: file.buffer,
+          ContentType: 'model/gltf-binary',
+        }),
+      )
 
       const fileUrl = `${ARTIFACTS_PUBLIC_URL}${file.originalname}`
-      res.json({ url: fileUrl })
+
+      // Insert metadata into Supabase
+      const { error } = await supabase.from('artifacts_metadata').insert([
+        {
+          file_name: file.originalname,
+          file_url: fileUrl,
+          uploaded_at: new Date(),
+          updated_at: new Date(),
+        },
+      ])
+
+      if (error) {
+        console.error('Supabase insert error:', error)
+        return res
+          .status(500)
+          .json({ error: 'Failed to save metadata', detail: error.message || error })
+      }
+
+      const metadataResult = {}
+
+      // Return file URL + metadata stored
+      return res.json({
+        url: fileUrl,
+        metadata: {
+          file_name: file.originalname,
+          title: metadataResult.title || '',
+          author: metadataResult.author || '',
+          date: metadataResult.date || '',
+          summary: metadataResult.summary || '',
+          keywords: metadataResult.keywords || [],
+          categories: metadataResult.categories || [],
+        },
+      })
     }
-  } catch (err) {
-    if (err.response) {
-      console.error('FastAPI error response:', err.response.status, err.response.data)
-    } else if (err.request) {
-      console.error('No response from FastAPI:', err.request)
-    } else {
-      console.error('Error in request setup:', err.message)
-    }
+  } catch (error) {
+    console.error('Error uploading file:', error)
     res.status(500).json({ error: 'Upload failed.' })
   }
 })
@@ -119,21 +145,20 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 // List models route
 app.get('/models', async (req, res) => {
   try {
-    const command = new ListObjectsV2Command({
-      Bucket: BUCKET_NAME,
-      Prefix: 'artifacts/',
-    })
+    const { data, error } = await supabase
+      .from('artifacts_metadata')
+      .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
+      .order('uploaded_at', { ascending: false })
 
-    const data = await s3.send(command)
+    if (error) {
+      console.error('Supabase error fetching artifacts:', error)
+      return res.status(500).json({ error: 'Failed to fetch artifacts metadata' })
+    }
 
-    const urls = (data.Contents || [])
-      .filter((obj) => obj.Key.endsWith('.glb'))
-      .map((obj) => `${ARTIFACTS_PUBLIC_URL}${obj.Key.replace('artifacts/', '')}`)
-
-    res.json(urls)
+    res.json(data)
   } catch (error) {
-    console.error('Error listing models:', error)
-    res.status(500).json({ error: 'Failed to list models' })
+    console.error('Error listing artifacts:', error)
+    res.status(500).json({ error: 'Failed to list artifacts' })
   }
 })
 
@@ -142,7 +167,7 @@ app.get('/documents', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('documents_metadata')
-      .select('file_name, file_url, metadata, uploaded_at')
+      .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
       .order('uploaded_at', { ascending: false })
 
     if (error) {
@@ -169,17 +194,36 @@ app.post('/save-metadata', async (req, res) => {
   }
 
   try {
-    // Update the metadata record in Supabase
-    const { error } = await supabase
-      .from('documents_metadata')
-      .update({ metadata: updatedMetadata.metadata, updated_at: new Date() })
-      .eq('file_name', updatedMetadata.file_name)
+    const isPDF = updatedMetadata.file_name.toLowerCase().endsWith('.pdf')
+    const isGLB = updatedMetadata.file_name.toLowerCase().endsWith('.glb')
 
-    if (error) {
-      console.error('Supabase update error:', error)
-      return res
-        .status(500)
-        .json({ error: 'Failed to update metadata', detail: error.message || error })
+    // Update the metadata record in Supabase
+    if (isPDF) {
+      const { error } = await supabase
+        .from('documents_metadata')
+        .update({ metadata: updatedMetadata.metadata, updated_at: new Date() })
+        .eq('file_name', updatedMetadata.file_name)
+
+      if (error) {
+        console.error('Supabase update error:', error)
+        return res
+          .status(500)
+          .json({ error: 'Failed to update metadata', detail: error.message || error })
+      }
+    }
+
+    if (isGLB) {
+      const { error } = await supabase
+        .from('artifacts_metadata')
+        .update({ metadata: updatedMetadata.metadata, updated_at: new Date() })
+        .eq('file_name', updatedMetadata.file_name)
+
+      if (error) {
+        console.error('Supabase update error:', error)
+        return res
+          .status(500)
+          .json({ error: 'Failed to update metadata', detail: error.message || error })
+      }
     }
 
     return res.json({ message: 'Metadata updated successfully' })

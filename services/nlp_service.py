@@ -12,7 +12,7 @@ summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 kw_model = KeyBERT('all-MiniLM-L6-v2')
 nlp = spacy.load("en_core_web_sm")
 
-@app.post("/process-pdf")
+@app.post("/process-text")
 async def process_pdf(file: UploadFile = File(...), filename: str = Form(None)):
     pdf_bytes = await file.read()
     text = extract_text(pdf_bytes)

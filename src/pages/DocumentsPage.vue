@@ -8,18 +8,18 @@
       <div class="row q-gutter-md q-mt-md">
         <div v-for="(doc, index) in documentsStore.documents" :key="index" class="card-wrapper">
           <q-card class="my-card documentCard" rounded bordered scrollable>
-            <a :href="doc.file_url" target="_blank">
-              <PdfPreview :pdfUrl="doc.file_url" class="document" />
-            </a>
+            <PdfPreview :pdfUrl="doc.file_url" class="document" />
+
             <div class="metadata q-px-sm">
               <h6>{{ doc.metadata.title }}</h6>
               <p class="q-mb-sm">Author: {{ doc.metadata.author }}</p>
-              <p class="q-mb-sm">Date: {{ doc.metadata.date }}</p>
-              <h6>Summary:</h6>
-              <p>{{ doc.metadata.summary }}</p>
-              <h6>Category:</h6>
-              <p v-for="(category, i) in doc.metadata.categories" :key="i">{{ category }}</p>
             </div>
+            <router-link
+              :to="{ name: 'view-document', params: { id: doc.id } }"
+              class="text-primary q-px-sm"
+            >
+              View Document
+            </router-link>
           </q-card>
         </div>
       </div>
