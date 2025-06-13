@@ -148,8 +148,24 @@
           />
         </div>
 
-        <q-btn label="Back" @click="step--" color="secondary" />
-        <q-btn label="Register" @click="registerUser" color="primary" />
+        <div class="column items-center q-pt-xs">
+          <a @click="step--" class="names cursor-pointer">Back</a>
+          <q-btn
+            class="sign-up"
+            push
+            color="primary"
+            text-color="white"
+            label="SIGN UP"
+            @click="handleSubmit"
+          />
+        </div>
+
+        <div class="column items-center q-mb-xs">
+          <label class="already">
+            Already have an account?
+            <a href="/login" class="signup-login-link">Log In</a>
+          </label>
+        </div>
       </div>
     </q-form>
   </div>
