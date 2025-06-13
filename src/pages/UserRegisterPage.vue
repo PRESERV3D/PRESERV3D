@@ -58,60 +58,65 @@
       <div class="column items-center q-mb-xs">
         <label class="already">
           Already have an account?
-          <a href="/login" class="login-link">Log In</a>
+          <router-link to="/user/login" name="user-login" class="signup-login-link"
+            >Log In</router-link
+          >
         </label>
       </div>
 
       <div v-if="step === 2">
-        <label class="names">College & Department</label>
-        <q-select
-          dense
-          v-model="form.college"
-          :options="collegeOptions"
-          lazy-rules
-          :rules="[(val) => !!val || 'Please select your college.']"
-          class="text-box"
-        />
-        <label class="names">Last Name</label>
-        <q-select
-          dense
-          v-model="form.department"
-          :options="departmentOptions"
-          lazy-rules
-          :rules="[(val) => !!val || 'Please select your department.']"
-          class="c-textbox"
-        />
-        <p>Year & Section</p>
-        <q-input
-          filled
-          dense
-          v-model="form.year_section"
-          lazy-rules
-          :rules="[(val) => !!val || 'Please enter your year and section.']"
-          class="c-textbox"
-        />
-        <q-checkbox v-model="form.is_alumni" dense label="Alumni" class="c-textbox" />
-        <p>Password</p>
-        <q-input
-          dense
-          v-model="form.password"
-          type="password"
-          lazy-rules
-          :rules="[(val) => !!val || 'Please enter your password.']"
-          class="text-box"
-        />
-        <p>Confirm Password</p>
-        <q-input
-          dense
-          v-model="form.confirmPassword"
-          type="password"
-          lazy-rules
-          :rules="[
-            (val) => !!val || 'Please confirm your password.',
-            (val) => val === form.password || 'Passwords do not match.',
-          ]"
-          class="text-box"
-        />
+        <div class="column q-gutter-sm">
+          <label class="names">College & Department</label>
+          <q-select
+            dense
+            v-model="form.college"
+            :options="collegeOptions"
+            lazy-rules
+            :rules="[(val) => !!val || 'Please select your college.']"
+            class="text-box"
+          />
+
+          <label class="names">Department</label>
+          <q-select
+            dense
+            v-model="form.department"
+            :options="departmentOptions"
+            lazy-rules
+            :rules="[(val) => !!val || 'Please select your department.']"
+            class="c-textbox"
+          />
+          <label class="names">Year & Section</label>
+          <q-input
+            filled
+            dense
+            v-model="form.year_section"
+            lazy-rules
+            :rules="[(val) => !!val || 'Please enter your year and section.']"
+            class="c-textbox"
+          />
+          <q-checkbox v-model="form.is_alumni" dense label="Alumni" class="c-textbox" />
+          <label class="names">Password</label>
+          <q-input
+            dense
+            v-model="form.password"
+            type="password"
+            lazy-rules
+            :rules="[(val) => !!val || 'Please enter your password.']"
+            class="text-box"
+          />
+          <label class="names">Confirm Password</label>
+          <q-input
+            dense
+            v-model="form.confirmPassword"
+            type="password"
+            lazy-rules
+            :rules="[
+              (val) => !!val || 'Please confirm your password.',
+              (val) => val === form.password || 'Passwords do not match.',
+            ]"
+            class="text-box"
+          />
+        </div>
 
         <q-btn label="Back" @click="step--" color="secondary" />
         <q-btn label="Register" @click="registerUser" color="primary" />
