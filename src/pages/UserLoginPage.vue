@@ -25,40 +25,37 @@
   </q-page>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      form: {
-        email: '',
-        password: '',
-      },
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const form = ref({
+  email: '',
+  password: '',
+})
+
+async function loginUser() {
+  try {
+    const response = await fetch('http://localhost:3000/login-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form.value),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      alert(data.error || 'Login failed.')
+    } else {
+      alert('Login successful!')
+      console.log(data)
+      router.push('/home')
     }
-  },
-  methods: {
-    // Login user
-    async loginUser() {
-      try {
-        const response = await fetch('http://localhost:3000/login-user', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(this.form),
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-          alert(data.error || 'Login failed.')
-        } else {
-          alert('Login successful!')
-          console.log(data)
-          this.$router.push('/home')
-        }
-      } catch (error) {
-        alert('An error occurred during login.')
-        console.error(error)
-      }
-    },
-  },
+  } catch (error) {
+    alert('An error occurred during login.')
+    console.error(error)
+  }
 }
 </script>

@@ -94,107 +94,105 @@
   </q-page>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      step: 1,
-      form: {
-        first_name: '',
-        last_name: '',
-        email: '',
-        contact: '',
-        college: '',
-        department: '',
-        year_section: '',
-        is_alumni: false,
-        password: '',
-        confirmPassword: '',
-      },
-      collegeOptions: [
-        'College of Computer and Information Sciences',
-        'College of History',
-        'College of Arts and Sciences',
-      ],
-      departmentOptions: ['Information Technology', 'Computer Science', 'Social Sciences'],
+<script setup>
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const step = ref(1)
+
+const form = ref({
+  first_name: '',
+  last_name: '',
+  email: '',
+  contact: '',
+  college: '',
+  department: '',
+  year_section: '',
+  is_alumni: false,
+  password: '',
+  confirmPassword: '',
+})
+
+const collegeOptions = [
+  'College of Computer and Information Sciences',
+  'College of History',
+  'College of Arts and Sciences',
+]
+
+const departmentOptions = ['Information Technology', 'Computer Science', 'Social Sciences']
+
+// Password strength status
+const passwordStrength = computed(() => {
+  const pwd = form.value.password
+  if (!pwd) return ''
+
+  const hasUpper = /[A-Z]/.test(pwd)
+  const hasNumber = /[0-9]/.test(pwd)
+  const hasSpecial = /[^a-zA-Z0-9]/.test(pwd)
+  const isLongEnough = pwd.length >= 8
+
+  return hasUpper && hasNumber && hasSpecial && isLongEnough ? 'Strong' : 'Weak'
+})
+
+const passwordStrengthColor = computed(() =>
+  passwordStrength.value === 'Strong' ? 'green' : 'red',
+)
+
+// Validate step one inputs
+function validateStepOne() {
+  const { first_name, last_name, email, contact } = form.value
+
+  const isValidEmail = email && email.includes('@iskolarngbayan.pup.edu.ph')
+
+  if (!first_name || !last_name || !email || !contact) {
+    alert('Please fill out all required fields.')
+    return
+  }
+
+  if (!isValidEmail) {
+    alert('Please use your PUP email only.')
+    return
+  }
+
+  // Go to step two if all checks pass
+  step.value++
+}
+
+// Register user
+async function registerUser() {
+  const { college, department, year_section, password, confirmPassword } = form.value
+
+  if (password !== confirmPassword) {
+    alert('Passwords do not match!')
+    return
+  }
+
+  if (!college || !department || !year_section || !password || !confirmPassword) {
+    alert('Please fill out all required fields.')
+    return
+  }
+
+  try {
+    const response = await fetch('http://localhost:3000/register-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form.value),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      alert(data.error || 'Registration failed.')
+    } else {
+      alert('Registration successful!')
+      console.log(data)
+      router.push('/user-login')
     }
-  },
-  computed: {
-    passwordStrength() {
-      const pwd = this.form.password
-      if (!pwd) return ''
-
-      const hasUpper = /[A-Z]/.test(pwd)
-      const hasNumber = /[0-9]/.test(pwd)
-      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pwd)
-      const isLongEnough = pwd.length >= 8
-
-      if (hasUpper && hasNumber && hasSpecial && isLongEnough) {
-        return 'Strong'
-      }
-
-      return 'Weak'
-    },
-    passwordStrengthColor() {
-      return this.passwordStrength === 'Strong' ? 'green' : 'red'
-    },
-  },
-  methods: {
-    // Validate step one inputs
-    validateStepOne() {
-      const { first_name, last_name, email, contact } = this.form
-
-      const isValidEmail = email && email.includes('@iskolarngbayan.pup.edu.ph')
-
-      if (!first_name || !last_name || !email || !contact) {
-        alert('Please fill out all required fields.')
-        return
-      }
-
-      if (!isValidEmail) {
-        alert('Please use your PUP email only.')
-        return
-      }
-
-      // If all checks passed, go to next step
-      this.step++
-    },
-
-    // Register user
-    async registerUser() {
-      const { college, department, year_section, password, confirmPassword } = this.form
-
-      if (password !== confirmPassword) {
-        alert('Passwords do not match!')
-        return
-      }
-
-      if (!college || !department || !year_section || !password || !confirmPassword) {
-        alert('Please fill out all required fields.')
-        return
-      }
-
-      try {
-        const response = await fetch('http://localhost:3000/register-user', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(this.form),
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-          alert(data.error || 'Registration failed.')
-        } else {
-          alert('Registration successful!')
-          console.log(data)
-          this.$router.push('/user-login')
-        }
-      } catch (error) {
-        alert('An error occurred.')
-        console.error(error)
-      }
-    },
-  },
+  } catch (error) {
+    alert('An error occurred.')
+    console.error(error)
+  }
 }
 </script>
