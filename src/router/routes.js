@@ -12,6 +12,7 @@ const routes = [
       { path: 'user-register', component: () => import('pages/UserRegisterPage.vue') },
       { path: 'user-login', component: () => import('pages/UserLoginPage.vue') },
       { path: 'admin-register', component: () => import('pages/AdminRegisterPage.vue') },
+      { path: 'admin-login', component: () => import('pages/AdminLoginPage.vue') },
       {
         path: 'documents/:id',
         name: 'view-document',
