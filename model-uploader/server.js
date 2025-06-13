@@ -267,6 +267,15 @@ app.post('/register-user', async (req, res) => {
   //   return res.status(400).json({ error: 'Please fill in all required fields.' })
   // }
 
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/
+
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      error:
+        'Password must be at least 8 characters long and contain an uppercase letter, a number, and a special character.',
+    })
+  }
+
   try {
     // Check if user already exists
     const { data: existingUser, error: existingError } = await supabase

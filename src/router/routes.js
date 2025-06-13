@@ -19,6 +19,7 @@ const routes = [
         name: 'view-artifact',
         component: () => import('pages/ViewArtifactPage.vue'),
       },
+>>>>>>> 9384d4a614d1cfc12e977a64c5dbeba0bd8d7d35
     ],
   },
   {
