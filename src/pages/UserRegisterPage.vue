@@ -63,10 +63,19 @@
         <q-checkbox v-model="form.is_alumni" label="Alumni" />
         <p>Password</p>
         <q-input
+          filled
           v-model="form.password"
           type="password"
+          :hint="passwordStrength"
+          :color="passwordStrengthColor"
           lazy-rules
-          :rules="[(val) => !!val || 'Please enter your password.']"
+          :rules="[
+            (val) => !!val || 'Please enter your password.',
+            (val) => val.length >= 8 || 'Must be at least 8 characters long.',
+            (val) =>
+              (/[A-Z]/.test(val) && /[0-9]/.test(val) && /[^a-zA-Z0-9]/.test(val)) ||
+              'Must contain an uppercase letter, a number, and a special character.',
+          ]"
         />
         <p>Confirm Password</p>
         <q-input
@@ -109,6 +118,26 @@ export default {
       ],
       departmentOptions: ['Information Technology', 'Computer Science', 'Social Sciences'],
     }
+  },
+  computed: {
+    passwordStrength() {
+      const pwd = this.form.password
+      if (!pwd) return ''
+
+      const hasUpper = /[A-Z]/.test(pwd)
+      const hasNumber = /[0-9]/.test(pwd)
+      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pwd)
+      const isLongEnough = pwd.length >= 8
+
+      if (hasUpper && hasNumber && hasSpecial && isLongEnough) {
+        return 'Strong'
+      }
+
+      return 'Weak'
+    },
+    passwordStrengthColor() {
+      return this.passwordStrength === 'Strong' ? 'green' : 'red'
+    },
   },
   methods: {
     // Validate step one inputs
