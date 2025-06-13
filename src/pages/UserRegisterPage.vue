@@ -5,68 +5,77 @@
       <label class="subtitle">Let's Get You Set Up</label>
     </div>
 
-    <q-form @submit.prevent="registerUser">
+    <div @submit.prevent="registerUser">
       <div v-if="step === 1">
-        <label class="names">First Name</label>
-        <q-input
-          filled
-          dense
-          v-model="form.first_name"
-          lazy-rules
-          :rules="[(val) => !!val || 'Please enter your first name.']"
-          class="text-box"
-        />
-        <label class="names">Last Name</label>
-        <q-input
-          filled
-          dense
-          v-model="form.last_name"
-          lazy-rules
-          :rules="[(val) => !!val || 'Please enter your last name.']"
-          class="text-box"
-        />
-        <label class="names">Email</label>
-        <q-input
-          filled
-          dense
-          v-model="form.email"
-          type="email"
-          lazy-rules
-          :rules="[
-            (val) => !!val || 'Please enter your email.',
-            (val) =>
-              val.includes('@iskolarngbayan.pup.edu.ph') || 'Please use your PUP email only.',
-          ]"
-          class="text-box"
-        />
-        <label class="names">Contact Number</label>
-        <q-input
-          filled
-          dense
-          v-model="form.contact"
-          lazy-rules
-          :rules="[(val) => !!val || 'Please enter your contact number.']"
-          class="text-box"
-        />
-      </div>
-      <div class="column items-center q-mt-xs">
-        <q-btn class="next-button" push color="primary" text-color="white" @click="validateStepOne">
-          <img src="icons/arrow.png" alt="next" class="btn-icon" />
-        </q-btn>
-      </div>
+        <div class="column q-gutter-sm">
+          <label class="names">First Name</label>
+          <q-input
+            filled
+            dense
+            v-model="form.first_name"
+            lazy-rules
+            :rules="[(val) => !!val || 'Please enter your first name.']"
+            class="text-box"
+          />
+          <label class="names">Last Name</label>
+          <q-input
+            filled
+            dense
+            v-model="form.last_name"
+            lazy-rules
+            :rules="[(val) => !!val || 'Please enter your last name.']"
+            class="text-box"
+          />
+          <label class="names">Email</label>
+          <q-input
+            filled
+            dense
+            v-model="form.email"
+            type="email"
+            lazy-rules
+            :rules="[
+              (val) => !!val || 'Please enter your email.',
+              (val) =>
+                val.includes('@iskolarngbayan.pup.edu.ph') || 'Please use your PUP email only.',
+            ]"
+            class="text-box"
+          />
+          <label class="names">Contact Number</label>
+          <q-input
+            filled
+            dense
+            v-model="form.contact"
+            lazy-rules
+            :rules="[(val) => !!val || 'Please enter your contact number.']"
+            class="text-box"
+          />
+          <div class="column items-center q-mt-xs">
+            <q-btn
+              class="next-button"
+              push
+              color="primary"
+              text-color="white"
+              @click="validateStepOne"
+            >
+              <img src="icons/arrow.png" alt="next" class="btn-icon" />
+            </q-btn>
+          </div>
 
-      <div class="column items-center q-mb-xs">
-        <label class="already">
-          Already have an account?
-          <router-link to="/user/login" name="user-login" class="signup-login-link"
-            >Log In</router-link
-          >
-        </label>
+          <div class="column items-center q-mb-xs">
+            <label class="already">
+              Already have an account?
+              <router-link to="/user/login" name="user-login" class="signup-login-link"
+                >Log In</router-link
+              >
+            </label>
+          </div>
+        </div>
       </div>
+    </div>
 
       <div v-if="step === 2">
         <div class="column q-gutter-sm">
-          <label class="names">College & Department</label>
+          <label class="names">College</label>
           <q-select
             dense
             v-model="form.college"
@@ -75,26 +84,40 @@
             :rules="[(val) => !!val || 'Please select your college.']"
             class="text-box"
           />
+          <div class="row items-center"></div>
+            <div class="col-5">
+              <div class="column q-gutter-sm">
+              <label class="names">Department</label>
+              <q-select
+                dense
+                v-model="form.department"
+                :options="departmentOptions"
+                lazy-rules
+                :rules="[(val) => !!val || 'Please select your department.']"
+                class="c-textbox"
+              />
+              </div>
+            </div>
+          </div>
 
-          <label class="names">Department</label>
-          <q-select
-            dense
-            v-model="form.department"
-            :options="departmentOptions"
-            lazy-rules
-            :rules="[(val) => !!val || 'Please select your department.']"
-            class="c-textbox"
-          />
-          <label class="names">Year & Section</label>
-          <q-input
-            filled
-            dense
-            v-model="form.year_section"
-            lazy-rules
-            :rules="[(val) => !!val || 'Please enter your year and section.']"
-            class="c-textbox"
-          />
-          <q-checkbox v-model="form.is_alumni" dense label="Alumni" class="c-textbox" />
+          <div class="col-5">
+            <div class="column q-gutter-sm">
+              <label class="names">Year & Section</label>
+              <q-input
+                filled
+                dense
+                v-model="form.year_section"
+                lazy-rules
+                :rules="[(val) => !!val || 'Please enter your year and section.']"
+                class="c-textbox"
+              />
+            </div>
+
+            <div class="col q-pt-xs">
+              <q-checkbox v-model="form.is_alumni" dense label="Alumni" class="c-textbox" />
+            </div>
+          </div>
+
           <label class="names">Password</label>
           <q-input
             dense
@@ -129,6 +152,7 @@
         <q-btn label="Back" @click="step--" color="secondary" />
         <q-btn label="Register" @click="registerUser" color="primary" />
       </div>
+    </div>
     </q-form>
   </div>
 </template>
@@ -137,7 +161,7 @@
 export default {
   data() {
     return {
-      step: 1,
+      step: 2,
       form: {
         first_name: '',
         last_name: '',
