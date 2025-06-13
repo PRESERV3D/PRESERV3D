@@ -39,3 +39,4 @@ public/unity/Build/UnityPlayer.framework.js
 public/unity/Build/UnityPlayer.wasm
 public/unity/Build/UnityPlayer.loader.js
 >>>>>>> 3c225969b13f1f621adbb537bc31460885bb50c0
+services/__pycache__/nlp_service.cpython-313.pyc

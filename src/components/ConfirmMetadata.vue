@@ -8,8 +8,14 @@
       <q-card-section>
         <q-input filled v-model="localMetadata.title" label="Title" />
         <q-input filled v-model="localMetadata.author" label="Author(s)" class="q-mt-sm" />
-        <q-input filled v-model="localMetadata.date" label="Date" class="q-mt-sm" />
-        <q-editor v-model="localMetadata.summary" label="Summary" height="150px" class="q-mt-sm" />
+        <q-input filled v-model="localMetadata.date" type="date" label="Date" class="q-mt-sm" />
+        <q-editor
+          v-model="localMetadata.summary"
+          label="Summary"
+          height="150px"
+          class="q-mt-sm"
+          placeholder="Enter summary here..."
+        />
       </q-card-section>
 
       <q-card-actions align="right">
@@ -21,7 +27,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, ref, reactive, watch } from 'vue'
+import { ref, reactive, watch } from 'vue'
 
 const props = defineProps({
   modelValue: Boolean,

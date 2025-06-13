@@ -11,7 +11,20 @@ const routes = [
       { path: 'upload', component: () => import('pages/UploadPage.vue') },
       { path: 'user-register', component: () => import('pages/UserRegisterPage.vue') },
       { path: 'user-login', component: () => import('pages/UserLoginPage.vue') },
+<<<<<<< HEAD
       { path: 'admin-register', component: () => import('pages/AdminRegisterPage.vue') },
+=======
+      {
+        path: 'documents/:id',
+        name: 'view-document',
+        component: () => import('pages/ViewDocumentPage.vue'),
+      },
+      {
+        path: 'artifacts/:id',
+        name: 'view-artifact',
+        component: () => import('pages/ViewArtifactPage.vue'),
+      },
+>>>>>>> 9384d4a614d1cfc12e977a64c5dbeba0bd8d7d35
     ],
   },
 
