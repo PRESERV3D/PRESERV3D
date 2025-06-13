@@ -5,7 +5,7 @@
       <label class="subtitle">Let's Get You Set Up</label>
     </div>
 
-    <div @submit.prevent="registerUser">
+    <q-form @submit.prevent="registerUser">
       <div v-if="step === 1">
         <div class="column q-gutter-sm">
           <label class="names">First Name</label>
@@ -71,7 +71,6 @@
           </div>
         </div>
       </div>
-    </div>
 
       <div v-if="step === 2">
         <div class="column q-gutter-sm">
@@ -84,33 +83,33 @@
             :rules="[(val) => !!val || 'Please select your college.']"
             class="text-box"
           />
-          <div class="row items-center"></div>
+
+          <div class="row items-center">
             <div class="col-5">
               <div class="column q-gutter-sm">
-              <label class="names">Department</label>
-              <q-select
-                dense
-                v-model="form.department"
-                :options="departmentOptions"
-                lazy-rules
-                :rules="[(val) => !!val || 'Please select your department.']"
-                class="c-textbox"
-              />
+                <label class="names">Department</label>
+                <q-select
+                  dense
+                  v-model="form.department"
+                  :options="departmentOptions"
+                  lazy-rules
+                  :rules="[(val) => !!val || 'Please select your department.']"
+                  class="c-textbox"
+                />
               </div>
             </div>
-          </div>
 
-          <div class="col-5">
-            <div class="column q-gutter-sm">
-              <label class="names">Year & Section</label>
-              <q-input
-                filled
-                dense
-                v-model="form.year_section"
-                lazy-rules
-                :rules="[(val) => !!val || 'Please enter your year and section.']"
-                class="c-textbox"
-              />
+            <div class="col-5">
+              <div class="column q-gutter-sm">
+                <label class="names">Year & Section</label>
+                <q-input
+                  dense
+                  v-model="form.year_section"
+                  lazy-rules
+                  :rules="[(val) => !!val || 'Please enter your year and section.']"
+                  class="c-textbox"
+                />
+              </div>
             </div>
 
             <div class="col q-pt-xs">
@@ -152,7 +151,6 @@
         <q-btn label="Back" @click="step--" color="secondary" />
         <q-btn label="Register" @click="registerUser" color="primary" />
       </div>
-    </div>
     </q-form>
   </div>
 </template>
