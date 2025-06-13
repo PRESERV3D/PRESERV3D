@@ -1,4 +1,6 @@
 // app global css in SCSS form
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 .page-header {
   color: #560505;
 }
@@ -53,4 +55,109 @@
   width: 350px;
   height: 500px;
   overflow-y: scroll;
+}
+
+// Sign Up_ Log In
+
+.header-section {
+  height: 100px;
+}
+
+.form-title {
+  font-family: 'Poppins', sans-serif;
+  color: #560505;
+  font-size: 2.5rem;
+  font-weight: 800;
+}
+
+.subtitle {
+  font-family: 'Poppins', sans-serif;
+  color: #616161;
+  display: block;
+}
+
+.names {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: #560505;
+  align-self: flex-start;
+}
+
+.text-box,
+.login-text-box {
+  width: 32rem;
+}
+
+.next-button {
+  width: 58px;
+  height: 42px;
+  border-radius: 17px;
+  box-shadow: 0 2px 6px rgba(86, 5, 5, 0.22);
+}
+
+.btn-icon {
+  width: 12px;
+  height: 17px;
+}
+
+.already {
+  margin-top: 1.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: smaller;
+  color: #616161;
+}
+
+.signup-login-link {
+  color: #4d0000;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.forgot-password-link {
+  margin-top: 1.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: smaller;
+  color: #616161;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.signup-login-link:hover,
+.forgot-password-link:hover {
+  text-decoration: underline;
+}
+
+.sign-up,
+.log-in {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  background-color: #560505;
+  color: white;
+  margin-top: 0.5rem;
+  width: 250px;
+  border-radius: 25px;
+  box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
+}
+
+.no-gutter-top {
+  margin-top: -16px !important;
+}
+
+.c-textbox {
+  width: 11rem;
+}
+
+.text-box-2 {
+  width: 14.2rem;
+}
+
+.text-box .q-field__control,
+.c-textbox .q-field__control,
+.text-box-2 .q-field__control,
+.login-text-box .q-field__control {
+  border-radius: 10px;
+  border: 1px solid #4d0000;
+  box-shadow: 0 2px 6px rgba(86, 5, 5, 0.22);
 }

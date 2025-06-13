@@ -25,9 +25,12 @@ const routes = [
     path: '/user',
     component: () => import('layouts/LogInSignUpLayout.vue'),
     children: [
-      { path: 'login', component: () => import('pages/UserLoginPage.vue') },
-      { path: 'register', component: () => import('pages/UserRegisterPage.vue') },
-      { path: 'register-page-2', component: () => import('pages/UserRegisterPage2.vue') },
+      { path: 'login', name: 'user-login', component: () => import('pages/UserLoginPage.vue') },
+      {
+        path: 'register',
+        name: 'user-register',
+        component: () => import('pages/UserRegisterPage.vue'),
+      },
     ],
   },
 
@@ -35,8 +38,16 @@ const routes = [
     path: '/admin',
     component: () => import('layouts/LogInSignUpLayout.vue'),
     children: [
-      { path: 'admin-register', component: () => import('pages/AdminRegisterPage.vue') },
-      { path: 'admin-login', component: () => import('pages/AdminLoginPage.vue') },
+      {
+        path: 'register',
+        name: 'admin-register',
+        component: () => import('pages/AdminRegisterPage.vue'),
+      },
+      {
+        path: 'login',
+        name: 'admin-login',
+        component: () => import('pages/AdminLoginPage.vue'),
+      },
     ],
   },
   // Always leave this as last one,
