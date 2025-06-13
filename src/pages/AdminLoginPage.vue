@@ -4,7 +4,7 @@
       <label class="form-title">LOG IN</label>
       <label class="subtitle">Access Your Account</label>
     </div>
-    <q-form @submit.prevent="loginUser">
+    <q-form @submit.prevent="loginAdmin">
       <div class="column q-gutter-sm">
         <label class="names">Email</label>
         <q-input
@@ -55,43 +55,37 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      form: {
-        email: '',
-        password: '',
-        showPassword: false,
-      },
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const form = ref({
+  email: '',
+  password: '',
+})
+
+async function loginAdmin() {
+  try {
+    const response = await fetch('http://localhost:3000/login-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form.value),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      alert(data.error || 'Login failed.')
+    } else {
+      alert('Login successful!')
+      console.log(data)
+      router.push('/home')
     }
-  },
-
-  methods: {
-    // Login user
-    async loginUser() {
-      try {
-        const response = await fetch('http://localhost:3000/login-user', {
-          //for admin login
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(this.form),
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-          alert(data.error || 'Login failed.')
-        } else {
-          alert('Login successful!')
-          console.log(data)
-          this.$router.push('/home')
-        }
-      } catch (error) {
-        alert('An error occurred during login.')
-        console.error(error)
-      }
-    },
-  },
+  } catch (error) {
+    alert('An error occurred during login.')
+    console.error(error)
+  }
 }
 </script>
