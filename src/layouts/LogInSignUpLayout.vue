@@ -1,41 +1,20 @@
 <template>
-  <div class="page-background" style="background-color: #4d0000">
-    <div class="row">
-      <div class="col-6 flex">
-        <q-img src="src/assets/img/pup-glows.png" alt="PUP Glow" class="bg-glow" />
-      </div>
-      <div class="col-6 q-py-xl login-card-style flex flex-center">
-        <q-page-container>
-          <!-- <router-view /> -->
-          <q-page class="flex flex-center">
-            <q-form @submit.prevent="loginUser">
-              <p>Email</p>
-              <q-input
-                filled
-                v-model="form.email"
-                type="email"
-                lazy-rules
-                :rules="[
-                  (val) => !!val || 'Please enter your email.',
-                  (val) => val.includes('@iskolarngbayan.pup.edu.ph') || 'Use your PUP email only.',
-                ]"
-              />
-              <p>Password</p>
-              <q-input
-                filled
-                v-model="form.password"
-                type="password"
-                lazy-rules
-                :rules="[(val) => !!val || 'Please enter your password.']"
-              />
-              <q-btn label="Login" type="submit" color="primary" />
-            </q-form>
-          </q-page>
-        </q-page-container>
+  <q-layout view="lHh Lpr lFf">
+    <div class="page-background" style="background-color: #4d0000">
+      <div class="row">
+        <div class="col-6 flex">
+          <q-img src="src/assets/img/pup-glows.png" alt="PUP Glow" class="bg-glow" />
+        </div>
+        <div class="col-6 q-py-xl login-card-style flex flex-center">
+          <q-page-container>
+            <router-view />
+          </q-page-container>
+        </div>
       </div>
     </div>
-  </div>
+  </q-layout>
 </template>
+
 <style scoped>
 .page-background {
   background-image:

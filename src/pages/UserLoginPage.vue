@@ -1,5 +1,5 @@
 <template>
-  <q-page class="flex flex-center">
+  <div class="flex flex-center">
     <q-form @submit.prevent="loginUser">
       <p>Email</p>
       <q-input
@@ -22,7 +22,7 @@
       />
       <q-btn label="Login" type="submit" color="primary" />
     </q-form>
-  </q-page>
+  </div>
 </template>
 
 <script>
