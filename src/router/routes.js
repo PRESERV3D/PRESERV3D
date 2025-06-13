@@ -21,6 +21,12 @@ const routes = [
       },
     ],
   },
+  {
+    path: '/LandingPage',
+    component: () => import('pages/LandingPage.vue'), // Landing Page
+  },
+
+
 
   // Always leave this as last one,
   // but you can also remove it
@@ -28,6 +34,6 @@ const routes = [
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),
   },
-]
+];
 
-export default routes
+export default routes;

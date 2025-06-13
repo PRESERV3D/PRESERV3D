@@ -54,3 +54,50 @@
   height: 500px;
   overflow-y: scroll;
 }
+
+.text-tertiary {
+  color: $tertiary !important;
+}
+
+// styles for landing page
+
+.page-background {
+  background:
+    linear-gradient(0deg, rgba(63, 4, 4, 0.8) 70%, rgba(0, 0, 0, 0.9) 99%),
+    url('src/assets/img/bg-img.png');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+}
+
+.bottom-shadow-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 350px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 20%, transparent 100%);
+  z-index: 50;
+  pointer-events: none;
+}
+
+@font-face {
+  font-family: 'Benne';
+  src: url(src/assets/fonts/Benne.ttf) format('truetype');
+}
+
+.font-benne {
+  font-family: 'Benne', sans-serif;
+  text-shadow: 70px 30px 4px rgba(0, 0, 0, 0.55);
+}
+
+.main-tile {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 15px;
+  z-index: 100;
+  width: 100%;
+  text-align: center;
+}
