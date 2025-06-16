@@ -192,6 +192,10 @@
   color: #fefcf3;
 }
 
+.trophies {
+  max-width: 85%;
+}
+
 .btn-explore {
   background-color: #010101;
   font: Poppins;
@@ -199,7 +203,7 @@
   font-size: 14px;
   color: #ffffff;
   border-radius: 30px;
-  padding: 1.2rem;
+  padding: 1rem;
   margin-bottom: 2rem;
 }
 
@@ -209,21 +213,21 @@
   font-size: 14px;
   color: #ffffff;
   border-radius: 30px;
-  padding: 1.2rem;
+  padding: 1rem;
   border: 2px solid #ffffff;
   margin-bottom: 2rem;
 }
 
 .box-1 {
   border-radius: 15px;
-  background: linear-gradient(334deg, #fbf4d0 0%, #ffffff 28%, #a68080 54%, #4d0000 80%);
+  background: linear-gradient(145deg, #4d0000 15%, #a68080 60%, #ffffff 85%, #fbf4d0 100%);
   width: 50rem;
   height: 18rem;
 }
 
 .box-2 {
   border-radius: 15px;
-  background: linear-gradient(334deg, #fbf4d0 0%, #ffffff 28%, #a68080 54%, #4d0000 80%);
+  background: linear-gradient(145deg, #4d0000 15%, #a68080 60%, #ffffff 85%, #fbf4d0 100%);
   margin-left: 1.5rem;
   width: 27rem;
   height: 18rem;
@@ -231,14 +235,14 @@
 
 .box-3 {
   border-radius: 15px;
-  background: linear-gradient(334deg, #fbf4d0 0%, #ffffff 28%, #a68080 54%, #4d0000 80%);
+  background: linear-gradient(145deg, #4d0000 15%, #a68080 60%, #ffffff 85%, #fbf4d0 100%);
   width: 50rem;
   height: 27rem;
 }
 
 .box-4 {
   border-radius: 15px;
-  background: linear-gradient(334deg, #fbf4d0 0%, #ffffff 28%, #a68080 54%, #4d0000 80%);
+  background: linear-gradient(145deg, #4d0000 15%, #a68080 60%, #ffffff 85%, #fbf4d0 100%);
   margin-left: 1.5rem;
   width: 27rem;
   height: 27rem;
