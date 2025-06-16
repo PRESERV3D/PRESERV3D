@@ -179,9 +179,9 @@
 
 .admin-title-2 {
   font-family: 'Poppins', sans-serif;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 22px;
-  color: #fefcf3;
+  color: #560505;
   margin-top: 1rem;
 }
 
@@ -220,17 +220,29 @@
 
 .box-1 {
   border-radius: 15px;
-  background: linear-gradient(145deg, #4d0000 15%, #a68080 60%, #ffffff 85%, #fbf4d0 100%);
+  background: linear-gradient(145deg, #4d0000 15%, #a68080 60%, #ffffff 85%, #f9f7ea 100%);
   width: 50rem;
   height: 18rem;
 }
 
 .box-2 {
   border-radius: 15px;
-  background: linear-gradient(145deg, #4d0000 15%, #a68080 60%, #ffffff 85%, #fbf4d0 100%);
+  background: linear-gradient(185deg, #fffae2 0%, #ffffff 83%, #e6dada 100%);
   margin-left: 1.5rem;
   width: 27rem;
   height: 18rem;
+}
+
+.btn-1 {
+  border-radius: 10px;
+  background-color: rgba(136, 0, 0, 0.07);
+  color: 121212;
+  font-size: 12px;
+}
+
+.btn-1 :active {
+  background-color: #880000;
+  color: #ffffff;
 }
 
 .box-3 {

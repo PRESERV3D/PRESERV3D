@@ -23,7 +23,27 @@
       </div>
 
       <div class="q-mt-md box-2">
-        <p class="q-ml-lg admin-title-2">Upload</p>
+        <p class="q-ml-lg admin-title-2">Uploaded Archives</p>
+        <div class="row q-gutter-md q-ml-sm">
+          <q-btn
+            label="All"
+            class="btn-1"
+            :class="{ active: activeFilter === 'all' }"
+            @click="activeFilter = 'all'"
+          />
+          <q-btn
+            label="Artifacts"
+            class="btn-1"
+            :class="{ active: activeFilter === 'artifacts' }"
+            @click="activeFilter = 'artifacts'"
+          />
+          <q-btn
+            label="Documents"
+            class="btn-1"
+            :class="{ active: activeFilter === 'documents' }"
+            @click="activeFilter = 'documents'"
+          />
+        </div>
       </div>
     </div>
 
@@ -45,3 +65,8 @@
     </div>
   </q-page>
 </template>
+
+<script setup>
+import { ref } from 'vue'
+const activeFilter = ref('all')
+</script>
