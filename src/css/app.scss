@@ -198,7 +198,7 @@
 
 .btn-explore {
   background-color: #010101;
-  font: Poppins;
+  font-family: 'Poppins', sans-serif;
   font-weight: 400;
   font-size: 14px;
   color: #ffffff;
@@ -208,7 +208,7 @@
 }
 
 .btn-document {
-  font: Poppins;
+  font-family: 'Poppins', sans-serif;
   font-weight: 400;
   font-size: 14px;
   color: #ffffff;
@@ -237,7 +237,9 @@
   border-radius: 10px;
   background-color: rgba(136, 0, 0, 0.07);
   color: 121212;
-  font-size: 12px;
+  font-size: 10px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
 }
 
 .btn-1 :active {
@@ -258,7 +260,7 @@
 
   color: #121212;
   font-size: 12px;
-  font: Poppins;
+  font-family: 'Poppins', sans-serif;
   font-weight: 400;
 }
 

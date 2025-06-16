@@ -9,8 +9,8 @@
             tools — all in one place.
           </p>
           <div class="q-ml-md q-gutter-lg">
-            <q-btn to="/artifacts" label="Explore Artifacts" class="btn-explore" />
-            <q-btn to="/documents" label="Browse Documents" class="btn-document" />
+            <q-btn to="/artifacts" label="Explore Artifacts" class="btn-explore" no-caps />
+            <q-btn to="/documents" label="Browse Documents" class="btn-document" no-caps />
           </div>
         </div>
         <div class="col-5 q-gutter-xs">
@@ -27,18 +27,21 @@
         <div class="row q-gutter-md q-ml-sm">
           <q-btn
             label="All"
+            no-caps
             class="btn-1"
             :class="{ active: activeFilter === 'all' }"
             @click="activeFilter = 'all'"
           />
           <q-btn
             label="Artifacts"
+            no-caps
             class="btn-1"
             :class="{ active: activeFilter === 'artifacts' }"
             @click="activeFilter = 'artifacts'"
           />
           <q-btn
             label="Documents"
+            no-caps
             class="btn-1"
             :class="{ active: activeFilter === 'documents' }"
             @click="activeFilter = 'documents'"
@@ -51,7 +54,7 @@
       <div class="row box-3 item-center justify-between q-px-lg">
         <p class="admin-title-2">Reports</p>
         <div class="q-my-xs q-gutter-md">
-          <q-btn label="Generate Report" class="btn-report" />
+          <q-btn label="Generate Report" class="btn-report" no-caps />
         </div>
       </div>
 
