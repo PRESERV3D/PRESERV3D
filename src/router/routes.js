@@ -10,6 +10,11 @@ const routes = [
       { path: 'gallery', component: () => import('pages/GalleryPage.vue') },
       { path: 'upload', component: () => import('pages/UploadPage.vue') },
       {
+        path: 'admindash',
+        name: 'admin-home',
+        component: () => import('pages/AdminDashboard.vue'),
+      },
+      {
         path: 'documents/:id',
         name: 'view-document',
         component: () => import('pages/ViewDocumentPage.vue'),

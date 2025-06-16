@@ -57,6 +57,12 @@
   overflow-y: scroll;
 }
 
+.search {
+  width: 50rem;
+  font: Poppins;
+  margin-left: 4.7rem;
+}
+
 // Sign Up_ Log In
 
 .header-section {
@@ -159,4 +165,81 @@
   border-radius: 10px;
   border: 1px solid #4d0000;
   box-shadow: 0 2px 6px rgba(86, 5, 5, 0.22);
+}
+
+//admin
+
+.admin-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 32px;
+  color: #fefcf3;
+  margin-top: 1rem;
+}
+
+.admin-title-2 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 22px;
+  color: #fefcf3;
+  margin-top: 1rem;
+}
+
+.admin-subtitle {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 100;
+  font-size: 16px;
+  color: #fefcf3;
+}
+
+.btn-explore {
+  background-color: #010101;
+  font: Poppins;
+  font-weight: 400;
+  font-size: 14px;
+  color: #ffffff;
+  border-radius: 30px;
+  padding: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.btn-document {
+  font: Poppins;
+  font-weight: 400;
+  font-size: 14px;
+  color: #ffffff;
+  border-radius: 30px;
+  padding: 1.2rem;
+  border: 2px solid #ffffff;
+  margin-bottom: 2rem;
+}
+
+.box-1 {
+  border-radius: 15px;
+  background: linear-gradient(334deg, #fbf4d0 0%, #ffffff 28%, #a68080 54%, #4d0000 80%);
+  width: 50rem;
+  height: 18rem;
+}
+
+.box-2 {
+  border-radius: 15px;
+  background: linear-gradient(334deg, #fbf4d0 0%, #ffffff 28%, #a68080 54%, #4d0000 80%);
+  margin-left: 1.5rem;
+  width: 27rem;
+  height: 18rem;
+}
+
+.box-3 {
+  border-radius: 15px;
+  background: linear-gradient(334deg, #fbf4d0 0%, #ffffff 28%, #a68080 54%, #4d0000 80%);
+  width: 50rem;
+  height: 27rem;
+}
+
+.box-4 {
+  border-radius: 15px;
+  background: linear-gradient(334deg, #fbf4d0 0%, #ffffff 28%, #a68080 54%, #4d0000 80%);
+  margin-left: 1.5rem;
+  width: 27rem;
+  height: 27rem;
 }
