@@ -51,10 +51,17 @@
     </div>
 
     <div class="row q-my-lg">
-      <div class="row box-3 item-center justify-between q-px-lg">
-        <p class="admin-title-2">Reports</p>
-        <div class="q-my-xs q-gutter-md">
-          <q-btn label="Generate Report" class="btn-report" no-caps />
+      <div class="column box-3 q-px-lg q-py-md">
+        <div class="row item-center justify-between q-mb-md">
+          <p class="q-ml-md admin-title-2">Reports</p>
+          <div class="q-mt-sm">
+            <q-btn label="Generate Report" class="btn-report" no-caps />
+          </div>
+        </div>
+        <div class="row q-py-md">
+          <div class="col box-report">All Active Users</div>
+          <div class="col box-report">Total Artifacts</div>
+          <div class="col box-report">Total Documents</div>
         </div>
       </div>
 

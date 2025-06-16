@@ -203,6 +203,7 @@
   font-size: 14px;
   color: #ffffff;
   border-radius: 30px;
+  border: 2px solid #010101;
   padding: 1rem;
   margin-bottom: 2rem;
 }
@@ -251,17 +252,33 @@
   border-radius: 15px;
   background: linear-gradient(10deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
   width: 60rem;
-  height: 27rem;
+  height: 35rem;
 }
 
 .btn-report {
   border-radius: 10px;
   background-color: rgba(204, 172, 0, 0.7);
-
   color: #121212;
   font-size: 12px;
   font-family: 'Poppins', sans-serif;
   font-weight: 400;
+  height: 3rem;
+  width: 9rem;
+  margin-right: 0.5rem;
+}
+
+.box-report {
+  font-family: 'Poppins', sans-serif;
+  background-color: rgba(136, 0, 0, 0.07);
+  border-radius: 12px;
+  height: 5rem;
+  color: #7c7c7c;
+  text-align: bottom;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin: 0 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 .box-4 {
@@ -269,5 +286,5 @@
   background: linear-gradient(25deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
   margin-left: 2rem;
   width: 25rem;
-  height: 27rem;
+  height: 35rem;
 }
