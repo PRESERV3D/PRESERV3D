@@ -1,14 +1,14 @@
 <template>
   <q-page class="q-pa-md">
-    <div class="row">
-      <div class="q-mt-md box-1 row items-center">
+    <div class="row q-gutter-sm">
+      <div class="q-mt-xs box-1 row items-center">
         <div class="col-7 q-gutter-xs">
-          <p class="q-ml-lg admin-title">Explore & Manage Cultural Heritage Assets</p>
-          <p class="q-ml-lg admin-subtitle">
+          <p class="q-ml-xl admin-title">Explore & Manage Cultural Heritage Assets</p>
+          <p class="q-ml-xl admin-subtitle">
             Access digital artifacts, document, and research <br />
             tools — all in one place.
           </p>
-          <div class="q-ml-xs q-gutter-md">
+          <div class="q-ml-md q-gutter-lg">
             <q-btn to="/artifacts" label="Explore Artifacts" class="btn-explore" />
             <q-btn to="/documents" label="Browse Documents" class="btn-document" />
           </div>
@@ -22,7 +22,7 @@
         </div>
       </div>
 
-      <div class="q-mt-md box-2">
+      <div class="q-mt-xs box-2">
         <p class="q-ml-lg admin-title-2">Uploaded Archives</p>
         <div class="row q-gutter-md q-ml-sm">
           <q-btn
@@ -48,14 +48,10 @@
     </div>
 
     <div class="row q-my-lg">
-      <div class="box-3">
-        <p class="q-ml-lg admin-title-2">Reports</p>
-        <p class="q-ml-lg admin-subtitle">
-          Access digital artifacts, document, and research tools — all in one place.
-        </p>
-        <div class="q-ml-xs q-gutter-md">
-          <q-btn to="/artifacts" label="Explore Artifacts" class="btn-explore" />
-          <q-btn to="/documents" label="Browse Documents" class="btn-document" />
+      <div class="row box-3 item-center justify-between q-px-lg">
+        <p class="admin-title-2">Reports</p>
+        <div class="q-my-xs q-gutter-md">
+          <q-btn label="Generate Report" class="btn-report" />
         </div>
       </div>
 

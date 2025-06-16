@@ -58,7 +58,7 @@
 }
 
 .search {
-  width: 50rem;
+  width: 60rem;
   font: Poppins;
   margin-left: 4.7rem;
 }
@@ -193,7 +193,7 @@
 }
 
 .trophies {
-  max-width: 85%;
+  max-width: 80%;
 }
 
 .btn-explore {
@@ -221,15 +221,15 @@
 .box-1 {
   border-radius: 15px;
   background: linear-gradient(145deg, #4d0000 15%, #a68080 60%, #ffffff 85%, #f9f7ea 100%);
-  width: 50rem;
+  width: 60rem;
   height: 18rem;
 }
 
 .box-2 {
   border-radius: 15px;
   background: linear-gradient(185deg, #fffae2 0%, #ffffff 83%, #e6dada 100%);
-  margin-left: 1.5rem;
-  width: 27rem;
+  margin-left: 2rem;
+  width: 25rem;
   height: 18rem;
 }
 
@@ -247,15 +247,25 @@
 
 .box-3 {
   border-radius: 15px;
-  background: linear-gradient(145deg, #4d0000 15%, #a68080 60%, #ffffff 85%, #fbf4d0 100%);
-  width: 50rem;
+  background: linear-gradient(10deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
+  width: 60rem;
   height: 27rem;
+}
+
+.btn-report {
+  border-radius: 10px;
+  background-color: rgba(204, 172, 0, 0.7);
+
+  color: #121212;
+  font-size: 12px;
+  font: Poppins;
+  font-weight: 400;
 }
 
 .box-4 {
   border-radius: 15px;
-  background: linear-gradient(145deg, #4d0000 15%, #a68080 60%, #ffffff 85%, #fbf4d0 100%);
-  margin-left: 1.5rem;
-  width: 27rem;
+  background: linear-gradient(25deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
+  margin-left: 2rem;
+  width: 25rem;
   height: 27rem;
 }
