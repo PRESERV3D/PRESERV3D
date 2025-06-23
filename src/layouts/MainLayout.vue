@@ -4,9 +4,12 @@
       <q-drawer
         v-model="drawer"
         show-if-above
+        :mini="miniState"
+        mini-to-overlay
+        :mini-width="120"
         @mouseenter="onDrawerMouseEnter"
         @mouseleave="onDrawerMouseLeave"
-        :width="miniState ? 120 : 280"
+        :width="280"
         :breakpoint="500"
         bordered
         :class="'bg-transparent sidebar-drawer'"

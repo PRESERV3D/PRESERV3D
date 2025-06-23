@@ -60,21 +60,27 @@
 
 // STYLE FOR SIDEBAR (NASA MAIN LAYOUT)
 .sidebar-drawer.q-drawer {
-  transition: width 0.3s ease !important;
   overflow: hidden;
 }
 
 .text-hidden {
   opacity: 0 !important;
-  width: 0 !important;
+  transform: translateX(-10px) !important;
+  transition: opacity 0.25s ease, transform 0.25s ease !important;
   overflow: hidden !important;
+}
+
+.nav-text, .logout-text {
+  opacity: 1;
+  transform: translateX(0) !important;
+  transition: opacity 0.25s ease 0.1s, transform 0.25s ease 0.1s !important;
 }
 
 /* styles for navigation and logout */
 .nav-item, .logout-item {
   margin-bottom: 16px !important;
   border-radius: 12px;
-  transition: all 0.3s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .nav-item:hover {
@@ -92,7 +98,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   border: 2px solid transparent;
   flex-shrink: 0;
 }
@@ -122,6 +128,7 @@
 .nav-item.q-item--active .icon-wrapper {
   background-color: #880000;
   box-shadow: 0 4px 12px rgba(136, 0, 0, 0.3);
+  transform: scale(1.05);
 }
 
 .nav-item.q-item--active .nav-icon {
