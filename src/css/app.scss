@@ -202,6 +202,13 @@
   color: #560505;
 }
 
+.sub-font-2 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: #560505;
+}
+
 .trophies {
   max-width: 80%;
 }
@@ -326,16 +333,18 @@
 }
 
 .recent-box {
-  flex: 1;
-  height: 18rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 13rem;
   background-color: #000000;
   border-radius: 10px;
 }
 
 .recent-card {
   width: 9rem;
-  height: 12rem;
-  margin: 1rem;
+  height: 11.5rem;
+  margin-left: 0.8rem;
   border-radius: 10px;
   background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
 }

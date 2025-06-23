@@ -84,25 +84,25 @@
               <div class="row items-center justify-between">
                 <div class="row items-center q-gutter-sm">
                   <p class="number">1</p>
-                  <p class="sub-font" style="font-size: 12px">Artifact Title 1</p>
+                  <p class="sub-font-2">Artifact Title 1</p>
                 </div>
-                <p class="q-mr-md sub-font" style="font-size: 12px">9.5k views</p>
+                <p class="q-mr-md sub-font-2" style="font-size: 12px">9.5k views</p>
               </div>
 
               <div class="row items-center justify-between">
                 <div class="row items-center q-gutter-sm">
                   <p class="number">2</p>
-                  <p class="sub-font" style="font-size: 12px">Artifact Title 2</p>
+                  <p class="sub-font-2">Artifact Title 2</p>
                 </div>
-                <p class="q-mr-md sub-font" style="font-size: 12px">7.2k views</p>
+                <p class="q-mr-md sub-font-2" style="font-size: 12px">7.2k views</p>
               </div>
 
               <div class="row items-center justify-between">
                 <div class="row items-center q-gutter-sm">
                   <p class="number">3</p>
-                  <p class="sub-font" style="font-size: 12px">Artifact Title 3</p>
+                  <p class="sub-font-2">Artifact Title 3</p>
                 </div>
-                <p class="q-mr-md sub-font" style="font-size: 12px">6.8k views</p>
+                <p class="q-mr-md sub-font-2" style="font-size: 12px">6.8k views</p>
               </div>
 
               <p class="q-py-xs sub-font" style="font-size: 14px">Documents</p>
@@ -110,25 +110,25 @@
               <div class="row items-center justify-between">
                 <div class="row items-center q-gutter-sm">
                   <p class="number">1</p>
-                  <p class="sub-font" style="font-size: 12px">Document Title 1</p>
+                  <p class="sub-font-2">Document Title 1</p>
                 </div>
-                <p class="q-mr-md sub-font" style="font-size: 12px">12.4k views</p>
+                <p class="q-mr-md sub-font-2" style="font-size: 12px">12.4k views</p>
               </div>
 
               <div class="row items-center justify-between">
                 <div class="row items-center q-gutter-sm">
                   <p class="number">2</p>
-                  <p class="sub-font" style="font-size: 12px">Document Title 2</p>
+                  <p class="sub-font-2">Document Title 2</p>
                 </div>
-                <p class="q-mr-md sub-font" style="font-size: 12px">8.1k views</p>
+                <p class="q-mr-md sub-font-2" style="font-size: 12px">8.1k views</p>
               </div>
 
               <div class="row items-center justify-between">
                 <div class="row items-center q-gutter-sm">
                   <p class="number">3</p>
-                  <p class="sub-font" style="font-size: 12px">Document Title 3</p>
+                  <p class="sub-font-2">Document Title 3</p>
                 </div>
-                <p class="q-mr-md sub-font" style="font-size: 12px">5.9k views</p>
+                <p class="q-mr-md sub-font-2" style="font-size: 12px">5.9k views</p>
               </div>
             </div>
           </div>
@@ -138,11 +138,13 @@
       <div class="box-4">
         <p class="q-ml-lg admin-title-2">Recently Uploaded</p>
         <div class="q-pa-md">
-          <div class="row q-gutter-md">
+          <div class="col q-gutter-lg q-px-sm">
             <div class="recent-box">
               <div class="recent-card"></div>
             </div>
-            <div class="recent-box">Box 2</div>
+            <div class="recent-box">
+              <div class="recent-card"></div>
+            </div>
           </div>
         </div>
       </div>
