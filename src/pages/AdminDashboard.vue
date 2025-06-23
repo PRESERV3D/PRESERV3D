@@ -58,10 +58,19 @@
             <q-btn label="Generate Report" class="btn-report" no-caps />
           </div>
         </div>
-        <div class="row">
-          <div class="col box-report">All Active Users</div>
-          <div class="col box-report">Total Artifacts</div>
-          <div class="col box-report">Total Documents</div>
+        <div class="row q-gutter-md q-px-sm">
+          <div class="col box-report">
+            <div class="number-report">3.2k</div>
+            <div class="label">All Active User</div>
+          </div>
+          <div class="col box-report">
+            <div class="number-report">2k</div>
+            <div class="label">Total Artifacts</div>
+          </div>
+          <div class="col box-report">
+            <div class="number-report">3.2k</div>
+            <div class="label">Total Documents</div>
+          </div>
         </div>
         <div class="row q-py-md">
           <div class="col-6">

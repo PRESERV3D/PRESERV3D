@@ -309,18 +309,28 @@
 }
 
 .box-report {
-  font-family: 'Poppins', sans-serif;
-  font-size: 12px;
   background-color: rgba(136, 0, 0, 0.07);
   border-radius: 12px;
   height: 4.5rem;
+  font-family: 'Poppins', sans-serif;
   color: #7c7c7c;
-  text-align: bottom;
   display: flex;
-  align-items: flex-end;
+  text-align: center;
+  align-items: center;
+  flex-direction: column;
   justify-content: center;
-  margin: 0 0.5rem;
-  padding-bottom: 0.5rem;
+}
+
+.number-report {
+  font-weight: 600;
+  font-size: 28px;
+  color: #121212;
+  margin-top: 1rem;
+}
+
+.label {
+  font-size: 12px;
+  margin-bottom: 1rem;
 }
 
 .box-4 {
