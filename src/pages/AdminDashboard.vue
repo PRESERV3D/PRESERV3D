@@ -58,10 +58,34 @@
             <q-btn label="Generate Report" class="btn-report" no-caps />
           </div>
         </div>
-        <div class="row q-py-md">
+        <div class="row q-py-xs">
           <div class="col box-report">All Active Users</div>
           <div class="col box-report">Total Artifacts</div>
           <div class="col box-report">Total Documents</div>
+        </div>
+        <div class="row q-py-md">
+          <div class="col-6">
+            <p class="q-ml-md sub-font">Users per Month</p>
+            <div class="row q-py-sm justify-center q-gutter-md">
+              <div class="box-legend" style="background-color: #880000"></div>
+              <p class="q-ml-sm sub-font" style="font-size: 12px">PUP Students</p>
+              <div class="box-legend" style="background-color: #efaf00"></div>
+              <p class="q-ml-sm sub-font" style="font-size: 12px">PUP Faculty</p>
+              <div class="box-legend" style="background-color: #3d86ff"></div>
+              <p class="q-ml-sm sub-font" style="font-size: 12px">Visitors</p>
+            </div>
+          </div>
+          <div class="col-6">
+            <p class="sub-font">Most Viewed Artifacts Materials</p>
+            <div class="column">
+              <p class="q-py-xs sub-font" style="font-size: 14px">Artifacts</p>
+
+              <p class="number">1</p>
+              <p class="number">2</p>
+              <p class="number">3</p>
+              <p class="q-py-xs sub-font" style="font-size: 14px">Documents</p>
+            </div>
+          </div>
         </div>
       </div>
 

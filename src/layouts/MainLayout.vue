@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-md">
+  <div class="q-pa-md bg-all">
     <q-layout view="lHh Lpr lFf">
       <div class="search q-py-md">
         <q-input

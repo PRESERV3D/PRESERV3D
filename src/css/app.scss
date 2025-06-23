@@ -1,5 +1,8 @@
 // app global css in SCSS form
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+.bg-all {
+  background: linear-gradient(180deg, #ffffff 0%, #fffef5 64%, #fffced 100%);
+}
 
 .page-header {
   color: #560505;
@@ -180,7 +183,7 @@
 .admin-title-2 {
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
-  font-size: 22px;
+  font-size: 24px;
   color: #560505;
   margin-top: 1rem;
 }
@@ -192,8 +195,36 @@
   color: #fefcf3;
 }
 
+.sub-font {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  color: #560505;
+}
+
 .trophies {
   max-width: 80%;
+}
+
+.box-legend {
+  margin-top: 1.1rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.number {
+  background-color: rgba(204, 172, 0, 0.2);
+  color: #560505;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-explore {
@@ -224,6 +255,7 @@
   background: linear-gradient(145deg, #4d0000 15%, #a68080 60%, #ffffff 85%, #f9f7ea 100%);
   width: 60rem;
   height: 18rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
 }
 
 .box-2 {
@@ -232,6 +264,7 @@
   margin-left: 2rem;
   width: 25rem;
   height: 18rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
 }
 
 .btn-1 {
@@ -253,6 +286,7 @@
   background: linear-gradient(10deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
   width: 60rem;
   height: 35rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
 }
 
 .btn-report {
@@ -269,9 +303,10 @@
 
 .box-report {
   font-family: 'Poppins', sans-serif;
+  font-size: 12px;
   background-color: rgba(136, 0, 0, 0.07);
   border-radius: 12px;
-  height: 5rem;
+  height: 4rem;
   color: #7c7c7c;
   text-align: bottom;
   display: flex;
@@ -287,4 +322,5 @@
   margin-left: 2rem;
   width: 25rem;
   height: 35rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
 }
