@@ -1,26 +1,74 @@
 <template>
   <q-page class="q-pa-md">
     <div class="page-header">
-      <h2 class="q-mb-sm title">Documents</h2>
-      <h5 class="q-mt-xs q-mb-lg">Browse selected digital books from the university archives.</h5>
+      <div class="q-mt-xs title">Documents</div>
+      <div class="q-mb-md sub-font-3 row items-baseline justify-between">
+        <div>Browse selected digital books from the university archives.</div>
+        <q-btn to="/artifacts" label="Add New" class="btn-add" no-caps />
+      </div>
     </div>
-    <div>
-      <div class="row q-gutter-md q-mt-md">
-        <div v-for="(doc, index) in documentsStore.documents" :key="index" class="card-wrapper">
-          <q-card class="my-card documentCard" rounded bordered scrollable>
-            <PdfPreview :pdfUrl="doc.file_url" class="document" />
+    <div class="q-py-lg q-gutter-xl column">
+      <div class="box-highlights">
+        <p class="q-ml-lg admin-title-2" style="font-size: 16px">Book Highlights</p>
+      </div>
+      <div class="box-category">
+        <div class="q-pa-lg">
+          <p class="admin-title-2" style="font-size: 16px; margin-top: 0">Category</p>
+          <div class="row q-gutter-md">
+            <q-btn
+              label="All"
+              no-caps
+              class="btn-1"
+              :class="{ active: activeFilter === 'all' }"
+              @click="activeFilter = 'all'"
+            />
+            <q-btn
+              label="Journals"
+              no-caps
+              class="btn-1"
+              :class="{ active: activeFilter === 'journals' }"
+              @click="activeFilter = 'journals'"
+            />
+            <q-btn
+              label="Documents"
+              no-caps
+              class="btn-1"
+              :class="{ active: activeFilter === 'documents' }"
+              @click="activeFilter = 'documents'"
+            />
+            <q-btn
+              label="Historical Records"
+              no-caps
+              class="btn-1"
+              :class="{ active: activeFilter === 'historical records' }"
+              @click="activeFilter = 'historical records'"
+            />
+            <q-btn
+              label="Manuscripts"
+              no-caps
+              class="btn-1"
+              :class="{ active: activeFilter === 'manuscripts' }"
+              @click="activeFilter = 'manuscripts'"
+            />
+          </div>
+          <div class="row q-gutter-md q-mt-sm">
+            <div v-for="(doc, index) in documentsStore.documents" :key="index" class="card-wrapper">
+              <q-card class="my-card documentCard" rounded bordered scrollable>
+                <PdfPreview :pdfUrl="doc.file_url" class="document" />
 
-            <div class="metadata q-px-sm">
-              <h6>{{ doc.metadata.title }}</h6>
-              <p class="q-mb-sm">Author: {{ doc.metadata.author }}</p>
+                <div class="metadata q-px-sm">
+                  <h6>{{ doc.metadata.title }}</h6>
+                  <p class="q-mb-sm">Author: {{ doc.metadata.author }}</p>
+                </div>
+                <router-link
+                  :to="{ name: 'view-document', params: { id: doc.id } }"
+                  class="text-primary q-px-sm"
+                >
+                  View Document
+                </router-link>
+              </q-card>
             </div>
-            <router-link
-              :to="{ name: 'view-document', params: { id: doc.id } }"
-              class="text-primary q-px-sm"
-            >
-              View Document
-            </router-link>
-          </q-card>
+          </div>
         </div>
       </div>
     </div>
