@@ -38,16 +38,26 @@
 import { onMounted } from 'vue'
 import { useModelStore } from 'stores/modelStore'
 import '@google/model-viewer'
+import { supabase } from 'boot/supabase'
 
 const modelStore = useModelStore()
 
 onMounted(async () => {
+  // Load artifacts metadata from Supabase
   try {
-    const res = await fetch('http://localhost:3000/models')
-    const models = await res.json()
-    modelStore.setModels(models)
+    const { data, error } = await supabase
+      .from('artifacts_metadata')
+      .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
+      .order('uploaded_at', { ascending: false })
+
+    if (error) {
+      console.error('Supabase error fetching artifacts:', error)
+      return
+    }
+
+    modelStore.setModels(data)
   } catch (err) {
-    console.error('Failed to load models:', err)
+    console.error('Unexpected error while loading documents:', err)
   }
 })
 </script>

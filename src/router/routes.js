@@ -4,9 +4,9 @@ const routes = [
     component: () => import('layouts/MainLayout.vue'),
     children: [
       { path: '', component: () => import('pages/IndexPage.vue') },
-      { path: 'home', component: () => import('pages/IndexPage.vue') },
-      { path: 'artifacts', component: () => import('pages/ArtifactsPage.vue') },
-      { path: 'documents', component: () => import('pages/DocumentsPage.vue') },
+      { path: 'home', name: 'dashboard', component: () => import('pages/IndexPage.vue') },
+      { path: 'artifacts', name: 'artifacts', component: () => import('pages/ArtifactsPage.vue') },
+      { path: 'documents', name: 'documents', component: () => import('pages/DocumentsPage.vue') },
       { path: 'gallery', component: () => import('pages/GalleryPage.vue') },
       { path: 'upload', component: () => import('pages/UploadPage.vue') },
       {

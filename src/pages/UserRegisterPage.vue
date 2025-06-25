@@ -156,14 +156,14 @@
             color="primary"
             text-color="white"
             label="SIGN UP"
-            @click="handleSubmit"
+            @click="registerUser"
           />
         </div>
 
         <div class="column items-center q-mb-xs">
           <label class="already">
             Already have an account?
-            <a href="/login" class="signup-login-link">Log In</a>
+            <a href="/user/login" class="signup-login-link">Log In</a>
           </label>
         </div>
       </div>
@@ -265,7 +265,7 @@ async function registerUser() {
     } else {
       alert('Registration successful!')
       console.log(data)
-      router.push('/user-login')
+      router.push('/user/login')
     }
   } catch (error) {
     alert('An error occurred.')
