@@ -399,3 +399,33 @@
   height: auto;
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
 }
+
+//document_view
+
+.document-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 48px;
+  color: #560505;
+}
+
+.document-img {
+  width: 300px;
+  margin-left: 10rem;
+  margin-right: 2rem;
+  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+}
+
+.edit-delete-btns {
+  display: flex;
+  gap: 1rem;
+  margin-left: auto;
+  margin-right: 2rem;
+}
+
+.sub-font-5 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 18px;
+  color: #880000;
+}

@@ -1,10 +1,27 @@
 <template>
   <q-page class="q-pa-md">
-    <router-link to="/documents">Back</router-link>
     <div v-if="doc">
-      <PdfPreview :pdfUrl="doc.file_url" style="width: 300px" />
-      <h2>{{ doc.metadata.title }}</h2>
-      <p><strong>Author:</strong> {{ doc.metadata.author }}</p>
+      <div class="row q-mt-xs q-gutter-md justify-center items-start">
+        <div class="col-auto flex flex-column items-start q-mt-sm">
+          <router-link to="/documents">Back</router-link>
+        </div>
+        <div class="col-auto">
+          <PdfPreview :pdfUrl="doc.file_url" class="document-img" />
+        </div>
+        <div class="col">
+          <h2 class="document-title">{{ doc.metadata.title }}</h2>
+          <div class="row items-baseline">
+            <p class="sub-font-3" style="font-size: 18px; margin-left: 0.5rem">
+              {{ doc.metadata.author }}
+            </p>
+            <div class="edit-delete-btns">
+              <p class="sub-font-5" style="font-size: 14px">Edit</p>
+              <p class="sub-font-5" style="font-size: 14px">Delete</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <p><strong>Date:</strong> {{ doc.metadata.date }}</p>
       <h6>Summary:</h6>
       <p>{{ doc.metadata.summary }}</p>
