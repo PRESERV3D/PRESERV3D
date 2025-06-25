@@ -2,7 +2,7 @@
   <q-page class="q-pa-md">
     <div class="page-header">
       <h2 class="q-mb-sm title">Documents</h2>
-      <h5 class="q-mt-xs q-mb-lg">Lorem ipsum dolor sit, amet consectetur adipisicing elit.</h5>
+      <h5 class="q-mt-xs q-mb-lg">Browse selected digital books from the university archives.</h5>
     </div>
     <div>
       <div class="row q-gutter-md q-mt-md">
