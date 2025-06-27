@@ -151,9 +151,6 @@
             <div class="recent-box">
               <div class="recent-card"></div>
             </div>
-            <div class="recent-box">
-              <div class="recent-card"></div>
-            </div>
           </div>
         </div>
       </div>

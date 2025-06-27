@@ -9,9 +9,7 @@
 }
 
 .title {
-  font-family: Poppins, sans-serif;
-  font-size: 50px;
-  font-weight: 600;
+  font-weight: bold;
 }
 
 .card-wrapper {
@@ -172,20 +170,6 @@
   box-shadow: 0 2px 6px rgba(86, 5, 5, 0.22);
 }
 
-.btn-add {
-  width: 7rem;
-  height: 1.5rem;
-  border-radius: 5px;
-  background-color: #880000;
-  color: white;
-  font-size: 14px;
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 //admin
 
 .admin-title {
@@ -223,13 +207,6 @@
   font-weight: 400;
   font-size: 12px;
   color: #560505;
-}
-
-.sub-font-3 {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  color: #000000;
 }
 
 .trophies {
@@ -368,10 +345,12 @@
 .recent-box {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  height: 13rem;
+  justify-content: center;
+  width: 15rem;
+  height: 20rem;
   background-color: #000000;
   border-radius: 10px;
+  margin-left: 5rem;
 }
 
 .recent-card {
@@ -380,52 +359,4 @@
   margin-left: 0.8rem;
   border-radius: 10px;
   background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
-}
-
-//documents tab
-
-.box-highlights {
-  border-radius: 10px;
-  background-color: ffffff;
-  width: auto;
-  height: 18rem;
-  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
-}
-
-.box-category {
-  border-radius: 10px;
-  background-color: ffffff;
-  width: auto;
-  height: auto;
-  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
-}
-
-//document_view
-
-.document-title {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 48px;
-  color: #560505;
-}
-
-.document-img {
-  width: 300px;
-  margin-left: 10rem;
-  margin-right: 2rem;
-  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
-}
-
-.edit-delete-btns {
-  display: flex;
-  gap: 1rem;
-  margin-left: auto;
-  margin-right: 2rem;
-}
-
-.sub-font-5 {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 500;
-  font-size: 18px;
-  color: #880000;
 }
