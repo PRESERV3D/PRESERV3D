@@ -58,6 +58,11 @@
   color: $tertiary !important;
 }
 
+.main-page-bg {
+  background: linear-gradient(127deg, #FFF 0.9%, #FFFCE9 88.33%);
+  min-height: 100vh;
+}
+
 // STYLE FOR SIDEBAR (NASA MAIN LAYOUT)
 .sidebar-drawer.q-drawer {
   overflow: hidden;
@@ -171,3 +176,71 @@
   background-color: rgba(0, 0, 0, 0.1);
   height: 1px;
 }
+
+/* Search styling */
+.search-toolbar {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+
+.search-input {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.search-input .q-field__control {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.search-input .q-field__native {
+  color: #333 !important;
+}
+
+.search-input .q-placeholder {
+  color: #666 !important;
+}
+
+/* Notification button styling */
+.notif-btn {
+  background-color: #F8F8FF !important;
+  width: 40px;
+  backdrop-filter: blur(10px);
+}
+
+.notif-btn:hover {
+  background-color: #e0e0e0 !important;
+}
+
+.notif-image {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.custom-badge {
+  font-size: 11px !important;
+  font-weight: bold !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+}
+
+/* User profile button styling */
+.user-profile-btn {
+  background-color: #f8f9fa !important;
+  border-radius: 10px;
+  width: 282px;
+  padding: 4px 12px !important;
+}
+
+.user-profile-btn:hover {
+  background-color: #e9ecef !important;
+}
+
+
+
+
