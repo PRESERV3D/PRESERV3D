@@ -1,6 +1,20 @@
 <template>
   <div class="q-pa-md main-page-bg">
     <q-layout view="lHh Lpr lFf">
+      <div class="search q-py-md">
+        <q-input
+          v-model="search"
+          debounce="500"
+          filled
+          placeholder="Search name, work, year, etc."
+          dense
+        >
+          <template v-slot:append>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+      </div>
+
       <q-drawer
         v-model="drawer"
         show-if-above
@@ -15,7 +29,7 @@
         :class="'sidebar-drawer'"
         content-class="drawer-content"
       >
-      
+
         <div class="absolute-full flex column">
           <!-- Expanded State -->
           <div class="q-pa-md q-mb-md" v-show="!miniState">
@@ -145,7 +159,7 @@
             </q-btn>
 
             <q-space />
-            
+
             <!-- User Profile Button -->
             <q-btn flat round dense class="custom-spacing user-profile-btn">
               <q-avatar size="32px">

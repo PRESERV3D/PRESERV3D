@@ -1,4 +1,9 @@
 // app global css in SCSS form
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+.bg-all {
+  background: linear-gradient(180deg, #ffffff 0%, #fffef5 64%, #fffced 100%);
+}
+
 .page-header {
   color: #560505;
 }
@@ -53,6 +58,305 @@
   width: 350px;
   height: 500px;
   overflow-y: scroll;
+}
+
+.search {
+  width: 60rem;
+  font: Poppins;
+  margin-left: 4.7rem;
+}
+
+// Sign Up_ Log In
+
+.header-section {
+  height: 100px;
+}
+
+.form-title {
+  font-family: 'Poppins', sans-serif;
+  color: #560505;
+  font-size: 2.5rem;
+  font-weight: 800;
+}
+
+.subtitle {
+  font-family: 'Poppins', sans-serif;
+  color: #616161;
+  display: block;
+}
+
+.names {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: #560505;
+}
+
+.text-box,
+.login-text-box {
+  width: 32rem;
+}
+
+.next-button {
+  width: 58px;
+  height: 42px;
+  border-radius: 17px;
+  box-shadow: 0 2px 6px rgba(86, 5, 5, 0.22);
+}
+
+.btn-icon {
+  width: 12px;
+  height: 17px;
+}
+
+.already {
+  margin-top: 1.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: smaller;
+  color: #616161;
+}
+
+.signup-login-link {
+  color: #4d0000;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.forgot-password-link {
+  margin-top: 1.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: smaller;
+  color: #616161;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.signup-login-link:hover,
+.forgot-password-link:hover {
+  text-decoration: underline;
+}
+
+.sign-up,
+.log-in {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  background-color: #560505;
+  color: white;
+  margin-top: 0.5rem;
+  width: 250px;
+  border-radius: 25px;
+  box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
+}
+
+.no-gutter-top {
+  margin-top: -16px !important;
+}
+
+.c-textbox {
+  width: 11rem;
+}
+
+.text-box-2 {
+  width: 15.6rem;
+}
+
+.text-box .q-field__control,
+.c-textbox .q-field__control,
+.text-box-2 .q-field__control,
+.login-text-box .q-field__control {
+  border-radius: 10px;
+  border: 1px solid #4d0000;
+  box-shadow: 0 2px 6px rgba(86, 5, 5, 0.22);
+}
+
+//admin
+
+.admin-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 32px;
+  color: #fefcf3;
+  margin-top: 1rem;
+}
+
+.admin-title-2 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  color: #560505;
+  margin-top: 1rem;
+}
+
+.admin-subtitle {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 100;
+  font-size: 16px;
+  color: #fefcf3;
+}
+
+.sub-font {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  color: #560505;
+}
+
+.sub-font-2 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: #560505;
+}
+
+.trophies {
+  max-width: 80%;
+}
+
+.box-legend {
+  margin-top: 1.1rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.number {
+  background-color: rgba(204, 172, 0, 0.2);
+  color: #560505;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-explore {
+  background-color: #010101;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: #ffffff;
+  border-radius: 30px;
+  border: 2px solid #010101;
+  padding: 1rem;
+  margin-bottom: 2rem;
+}
+
+.btn-document {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: #ffffff;
+  border-radius: 30px;
+  padding: 1rem;
+  border: 2px solid #ffffff;
+  margin-bottom: 2rem;
+}
+
+.box-1 {
+  border-radius: 15px;
+  background: linear-gradient(145deg, #4d0000 15%, #a68080 60%, #ffffff 85%, #f9f7ea 100%);
+  width: 60rem;
+  height: 18rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+}
+
+.box-2 {
+  border-radius: 15px;
+  background: linear-gradient(185deg, #fffae2 0%, #ffffff 83%, #e6dada 100%);
+  margin-left: 2rem;
+  width: 25rem;
+  height: 18rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+}
+
+.btn-1 {
+  border-radius: 10px;
+  background-color: rgba(136, 0, 0, 0.07);
+  color: 121212;
+  font-size: 10px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+}
+
+.btn-1 :active {
+  background-color: #880000;
+  color: #ffffff;
+}
+
+.box-3 {
+  border-radius: 15px;
+  background: linear-gradient(10deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
+  width: 60rem;
+  height: 35rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+}
+
+.btn-report {
+  border-radius: 7px;
+  background-color: rgba(204, 172, 0, 0.7);
+  color: #121212;
+  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  height: 2rem;
+  width: 9rem;
+  margin-right: 0.5rem;
+}
+
+.box-report {
+  background-color: rgba(136, 0, 0, 0.07);
+  border-radius: 12px;
+  height: 4.5rem;
+  font-family: 'Poppins', sans-serif;
+  color: #7c7c7c;
+  display: flex;
+  text-align: center;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.number-report {
+  font-weight: 600;
+  font-size: 28px;
+  color: #121212;
+  margin-top: 1rem;
+}
+
+.label {
+  font-size: 12px;
+  margin-bottom: 1rem;
+}
+
+.box-4 {
+  border-radius: 15px;
+  background: linear-gradient(25deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
+  margin-left: 2rem;
+  width: 25rem;
+  height: 35rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+}
+
+.recent-box {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 13rem;
+  background-color: #000000;
+  border-radius: 10px;
+}
+
+.recent-card {
+  width: 9rem;
+  height: 11.5rem;
+  margin-left: 0.8rem;
+  border-radius: 10px;
+  background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
 }
 .text-tertiary {
   color: $tertiary !important;

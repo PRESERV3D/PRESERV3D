@@ -10,6 +10,11 @@ const routes = [
       { path: 'gallery', component: () => import('pages/GalleryPage.vue') },
       { path: 'upload', component: () => import('pages/UploadPage.vue') },
       {
+        path: 'admindash',
+        name: 'admin-home',
+        component: () => import('pages/AdminDashboard.vue'),
+      },
+      {
         path: 'documents/:id',
         name: 'view-document',
         component: () => import('pages/ViewDocumentPage.vue'),
@@ -21,7 +26,35 @@ const routes = [
       },
     ],
   },
+  {
+    path: '/user',
+    component: () => import('layouts/LogInSignUpLayout.vue'),
+    children: [
+      { path: 'login', name: 'user-login', component: () => import('pages/UserLoginPage.vue') },
+      {
+        path: 'register',
+        name: 'user-register',
+        component: () => import('pages/UserRegisterPage.vue'),
+      },
+    ],
+  },
 
+  {
+    path: '/admin',
+    component: () => import('layouts/LogInSignUpLayout.vue'),
+    children: [
+      {
+        path: 'register',
+        name: 'admin-register',
+        component: () => import('pages/AdminRegisterPage.vue'),
+      },
+      {
+        path: 'login',
+        name: 'admin-login',
+        component: () => import('pages/AdminLoginPage.vue'),
+      },
+    ],
+  },
   // Always leave this as last one,
   // but you can also remove it
   {
