@@ -148,9 +148,23 @@
         <p class="q-ml-lg admin-title-2">Recently Uploaded</p>
         <div class="q-pa-md">
           <div class="col q-gutter-lg q-px-sm">
-            <div class="recent-box">
+            <div class="recent-box q-pa-sm flex column items-center">
               <div class="recent-card"></div>
+              <div class="q-mt-md self-start sub-font-4" style="margin-left: 1rem">Title</div>
+              <div class="q-mt-sm self-start sub-font-2" style="margin-left: 1rem; color: #ffffff">
+                Date Added
+              </div>
             </div>
+          </div>
+
+          <div class="row q-gutter-lg items-center justify-center">
+            <q-btn flat round class="arrow-button" @click="goBack">
+              <img src="/icons/arrow_left.png" alt="back" class="btn-arrows" />
+            </q-btn>
+
+            <q-btn flat round class="arrow-button" @click="goNext">
+              <img src="/icons/arrow_right.png" alt="next" class="btn-arrows" />
+            </q-btn>
           </div>
         </div>
       </div>
@@ -161,4 +175,6 @@
 <script setup>
 import { ref } from 'vue'
 const activeFilter = ref('all')
+function goBack() {}
+function goNext() {}
 </script>
