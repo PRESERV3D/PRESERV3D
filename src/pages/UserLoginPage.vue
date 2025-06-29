@@ -88,7 +88,6 @@ async function loginUser() {
     alert('Login successful!')
 
     await router.push('/')
-    console.log('Redirecting to /')
   } catch (err) {
     alert('An unexpected error occurred.')
     console.error(err)
