@@ -56,7 +56,7 @@
               <q-item-section> Documents </q-item-section>
             </q-item>
 
-            <q-item
+            <!-- <q-item
               clickable
               v-ripple
               :active="activeItem === 'gallery'"
@@ -67,7 +67,7 @@
               </q-item-section>
 
               <q-item-section> Gallery </q-item-section>
-            </q-item>
+            </q-item> -->
 
             <q-item
               clickable
@@ -80,6 +80,14 @@
               </q-item-section>
 
               <q-item-section> Upload </q-item-section>
+            </q-item>
+
+            <q-item clickable v-ripple @click="signOut()">
+              <q-item-section avatar>
+                <q-icon name="logout" size="md" />
+              </q-item-section>
+
+              <q-item-section> Logout </q-item-section>
             </q-item>
           </q-list>
           <div class="col" />
@@ -96,7 +104,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useUserStore } from 'src/stores/user'
 
+const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
 
@@ -104,6 +114,16 @@ const drawer = ref(false)
 const miniState = ref(true)
 
 const activeItem = ref('home')
+
+const signOut = async () => {
+  try {
+    await userStore.signOut()
+    router.push('/user/login')
+  } catch (error) {
+    console.error('Error signing out:', error)
+  }
+}
+
 const setActiveItem = (itemName) => {
   activeItem.value = itemName
 
@@ -113,15 +133,16 @@ const setActiveItem = (itemName) => {
 }
 
 onMounted(() => {
-  // Extract the route path without leading slash
+  // Extract the route path
   const currentPath = route.path.substring(1)
 
-  // If we're on the root path, set active to 'home'
   if (route.path === '/') {
     activeItem.value = 'home'
   }
-  // Otherwise set active to the current path if it matches a sidebar item
-  else if (['artifacts', 'documents', 'gallery', 'upload'].includes(currentPath)) {
+  // else if (['artifacts', 'documents', 'gallery', 'upload'].includes(currentPath)) {
+  //   activeItem.value = currentPath
+  // }
+  else if (['artifacts', 'documents', 'upload'].includes(currentPath)) {
     activeItem.value = currentPath
   }
 })

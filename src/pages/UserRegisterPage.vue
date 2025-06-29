@@ -174,6 +174,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { supabase } from 'boot/supabase'
 
 const router = useRouter()
 
@@ -221,15 +222,8 @@ const passwordStrengthColor = computed(() =>
 function validateStepOne() {
   const { first_name, last_name, email, contact } = form.value
 
-  const isValidEmail = email && email.includes('@iskolarngbayan.pup.edu.ph')
-
   if (!first_name || !last_name || !email || !contact) {
     alert('Please fill out all required fields.')
-    return
-  }
-
-  if (!isValidEmail) {
-    alert('Please use your PUP email only.')
     return
   }
 
@@ -239,7 +233,16 @@ function validateStepOne() {
 
 // Register user
 async function registerUser() {
-  const { college, department, year_section, password, confirmPassword } = form.value
+  const { password, confirmPassword, college, department, year_section } = form.value
+
+  // Validate password
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/
+  if (!passwordRegex.test(password)) {
+    alert(
+      'Password must be at least 8 characters long and contain an uppercase letter, a number, and a special character.',
+    )
+    return
+  }
 
   if (password !== confirmPassword) {
     alert('Passwords do not match!')
@@ -252,24 +255,44 @@ async function registerUser() {
   }
 
   try {
-    const response = await fetch('http://localhost:3000/register-user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form.value),
+    const { data, error } = await supabase.auth.signUp({
+      email: form.value.email,
+      password: form.value.password,
     })
 
-    const data = await response.json()
+    if (error) {
+      alert(error.message)
+      return
+    }
 
-    if (!response.ok) {
-      alert(data.error || 'Registration failed.')
-    } else {
-      alert('Registration successful!')
-      console.log(data)
+    if (data.user) {
+      const { error: profileError } = await supabase.from('registered_users').insert([
+        {
+          id: data.user.id, // Link to auth.users
+          first_name: form.value.first_name,
+          last_name: form.value.last_name,
+          email: form.value.email,
+          contact: form.value.contact,
+          college: form.value.college,
+          department: form.value.department,
+          year_section: form.value.year_section,
+          is_alumni: form.value.is_alumni,
+          created_at: new Date(),
+        },
+      ])
+
+      if (profileError) {
+        alert('User created, but failed to save profile.')
+        console.error(profileError)
+        return
+      }
+
+      alert('Registration successful! Please check your email to confirm your account.')
       router.push('/user/login')
     }
-  } catch (error) {
-    alert('An error occurred.')
-    console.error(error)
+  } catch (err) {
+    console.error('Unexpected error:', err)
+    alert('An unexpected error occurred.')
   }
 }
 </script>

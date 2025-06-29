@@ -57,7 +57,7 @@ onMounted(async () => {
 
     modelStore.setModels(data)
   } catch (err) {
-    console.error('Unexpected error while loading documents:', err)
+    console.error('Unexpected error while loading artifacts:', err)
   }
 })
 </script>
