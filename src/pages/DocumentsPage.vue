@@ -51,22 +51,26 @@
               @click="activeFilter = 'manuscripts'"
             />
           </div>
-          <div class="row q-gutter-md q-mt-sm">
+          <div class="row q-gutter-md q-mt-md justify-around">
             <div v-for="(doc, index) in documentsStore.documents" :key="index" class="card-wrapper">
-              <q-card class="my-card documentCard" rounded bordered scrollable>
-                <PdfPreview :pdfUrl="doc.file_url" class="document" />
-
-                <div class="metadata q-px-sm">
-                  <h6>{{ doc.metadata.title }}</h6>
-                  <p class="q-mb-sm">Author: {{ doc.metadata.author }}</p>
-                </div>
+              <q-card class="my-card documentCard" rounded bordered>
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
-                  class="text-primary q-px-sm"
+                  class="document-link"
                 >
-                  View Document
+                  <PdfPreview :pdfUrl="doc.file_url" class="document" />
                 </router-link>
               </q-card>
+
+              <div class="q-mt-md fade-title-container">
+                <div class="q-mt-md sub-font fade-title" style="color: black">
+                  {{ doc.metadata.title }}
+                  <div class="tooltip-box">{{ doc.metadata.title }}</div>
+                </div>
+              </div>
+              <div class="q-mt-sm sub-font-2" style="color: black; font-weight: 200">
+                Author: {{ doc.metadata.author }}
+              </div>
             </div>
           </div>
         </div>

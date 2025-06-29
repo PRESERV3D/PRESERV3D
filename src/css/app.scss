@@ -40,7 +40,7 @@
 }
 
 .card-wrapper:hover .my-card .artifacts {
-  transform: scale(1.3);
+  transform: scale(1.2);
 }
 
 #unityContainer {
@@ -48,18 +48,24 @@
 }
 
 .document {
-  max-width: 300px;
+  max-width: 12rem;
   height: auto;
 }
 
-.metadata h6 {
-  margin: 0;
-}
+// .metadata h6 {
+//   margin: 0;
+// }
 
 .documentCard {
-  width: 350px;
-  height: 500px;
-  overflow-y: scroll;
+  width: 12rem;
+  height: 15rem;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
+}
+
+.documentCard:hover {
+  overflow-y: auto;
 }
 
 .search {
@@ -459,6 +465,41 @@
   font-weight: 500;
   font-size: 18px;
   color: #880000;
+}
+
+.fade-title-container {
+  position: relative;
+  max-width: 250px;
+  display: inline-block;
+}
+
+.fade-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  color: black;
+}
+
+.tooltip-box {
+  visibility: hidden;
+  opacity: 0;
+  background-color: rgb(251, 251, 251);
+  color: black;
+  padding: 0.3rem 10px;
+  font-size: 12px;
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 10;
+  white-space: normal;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: opacity 0.2s ease;
+}
+
+.fade-title-container:hover .tooltip-box {
+  visibility: visible;
+  opacity: 1;
 }
 
 //add ni alex
