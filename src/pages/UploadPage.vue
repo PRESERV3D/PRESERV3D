@@ -24,8 +24,6 @@
 <script setup>
 import { ref } from 'vue'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
-import { r2, r2Bucket, r2PublicUrl } from 'boot/r2'
-import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { supabase } from 'boot/supabase'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
@@ -46,12 +44,10 @@ const metadata = ref({
   categories: [],
 })
 
-const DOCUMENTS_PUBLIC_URL = `${r2PublicUrl}/documents/`
-const ARTIFACTS_PUBLIC_URL = `${r2PublicUrl}/artifacts/`
-
 const handleUpload = async () => {
   const file = selectedFile.value
   const fileName = file.name
+
   if (!file || (!fileName.endsWith('.pdf') && !fileName.endsWith('.glb'))) {
     alert('Only .pdf and .glb files are allowed.')
     return
@@ -60,9 +56,7 @@ const handleUpload = async () => {
   loading.value = true
   const isPdf = fileName.endsWith('.pdf')
   const folder = isPdf ? 'documents' : 'artifacts'
-  const publicUrl = isPdf ? DOCUMENTS_PUBLIC_URL : ARTIFACTS_PUBLIC_URL
-  const contentType = isPdf ? 'application/pdf' : 'model/gltf-binary'
-
+  const bucket = folder
   try {
     const alreadyExists = await fileExists(fileName)
     let nlpMetadata = {}
@@ -72,7 +66,7 @@ const handleUpload = async () => {
       return
     }
 
-    // If PDF, send to FastAPI for NLP
+    // NLP processing for PDFs
     if (isPdf) {
       const formData = new FormData()
       formData.append('file', file)
@@ -84,20 +78,23 @@ const handleUpload = async () => {
       nlpMetadata = response.data
     }
 
-    const buffer = await file.arrayBuffer()
-    const key = `${folder}/${fileName}`
-
-    const putCommand = new PutObjectCommand({
-      Bucket: r2Bucket,
-      Key: key,
-      Body: buffer,
-      ContentType: contentType,
-      ContentDisposition: isPdf ? 'inline' : undefined,
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage.from(bucket).upload(`${fileName}`, file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: isPdf ? 'application/pdf' : 'model/gltf-binary',
     })
 
-    await r2.send(putCommand)
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(`${fileName}`)
+    const fileUrl = urlData.publicUrl
 
-    const fileUrl = `${publicUrl}${fileName}`
+    if (uploadError) {
+      console.error('Upload error:', uploadError)
+      alert('Upload failed.')
+      return
+    }
+
+    // Save metadata
     const supabaseTable = isPdf ? 'documents_metadata' : 'artifacts_metadata'
 
     const insertData = {
@@ -108,14 +105,14 @@ const handleUpload = async () => {
       ...(isPdf && { metadata: nlpMetadata }),
     }
 
-    const { error } = await supabase.from(supabaseTable).insert([insertData])
-    if (error) {
-      console.error('Supabase insert error:', error)
+    const { error: dbError } = await supabase.from(supabaseTable).insert([insertData])
+    if (dbError) {
+      console.error('Supabase insert error:', dbError)
       alert('Upload succeeded but metadata failed to save.')
       return
     }
 
-    // Populate metadata for editing
+    // Open metadata confirmation dialog
     metadata.value = {
       file_name: fileName,
       file_url: fileUrl,
@@ -144,7 +141,8 @@ async function fileExists(fileName) {
   if (!table) return false
 
   const { data, error } = await supabase.from(table).select('file_name').eq('file_name', fileName)
-  if (data.length === 0) return false
+
+  if (!data || data.length === 0) return false
 
   if (error) {
     console.error('Error checking file existence:', error)
@@ -157,7 +155,7 @@ async function fileExists(fileName) {
 async function saveMetadata(updatedMetadata) {
   const isPdf = metadata.value.file_name.endsWith('.pdf')
   const table = isPdf ? 'documents_metadata' : 'artifacts_metadata'
-
+  console.log('Saving metadata: ', updatedMetadata)
   try {
     const { error } = await supabase
       .from(table)

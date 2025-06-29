@@ -47,4 +47,6 @@ function formatDate(dateStr) {
 }
 
 const model = computed(() => modelStore.models.find((model) => model.id == route.params.id))
+
+console.log('Model:', model)
 </script>
