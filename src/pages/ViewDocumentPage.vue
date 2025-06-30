@@ -6,7 +6,7 @@
           <router-link to="/documents">Back</router-link>
         </div>
         <div class="col-auto">
-          <PdfPreview :pdfUrl="doc.file_url" class="document-img" />
+          <PdfPreview :pdfUrl="doc.file_url" class="document-img" style="z-index: 1" />
         </div>
         <div class="col">
           <h2 class="document-title">{{ doc.metadata.title }}</h2>
@@ -21,16 +21,20 @@
           </div>
         </div>
       </div>
-
-      <p><strong>Date:</strong> {{ doc.metadata.date }}</p>
-      <h6>Summary:</h6>
-      <p>{{ doc.metadata.summary }}</p>
-      <h6>Category:</h6>
-      <ul>
-        <li v-for="(category, i) in doc.metadata.categories" :key="i">{{ category }}</li>
-      </ul>
-      <p><strong>Uploaded At: </strong> {{ formatDate(doc.uploaded_at) }}</p>
-      <p><strong>Updated At: </strong> {{ formatDate(doc.updated_at) }}</p>
+      <div class="preview-container">
+        <div class="box-view">
+          <div class="sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
+          <p><strong>Date:</strong> {{ doc.metadata.date }}</p>
+          <h6>Summary:</h6>
+          <p>{{ doc.metadata.summary }}</p>
+          <h6>Category:</h6>
+          <ul>
+            <li v-for="(category, i) in doc.metadata.categories" :key="i">{{ category }}</li>
+          </ul>
+          <p><strong>Uploaded At: </strong> {{ formatDate(doc.uploaded_at) }}</p>
+          <p><strong>Updated At: </strong> {{ formatDate(doc.updated_at) }}</p>
+        </div>
+      </div>
     </div>
     <div v-else>
       <q-spinner />
