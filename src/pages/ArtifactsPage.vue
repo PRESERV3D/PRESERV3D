@@ -23,10 +23,11 @@
           <q-card-section class="q-pa-sm">
             <div class="text-subtitle1">{{ model.metadata?.title || model.file_name }}</div>
             <router-link
-              :to="{ name: 'view-artifact', params: { id: model.id } }"
-              class="text-primary"
-              >View Artifact</router-link
+              :to="{ name: 'view-document', params: { id: doc.id } }"
+              class="no-decoration"
             >
+              <q-btn label="Now Read" class="now-read-btn" unelevated no-caps />
+            </router-link>
           </q-card-section>
         </q-card>
       </div>

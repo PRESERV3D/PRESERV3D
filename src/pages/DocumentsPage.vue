@@ -37,7 +37,11 @@
                 <div class="sub-details">
                   {{ doc.metadata.summary }}
                 </div>
-                <q-btn label="Now Read" class="now-read-btn" unelevated rounded />
+                <div class="q-mt-xs q-mb-xs flex justify-center">
+                  <router-link :to="{ name: 'view-document', params: { id: doc.id } }">
+                    <q-btn label="Now Read" class="now-read-btn" unelevated no-caps />
+                  </router-link>
+                </div>
               </div>
             </div>
           </div>
@@ -95,13 +99,13 @@
               </q-card>
 
               <div class="q-mt-md fade-title-container">
-                <div class="q-mt-md sub-font fade-title" style="color: black">
+                <div class="q-mt-md sub-font fade-title" style="color: black; font-weight: 800">
                   {{ doc.metadata.title }}
                   <div class="tooltip-box">{{ doc.metadata.title }}</div>
                 </div>
               </div>
               <div class="q-mt-sm sub-font-2" style="color: black; font-weight: 200">
-                Author: {{ doc.metadata.author }}
+                {{ doc.metadata.author }}
               </div>
             </div>
           </div>
