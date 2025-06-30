@@ -7,9 +7,41 @@
         <q-btn to="/artifacts" label="Add New" class="btn-add" no-caps />
       </div>
     </div>
-    <div class="q-py-lg q-gutter-xl column">
+
+    <div class="column q-py-md q-gutter-lg">
       <div class="box-highlights">
         <p class="q-ml-lg admin-title-2" style="font-size: 16px">Book Highlights</p>
+        <div class="row q-ml-xs q-gutter-md justify-around">
+          <div
+            v-for="(doc, index) in documentsStore.documents.slice(0, 3)"
+            :key="index"
+            class="card-wrapper"
+          >
+            <div class="row no-wrap">
+              <q-card class="my-card documentCard" style="transform: rotate(-5deg)">
+                <router-link
+                  :to="{ name: 'view-document', params: { id: doc.id } }"
+                  class="document-link"
+                >
+                  <PdfPreview :pdfUrl="doc.file_url" class="document" />
+                </router-link>
+              </q-card>
+
+              <div class="bg-highlights-details">
+                <div class="fade-title-container">
+                  <div class="title-highlight fade-title">
+                    {{ doc.metadata.title }}
+                    <div class="tooltip-box">{{ doc.metadata.title }}</div>
+                  </div>
+                </div>
+                <div class="sub-details">
+                  {{ doc.metadata.summary }}
+                </div>
+                <q-btn label="Now Read" class="now-read-btn" unelevated rounded />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="box-category">
         <div class="q-pa-lg">
