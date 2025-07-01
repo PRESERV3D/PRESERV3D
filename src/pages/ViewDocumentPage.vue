@@ -53,6 +53,7 @@
               <div class="font-label">
                 <p><strong>Uploaded At:</strong> {{ formatDate(doc.uploaded_at) }}</p>
                 <p><strong>Updated At:</strong> {{ formatDate(doc.updated_at) }}</p>
+                <!-- <p><strong>Modified By:</strong>{{ doc.metadata.modified_by }}</p> -->
                 <p><strong>Date:</strong> {{ doc.metadata.date }}</p>
               </div>
             </div>
