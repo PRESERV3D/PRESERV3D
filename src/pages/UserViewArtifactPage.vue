@@ -116,25 +116,9 @@
                 <div class="a-info-subtitle">Student Affairs and Recognition Committee</div>
               </div>
 
-            <!-- ADMIN: Info with side-by-side layout -->
+            <!-- USER: Info with side-by-side layout -->
             <div class="side-by-side-details q-mb-lg">
-              <div class="detail-row q-mb-md">
-                <div class="detail-label">
-                  <div class="a-info-title2">Created By:</div>
-                </div>
-                <div class="detail-value">
-                  <div class="a-info-subtitle">{{ model.created_by || '[Creator Name]' }}</div>
-                </div>
-              </div>
 
-              <div class="detail-row q-mb-md">
-                <div class="detail-label">
-                  <div class="a-info-title2">Modified By:</div>
-                </div>
-                <div class="detail-value">
-                  <div class="a-info-subtitle">{{ model.modified_by || '[Modifier Name]' }}</div>
-                </div>
-              </div>
 
               <div class="detail-row q-mb-md">
                 <div class="detail-label">

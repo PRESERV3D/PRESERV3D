@@ -27,8 +27,9 @@ const routes = [
       {
         path: 'artifacts/:id',
         name: 'view-artifact',
-        component: () => import('pages/ViewArtifactPage.vue'),
+        component: () => import('pages/UserViewArtifactPage.vue'),  // USER
       },
+
     ],
   },
   {
