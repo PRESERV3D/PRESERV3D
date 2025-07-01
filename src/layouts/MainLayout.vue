@@ -1,20 +1,6 @@
 <template>
   <div class="q-pa-md main-page-bg">
     <q-layout view="lHh Lpr lFf">
-      <div class="search q-py-md">
-        <q-input
-          v-model="search"
-          debounce="500"
-          filled
-          placeholder="Search name, work, year, etc."
-          dense
-        >
-          <template v-slot:append>
-            <q-icon name="search" />
-          </template>
-        </q-input>
-      </div>
-
       <q-drawer
         v-model="drawer"
         show-if-above
