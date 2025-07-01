@@ -24,6 +24,11 @@ const routes = [
         name: 'view-artifact',
         component: () => import('pages/ViewArtifactPage.vue'),
       },
+      {
+        path: 'collections',
+        name: 'user-collections',
+        component: () => import('pages/CollectionsPage.vue'),
+      },
     ],
   },
   {
