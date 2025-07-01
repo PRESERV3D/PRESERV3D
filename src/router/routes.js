@@ -30,6 +30,12 @@ const routes = [
         component: () => import('pages/UserViewArtifactPage.vue'),  // USER
       },
 
+      {
+        path: 'admin/artifacts/:id',
+        name: 'admin-view-artifact',
+        component: () => import('pages/AdminViewArtifactPage.vue'),  // ADMIN
+      },
+
     ],
   },
   {
