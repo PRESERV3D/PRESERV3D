@@ -106,7 +106,7 @@
               clearable
               clear-icon="close"
               @keyup.enter="performSearch"
-              style="width: 100%; max-width: 750px;"
+              style="width: 100%; max-width: 830px;"
             >
               <template v-slot:prepend>
                 <q-icon name="search" @click="performSearch" class="cursor-pointer" />
