@@ -1,86 +1,154 @@
 <template>
   <q-page class="q-pa-md">
-    <div v-if="doc">
-      <div class="row q-mt-xs q-gutter-md justify-center items-start">
-        <div class="col-auto flex flex-column items-start q-mt-sm">
-          <router-link to="/documents">Back</router-link>
-        </div>
-        <div class="col-auto">
-          <PdfPreview :pdfUrl="doc.file_url" class="document-img" style="z-index: 1" />
-        </div>
-        <div class="col">
-          <h2 class="document-title">{{ doc.metadata.title }}</h2>
-          <div class="row items-baseline">
-            <p class="sub-font-3" style="font-size: 18px; margin-left: 0.5rem">
-              {{ doc.metadata.author }}
-            </p>
-            <div class="edit-delete-btns">
-              <p class="sub-font-5" style="font-size: 14px">Edit</p>
-              <p class="sub-font-5" style="font-size: 14px">Delete</p>
-            </div>
-          </div>
-        </div>
+    <div class="page-header">
+      <div class="q-mt-xs title">Collections</div>
+
+      <div class="q-mb-md sub-font-3 row items-baseline justify-between">
+        <div class="q-ml-sm">Archival Materials grouped into a collection.</div>
+        <q-btn label="Add New" class="btn-add" no-caps @click="showDialog = true" />
       </div>
 
-      <div class="preview-container">
-        <div class="box-view">
-          <div class="row">
-            <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
-            <div class="tags">
-              <span class="tag-box" v-for="(category, i) in doc.metadata.categories" :key="i">
-                {{ category }}
-              </span>
+      <div class="box-collections">
+        <q-card
+          v-for="collection in placeholderCollections"
+          :key="collection.id"
+          class="collectionCard"
+        >
+          <router-link :to="`/collections/${collection.id}`" class="collection-link">
+            <img :src="collection.image" :alt="collection.title" class="collection-image" />
+          </router-link>
+
+          <div class="q-mt-md fade-title-container">
+            <div class="q-mt-md sub-font fade-title" style="color: black; font-weight: 800">
+              {{ collection.title }}
+              <div class="tooltip-box">{{ collection.title }}</div>
             </div>
           </div>
-
-          <div class="row description-row">
-            <div class="description-section">
-              <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 2rem">
-                Description
-              </div>
-              <div class="q-ml-md summary">
-                {{ doc.metadata.summary }}
-              </div>
-            </div>
-            <div class="meta-section">
-              <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 2rem">
-                Language
-              </div>
-              <div class="q-ml-md sub-font-2" style="color: black">
-                {{ doc.metadata.language }}
-              </div>
-
-              <div class="font-label">
-                <p><strong>Uploaded At:</strong> {{ formatDate(doc.uploaded_at) }}</p>
-                <p><strong>Updated At:</strong> {{ formatDate(doc.updated_at) }}</p>
-                <!-- <p><strong>Modified By:</strong>{{ doc.metadata.modified_by }}</p> -->
-                <p><strong>Date:</strong> {{ doc.metadata.date }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        </q-card>
       </div>
-    </div>
-    <div v-else>
-      <q-spinner />
+
+      <!-- Add Collection Dialog -->
+      <q-dialog v-model="showDialog" persistent>
+        <q-card class="add-collection-card">
+          <q-card-section class="row justify-center items-center">
+            <div class="sub-font-3 text-center" style="font-size: 16px; font-weight: 700">
+              Add New Collection
+            </div>
+          </q-card-section>
+
+          <q-card-section class="row q-col-gutter-md">
+            <div class="col-6">
+              <div class="upload-box" @click="triggerFilePicker">
+                <q-img
+                  v-if="previewImage"
+                  :src="previewImage"
+                  style="width: 100%; height: 14.5rem; object-fit: cover; border-radius: 10px"
+                />
+                <div v-else class="upload">
+                  <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon" />
+                  <div>Upload Photo</div>
+                </div>
+                <input
+                  type="file"
+                  ref="fileInput"
+                  accept="image/*"
+                  @change="handleImageUpload"
+                  style="display: none"
+                />
+              </div>
+            </div>
+
+            <div class="col-5">
+              <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
+                COLLECTION NAME
+              </div>
+              <q-input
+                v-model="newCollectionTitle"
+                class="field-collection q-mb-md"
+                label="Enter Collection Name"
+                dense
+                outlined
+              />
+
+              <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
+                SHORT DESCRIPTION
+              </div>
+              <q-input
+                v-model="newCollectionDesc"
+                type="textarea"
+                class="field-collection"
+                label="Enter Short Description"
+                dense
+                outlined
+                style="min-height: 8rem"
+              />
+            </div>
+          </q-card-section>
+
+          <q-card-actions align="right">
+            <q-btn
+              flat
+              label="Cancel"
+              class="sub-font-2"
+              style="color: #000000"
+              v-close-popup
+              no-caps
+            />
+            <q-btn label="Save" class="q-mr-sm btn-save" @click="addCollection" no-caps />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
     </div>
   </q-page>
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router'
-import { computed } from 'vue'
-import { useModelStore } from 'stores/documentsStore'
-import PdfPreview from 'components/PdfPreview.vue'
+import { ref } from 'vue'
 
-const route = useRoute()
-const documentsStore = useModelStore()
+const showDialog = ref(false)
+const newCollectionTitle = ref('')
+const newCollectionDesc = ref('')
+const fileInput = ref(null)
+const previewImage = ref(null)
+const placeholderCollections = ref([
+  {
+    id: 1,
+    title: 'Favorites',
+    image: '/src/assets/img/favorites.png',
+  },
+])
 
-function formatDate(dateStr) {
-  const date = new Date(dateStr)
-  const formatted = `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' })}`
-  return formatted
+function addCollection() {
+  if (!newCollectionTitle.value.trim()) return
+
+  const newId = placeholderCollections.value.length + 1
+  placeholderCollections.value.push({
+    id: newId,
+    title: newCollectionTitle.value,
+    image:
+      previewImage.value ||
+      `https://via.placeholder.com/300x200?text=${encodeURIComponent(newCollectionTitle.value)}`,
+  })
+
+  // Clear form
+  newCollectionTitle.value = ''
+  newCollectionDesc.value = ''
+  previewImage.value = null
+  showDialog.value = false
 }
 
-const doc = computed(() => documentsStore.documents.find((doc) => doc.id == route.params.id))
+function triggerFilePicker() {
+  fileInput.value.click()
+}
+
+function handleImageUpload(event) {
+  const file = event.target.files[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = () => {
+    previewImage.value = reader.result
+  }
+  reader.readAsDataURL(file)
+}
 </script>
