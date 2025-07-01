@@ -196,7 +196,7 @@ const miniState = ref(true)
 const search = ref('')
 
 // User and notifications data
-const userName = ref('USER')
+const userName = ref('ADMIN')
 const notifications = ref([
   { id: 1, message: 'New message from Mrs. Beth', time: '5m ago' },
   { id: 2, message: '⚠️ Notice: The file you uploaded appears incomplete.', time: '1h ago' },
