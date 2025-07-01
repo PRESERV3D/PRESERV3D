@@ -4,7 +4,7 @@
       <div class="q-mt-xs title">Documents</div>
       <div class="q-mb-md sub-font-3 row items-baseline justify-between">
         <div class="q-ml-sm">Browse selected digital books from the university archives.</div>
-        <q-btn to="/artifacts" label="Add New" class="btn-add" no-caps />
+        <q-btn to="/upload" label="Add New" class="btn-add" no-caps />
       </div>
     </div>
 

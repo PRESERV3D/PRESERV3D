@@ -27,7 +27,6 @@
         </q-card>
       </div>
 
-      <!-- Add Collection Dialog -->
       <q-dialog v-model="showDialog" persistent>
         <q-card class="add-collection-card">
           <q-card-section class="row justify-center items-center">
