@@ -168,14 +168,16 @@
                   </router-link>
                   <div class="action-icons">
                     <q-icon
-                      name="bookmark_border"
+                      :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                       class="action-icon bookmark-icon"
+                      :class="{ 'bookmarked': model.bookmarked }"
                       size="18px"
                       @click.stop="toggleBookmark(model.id)"
                     />
                     <q-icon
-                      name="star_border"
+                      :name="model.starred ? 'star' : 'star_border'"
                       class="action-icon star-icon"
+                      :class="{ 'starred': model.starred }"
                       size="18px"
                       @click.stop="toggleStar(model.id)"
                     />
@@ -318,6 +320,7 @@ import '@google/model-viewer'
 // const activeFilter = ref('all')
 const modelStore = useModelStore()
 
+
 // Filter and Sort reactive variables
 const selectedFilter = ref('All')
 const selectedSort = ref('Recent')
@@ -342,16 +345,20 @@ const viewArtifact = (artifactId) => {
   // Add view logic here
 }
 
-const toggleStar = (artifactId) => {
-  console.log('Toggling star for:', artifactId)
-  // Add star/favorite logic here
+const toggleStar = (modelId) => {
+  const model = modelStore.models.find(m => m.id === modelId)
+  if (model) {
+    model.starred = !model.starred
+  }
 }
 
-const toggleBookmark = (artifactId) => {
-  console.log('Toggling bookmark for:', artifactId)
-  // Add bookmark logic here
-
+const toggleBookmark = (modelId) => {
+  const model = modelStore.models.find(m => m.id === modelId)
+  if (model) {
+    model.bookmarked = !model.bookmarked
+  }
 }
+
 
 const addNewCollection = () => {
   console.log('Adding new collection')
@@ -371,209 +378,3 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
-
-
-
-
-
-
-
-.artifacts {
-  border-radius: 8px 8px 0 0;
-}
-
-.artifact-title {
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  color: #010101;
-  line-height: 1.3;
-  margin-bottom: 4px;
-  margin-left: 20px;
-}
-
-.view-link {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 400;
-  font-size: 12px;
-  text-decoration: none;
-  color: #880000;
-}
-
-.view-link:hover {
-  color: #560505;
-  text-decoration: underline;
-}
-
-.card-wrapper {
-  min-width: 0;
-  flex: 1;
-}
-
-/* Adjust box-3 height to accommodate artifacts */
-.box-4 {
-  border-radius: 15px;
-  background: linear-gradient(10deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
-  flex: 2;
-  min-width: 0;
-  height: auto;
-  min-height: 35rem;
-  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
-}
-
-/* Collections Book Style */
-.collection-card {
-  border: none;
-  background: transparent;
-  box-shadow: none;
-}
-
-.book-container {
-  perspective: 1000px;
-  height: 350px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.book-cover {
-  width: 100%;
-  height: 320px;
-  position: relative;
-  background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
-  border-radius: 0 20px 20px 0;
-  box-shadow:
-    0 8px 16px rgba(0, 0, 0, 0.3),
-    inset 0 0 20px rgba(0, 0, 0, 0.1),
-    0 0 0 2px rgba(8, 3, 0, 0.3);
-  transform: rotateY(-5deg) rotateX(2deg);
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.book-cover:hover {
-  transform: rotateY(-2deg) rotateX(1deg) translateY(-15px);
-  box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.4),
-    inset 0 0 20px rgba(0, 0, 0, 0.1),
-    0 0 0 2px rgba(139, 69, 19, 0.3);
-}
-
-.book-spine {
-  position: absolute;
-  left: -8px;
-  top: 0;
-  bottom: 0;
-  width: 15px;
-  background: linear-gradient(to right, #523518 0%, #381c08 100%);
-  border-radius: 0 0 0 15px;
-  box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.3);
-}
-
-.book-content {
-  padding: 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-}
-
-.book-title-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-}
-
-.book-icon {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-}
-
-.collection-title-link {
-  text-decoration: none;
-  flex: 1;
-}
-
-.add-new-btn {
-  background-color: #560505;
-  color: white;
-  border-radius: 12px;
-  padding: 8px 16px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.add-new-btn:hover {
-  background-color: #560505;
-  transform: translateY(-1px);
-}
-
-/* See All Link and Filter/Sort Button Styles */
-.see-all-link, .filter-sort-btn {
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: #560505;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  transition: all 0.2s ease;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background-color: #56050512;
-  box-shadow: 0 2px 4px rgba(86, 5, 5, 0.15);
-}
-
-.see-all-link:hover, .filter-sort-btn:hover {
-  color: #ffffff;
-  background-color: #0000005f;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(86, 5, 5, 0.2);
-}
-
-.see-all-link .q-icon, .filter-sort-btn .q-icon {
-  transition: transform 0.2s ease;
-}
-
-.see-all-link:hover .q-icon, .filter-sort-btn:hover .q-icon {
-  transform: translateX(2px);
-}
-
-
-/* Information icon overlay */
-.info-icon-overlay {
-  position: absolute;
-  top: 14px;
-  left: 12px;
-  z-index: 100;
-  color: #d6d6d6 !important;
-  width: 36px !important;
-  height: 36px !important;
-  border-radius: 50% !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(86, 5, 5, 0.1);
-  padding: 8px !important;
-  margin: 4px !important;
-  transition: all 0.2s ease;
-}
-
-.info-icon-overlay:hover {
-  background-color: #560505 !important;
-  color: white !important;
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(86, 5, 5, 0.25);
-}
-
-</style>
