@@ -20,6 +20,11 @@ const routes = [
         component: () => import('pages/UserDashboard.vue'),
       },
       {
+        path: 'collectionview',
+        name: 'collection-view',
+        component: () => import('pages/CollectionView.vue'),
+      },
+      {
         path: 'documents/:id',
         name: 'view-document',
         component: () => import('pages/ViewDocumentPage.vue'),
