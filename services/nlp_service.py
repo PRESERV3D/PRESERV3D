@@ -18,7 +18,7 @@ app = FastAPI()
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:9000"],
+    allow_origins=["http://localhost:9000"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,10 +29,25 @@ kw_model = KeyBERT('all-MiniLM-L6-v2')
 nlp = spacy.load("en_core_web_sm")
 
 @app.post("/process-text")
-async def process_pdf(file: UploadFile = File(...), filename: str = Form(None)):
-    print("Processing file:", file.filename)
-    pdf_bytes = await file.read()
-    text = extract_text(pdf_bytes)
+async def process_pdf(file: UploadFile = File(None), filename: str = Form(None), raw_text: str = Form(None)):
+    print("Processing file:", filename)
+
+    if raw_text:
+        text = raw_text
+        print("Raw Text:", raw_text)    
+    elif file:
+        print("File:", file) 
+        pdf_bytes = await file.read()
+        result = extract_text(pdf_bytes, file.filename)
+
+        # OCR fallback
+        if isinstance(result, dict) and result.get("status") == "ocr_required":
+            result["filename"] = filename or file.filename
+            return result
+
+        text = result
+    else:
+        return {"error": "No file or raw text provided"}
 
     summary = summarizer(text[:3000])[0]['summary_text']
     keywords = kw_model.extract_keywords(text, top_n=5)
@@ -49,36 +64,30 @@ async def process_pdf(file: UploadFile = File(...), filename: str = Form(None)):
         "categories": categories
     }
 
-def extract_text(pdf_bytes):
-    print("Extracting text from PDF...")
+def extract_text(pdf_bytes, filename=None):
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     full_text = ""
+    print("Extracting text from PDF...")
 
     for page in doc[:2]:  # Limit to first 2 pages for performance
         text = page.get_text()
         if text.strip():  # If text exists, use it
             print(f"Extracted text from page {page.number + 1}")
             full_text += text
+            print("Extracted text: ", full_text[:1000])  # Print first 1000 chars for debugging
         else:
             # Render page to image
-            print(f"Rendering page {page.number + 1} to image...")
+            print("Converting to image...")
             pix = page.get_pixmap(dpi=300)
-            img = Image.open(io.BytesIO(pix.tobytes("png")))
+            img_bytes = pix.tobytes("png")
 
-            buffered = BytesIO()
-            img.save(buffered, format="PNG", optimize=True, quality=85)
-            img_bytes = buffered.getvalue()
+            encoded = base64.b64encode(img_bytes).decode("utf-8")
 
-            json_data={
-                "image": base64.b64encode(img_bytes).decode("utf-8")
+            return {
+                "status": "ocr_required",
+                "image_base64": encoded,
+                "filename": filename
             }
-
-            # Send image to Node server for OCR
-            response = requests.post("http://localhost:3000/ocr", json=json_data)
-            if response.ok:
-                full_text += response.json().get("text", "")
-            else:
-                print("OCR server error:", response.text)
 
     return full_text
 

@@ -192,9 +192,9 @@ function goToCollectionDetailsPage(collectionId) {
   router.push(`/collection/${collectionId}`)
 }
 
-function triggerFilePicker() {
-  fileInput.value.click()
-}
+// function triggerFileInput() {
+//   fileInput.value.click()
+// }
 
 function handleImageUpload(event) {
   const file = event.target.files[0]
