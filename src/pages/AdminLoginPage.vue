@@ -62,7 +62,7 @@ import { supabase } from 'boot/supabase'
 import { useUserStore } from 'src/stores/user'
 
 const userStore = useUserStore()
-await userStore.signOut() // Reset any previous session
+await userStore.signOut()
 
 const router = useRouter()
 

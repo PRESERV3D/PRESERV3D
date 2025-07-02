@@ -185,6 +185,7 @@ import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
 
 const userStore = useUserStore()
+const session = userStore.session
 const searchStore = useSearchStore()
 const router = useRouter()
 const route = useRoute()
@@ -226,9 +227,24 @@ const activeItem = ref('home')
 const setActiveItem = (itemName) => {
   activeItem.value = itemName
 
-  // Navigate to the corresponding route
-  const targetRoute = `/${itemName}`
-  router.push(targetRoute)
+  if (itemName === 'home') {
+    const role = session.user.user_metadata?.role
+
+    if (role === 'admin') {
+      activeItem.value = 'home'
+      router.push('/admindash')
+      return
+    } else if (role === 'user') {
+      activeItem.value = 'home'
+      router.push('/home')
+      return
+    }
+    return
+  } else {
+    // Navigate to the corresponding route
+    const targetRoute = `/${itemName}`
+    router.push(targetRoute)
+  }
 }
 
 // Search functionality
