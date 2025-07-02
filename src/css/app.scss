@@ -48,13 +48,10 @@
 }
 
 .document {
+  position: absolute;
+  top: 0;
   max-width: 12rem;
-  height: auto;
 }
-
-// .metadata h6 {
-//   margin: 0;
-// }
 
 .documentCard {
   width: 12rem;
@@ -63,10 +60,6 @@
   overflow-y: hidden;
   box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
   border-radius: 10px;
-}
-
-.documentCard:hover {
-  overflow-y: auto;
 }
 
 .search {
@@ -426,7 +419,7 @@
   border-radius: 10px;
   background-color: ffffff;
   width: auto;
-  height: 21rem;
+  height: auto;
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
 }
 
