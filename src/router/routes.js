@@ -33,6 +33,11 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'admindash',
+        name: 'admin-home',
+        component: () => import('pages/AdminDashboard.vue'),
+      },
+      {
         path: 'documents/:id',
         name: 'view-document',
         component: () => import('pages/ViewDocumentPage.vue'),
@@ -43,6 +48,11 @@ const routes = [
         name: 'view-artifact',
         component: () => import('pages/ViewArtifactPage.vue'),
         meta: { requiresAuth: true },
+      },
+      {
+        path: 'collections',
+        name: 'user-collections',
+        component: () => import('pages/CollectionsPage.vue'),
       },
     ],
   },
