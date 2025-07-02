@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-export const useModelStore = defineStore('documentsStore', {
+export const useDocumentsStore = defineStore('documentsStore', {
   state: () => ({
     documents: [], // will hold { url, metadata } objects
   }),

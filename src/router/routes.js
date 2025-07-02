@@ -3,12 +3,35 @@ const routes = [
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/IndexPage.vue') },
-      { path: 'home', component: () => import('pages/IndexPage.vue') },
-      { path: 'artifacts', component: () => import('pages/ArtifactsPage.vue') },
-      { path: 'documents', component: () => import('pages/DocumentsPage.vue') },
-      { path: 'gallery', component: () => import('pages/GalleryPage.vue') },
-      { path: 'upload', component: () => import('pages/UploadPage.vue') },
+      { path: '', component: () => import('pages/IndexPage.vue'), meta: { requiresAuth: true } },
+      {
+        path: 'home',
+        name: 'dashboard',
+        component: () => import('pages/IndexPage.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'artifacts',
+        name: 'artifacts',
+        component: () => import('pages/ArtifactsPage.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'documents',
+        name: 'documents',
+        component: () => import('pages/DocumentsPage.vue'),
+        meta: { requiresAuth: true },
+      },
+      // {
+      //   path: 'gallery',
+      //   component: () => import('pages/GalleryPage.vue'),
+      //   meta: { requiresAuth: true },
+      // },
+      {
+        path: 'upload',
+        component: () => import('pages/UploadPage.vue'),
+        meta: { requiresAuth: true },
+      },
       {
         path: 'admindash',
         name: 'admin-home',
@@ -18,11 +41,13 @@ const routes = [
         path: 'documents/:id',
         name: 'view-document',
         component: () => import('pages/ViewDocumentPage.vue'),
+        meta: { requiresAuth: true },
       },
       {
         path: 'artifacts/:id',
         name: 'view-artifact',
         component: () => import('pages/ViewArtifactPage.vue'),
+        meta: { requiresAuth: true },
       },
       {
         path: 'collections',

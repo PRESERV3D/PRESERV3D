@@ -7,7 +7,9 @@
         </div>
         <div class="col-6 q-py-xl login-card-style flex flex-center">
           <q-page-container>
-            <router-view />
+            <Suspense>
+              <router-view />
+            </Suspense>
           </q-page-container>
         </div>
       </div>

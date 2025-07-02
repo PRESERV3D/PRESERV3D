@@ -11,8 +11,19 @@ from fastapi import FastAPI, UploadFile, File, Form
 from transformers import pipeline
 from keybert import KeyBERT
 from dateutil.parser import parse as date_parse
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:9000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 kw_model = KeyBERT('all-MiniLM-L6-v2')
 nlp = spacy.load("en_core_web_sm")

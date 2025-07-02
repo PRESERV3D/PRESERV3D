@@ -183,6 +183,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 
+const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
 const $q = useQuasar()
@@ -220,6 +221,16 @@ const onDrawerMouseLeave = () => {
 }
 
 const activeItem = ref('home')
+
+const signOut = async () => {
+  try {
+    await userStore.signOut()
+    router.push('/user/login')
+  } catch (error) {
+    console.error('Error signing out:', error)
+  }
+}
+
 const setActiveItem = (itemName) => {
   activeItem.value = itemName
 
@@ -260,10 +271,9 @@ const handleLogout = () => {
 }
 
 onMounted(() => {
-  // Extract the route path without leading slash
+  // Extract the route path
   const currentPath = route.path.substring(1)
 
-  // If we're on the root path, set active to 'home'
   if (route.path === '/') {
     activeItem.value = 'home'
   }

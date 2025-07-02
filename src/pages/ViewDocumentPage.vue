@@ -70,11 +70,11 @@
 <script setup>
 import { useRoute } from 'vue-router'
 import { computed } from 'vue'
-import { useModelStore } from 'stores/documentsStore'
+import { useDocumentsStore } from 'stores/documentsStore'
 import PdfPreview from 'components/PdfPreview.vue'
 
 const route = useRoute()
-const documentsStore = useModelStore()
+const documentsStore = useDocumentsStore()
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)

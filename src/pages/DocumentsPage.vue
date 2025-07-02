@@ -117,18 +117,27 @@
 
 <script setup>
 import { onMounted } from 'vue'
-import { useModelStore } from 'stores/documentsStore'
+import { useDocumentsStore } from 'stores/documentsStore'
 import PdfPreview from 'components/PdfPreview.vue'
+import { supabase } from 'boot/supabase'
 
-const documentsStore = useModelStore()
+const documentsStore = useDocumentsStore()
 
 onMounted(async () => {
   try {
-    const res = await fetch('http://localhost:3000/documents')
-    const docs = await res.json()
-    documentsStore.setDocuments(docs)
+    const { data, error } = await supabase
+      .from('documents_metadata')
+      .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
+      .order('uploaded_at', { ascending: false })
+
+    if (error) {
+      console.error('Supabase error fetching documents:', error)
+      return
+    }
+
+    documentsStore.setDocuments(data)
   } catch (err) {
-    console.error('Failed to load documents', err)
+    console.error('Unexpected error while loading documents:', err)
   }
 })
 </script>
