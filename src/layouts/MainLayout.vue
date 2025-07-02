@@ -182,6 +182,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
+import { useUserStore } from 'src/stores/user'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -222,15 +223,6 @@ const onDrawerMouseLeave = () => {
 
 const activeItem = ref('home')
 
-const signOut = async () => {
-  try {
-    await userStore.signOut()
-    router.push('/user/login')
-  } catch (error) {
-    console.error('Error signing out:', error)
-  }
-}
-
 const setActiveItem = (itemName) => {
   activeItem.value = itemName
 
@@ -261,12 +253,14 @@ const goToSettings = () => {
   router.push('/settings')
 }
 
-const handleLogout = () => {
-  // Add logout logic here
-  console.log('Logging out...')
-
-  if (confirm('Are you sure you want to logout?')) {
-    router.push('/login')
+const handleLogout = async () => {
+  try {
+    if (confirm('Are you sure you want to logout?')) {
+      await userStore.signOut()
+      router.push('user/login')
+    }
+  } catch (error) {
+    console.error('Error signing out:', error)
   }
 }
 
