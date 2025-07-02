@@ -438,6 +438,34 @@
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
 }
 
+.add-document-card {
+  width: 100%;
+  height: 20rem;
+  border-radius: 10px;
+  background-color: #fbf4d0;
+  padding: 1rem;
+}
+
+.box-upload-docu {
+  width: 33rem;
+  height: 14.5rem;
+  background-color: transparent !important;
+  border: 2px dashed #afafaf !important;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.upload-icon-docu {
+  width: 6rem;
+  height: 6rem;
+}
+
 .bg-highlights-details {
   background-color: #880000;
   width: 13rem;
