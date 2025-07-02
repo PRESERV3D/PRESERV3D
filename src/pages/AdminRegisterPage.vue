@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md form-container">
-    <div class="column items-center q-mb-md">
+    <div class="column items-center">
       <label class="form-title">SIGN UP</label>
       <label class="subtitle">Let's Get You Set Up</label>
     </div>
@@ -85,7 +85,7 @@
           ]"
           class="text-box"
         />
-        <div class="column items-center q-pt-xs">
+        <div class="column items-center">
           <q-btn
             class="sign-up"
             push
@@ -96,7 +96,7 @@
           />
         </div>
 
-        <div class="column items-center q-mb-xs">
+        <div class="column items-center q-mt-md">
           <label class="already">
             Already have an account?
             <router-link to="/admin/login" name="admin-login" class="signup-login-link"

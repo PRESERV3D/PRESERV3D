@@ -36,7 +36,7 @@
 }
 
 .login-card-style {
-  min-height: 100vh;
+  height: 100vh;
 
   position: relative;
   border-top-left-radius: 20px;
