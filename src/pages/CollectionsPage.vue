@@ -20,17 +20,15 @@
     <!-- Collection Display -->
     <div v-else>
       <div v-if="collections.length > 0" class="box-collections">
-        <!-- Show up to 4 collections -->
         <div
-          v-for="collection in collections.slice(0, 4)"
+          v-for="collection in collections"
           :key="collection.collection_id"
           class="collection-item"
-          @click="goToCollectionDetailsPage(collection.collection_id)"
         >
           <router-link :to="`/collection/${collection.collection_id}`" class="collection-link">
             <img
-              :src="collection.cover_url"
-              :alt="collection.collection_name"
+              :src="collection?.cover_url"
+              :alt="collection?.collection_name"
               class="book-cover-img"
               style="object-fit: cover"
             />
@@ -129,9 +127,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { supabase } from 'boot/supabase'
-import { useRouter } from 'vue-router'
 
-const router = useRouter()
 const user = ref({ first_name: '' })
 const collections = ref([])
 const isLoading = ref(true)
@@ -189,10 +185,6 @@ async function loadCollections(userId) {
   }
 
   isLoading.value = false
-}
-
-function goToCollectionDetailsPage(collectionId) {
-  router.push(`/collection/${collectionId}`)
 }
 
 function triggerFileInput() {
@@ -258,6 +250,7 @@ async function addCollection() {
 
   const { error: insertError } = await supabase.from('collections').insert([
     {
+      created_at: new Date().toISOString(),
       collection_name: title,
       description: description,
       user_id: authUser.id,
