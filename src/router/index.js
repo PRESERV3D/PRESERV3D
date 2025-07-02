@@ -42,12 +42,23 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     }
 
     const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+    const allowedRoles = to.matched.find((r) => r.meta?.allowedRoles)?.meta.allowedRoles
+    const session = userStore.session
 
-    if (requiresAuth && !userStore.session) {
-      next('/user/login')
-    } else {
-      next()
+    if (requiresAuth && !session) {
+      return next('/user/login')
     }
+
+    if (requiresAuth && allowedRoles) {
+      const role = session?.user?.user_metadata?.role
+
+      if (!allowedRoles.includes(role)) {
+        alert('Unauthorized access')
+        return next(false)
+      }
+    }
+
+    next()
   })
 
   return Router

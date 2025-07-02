@@ -1,8 +1,8 @@
 <template>
   <q-page class="q-pa-md">
     <!-- Header -->
-    <div class="row items-center justify-between">
-      <div class="text-h6">Hello, {{ user.first_name }}!</div>
+    <div>
+      <p v-if="userStore.profile">Hello, {{ userStore.profile.first_name }}</p>
     </div>
 
     <div class="q-mt-xs title">Collections</div>
@@ -137,9 +137,11 @@
 import { ref, onMounted } from 'vue'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
+import { useUserStore } from 'src/stores/user'
 
 const router = useRouter()
-const user = ref({ first_name: '' })
+const userStore = useUserStore()
+
 const collections = ref([])
 const isLoading = ref(true)
 const showDialog = ref(false)
@@ -156,32 +158,20 @@ const newCollection = ref({
 const sortOption = ref('Newest to Oldest')
 const sortOptions = ['Alphabetical', 'Oldest to Newest', 'Newest to Oldest', 'Recently Updated']
 
-// Load user and their collections
 onMounted(async () => {
-  const {
-    data: { user: authUser },
-    error: authError,
-  } = await supabase.auth.getUser()
+  if (!userStore.session) {
+    await userStore.fetchSession()
+  }
 
-  if (authError || !authUser) {
-    console.error('Auth error:', authError)
+  const userId = userStore.profile?.id
+
+  if (!userId) {
+    console.error('No profile found in user store.')
     isLoading.value = false
     return
   }
 
-  const { data: userData, error: userError } = await supabase
-    .from('registered_users')
-    .select('first_name')
-    .eq('id', authUser.id)
-    .single()
-
-  if (userError) {
-    console.error('Error fetching user data:', userError)
-  } else {
-    user.value = userData
-  }
-
-  await loadCollections(authUser.id)
+  await loadCollections(userId)
   applySorting()
 })
 
@@ -208,11 +198,10 @@ function applySorting() {
   collections.value = sorted
 }
 
-// Load collections sorted from latest to oldest
 async function loadCollections(userId) {
   const { data, error } = await supabase
     .from('collections')
-    .select('collection_name, cover_url, collection_id, created_at, updated_at') // add created_at & updated_at
+    .select('collection_name, cover_url, collection_id, created_at, updated_at')
     .eq('user_id', userId)
 
   if (error) {
@@ -261,9 +250,8 @@ async function addCollection() {
     return
   }
 
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser()
+  const userId = userStore.profile?.id
+  if (!userId) return
 
   let coverUrl = ''
 
@@ -293,8 +281,8 @@ async function addCollection() {
     {
       created_at: new Date().toISOString(),
       collection_name: title,
-      description: description,
-      user_id: authUser.id,
+      description,
+      user_id: userId,
       cover_url: coverUrl || defaultCover,
     },
   ])
@@ -304,7 +292,7 @@ async function addCollection() {
   } else {
     showDialog.value = false
     resetForm()
-    await loadCollections(authUser.id)
+    await loadCollections(userId)
   }
 }
 </script>

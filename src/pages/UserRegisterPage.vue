@@ -177,7 +177,6 @@ import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 
 const router = useRouter()
-
 const step = ref(1)
 
 const form = ref({
@@ -227,16 +226,30 @@ function validateStepOne() {
     return
   }
 
-  // Go to step two if all checks pass
+  if (!email.includes('@iskolarngbayan.pup.edu.ph')) {
+    alert('Please use your PUP email only.')
+    return
+  }
+
   step.value++
 }
 
 // Register user
 async function registerUser() {
-  const { password, confirmPassword, college, department, year_section } = form.value
+  const {
+    first_name,
+    last_name,
+    email,
+    contact,
+    college,
+    department,
+    year_section,
+    is_alumni,
+    password,
+    confirmPassword,
+  } = form.value
 
-  // Validate password
-  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/
   if (!passwordRegex.test(password)) {
     alert(
       'Password must be at least 8 characters long and contain an uppercase letter, a number, and a special character.',
@@ -249,15 +262,20 @@ async function registerUser() {
     return
   }
 
-  if (!college || !department || !year_section || !password || !confirmPassword) {
+  if (!college || !department || !year_section) {
     alert('Please fill out all required fields.')
     return
   }
 
   try {
     const { data, error } = await supabase.auth.signUp({
-      email: form.value.email,
-      password: form.value.password,
+      email,
+      password,
+      options: {
+        data: {
+          role: 'user',
+        },
+      },
     })
 
     if (error) {
@@ -268,22 +286,22 @@ async function registerUser() {
     if (data.user) {
       const { error: profileError } = await supabase.from('registered_users').insert([
         {
-          id: data.user.id, // Link to auth.users
-          first_name: form.value.first_name,
-          last_name: form.value.last_name,
-          email: form.value.email,
-          contact: form.value.contact,
-          college: form.value.college,
-          department: form.value.department,
-          year_section: form.value.year_section,
-          is_alumni: form.value.is_alumni,
+          id: data.user.id,
+          first_name,
+          last_name,
+          email,
+          contact,
+          college,
+          department,
+          year_section,
+          is_alumni,
           created_at: new Date(),
         },
       ])
 
       if (profileError) {
-        alert('User created, but failed to save profile.')
         console.error(profileError)
+        alert('User created, but failed to save profile.')
         return
       }
 

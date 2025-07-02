@@ -8,7 +8,7 @@ const routes = [
         path: 'home',
         name: 'dashboard',
         component: () => import('pages/IndexPage.vue'),
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, allowedRoles: ['user'] },
       },
       {
         path: 'artifacts',
@@ -36,6 +36,7 @@ const routes = [
         path: 'admindash',
         name: 'admin-home',
         component: () => import('pages/AdminDashboard.vue'),
+        meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
       {
         path: 'documents/:id',
@@ -53,12 +54,12 @@ const routes = [
         path: 'collections',
         name: 'collections',
         component: () => import('src/pages/CollectionsPage2.vue'),
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, allowedRoles: ['user'] },
       },
       {
         path: 'collection/:id',
         component: () => import('pages/CollectionDetailsPage.vue'),
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, allowedRoles: ['user'] },
       },
     ],
   },

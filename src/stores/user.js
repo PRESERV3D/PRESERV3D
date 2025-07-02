@@ -4,15 +4,14 @@ import { supabase } from 'boot/supabase'
 export const useUserStore = defineStore('user', {
   state: () => ({
     session: null,
-    profile: null,
+    profile: null, // Includes full profile + role
   }),
 
   actions: {
-    // Initialize and listen to auth state changes
+    // Automatically initialize session and profile
     initSessionListener() {
       supabase.auth.getSession().then(({ data: { session } }) => {
         this.session = session
-
         if (session?.user) {
           this.fetchProfile(session.user.id)
         }
@@ -20,7 +19,6 @@ export const useUserStore = defineStore('user', {
 
       supabase.auth.onAuthStateChange((_, session) => {
         this.session = session
-
         if (session?.user) {
           this.fetchProfile(session.user.id)
         } else {
@@ -29,23 +27,37 @@ export const useUserStore = defineStore('user', {
       })
     },
 
-    // Fetch user's profile
+    // Fetch user or admin profile
     async fetchProfile(userId) {
-      const { data, error } = await supabase
+      // First, check if user is in registered_users
+      let { data: userData, error: userError } = await supabase
         .from('registered_users')
         .select('*')
         .eq('id', userId)
         .single()
 
-      if (error) {
-        console.error('Failed to fetch profile:', error)
-        this.profile = null
-      } else {
-        this.profile = data
+      if (userData) {
+        this.profile = { ...userData, role: 'user' }
+        return
       }
+
+      // Next, check if user is in registered_admins
+      const { data: adminData, error: adminError } = await supabase
+        .from('registered_admins')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (adminData) {
+        this.profile = { ...adminData, role: 'admin' }
+        return
+      }
+
+      console.error('Failed to fetch profile from both tables:', userError || adminError)
+      this.profile = null
     },
 
-    // Manual session fetch
+    // Manually fetch session + profile (e.g., on page reload)
     async fetchSession() {
       const {
         data: { session },

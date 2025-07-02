@@ -58,6 +58,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { supabase } from 'boot/supabase'
+import { useUserStore } from 'src/stores/user'
+
+const userStore = useUserStore()
+await userStore.signOut() // Reset any previous session
 
 const router = useRouter()
 
@@ -66,26 +71,35 @@ const form = ref({
   password: '',
 })
 
+const showPassword = ref(false)
+
 async function loginAdmin() {
+  const { email, password } = form.value
+
   try {
-    const response = await fetch('http://localhost:3000/login-admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form.value),
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     })
 
-    const data = await response.json()
-
-    if (!response.ok) {
-      alert(data.error || 'Login failed.')
-    } else {
-      alert('Login successful!')
-      console.log(data)
-      router.push('/home')
+    if (error) {
+      alert(error.message || 'Login failed.')
+      return
     }
-  } catch (error) {
-    alert('An error occurred during login.')
-    console.error(error)
+
+    // Fetch session and profile from your user store
+    await userStore.fetchSession()
+
+    if (userStore.profile?.role === 'admin') {
+      alert('Login successful!')
+      router.push('/admindash')
+    } else {
+      alert('Access denied. You are not authorized as an admin.')
+      await supabase.auth.signOut()
+    }
+  } catch (err) {
+    alert('An unexpected error occurred.')
+    console.error(err)
   }
 }
 </script>

@@ -74,10 +74,12 @@ const form = ref({
 const showPassword = ref(false)
 
 async function loginUser() {
+  const { email, password } = form.value
+
   try {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: form.value.email,
-      password: form.value.password,
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     })
 
     if (error) {
@@ -85,9 +87,18 @@ async function loginUser() {
       return
     }
 
-    alert('Login successful!')
+    const {
+      user: { user_metadata },
+    } = data
 
-    await router.push('/')
+    if (user_metadata?.role !== 'user') {
+      alert('Access denied. You already have an account as an admin.')
+      await supabase.auth.signOut()
+      return
+    }
+
+    alert('Login successful!')
+    await router.push('/home')
   } catch (err) {
     alert('An unexpected error occurred.')
     console.error(err)

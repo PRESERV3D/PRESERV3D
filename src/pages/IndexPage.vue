@@ -1,8 +1,9 @@
 <template>
   <q-page class="q-pa-md">
     <!-- Header -->
-    <div class="row items-center justify-between">
-      <div class="text-h6">Hello, {{ user.first_name }}!</div>
+    <div>
+      <p v-if="userStore.profile">Hello, {{ userStore.profile.first_name }}</p>
+      <p v-if="userStore.profile?.role === 'admin'">(Admin Access)</p>
     </div>
 
     <div class="q-mt-xs title">Collections</div>
@@ -142,12 +143,11 @@ const fileInput = ref(null)
 const previewImage = ref(null)
 const newCollectionTitle = ref('')
 const newCollectionDesc = ref('')
+const newCollection = ref({ coverFile: null })
 
-const newCollection = ref({
-  coverFile: null,
-})
+import { useUserStore } from 'src/stores/user'
+const userStore = useUserStore()
 
-// Load user and their collections
 onMounted(async () => {
   const {
     data: { user: authUser },
@@ -156,27 +156,22 @@ onMounted(async () => {
 
   if (authError || !authUser) {
     console.error('Auth error:', authError)
-    isLoading.value = false
+    router.push('/user/login') // redirect if not authenticated
     return
   }
 
-  const { data: userData, error: userError } = await supabase
+  const { data: userData } = await supabase
     .from('registered_users')
     .select('first_name')
     .eq('id', authUser.id)
     .single()
 
-  if (userError) {
-    console.error('Error fetching user data:', userError)
-  } else {
-    user.value = userData
-  }
-
+  user.value = userData
   await loadCollections(authUser.id)
 })
 
-// Load collections sorted from latest to oldest
 async function loadCollections(userId) {
+  isLoading.value = true
   const { data, error } = await supabase
     .from('collections')
     .select('collection_name, cover_url, collection_id')
@@ -265,7 +260,7 @@ async function addCollection() {
     {
       created_at: new Date().toISOString(),
       collection_name: title,
-      description: description,
+      description,
       user_id: authUser.id,
       cover_url: coverUrl || defaultCover,
     },
