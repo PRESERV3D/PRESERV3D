@@ -175,7 +175,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 
 const showDialog = ref(false)
-
+const activeFilter = ref('all')
 //
 const documentsStore = useDocumentsStore()
 
