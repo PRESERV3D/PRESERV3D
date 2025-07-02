@@ -13,13 +13,13 @@ const routes = [
       {
         path: 'artifacts',
         name: 'artifacts',
-        component: () => import('src/pages/ArtifactsPage2.vue'),
+        component: () => import('src/pages/ArtifactsPage.vue'),
         meta: { requiresAuth: true },
       },
       {
         path: 'documents',
         name: 'documents',
-        component: () => import('src/pages/DocumentsPage2.vue'),
+        component: () => import('src/pages/DocumentsPage.vue'),
         meta: { requiresAuth: true },
       },
       // {
@@ -54,7 +54,7 @@ const routes = [
         // name: 'user-collections',
         // component: () => import('pages/CollectionsPage.vue'),
         name: 'collections',
-        component: () => import('src/pages/CollectionsPage2.vuee'),
+        component: () => import('src/pages/CollectionsPage2.vue'),
         meta: { requiresAuth: true },
       },
       {
@@ -94,7 +94,6 @@ const routes = [
     ],
   },
   // Always leave this as last one,
-  // but you can also remove it
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),
