@@ -17,7 +17,7 @@
       <!-- Collection Display -->
       <div v-else>
         <div v-if="collections.length > 0" class="row q-col-gutter-md">
-          <div v-for="collection in collections.slice(0, 5)" :key="collection.collection_id">
+          <div v-for="collection in collections" :key="collection.collection_id">
             <q-card
               class="q-ma-sm cursor-pointer"
               @click="goToCollectionDetailsPage(collection.collection_id)"

@@ -44,6 +44,17 @@ const routes = [
         component: () => import('pages/ViewArtifactPage.vue'),
         meta: { requiresAuth: true },
       },
+      {
+        path: 'collections',
+        name: 'collections',
+        component: () => import('pages/CollectionsPage.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'collection/:id',
+        component: () => import('pages/CollectionDetailsPage.vue'),
+        meta: { requiresAuth: true },
+      },
     ],
   },
   {
