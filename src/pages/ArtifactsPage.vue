@@ -5,7 +5,11 @@
       <h5 class="q-mt-xs q-mb-lg">Lorem ipsum dolor sit, amet consectetur adipisicing elit.</h5>
     </div>
     <div class="row q-gutter-md q-mt-md">
-      <div v-for="(model, i) in modelStore.models" :key="i" class="card-wrapper">
+      <div
+        v-for="(model, i) in searchStore.query ? searchStore.results : modelStore.models"
+        :key="i"
+        class="card-wrapper"
+      >
         <q-card class="my-card" rounded bordered>
           <div class="card">
             <model-viewer
@@ -36,22 +40,22 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import { useModelStore } from 'stores/modelStore'
+import { useSearchStore } from 'stores/searchStore'
 import '@google/model-viewer'
 import { supabase } from 'boot/supabase'
 
 const modelStore = useModelStore()
+const searchStore = useSearchStore()
 
-onMounted(async () => {
-  // Load artifacts metadata from Supabase
+// Fetch all artifacts from Supabase
+const fetchAllArtifacts = async () => {
   try {
     const { data, error } = await supabase
       .from('artifacts_metadata')
       .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
       .order('uploaded_at', { ascending: false })
-
-    console.log('Fetched artifacts:', data)
 
     if (error) {
       console.error('Supabase error fetching artifacts:', error)
@@ -62,5 +66,16 @@ onMounted(async () => {
   } catch (err) {
     console.error('Unexpected error while loading artifacts:', err)
   }
+}
+
+// Initial load
+onMounted(async () => {
+  if (!searchStore.query) {
+    await fetchAllArtifacts()
+  }
+})
+
+onUnmounted(() => {
+  searchStore.clear()
 })
 </script>

@@ -179,15 +179,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
+import { useSearchStore } from 'src/stores/searchStore'
 
 const userStore = useUserStore()
+const searchStore = useSearchStore()
 const router = useRouter()
 const route = useRoute()
-const $q = useQuasar()
 
 const drawer = ref(false)
 const miniState = ref(true)
@@ -232,14 +232,19 @@ const setActiveItem = (itemName) => {
 }
 
 // Search functionality
-const performSearch = () => {
-  console.log('Searching for:', search.value)
-  $q.notify({
-    message: `Performing search for: "${search.value}"`,
-    color: 'positive',
-    icon: 'search',
-    position: 'top',
-  })
+const performSearch = async () => {
+  const query = search.value
+  const currentPath = route.path
+  const isDocumentsPage = currentPath.includes('/documents')
+
+  const type = isDocumentsPage ? 'documents' : 'artifacts'
+
+  if (!query.trim()) {
+    searchStore.clear()
+  } else {
+    await searchStore.search(query, type)
+    console.log('Search performed:', search.value, type)
+  }
 }
 
 // Profile and user actions
@@ -263,6 +268,14 @@ const handleLogout = async () => {
     console.error('Error signing out:', error)
   }
 }
+
+// Watch search bar input and run query
+watch(search, async (query) => {
+  if (query === null || query === undefined) {
+    searchStore.clear()
+    return
+  }
+})
 
 onMounted(() => {
   // Extract the route path
