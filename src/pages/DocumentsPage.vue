@@ -156,21 +156,4 @@ onMounted(async () => {
 onUnmounted(() => {
   searchStore.clear()
 })
-// onMounted(async () => {
-//   try {
-//     const { data, error } = await supabase
-//       .from('documents_metadata')
-//       .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
-//       .order('uploaded_at', { ascending: false })
-
-//     if (error) {
-//       console.error('Supabase error fetching documents:', error)
-//       return
-//     }
-
-//     documentsStore.setDocuments(data)
-//   } catch (err) {
-//     console.error('Unexpected error while loading documents:', err)
-//   }
-// })
 </script>
