@@ -31,6 +31,7 @@
               <router-link
                 :to="{ name: 'view-artifact', params: { id: model.id } }"
                 class="text-primary"
+                @click="logClick(model.id, 'artifact')"
               >
                 View Artifact
               </router-link>
@@ -121,13 +122,38 @@ function showNotifyDialog(title, message) {
   notifyDialogOpen.value = true
 }
 
+async function logClick(itemId, itemType) {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (authError || !userId) {
+    console.error('Auth error logging click:', authError)
+    return
+  }
+
+  try {
+    const { error } = await supabase.from('user_activity_log').insert({
+      user_id: userId,
+      item_id: itemId,
+      item_type: itemType,
+      clicked_at: new Date().toISOString(),
+    })
+
+    if (error) {
+      console.error('Error logging click:', error)
+    }
+    console.log(`Logged click for ${itemType} with ID: ${itemId}`)
+  } catch (err) {
+    console.error('Error logging click:', err)
+  }
+}
+
 // Fetch all artifacts from Supabase
 const fetchAllArtifacts = async () => {
   try {
     const { data, error } = await supabase
       .from('artifacts_metadata')
       .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
-      .order('uploaded_at', { ascending: false })
       .order('uploaded_at', { ascending: false })
 
     if (!error) {

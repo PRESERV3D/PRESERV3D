@@ -88,7 +88,10 @@
                   {{ doc.metadata.summary }}
                 </div>
                 <div class="q-mt-xs q-mb-xs flex justify-center">
-                  <router-link :to="{ name: 'view-document', params: { id: doc.id } }">
+                  <router-link
+                    :to="{ name: 'view-document', params: { id: doc.id } }"
+                    @click="logClick(doc.id, 'document')"
+                  >
                     <q-btn label="Now Read" class="now-read-btn" unelevated no-caps />
                   </router-link>
                 </div>
@@ -261,6 +264,32 @@ function showNotifyDialog(title, message) {
   notifyDialogTitle.value = title
   notifyDialogMessage.value = message
   notifyDialogOpen.value = true
+}
+
+async function logClick(itemId, itemType) {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (authError || !userId) {
+    console.error('Auth error logging click:', authError)
+    return
+  }
+
+  try {
+    const { error } = await supabase.from('user_activity_log').insert({
+      user_id: userId,
+      item_id: itemId,
+      item_type: itemType,
+      clicked_at: new Date().toISOString(),
+    })
+
+    if (error) {
+      console.error('Error logging click:', error)
+    }
+    console.log(`Logged click for ${itemType} with ID: ${itemId}`)
+  } catch (err) {
+    console.error('Error logging click:', err)
+  }
 }
 
 // Fetch all documents from Supabase
