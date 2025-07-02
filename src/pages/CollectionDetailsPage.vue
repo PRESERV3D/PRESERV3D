@@ -300,6 +300,7 @@ async function updateCollection() {
       collection_name: editData.value.collection_name,
       description: editData.value.description,
       cover_url: editData.value.cover_url,
+      updated_at: new Date(),
     })
     .eq('collection_id', collectionId)
 
@@ -339,9 +340,8 @@ async function deleteCollection() {
     showMessageDialog('Delete Failed', 'Failed to delete collection.')
   } else {
     confirmDeleteOpen.value = false
-    messageDialogTitle.value = 'Deleted'
-    messageDialogContent.value = 'Collection deleted.'
-    messageDialogOpen.value = true
+    showMessageDialog('Deleted', 'Collection deleted.')
+    router.push({ name: 'collections' })
   }
 }
 
