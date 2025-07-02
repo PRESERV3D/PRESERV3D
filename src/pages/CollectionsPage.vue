@@ -37,7 +37,7 @@
 
           <q-card-section class="row q-col-gutter-md">
             <div class="col-6">
-              <div class="upload-box" @click="triggerFilePicker">
+              <div class="upload-box" @click="triggerFileInput">
                 <q-img
                   v-if="previewImage"
                   :src="previewImage"
@@ -136,7 +136,7 @@ function addCollection() {
   showDialog.value = false
 }
 
-function triggerFilePicker() {
+function triggerFileInput() {
   fileInput.value.click()
 }
 
