@@ -980,17 +980,20 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 200px;
-  padding: 20px;
+  min-height: 20rem;
 }
 
 .document-icon {
-  max-width: 80px;
-  max-height: 80px;
+  width: 5rem;
+  height: 5rem;
 }
 
-.document-name {
+.selected-document-name {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
   word-break: break-word;
-  max-width: 100%;
-  color: #333;
+  margin-top: 0.5rem;
+  max-width: 70%;
+  color: #880000;
 }

@@ -11,39 +11,27 @@
     <q-dialog v-model="showDialog" persistent>
       <q-card class="add-document-card">
         <q-card-section class="box-upload-docu">
-          <!-- Upload Icon -->
           <q-img
             src="src/assets/img/drag-drop-icon.png"
             alt="Upload-Document"
             class="upload-icon-docu"
           />
-          <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
-            DRAG and DROP files
-          </div>
-
-          <!-- IF NO FILE SELECTED -->
           <div v-if="!selectedFile" class="sub-font-3 text-center" style="font-weight: 200">
+            <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
+              DRAG and DROP files
+            </div>
             or <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a> on
             your computer
           </div>
-
-          <!-- IF FILE SELECTED -->
           <div v-else class="document-preview text-center">
-            <q-img
-              src="src/assets/img/document-icon.png"
-              alt="Document"
-              class="document-icon"
-              style="width: 80px; height: 80px; margin: 0 auto"
-            />
-            <div class="document-name q-mt-md sub-font-3" style="font-size: 16px; font-weight: 400">
+            <q-img src="src/assets/img/document-icon.png" alt="Document" class="document-icon" />
+            <div class="selected-document-name q-mt-md">
               {{ selectedFile.name }}
             </div>
           </div>
-
-          <!-- Hidden File Input -->
           <input
             type="file"
-            ref="selectedFileInput"
+            ref="fileInput"
             accept=".pdf"
             style="display: none"
             @change="handleFileChange"
@@ -52,7 +40,7 @@
 
         <q-card-actions class="row q-ml-lg justify-between items-center">
           <div></div>
-          <q-btn label="Save" class="q-ml-xl q-mt-sm btn-save" @click="handleUpload" no-caps />
+          <q-btn label="Upload" class="q-ml-xl q-mt-sm btn-save" @click="handleUpload" no-caps />
           <q-btn
             flat
             label="Cancel"
@@ -60,6 +48,7 @@
             style="color: #000000"
             v-close-popup
             no-caps
+            @click="handleCancel"
           />
         </q-card-actions>
       </q-card>
@@ -213,6 +202,7 @@ onMounted(async () => {
 })
 
 const selectedFile = ref(null)
+const fileInput = ref(null)
 const dialog = ref(false)
 const loading = ref(false)
 const router = useRouter()
@@ -229,7 +219,7 @@ const metadata = ref({
 })
 
 function triggerFileInput() {
-  selectedFile.value?.click()
+  fileInput.value?.click()
 }
 
 function handleFileChange(event) {
@@ -406,5 +396,10 @@ async function handleCancelMetadata(cancelledData) {
   } finally {
     dialog.value = false
   }
+}
+
+function handleCancel() {
+  selectedFile.value = null
+  showDialog.value = false
 }
 </script>
