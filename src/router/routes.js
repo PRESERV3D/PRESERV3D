@@ -13,13 +13,13 @@ const routes = [
       {
         path: 'artifacts',
         name: 'artifacts',
-        component: () => import('pages/ArtifactsPage.vue'),
+        component: () => import('src/pages/ArtifactsPage2.vue'),
         meta: { requiresAuth: true },
       },
       {
         path: 'documents',
         name: 'documents',
-        component: () => import('pages/DocumentsPage.vue'),
+        component: () => import('src/pages/DocumentsPage2.vue'),
         meta: { requiresAuth: true },
       },
       // {
@@ -47,7 +47,7 @@ const routes = [
       {
         path: 'collections',
         name: 'collections',
-        component: () => import('pages/CollectionsPage.vue'),
+        component: () => import('src/pages/CollectionsPage2.vuee'),
         meta: { requiresAuth: true },
       },
       {
