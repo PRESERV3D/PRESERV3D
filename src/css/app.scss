@@ -972,3 +972,25 @@
 .user-profile-btn:hover {
   background-color: #e9ecef !important;
 }
+
+//
+
+.document-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 20px;
+}
+
+.document-icon {
+  max-width: 80px;
+  max-height: 80px;
+}
+
+.document-name {
+  word-break: break-word;
+  max-width: 100%;
+  color: #333;
+}
