@@ -29,10 +29,19 @@ kw_model = KeyBERT('all-MiniLM-L6-v2')
 nlp = spacy.load("en_core_web_sm")
 
 @app.post("/process-text")
-async def process_pdf(file: UploadFile = File(...), filename: str = Form(None)):
+async def process_pdf(
+    file: UploadFile = File(None),
+    filename: str = Form(None),
+    raw_text: str = Form(None)
+):
     print("Processing file:", file.filename)
-    pdf_bytes = await file.read()
-    text = extract_text(pdf_bytes)
+    if raw_text:
+        text = raw_text
+    elif file:
+        pdf_bytes = await file.read()
+        text = extract_text(pdf_bytes)
+    else:
+        return {"error": "No file or raw text provided"}
 
     summary = summarizer(text[:3000])[0]['summary_text']
     keywords = kw_model.extract_keywords(text, top_n=5)
