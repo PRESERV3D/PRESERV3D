@@ -241,6 +241,7 @@ import PdfPreview from 'components/PdfPreview.vue'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
+import Tesseract from 'tesseract.js'
 import axios from 'axios'
 
 const showDialog = ref(false)
@@ -301,6 +302,7 @@ const metadata = ref({
   keywords: [],
   categories: [],
 })
+let nlpMetadata = {}
 
 function triggerFileInput() {
   fileInput.value?.click()
@@ -331,7 +333,6 @@ const handleUpload = async () => {
   const bucket = folder
   try {
     const alreadyExists = await fileExists(fileName)
-    let nlpMetadata = {}
 
     if (alreadyExists) {
       alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
@@ -342,12 +343,28 @@ const handleUpload = async () => {
     if (isPdf) {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('filename', file.name)
 
-      const response = await axios.post('http://localhost:8000/process-text', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      const response = await axios.post('http://localhost:8000/process-text', formData)
 
-      nlpMetadata = response.data
+      if (response.data.status === 'ocr_required') {
+        console.log('Fallback to OCR...')
+        const base64Image = response.data.image_base64
+
+        // OCR the image
+        const result = await Tesseract.recognize(`data:image/png;base64,${base64Image}`, 'eng', {
+          tessedit_char_whitelist:
+            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,;:!?()[]{}-_"\'',
+        })
+        const text = result.data.text
+
+        // Send extracted text to FastAPI for NLP
+        const nlpForm = new FormData()
+        nlpForm.append('filename', file.name)
+        nlpForm.append('raw_text', text)
+
+        nlpMetadata = await axios.post('http://localhost:8000/process-text', nlpForm)
+      }
     }
 
     // Upload to Supabase Storage
@@ -383,17 +400,17 @@ const handleUpload = async () => {
       alert('Upload succeeded but metadata failed to save.')
       return
     }
-
+    console.log('Metadata', nlpMetadata)
     // Open metadata confirmation dialog
     metadata.value = {
       file_name: fileName,
       file_url: fileUrl,
-      title: nlpMetadata.title || '',
-      author: nlpMetadata.author || '',
-      date: nlpMetadata.date || '',
-      summary: nlpMetadata.summary || '',
-      keywords: nlpMetadata.keywords || [],
-      categories: nlpMetadata.categories || [],
+      title: nlpMetadata.data.title || '',
+      author: nlpMetadata.data.author || '',
+      date: nlpMetadata.data.date || '',
+      summary: nlpMetadata.data.summary || '',
+      keywords: nlpMetadata.data.keywords || [],
+      categories: nlpMetadata.data.categories || [],
     }
 
     dialog.value = true
