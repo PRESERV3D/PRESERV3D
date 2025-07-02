@@ -78,13 +78,14 @@
               <p class="a-info-text">{{ model.metadata.summary }}</p>
             </div>
 
-            <!-- Reference Link -->
+            <!-- WEBSCRAPE -->
+            <!-- Reference Link
             <div class="reference-section q-mb-lg">
               <a href="#" class="reference-link text-primary">
                 <q-icon name="link" class="q-mr-xs" />
                 Show Reference Links
               </a>
-            </div>
+            </div> -->
 
             <!-- Two-Column Section -->
             <div class="two-column-details q-mb-lg">
