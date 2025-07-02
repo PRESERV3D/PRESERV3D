@@ -629,6 +629,7 @@
 }
 
 .fade-title-container {
+  position: relative;
   max-width: 13rem;
   display: inline-block;
 }
@@ -659,7 +660,6 @@
 }
 
 .fade-title-container:hover .tooltip-box {
-  position: absolute;
   visibility: visible;
   opacity: 1;
 }
@@ -674,7 +674,7 @@
   display: flex;
   flex-wrap: wrap;
   padding-top: 4rem;
-  padding-bottom: 1rem;
+  padding-bottom: 3.5rem;
   padding-left: 1.5rem;
   gap: 3rem;
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
@@ -1000,13 +1000,4 @@
     0 8px 16px rgba(0, 0, 0, 0.3),
     inset 0 0 20px rgba(0, 0, 0, 0.1),
     0 0 0 2px rgba(8, 3, 0, 0.3);
-}
-
-.book-spine {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 0.7rem;
-  background: linear-gradient(to right, #523518 0%, #381c08 100%);
-  box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.3);
 }
