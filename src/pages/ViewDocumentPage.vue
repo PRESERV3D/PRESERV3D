@@ -43,13 +43,6 @@
               </div>
             </div>
             <div class="meta-section">
-              <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 2rem">
-                Language
-              </div>
-              <div class="q-ml-md sub-font-2" style="color: black">
-                {{ doc.metadata.language }}
-              </div>
-
               <div class="font-label">
                 <p><strong>Uploaded At:</strong> {{ formatDate(doc.uploaded_at) }}</p>
                 <p><strong>Updated At:</strong> {{ formatDate(doc.updated_at) }}</p>
