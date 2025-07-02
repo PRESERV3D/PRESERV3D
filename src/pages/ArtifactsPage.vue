@@ -23,7 +23,7 @@
           <q-card-section class="q-pa-sm">
             <div class="text-subtitle1">{{ model.metadata?.title || model.file_name }}</div>
             <router-link
-              :to="{ name: 'view-document', params: { id: doc.id } }"
+              :to="{ name: 'view-artifact', params: { id: model.id } }"
               class="no-decoration"
             >
               <q-btn label="Now Read" class="now-read-btn" unelevated no-caps />
@@ -50,6 +50,8 @@ onMounted(async () => {
       .from('artifacts_metadata')
       .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
       .order('uploaded_at', { ascending: false })
+
+    console.log('Fetched artifacts:', data)
 
     if (error) {
       console.error('Supabase error fetching artifacts:', error)
