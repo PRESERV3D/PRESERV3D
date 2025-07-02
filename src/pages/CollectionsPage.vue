@@ -21,28 +21,31 @@
     <div v-else>
       <div v-if="collections.length > 0" class="box-collections">
         <!-- Show up to 4 collections -->
-        <q-card
+        <div
           v-for="collection in collections.slice(0, 4)"
           :key="collection.collection_id"
-          class="collectionCard"
+          class="collection-item"
           @click="goToCollectionDetailsPage(collection.collection_id)"
         >
           <router-link :to="`/collection/${collection.collection_id}`" class="collection-link">
             <img
               :src="collection.cover_url"
               :alt="collection.collection_name"
-              class="collection-image"
-              style="width: 100%; height: 200px; object-fit: cover"
+              class="book-cover-img"
+              style="object-fit: cover"
             />
           </router-link>
 
           <div class="q-mt-md fade-title-container">
-            <div class="q-mt-md sub-font fade-title" style="color: black; font-weight: 800">
+            <div
+              class="sub-font fade-title"
+              style="color: black; font-weight: 600; margin-left: 3rem"
+            >
               {{ collection.collection_name }}
               <div class="tooltip-box">{{ collection.collection_name }}</div>
             </div>
           </div>
-        </q-card>
+        </div>
       </div>
 
       <div v-else class="text-center q-mt-md">
@@ -59,16 +62,16 @@
           </div>
         </q-card-section>
 
-        <q-card-section class="row q-col-gutter-md">
-          <div class="col-6">
-            <div class="upload-box" @click="triggerFilePicker">
+        <q-card-section class="row q-gutter-md" style="gap: 0.5rem">
+          <div class="col-auto q-ml-md">
+            <div class="upload-box" @click="triggerFileInput">
               <q-img
                 v-if="previewImage"
                 :src="previewImage"
-                style="width: 100%; height: 14.5rem; object-fit: cover; border-radius: 10px"
+                style="width: 100%; height: 14.5rem; object-fit: contain; border-radius: 10px"
               />
-              <div v-else class="upload text-center q-pa-md">
-                <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon q-mb-sm" />
+              <div v-else class="upload">
+                <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon" />
                 <div>Upload Photo</div>
               </div>
               <input
@@ -81,7 +84,7 @@
             </div>
           </div>
 
-          <div class="col-5">
+          <div class="col-5 q-ml-lg">
             <div class="sub-font-3" style="font-size: 16px; font-weight: 500">COLLECTION NAME</div>
             <q-input
               v-model="newCollectionTitle"
@@ -192,9 +195,9 @@ function goToCollectionDetailsPage(collectionId) {
   router.push(`/collection/${collectionId}`)
 }
 
-// function triggerFileInput() {
-//   fileInput.value.click()
-// }
+function triggerFileInput() {
+  fileInput.value.click()
+}
 
 function handleImageUpload(event) {
   const file = event.target.files[0]

@@ -48,13 +48,10 @@
 }
 
 .document {
+  position: absolute;
+  top: 0;
   max-width: 12rem;
-  height: auto;
 }
-
-// .metadata h6 {
-//   margin: 0;
-// }
 
 .documentCard {
   width: 12rem;
@@ -63,10 +60,6 @@
   overflow-y: hidden;
   box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
   border-radius: 10px;
-}
-
-.documentCard:hover {
-  overflow-y: auto;
 }
 
 .search {
@@ -320,7 +313,7 @@
   font-weight: 400;
 }
 
-.btn-1 :active {
+.btn-1:active {
   background-color: #880000;
   color: #ffffff;
 }
@@ -426,7 +419,7 @@
   border-radius: 10px;
   background-color: ffffff;
   width: auto;
-  height: 21rem;
+  height: auto;
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
 }
 
@@ -650,6 +643,8 @@
 }
 
 .tooltip-box {
+  font-weight: 200;
+  font-size: 10px;
   visibility: hidden;
   background-color: rgb(251, 251, 251);
   color: black;
@@ -662,8 +657,6 @@
   white-space: normal;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transition: opacity 0.2s ease;
-  font-weight: 200;
-  font-size: 10px;
 }
 
 .fade-title-container:hover .tooltip-box {
@@ -680,26 +673,16 @@
   height: auto;
   display: flex;
   flex-wrap: wrap;
-  padding-top: 3rem;
-  padding-bottom: 1rem;
-  gap: 1rem;
+  padding-top: 4rem;
+  padding-bottom: 3.5rem;
+  padding-left: 1.5rem;
+  gap: 3rem;
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
 }
 
-.collectionCard {
-  background: #ffffff;
-  width: 17rem;
-  padding: 1rem;
-  border-radius: 5px;
-  margin-left: 2.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-}
-
-.display-collection-image {
-  width: 15rem;
-  height: 14.5rem;
-  border-radius: 10px;
+.collection-item {
+  display: flex;
+  flex-direction: column;
 }
 
 .collection-image {
@@ -710,7 +693,7 @@
 }
 
 .add-collection-card {
-  width: 100%;
+  width: 32rem;
   height: 25.5rem;
   border-radius: 10px;
   background-color: #fbf4d0;
@@ -718,9 +701,9 @@
 }
 
 .upload-box {
-  width: 100%;
-  max-width: 15rem;
+  width: 11rem;
   height: 14.5rem;
+  border-radius: 10px;
   background-color: #ffffff;
   cursor: pointer;
   align-items: center;
@@ -736,8 +719,9 @@
 }
 
 .upload-icon {
-  width: 6rem;
-  height: 6rem;
+  width: 4rem;
+  height: 4rem;
+  margin-top: 0.5rem;
   margin-bottom: 1rem;
 }
 
@@ -996,4 +980,26 @@
   margin-top: 0.5rem;
   max-width: 70%;
   color: #880000;
+}
+
+//
+.docs-gap {
+  margin-left: 2.5rem;
+  margin-bottom: 0.5rem;
+  gap: 2rem;
+}
+
+//
+
+.book-cover-img {
+  width: 14rem;
+  height: 18rem;
+  margin-left: 3rem;
+  border: 3px solid #381c08;
+  border-left: 10px solid #381c08 !important;
+  border-radius: 0 15px 15px 0;
+  box-shadow:
+    0 8px 16px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(8, 3, 0, 0.3);
 }
