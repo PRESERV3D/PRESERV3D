@@ -138,14 +138,14 @@
             <q-card class="my-card" rounded bordered>
               <div class="card">
                 <!-- Information icon positioned in upper left -->
-                <q-btn
+                <!-- <q-btn
                   flat
                   round
                   icon="info_outline"
                   class="info-icon-overlay"
                   size="md"
                   @click.stop="showModelInfo(model.id)"
-                />
+                /> -->
                 <model-viewer
                   :src="model.file_url"
                   camera-controls
@@ -200,6 +200,7 @@
             <q-btn
               @click="addNewCollection"
               label="Add New"
+              icon="add_circle"
               style="min-width: 150px"
               class="add-new-btn"
               no-caps
@@ -252,15 +253,20 @@
           </div>
         </div>
 
-        <!-- Five Collections Section -->
+        <!-- Collections Section -->
         <div class="row q-gutter-xl q-pl-lg q-pr-sm q-mb-sm">
-          <div v-for="i in 5" :key="i" class="col card-wrapper">
+          <div v-for="collection in collections" :key="collection.id" class="col card-wrapper">
             <q-card class="my-card collection-card" flat>
               <div class="book-container">
                 <div class="book-cover">
                   <div class="book-spine"></div>
-                  <div class="book-content">
-                    <div class="book-title-section">
+                  <div class="book-content" :class="{ 'has-image': collection.image }">
+                    <!-- Show uploaded image as background if available -->
+                    <div v-if="collection.image" class="book-image-overlay">
+                      <img :src="collection.image" :alt="collection.title" class="book-background-image" />
+                    </div>
+                    <!-- Show default icon if no image -->
+                    <div v-else class="book-title-section">
                       <div class="book-icon">
                         <q-icon name="collections_bookmark" size="2rem" color="white" />
                       </div>
@@ -271,27 +277,10 @@
               <q-card-section class="q-pa-sm artifact-card-section">
                 <div class="title-row">
                   <div class="collection-title-link">
-                    <div class="text-subtitle2 artifact-title">Collection {{ i }}</div>
-                  </div>
-                  <div class="action-icons">
-                    <q-icon
-                      name="bookmark_border"
-                      class="action-icon bookmark-icon"
-                      size="18px"
-                      @click.stop="toggleBookmark('collection' + i)"
-                    />
-                    <q-icon
-                      name="star_border"
-                      class="action-icon star-icon"
-                      size="18px"
-                      @click.stop="toggleStar('collection' + i)"
-                    />
-
+                    <div class="text-subtitle2 artifact-title">{{ collection.title }}</div>
                   </div>
                 </div>
-
               </q-card-section>
-
             </q-card>
           </div>
         </div>
@@ -307,7 +296,79 @@
       </div>
     </div>
 
+    <!-- Add Collection Dialog -->
+    <q-dialog v-model="showDialog" persistent>
+      <q-card class="add-collection-card">
+        <q-card-section class="row justify-center items-center">
+          <div class="sub-font-3 text-center" style="font-size: 16px; font-weight: 700">
+            Add New Collection
+          </div>
+        </q-card-section>
 
+        <q-card-section class="row q-gutter-md" style="gap: 0.5rem">
+          <div class="col-auto q-ml-md">
+            <div class="upload-box" @click="triggerFileInput">
+              <img
+                v-if="previewImage"
+                :src="previewImage"
+                alt="Preview"
+                class="preview-image"
+              />
+              <div v-else class="upload">
+                <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon" />
+                <div>Upload Photo</div>
+              </div>
+              <input
+                type="file"
+                ref="fileInput"
+                accept="image/*"
+                @change="handleImageUpload"
+                style="display: none"
+              />
+            </div>
+          </div>
+
+          <div class="col-5 q-ml-lg">
+            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
+              COLLECTION NAME
+            </div>
+            <q-input
+              v-model="newCollectionTitle"
+              class="field-collection q-mb-md"
+              label="Enter Collection Name"
+              dense
+              outlined
+            />
+
+            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
+              SHORT DESCRIPTION
+            </div>
+            <q-input
+              v-model="newCollectionDesc"
+              type="textarea"
+              class="field-collection"
+              label="Enter Short Description"
+              dense
+              outlined
+              style="min-height: 8rem"
+            />
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn
+            flat
+            label="Cancel"
+            class="sub-font-2"
+            style="color: #000000"
+            v-close-popup
+            no-caps
+            @click="cancelAddCollection"
+          />
+          <q-btn label="Save" class="q-mr-sm btn-save" @click="saveCollection" no-caps />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
   </q-page>
 </template>
@@ -320,7 +381,6 @@ import '@google/model-viewer'
 // const activeFilter = ref('all')
 const modelStore = useModelStore()
 
-
 // Filter and Sort reactive variables
 const selectedFilter = ref('All')
 const selectedSort = ref('Recent')
@@ -329,6 +389,47 @@ const selectedSort = ref('Recent')
 const showFilterMenu = ref(false)
 const showSortMenu = ref(false)
 
+// Collection dialog variables
+const showDialog = ref(false)
+const newCollectionTitle = ref('')
+const newCollectionDesc = ref('')
+const fileInput = ref(null)
+const previewImage = ref(null)
+
+// Collections data
+const collections = ref([
+  {
+    id: 1,
+    title: 'Collection 1',
+    description: 'Default collection',
+    image: null
+  },
+  {
+    id: 2,
+    title: 'Collection 2',
+    description: 'Default collection',
+    image: null
+  },
+  {
+    id: 3,
+    title: 'Collection 3',
+    description: 'Default collection',
+    image: null
+  },
+  {
+    id: 4,
+    title: 'Collection 4',
+    description: 'Default collection',
+    image: null
+  },
+  {
+    id: 5,
+    title: 'Collection 5',
+    description: 'Default collection',
+    image: null
+  }
+])
+
 const filterOptions = ['All', 'Documents', 'PDFs', 'Images', 'Recent']
 const sortOptions = ['Recent', 'Alphabetical', 'Author', 'Date Created']
 
@@ -336,8 +437,6 @@ const sortOptions = ['Recent', 'Alphabetical', 'Author', 'Date Created']
 const featuredModels = computed(() => {
   return modelStore.models.slice(0, 3)
 })
-
-
 
 // Methods for recently viewed items
 const viewArtifact = (artifactId) => {
@@ -359,11 +458,76 @@ const toggleBookmark = (modelId) => {
   }
 }
 
-
+// Collection management methods
 const addNewCollection = () => {
-  console.log('Adding new collection')
-  // Add logic here to create a new collection
+  console.log('Opening add collection dialog')
+  showDialog.value = true
+}
 
+const saveCollection = () => {
+  if (!newCollectionTitle.value.trim()) {
+    console.log('Collection title is required')
+    return
+  }
+
+  // Add new collection to the LEFT side (beginning of array)
+  const newCollection = {
+    id: Date.now(), // Use timestamp for unique ID
+    title: newCollectionTitle.value,
+    description: newCollectionDesc.value || 'No description provided',
+    image: previewImage.value // Store the uploaded image
+  }
+
+  // Add to the beginning and keep only 5 collections
+  collections.value.unshift(newCollection)
+  if (collections.value.length > 5) {
+    collections.value = collections.value.slice(0, 5)
+  }
+
+  console.log('Collection added to left side:', newCollection)
+
+  // Clear form and close dialog
+  clearCollectionForm()
+  showDialog.value = false
+}
+
+const cancelAddCollection = () => {
+  clearCollectionForm()
+  showDialog.value = false
+}
+
+const clearCollectionForm = () => {
+  newCollectionTitle.value = ''
+  newCollectionDesc.value = ''
+  previewImage.value = null
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+const triggerFileInput = () => {
+  fileInput.value.click()
+}
+
+const handleImageUpload = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    console.log('Please select an image file')
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    previewImage.value = e.target.result
+    console.log('Image loaded successfully')
+  }
+  reader.onerror = (error) => {
+    console.error('Error reading file:', error)
+  }
+  reader.readAsDataURL(file)
 }
 
 onMounted(async () => {
