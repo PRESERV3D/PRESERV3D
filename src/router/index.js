@@ -50,15 +50,6 @@ export default defineRouter(function (/* { store, ssrContext } */) {
       return
     }
 
-    if (requiresAuth && allowedRoles) {
-      const role = session.user.user_metadata?.role
-      if (!allowedRoles.includes(role)) {
-        alert('Unauthorized access')
-        next('/')
-        return
-      }
-    }
-
     // Role-based redirect if landing on root path
     if (to.path === '/') {
       const role = session.user.user_metadata?.role
@@ -67,6 +58,16 @@ export default defineRouter(function (/* { store, ssrContext } */) {
         return
       } else if (role === 'user') {
         next('/home')
+        return
+      }
+    }
+
+    // Role-based access control
+    if (requiresAuth && allowedRoles) {
+      const role = session.user.user_metadata?.role
+      if (!allowedRoles.includes(role)) {
+        alert('Unauthorized access')
+        next('/')
         return
       }
     }
