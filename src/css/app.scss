@@ -390,6 +390,7 @@
   margin-bottom: 16px !important;
   border-radius: 12px;
   transition: background-color 0.2s ease, transform 0.2s ease;
+  padding: 8px 16px;
 }
 
 .nav-item:hover {
@@ -401,8 +402,8 @@
 }
 
 .icon-wrapper {
-  width: 50px;
-  height: 50px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -543,6 +544,39 @@
 
 .user-profile-btn:hover {
   background-color: #e9ecef !important;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .search-input {
+    max-width: 400px !important;
+  }
+  
+  .user-profile-btn {
+    width: auto !important;
+    max-width: 200px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .search-input {
+    max-width: 300px !important;
+  }
+  
+  .username-bg {
+    font-size: 14px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-item, .logout-item {
+    margin-bottom: 8px !important;
+    padding: 6px 8px;
+  }
+  
+  .search-input {
+    max-width: 250px !important;
+  }
 }
 
 

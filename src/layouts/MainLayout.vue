@@ -6,15 +6,16 @@
         show-if-above
         :mini="miniState"
         mini-to-overlay
-        :mini-width="120"
+        :mini-width="90"
         @mouseenter="onDrawerMouseEnter"
         @mouseleave="onDrawerMouseLeave"
         :width="280"
-        :breakpoint="500"
+        :breakpoint="768"
         bordered
         :class="'sidebar-drawer'"
         content-class="drawer-content"
       >
+
 
         <div class="absolute-full flex column">
           <!-- Expanded State -->
@@ -23,22 +24,26 @@
               <img
                 src="\src\assets\img\logo.png"
                 alt="Your Logo"
-                style="max-width: 200px; max-height: 80px; object-fit: contain;"
+                style="max-width: 100px; max-height: 80px; object-fit: contain;"
                 class="q-mb-sm"
               />
             </div>
           </div>
+
 
           <!-- Mini State -->
           <div class="q-pa-lg q-mb-sm text-center" v-show="miniState">
             <img
               src="\src\assets\img\logo.png"
               alt="Logo"
-              style="width: 60px; height: 60px; object-fit: contain;"
+              style="width: 45px; height: 45px; object-fit: contain;"
+              class="q-mt-sm"
             />
           </div>
 
+
           <div class="col" />
+
 
           <!-- Navigation -->
           <q-list padding :class="{ 'text-center': miniState }">
@@ -56,7 +61,7 @@
                   <img
                     :src="item.icon"
                     :alt="item.label"
-                    style="width: 30px; height: 30px; object-fit: contain;"
+                    style="width: 28px; height: 28px; object-fit: contain;"
                     class="nav-icon"
                   />
                 </div>
@@ -67,7 +72,9 @@
             </q-item>
           </q-list>
 
+
           <div class="col" />
+
 
           <!-- Logout -->
           <div class="q-pa-md">
@@ -92,6 +99,7 @@
         </div>
       </q-drawer>
 
+
       <q-page-container>
         <div class="search-toolbar q-py-md q-px-md">
           <q-toolbar class="bg-transparent">
@@ -112,6 +120,8 @@
                 <q-icon name="search" @click="performSearch" class="cursor-pointer" />
               </template>
             </q-input>
+
+
 
 
             <!-- Notifications Button -->
@@ -144,35 +154,34 @@
               </q-menu>
             </q-btn>
 
+
             <q-space />
 
+
             <!-- User Profile Button -->
-            <q-btn flat round dense class="custom-spacing user-profile-btn">
+             <q-btn flat round dense class="custom-spacing user-profile-btn">
               <q-avatar size="32px">
                 <img src="https://cdn.quasar.dev/img/avatar.png">
               </q-avatar>
               <span class="q-ml-lg gt-sm username-bg">{{ userName }}</span>
               <q-menu>
                 <q-list style="min-width: 150px;">
-                  <q-item-label header>{{ userName }}</q-item-label>
-                  <q-item clickable v-ripple @click="goToProfile">
+                  <!-- <q-item-label header>{{ userName }}</q-item-label> -->
+                  <!-- <q-item clickable v-ripple @click="goToProfile">
                     <q-item-section avatar><q-icon name="person" /></q-item-section>
                     <q-item-section>Profile</q-item-section>
                   </q-item>
-                  <q-item clickable v-ripple @click="goToSettings">
-                    <q-item-section avatar><q-icon name="settings" /></q-item-section>
-                    <q-item-section>Settings</q-item-section>
-                  </q-item>
-                  <q-separator />
-                  <q-item clickable v-ripple @click="handleLogout">
+                  <q-separator /> -->
+                  <!-- <q-item clickable v-ripple @click="handleLogout">
                     <q-item-section avatar><q-icon name="logout" /></q-item-section>
                     <q-item-section>Logout</q-item-section>
-                  </q-item>
+                  </q-item> -->
                 </q-list>
               </q-menu>
             </q-btn>
           </q-toolbar>
         </div>
+
 
         <router-view />
       </q-page-container>
@@ -180,20 +189,21 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar';
 
-
-
 const router = useRouter();
 const route = useRoute()
 const $q = useQuasar();
 
+
 const drawer = ref(false)
 const miniState = ref(true)
 const search = ref('')
+
 
 // User and notifications data
 const userName = ref('ADMIN')
@@ -202,6 +212,7 @@ const notifications = ref([
   { id: 2, message: '⚠️ Notice: The file you uploaded appears incomplete.', time: '1h ago' },
 ])
 
+
 const notificationCount = computed(() => notifications.value.length)
 const navItems = [
   { name: 'home', label: 'Home', icon: '\\src\\assets\\icon\\home.png' },
@@ -209,13 +220,16 @@ const navItems = [
   { name: 'documents', label: 'Documents', icon: '\\src\\assets\\icon\\book.png' }
 ]
 
+
 // Add a timeout to prevent rapid state changes
 let hoverTimeout = null
+
 
 const onDrawerMouseEnter = () => {
   if (hoverTimeout) clearTimeout(hoverTimeout)
   miniState.value = false
 }
+
 
 const onDrawerMouseLeave = () => {
   if (hoverTimeout) clearTimeout(hoverTimeout)
@@ -223,14 +237,17 @@ const onDrawerMouseLeave = () => {
   miniState.value = true
 }
 
+
 const activeItem = ref('home')
 const setActiveItem = (itemName) => {
   activeItem.value = itemName
+
 
   // Navigate to the corresponding route
   const targetRoute = `/${itemName}`
   router.push(targetRoute)
 }
+
 
 // Search functionality
 const performSearch = () => {
@@ -243,29 +260,31 @@ const performSearch = () => {
   })
 }
 
-// Profile and user actions
-const goToProfile = () => {
-  console.log('Going to profile...')
-  router.push('/profile')
-}
 
-const goToSettings = () => {
-  console.log('Going to settings...')
-  router.push('/settings')
-}
+// // Profile and user actions
+// const goToProfile = () => {
+//   console.log('Going to profile...')
+//   router.push('/profile')
+// }
+
+
+
 
 const handleLogout = () => {
   // Add logout logic here
   console.log('Logging out...')
+
 
   if (confirm('Are you sure you want to logout?')) {
     router.push('/login')
   }
 }
 
+
 onMounted(() => {
   // Extract the route path without leading slash
   const currentPath = route.path.substring(1)
+
 
   // If we're on the root path, set active to 'home'
   if (route.path === '/') {
