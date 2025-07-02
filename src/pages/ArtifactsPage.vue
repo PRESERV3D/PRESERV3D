@@ -146,14 +146,14 @@
         <q-card class="my-card" rounded bordered>
           <div class="card">
             <!-- Information icon positioned in upper left -->
-            <q-btn
+            <!-- <q-btn
               flat
               round
               icon="info_outline"
               class="info-icon-overlay"
               size="md"
               @click.stop="showModelInfo(model.id)"
-            />
+            /> -->
             <model-viewer
               :src="model.file_url"
               camera-controls
@@ -345,10 +345,10 @@ const clearFilters = () => {
   statusFilter.value = null
 }
 
-const showModelInfo = (modelId) => {
-  console.log('Show info for model:', modelId)
+// const showModelInfo = (modelId) => {
+//   console.log('Show info for model:', modelId)
 
-}
+//}
 
 const toggleBookmark = (modelId) => {
   const model = modelStore.models.find(m => m.id === modelId)
