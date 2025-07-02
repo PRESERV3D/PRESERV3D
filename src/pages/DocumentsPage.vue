@@ -57,19 +57,15 @@
     <div class="column q-py-md q-gutter-lg">
       <div class="box-highlights">
         <p class="q-ml-lg admin-title-2" style="font-size: 16px">Book Highlights</p>
-        <div class="row q-mx-md q-gutter-lg justify-start">
+        <div class="row docs-gap justify-start">
           <div v-for="(doc, index) in documentsStore.documents.slice(0, 3)" :key="index">
             <div class="row q-mb-lg">
-              <q-card class="my-card documentCard">
+              <q-card class="my-card documentCard" style="transform: rotate(-5deg)">
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
                 >
-                  <PdfPreview
-                    :pdfUrl="doc.file_url"
-                    class="document"
-                    style="transform: rotate(-5deg)"
-                  />
+                  <PdfPreview :pdfUrl="doc.file_url" class="document" />
                 </router-link>
               </q-card>
 
