@@ -142,7 +142,6 @@ async function logClick(itemId, itemType) {
     if (error) {
       console.error('Error logging click:', error)
     }
-    console.log(`Logged click for ${itemType} with ID: ${itemId}`)
   } catch (err) {
     console.error('Error logging click:', err)
   }
