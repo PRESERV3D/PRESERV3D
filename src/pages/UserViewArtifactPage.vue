@@ -55,7 +55,7 @@
                 <div class="action-icons">
                 <q-icon
                   :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
-                  class="action-btn bookmark-icon q-mr-md"
+                  class="bookmark-icon q-mr-md"
                   :class="{ 'bookmarked': model.bookmarked }"
                   size="sm"
                   @click.stop="toggleBookmark(model.id)"
@@ -63,7 +63,7 @@
 
                 <q-icon
                   :name="model.starred ? 'star' : 'star_border'"
-                  class="action-btn star-icon"
+                  class="star-icon"
                   :class="{ 'starred': model.starred }"
                   size="sm"
                   @click.stop="toggleStar(model.id)"
