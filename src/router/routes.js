@@ -51,8 +51,6 @@ const routes = [
       },
       {
         path: 'collections',
-        // name: 'user-collections',
-        // component: () => import('pages/CollectionsPage.vue'),
         name: 'collections',
         component: () => import('src/pages/CollectionsPage2.vue'),
         meta: { requiresAuth: true },
