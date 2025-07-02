@@ -2,29 +2,36 @@
   <q-page class="q-pa-md">
     <div class="page-header">
       <div class="q-mt-xs title">Collections</div>
-
       <div class="q-mb-md sub-font-3 row items-baseline justify-between">
         <div class="q-ml-sm">Archival Materials grouped into a collection.</div>
         <q-btn label="Add New" class="btn-add" no-caps @click="showDialog = true" />
       </div>
 
       <div class="box-collections">
-        <q-card
+        <div
           v-for="collection in placeholderCollections"
           :key="collection.id"
-          class="collectionCard"
+          class="collection-item"
         >
           <router-link :to="`/collections/${collection.id}`" class="collection-link">
-            <img :src="collection.image" :alt="collection.title" class="collection-image" />
+            <img
+              :src="collection.image"
+              :alt="collection.title"
+              class="book-cover-img"
+              style="object-fit: cover"
+            />
           </router-link>
 
           <div class="q-mt-md fade-title-container">
-            <div class="q-mt-md sub-font fade-title" style="color: black; font-weight: 800">
+            <div
+              class="sub-font fade-title"
+              style="color: black; font-weight: 600; margin-left: 3rem"
+            >
               {{ collection.title }}
               <div class="tooltip-box">{{ collection.title }}</div>
             </div>
           </div>
-        </q-card>
+        </div>
       </div>
 
       <q-dialog v-model="showDialog" persistent>
@@ -35,13 +42,13 @@
             </div>
           </q-card-section>
 
-          <q-card-section class="row q-col-gutter-md">
-            <div class="col-6">
+          <q-card-section class="row q-gutter-md" style="gap: 0.5rem">
+            <div class="col-auto q-ml-md">
               <div class="upload-box" @click="triggerFileInput">
                 <q-img
                   v-if="previewImage"
                   :src="previewImage"
-                  style="width: 100%; height: 14.5rem; object-fit: cover; border-radius: 10px"
+                  style="width: 100%; height: 14.5rem; object-fit: contain; border-radius: 10px"
                 />
                 <div v-else class="upload">
                   <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon" />
@@ -57,7 +64,7 @@
               </div>
             </div>
 
-            <div class="col-5">
+            <div class="col-5 q-ml-lg">
               <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
                 COLLECTION NAME
               </div>
