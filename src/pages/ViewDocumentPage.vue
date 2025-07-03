@@ -1,6 +1,10 @@
 <template>
   <q-page class="q-pa-md">
-    <div v-if="doc">
+    <div v-if="loading">
+      <q-spinner color="primary" size="lg" />
+    </div>
+
+    <div v-else-if="doc">
       <div class="row q-mt-xs q-gutter-md justify-center items-start">
         <div class="col-auto flex flex-column items-start q-mt-sm">
           <router-link to="/documents">Back</router-link>
@@ -54,26 +58,45 @@
         </div>
       </div>
     </div>
+
     <div v-else>
-      <q-spinner />
+      <q-banner type="negative">Document not found.</q-banner>
     </div>
   </q-page>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { computed } from 'vue'
-import { useDocumentsStore } from 'stores/documentsStore'
+import { supabase } from 'boot/supabase'
 import PdfPreview from 'components/PdfPreview.vue'
 
 const route = useRoute()
-const documentsStore = useDocumentsStore()
+const doc = ref(null)
+const loading = ref(true)
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)
-  const formatted = `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' })}`
-  return formatted
+  return `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })}`
 }
 
-const doc = computed(() => documentsStore.documents.find((doc) => doc.id == route.params.id))
+onMounted(async () => {
+  const { data, error } = await supabase
+    .from('documents_metadata')
+    .select('*')
+    .eq('id', route.params.id)
+    .single()
+
+  if (error || !data) {
+    console.error('Failed to fetch document:', error)
+    doc.value = null
+  } else {
+    doc.value = data
+  }
+
+  loading.value = false
+})
 </script>

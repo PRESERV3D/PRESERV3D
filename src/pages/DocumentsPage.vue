@@ -152,6 +152,7 @@
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
+                  @click="logClick(doc.id, 'document')"
                 >
                   <PdfPreview :pdfUrl="doc.file_url" class="document" />
                 </router-link>

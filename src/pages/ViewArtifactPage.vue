@@ -1,7 +1,12 @@
 <template>
   <q-page class="q-pa-md">
     <router-link to="/artifacts">Back</router-link>
-    <div v-if="model">
+
+    <div v-if="loading">
+      <q-spinner color="primary" size="lg" />
+    </div>
+
+    <div v-else-if="model">
       <model-viewer
         :src="model.file_url"
         camera-controls
@@ -25,28 +30,51 @@
       <p><strong>Uploaded At: </strong> {{ formatDate(model.uploaded_at) }}</p>
       <p><strong>Updated At: </strong> {{ formatDate(model.updated_at) }}</p>
     </div>
+
     <div v-else>
-      <q-spinner />
+      <q-banner type="negative">Artifact not found.</q-banner>
     </div>
   </q-page>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { computed } from 'vue'
+import { supabase } from 'boot/supabase'
 import { useModelStore } from 'stores/modelStore'
 import '@google/model-viewer'
 
 const route = useRoute()
+const model = ref(null)
+const loading = ref(true)
+
 const modelStore = useModelStore()
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)
-  const formatted = `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' })}`
-  return formatted
+  return `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })}`
 }
 
-const model = computed(() => modelStore.models.find((model) => model.id == route.params.id))
+onMounted(async () => {
+  const { data, error } = await supabase
+    .from('artifacts_metadata')
+    .select('*')
+    .eq('id', route.params.id)
+    .single()
 
-console.log('Model:', model)
+  if (error || !data) {
+    console.error('Artifact not found from Supabase:', error)
+    // Fallback to modelStore if Supabase fails
+    model.value = modelStore.models.find((m) => m.id == route.params.id) || null
+    console.log('Fallback Model from Store:', model.value)
+  } else {
+    model.value = data
+    console.log('Model from Supabase:', model.value)
+  }
+
+  loading.value = false
+})
 </script>
