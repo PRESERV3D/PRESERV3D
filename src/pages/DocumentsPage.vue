@@ -10,7 +10,13 @@
 
     <q-dialog v-model="showDialog" persistent>
       <q-card class="add-document-card">
-        <q-card-section class="box-upload-docu">
+        <q-card-section
+          class="box-upload-docu"
+          @dragover.prevent="onDragOver"
+          @dragleave.prevent="onDragLeave"
+          @drop.prevent="onFileDrop"
+          :class="{ 'drag-over': isDragging }"
+        >
           <q-img
             src="src/assets/img/drag-drop-icon.png"
             alt="Upload-Document"
@@ -28,6 +34,13 @@
             <div class="selected-document-name q-mt-md">
               {{ selectedFile.name }}
             </div>
+            <!-- Upload progress bar -->
+            <q-linear-progress
+              v-if="uploading"
+              :value="uploadProgress / 100"
+              color="primary"
+              class="q-mt-md full-width"
+            />
           </div>
           <input
             type="file"
@@ -40,7 +53,16 @@
 
         <q-card-actions class="row q-ml-lg justify-between items-center">
           <div></div>
-          <q-btn label="Upload" class="q-ml-xl q-mt-sm btn-save" @click="handleUpload" no-caps />
+          <q-btn
+            v-if="!uploading"
+            label="Upload"
+            class="q-ml-xl q-mt-sm btn-save"
+            @click="handleUpload"
+            no-caps
+          />
+
+          <q-spinner v-else color="primary" size="2em" class="q-ml-xl q-mt-sm" />
+
           <q-btn
             flat
             label="Cancel"
@@ -65,7 +87,7 @@
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
                 >
-                  <PdfPreview :pdfUrl="doc.file_url" class="document" />
+                  <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
                 </router-link>
                 <q-btn
                   icon="bookmark_border"
@@ -103,6 +125,46 @@
       <div class="box-category">
         <div class="q-pa-lg">
           <p class="admin-title-2" style="font-size: 16px; margin-top: 0">Category</p>
+          <div class="row q-col-gutter-sm items-center q-mb-md">
+            <q-select
+              filled
+              v-model="category"
+              :options="categoryOptions"
+              label="Category"
+              @update:model-value="applyFilters"
+              clearable
+              class="col-2"
+            />
+
+            <q-select
+              filled
+              v-model="author"
+              :options="authorOptions"
+              label="Author"
+              @update:model-value="applyFilters"
+              clearable
+              class="col-2"
+            />
+
+            <q-select
+              filled
+              v-model="date"
+              :options="dateOptions"
+              label="Year"
+              @update:model-value="applyFilters"
+              clearable
+              class="col-2"
+            />
+
+            <q-select
+              v-model="sortOption"
+              :options="sortOptions"
+              label="Sort by"
+              filled
+              @update:model-value="onSort"
+              class="col-3"
+            />
+          </div>
           <div class="row q-gutter-md">
             <q-btn
               label="All"
@@ -144,7 +206,7 @@
             <div
               v-for="(doc, i) in searchStore.query
                 ? searchStore.results
-                : documentsStore.documents.slice(0, 3)"
+                : documentsStore.filteredDocuments.slice(0, 3)"
               :key="i"
               class="card-wrapper"
             >
@@ -154,7 +216,7 @@
                   class="document-link"
                   @click="logClick(doc.id, 'document')"
                 >
-                  <PdfPreview :pdfUrl="doc.file_url" class="document" />
+                  <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
                 </router-link>
                 <q-btn
                   icon="bookmark_border"
@@ -235,9 +297,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useDocumentsStore } from 'stores/documentsStore'
-import PdfPreview from 'components/PdfPreview.vue'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
@@ -249,6 +310,15 @@ import { useSearchStore } from 'stores/searchStore'
 
 const searchStore = useSearchStore()
 const documentsStore = useDocumentsStore()
+
+const category = ref('')
+const author = ref('')
+const date = ref('')
+const sortOption = ref('Newest')
+const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
+const categoryOptions = ref([])
+const authorOptions = ref([])
+const dateOptions = ref([])
 
 const dialogOpen = ref(false)
 const selectedDocument = ref(null)
@@ -265,6 +335,31 @@ function showNotifyDialog(title, message) {
   notifyDialogTitle.value = title
   notifyDialogMessage.value = message
   notifyDialogOpen.value = true
+}
+
+function onSort() {
+  switch (sortOption.value) {
+    case 'Newest':
+      documentsStore.sortBy('uploaded_at', 'desc')
+      break
+    case 'Oldest':
+      documentsStore.sortBy('uploaded_at', 'asc')
+      break
+    case 'Title A-Z':
+      documentsStore.sortBy('title', 'asc')
+      break
+    case 'Title Z-A':
+      documentsStore.sortBy('title', 'desc')
+      break
+  }
+}
+
+function applyFilters() {
+  documentsStore.filterBy({
+    category: category.value,
+    author: author.value,
+    date: date.value,
+  })
 }
 
 async function logClick(itemId, itemType) {
@@ -297,7 +392,7 @@ const fetchAllDocuments = async () => {
   try {
     const { data, error } = await supabase
       .from('documents_metadata')
-      .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
+      .select('id, file_name, file_url, preview_url, metadata, uploaded_at, updated_at')
       .order('uploaded_at', { ascending: false })
 
     if (error) {
@@ -306,15 +401,76 @@ const fetchAllDocuments = async () => {
     }
 
     documentsStore.setDocuments(data)
+
+    // Extract unique author and date values for filters
+    const authors = new Set()
+    const years = new Set()
+    const categories = new Set()
+
+    data.forEach((doc) => {
+      if (doc.metadata?.author) {
+        // Support multiple authors split by comma
+        const authorList = doc.metadata.author.split(',').map((a) => a.trim())
+        authorList.forEach((a) => authors.add(a))
+      }
+
+      if (doc.metadata?.date) years.add(doc.metadata.date?.slice(0, 4)) // get year part
+
+      if (Array.isArray(doc.metadata?.categories)) {
+        doc.metadata.categories.forEach((cat) => categories.add(cat))
+      }
+    })
+
+    authorOptions.value = Array.from(authors)
+    categoryOptions.value = Array.from(categories)
+    dateOptions.value = Array.from(years).sort((a, b) => b - a)
   } catch (err) {
     console.error('Unexpected error while loading documents:', err)
   }
 }
 
+// for populating filter options
+watch(
+  () => documentsStore.filteredDocuments,
+  (docs) => {
+    const authors = new Set()
+    const years = new Set()
+    const categories = new Set()
+
+    docs.forEach((doc) => {
+      const meta = doc.metadata || {}
+
+      // Author
+      if (meta.author) {
+        meta.author.split(',').forEach((a) => authors.add(a.trim()))
+      }
+
+      // Date
+      if (meta.date) {
+        const year = meta.date.slice(0, 4)
+        years.add(year)
+      }
+
+      // Categories
+      if (Array.isArray(meta.categories)) {
+        meta.categories.forEach((cat) => categories.add(cat))
+      }
+    })
+
+    authorOptions.value = [...authors].sort()
+    categoryOptions.value = [...categories].sort()
+    dateOptions.value = [...years].sort((a, b) => b - a) // descending
+  },
+  { immediate: true },
+)
+
 const selectedFile = ref(null)
 const fileInput = ref(null)
+const isDragging = ref(false)
 const dialog = ref(false)
 const loading = ref(false)
+const uploading = ref(false)
+const uploadProgress = ref(0)
 const router = useRouter()
 
 const metadata = ref({
@@ -337,15 +493,38 @@ function handleFileChange(event) {
   const file = event.target.files[0]
   if (file) {
     selectedFile.value = file
-    console.log('Selected file:', file.name)
   } else {
     selectedFile.value = null
   }
 }
 
+function onDragOver() {
+  isDragging.value = true
+}
+
+function onDragLeave() {
+  isDragging.value = false
+}
+
+function onFileDrop(e) {
+  isDragging.value = false
+  const files = e.dataTransfer.files
+  if (files.length > 0 && files[0].type === 'application/pdf') {
+    selectedFile.value = files[0]
+  } else {
+    alert('Only PDF files are allowed.')
+  }
+}
+
+function sanitizeFileName(name) {
+  return name.replace(/[^\w.-]/g, '_') // Replace all non-alphanumeric/underscore/dot/dash characters with _
+}
+
 const handleUpload = async () => {
   const file = selectedFile.value
-  const fileName = file.name
+  const fileName = sanitizeFileName(file.name)
+  uploading.value = true
+  uploadProgress.value = 0
 
   if (!file || (!fileName.endsWith('.pdf') && !fileName.endsWith('.glb'))) {
     alert('Only .pdf and .glb files are allowed.')
@@ -364,11 +543,18 @@ const handleUpload = async () => {
       return
     }
 
+    // Fake progress bar animation
+    const progressInterval = setInterval(() => {
+      if (uploadProgress.value < 90) {
+        uploadProgress.value += 1
+      }
+    }, 200)
+
     // NLP processing for PDFs
     if (isPdf) {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('filename', file.name)
+      formData.append('filename', fileName)
 
       const response = await axios.post('http://localhost:8000/process-text', formData)
 
@@ -389,7 +575,11 @@ const handleUpload = async () => {
         nlpForm.append('raw_text', text)
 
         nlpMetadata = await axios.post('http://localhost:8000/process-text', nlpForm)
+      } else {
+        // Use the metadata returned from FastAPI
+        nlpMetadata = response.data
       }
+      console.log('NLP Metadata:', nlpMetadata)
     }
 
     // Upload to Supabase Storage
@@ -399,8 +589,41 @@ const handleUpload = async () => {
       contentType: isPdf ? 'application/pdf' : 'model/gltf-binary',
     })
 
+    const previewBlob = await (async () => {
+      const base64 = nlpMetadata.preview
+      const byteCharacters = atob(base64)
+      const byteNumbers = Array.from(byteCharacters).map((char) => char.charCodeAt(0))
+      const byteArray = new Uint8Array(byteNumbers)
+      return new Blob([byteArray], { type: 'image/png' })
+    })()
+
+    const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
+
+    const { data, error } = await supabase.storage
+      .from('pdf-previews')
+      .upload(previewFileName, previewBlob, {
+        contentType: 'image/png',
+        upsert: true,
+      })
+
+    if (error) {
+      console.error('Upload error:', error)
+      alert('Failed to upload preview.')
+      return
+    }
+
+    console.log('Upload successful:', data)
+
+    clearInterval(progressInterval)
+    uploadProgress.value = 100
+
     const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(`${fileName}`)
     const fileUrl = urlData.publicUrl
+
+    const { data: previewData } = supabase.storage
+      .from('pdf-previews')
+      .getPublicUrl(`${previewFileName}`)
+    const previewUrl = previewData.publicUrl
 
     if (uploadError) {
       console.error('Upload error:', uploadError)
@@ -416,7 +639,7 @@ const handleUpload = async () => {
       file_url: fileUrl,
       uploaded_at: new Date(),
       updated_at: new Date(),
-      ...(isPdf && { metadata: nlpMetadata }),
+      ...(isPdf && { preview_url: previewUrl, metadata: nlpMetadata }),
     }
 
     const { error: dbError } = await supabase.from(supabaseTable).insert([insertData])
@@ -425,17 +648,24 @@ const handleUpload = async () => {
       alert('Upload succeeded but metadata failed to save.')
       return
     }
+
     console.log('Metadata', nlpMetadata)
+
+    setTimeout(() => {
+      uploading.value = false
+      uploadProgress.value = 0
+    }, 1000)
+
     // Open metadata confirmation dialog
     metadata.value = {
       file_name: fileName,
       file_url: fileUrl,
-      title: nlpMetadata.data.title || '',
-      author: nlpMetadata.data.author || '',
-      date: nlpMetadata.data.date || '',
-      summary: nlpMetadata.data.summary || '',
-      keywords: nlpMetadata.data.keywords || [],
-      categories: nlpMetadata.data.categories || [],
+      title: nlpMetadata.title || '',
+      author: nlpMetadata.author || '',
+      date: nlpMetadata.date || '',
+      summary: nlpMetadata.summary || '',
+      keywords: nlpMetadata.keywords || [],
+      categories: nlpMetadata.categories || [],
     }
 
     dialog.value = true

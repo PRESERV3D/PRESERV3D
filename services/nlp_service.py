@@ -39,6 +39,7 @@ async def process_pdf(file: UploadFile = File(None), filename: str = Form(None),
         print("File:", file) 
         pdf_bytes = await file.read()
         result = extract_text(pdf_bytes, file.filename)
+        preview = pdf_preview(pdf_bytes, file.filename)
 
         # OCR fallback
         if isinstance(result, dict) and result.get("status") == "ocr_required":
@@ -56,6 +57,7 @@ async def process_pdf(file: UploadFile = File(None), filename: str = Form(None),
 
     return {
         "file_name": filename or file.filename,
+        "preview": preview,
         "title": metadata.get("title"),
         "author": metadata.get("author"),
         "date": metadata.get("date"),
@@ -63,6 +65,22 @@ async def process_pdf(file: UploadFile = File(None), filename: str = Form(None),
         "keywords": [kw for kw, _ in keywords],
         "categories": categories
     }
+    
+def pdf_preview(pdf_bytes, filename=None):
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    print("Generating PDF preview...")
+
+    if len(doc) == 0:
+        return {"error": "Empty PDF document"}
+
+    # Render first page to image
+    page = doc[0]
+    pix = page.get_pixmap(dpi=150)
+    img_bytes = pix.tobytes("png")
+
+    encoded = base64.b64encode(img_bytes).decode("utf-8")
+
+    return encoded if encoded else {"error": "Failed to generate preview"}
 
 def extract_text(pdf_bytes, filename=None):
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
