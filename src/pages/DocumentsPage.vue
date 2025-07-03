@@ -83,7 +83,7 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-
+    <!-- Book Highlights Section -->
     <div class="column q-py-md q-gutter-lg">
       <div class="box-highlights">
         <p class="q-ml-lg admin-title-2" style="font-size: 16px">Book Highlights</p>
@@ -99,11 +99,11 @@
                 </router-link>
                 <q-btn
                   icon="bookmark_border"
-                  flat
                   dense
                   size="sm"
-                  color="primary"
+                  class="btn-bm"
                   @click="openBookmarkDialog(doc, 'document')"
+                  flat
                 />
               </q-card>
 
@@ -117,7 +117,7 @@
                 <div class="sub-details">
                   {{ doc.metadata.summary }}
                 </div>
-                <div class="q-mt-xs q-mb-xs flex justify-center">
+                <div class="q-mt-xs q-mb-xs flex justify-evenly">
                   <router-link
                     :to="{ name: 'view-document', params: { id: doc.id } }"
                     @click="logClick(doc.id, 'document')"
@@ -130,57 +130,139 @@
           </div>
         </div>
       </div>
+
+      <!-- Box Category -->
       <div class="box-category">
         <div class="q-pa-lg">
           <p class="admin-title-2" style="font-size: 16px; margin-top: 0">Category</p>
-          <div class="row q-col-gutter-sm items-center q-mb-md">
-            <q-select
-              filled
-              v-model="author"
-              :options="authorOptions"
-              label="Author"
-              @update:model-value="applyFilters"
-              clearable
-              class="col-2"
-            />
-
-            <q-select
-              filled
-              v-model="date"
-              :options="dateOptions"
-              label="Year"
-              @update:model-value="applyFilters"
-              clearable
-              class="col-2"
-            />
-
-            <q-select
-              v-model="sortOption"
-              :options="sortOptions"
-              label="Sort by"
-              filled
-              @update:model-value="onSort"
-              class="col-3"
-            />
+          <div class="row q-col-gutter-md q-mb-md justify-between items-center">
+            <!-- Category Section -->
+            <div class="row q-gutter-sm col-auto">
+              <q-btn
+                v-for="cat in categoryOptions"
+                :key="cat"
+                :label="cat"
+                class="btn-1"
+                :class="{ active: selectedCategories.has(cat) }"
+                unelevated
+                @click="toggleCategory(cat)"
+              />
+            </div>
+            <div class="row q-gutter-sm col-auto">
+              <!-- Filter Section -->
+              <q-btn
+                flat
+                round
+                icon="filter_list"
+                class="filter-sort-btn"
+                @click="showFilterMenu = !showFilterMenu"
+              >
+                <q-menu
+                  v-model="showFilterMenu"
+                  anchor="bottom right"
+                  self="top left"
+                  style="width: 25.5rem"
+                >
+                  <div class="row q-pa-md">
+                    <!-- Authors Column (Left) -->
+                    <div class="col-7 q-pr-sm">
+                      <div class="sub-font-3 q-mb-sm">Authors</div>
+                      <q-scroll-area style="height: 12rem; max-height: 15rem">
+                        <q-list dense>
+                          <q-item
+                            v-for="authorOption in authorOptions"
+                            :key="authorOption"
+                            clickable
+                            class="sub-font-2"
+                            style="color: #000000"
+                            @click="toggleAuthor(authorOption)"
+                          >
+                            <q-item-section avatar>
+                              <q-checkbox
+                                :model-value="author === authorOption"
+                                @update:model-value="toggleAuthor(authorOption)"
+                              />
+                            </q-item-section>
+                            <q-item-section>{{ authorOption }}</q-item-section>
+                          </q-item>
+                        </q-list>
+                      </q-scroll-area>
+                      <!-- Clear Authors -->
+                      <q-btn
+                        v-if="author"
+                        flat
+                        dense
+                        color="primary"
+                        label="Clear Author"
+                        @click="clearAuthor"
+                        class="q-mt-xs sub-font-3 full-width"
+                      />
+                    </div>
+                    <!-- Years Column (Right) -->
+                    <div class="col-5">
+                      <div class="sub-font-3 q-mb-sm">Year</div>
+                      <q-scroll-area style="height: 12rem; max-height: 15rem">
+                        <q-list dense>
+                          <q-item
+                            v-for="dateOption in dateOptions"
+                            :key="dateOption"
+                            clickable
+                            class="sub-font-2"
+                            style="color: #000000"
+                            @click="toggleDate(dateOption)"
+                          >
+                            <q-item-section avatar>
+                              <q-checkbox
+                                :model-value="date === dateOption"
+                                @update:model-value="toggleDate(dateOption)"
+                              />
+                            </q-item-section>
+                            <q-item-section>{{ dateOption }}</q-item-section>
+                          </q-item>
+                        </q-list>
+                      </q-scroll-area>
+                      <!-- Clear Years -->
+                      <q-btn
+                        v-if="date"
+                        flat
+                        dense
+                        color="primary"
+                        label="Clear Year"
+                        @click="clearDate"
+                        class="q-mt-xs sub-font-3 full-width"
+                      />
+                    </div>
+                  </div>
+                </q-menu>
+              </q-btn>
+              <!-- Sort Section -->
+              <q-btn flat round icon="sort" class="filter-sort-btn">
+                <q-menu anchor="bottom right" self="top left" class="sort-menu">
+                  <q-list dense>
+                    <q-item
+                      v-for="option in sortOptions"
+                      :key="option"
+                      clickable
+                      v-close-popup
+                      @click="((sortOption = option), onSort(option))"
+                      :class="['sort-option-item', { 'selected-option': sortOption === option }]"
+                    >
+                      <q-item-section>{{ option }}</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-menu>
+              </q-btn>
+            </div>
           </div>
-          <div class="row q-gutter-md">
-            <q-btn
-              v-for="cat in categoryOptions"
-              :key="cat"
-              :label="cat"
-              class="btn-1"
-              :class="{ active: selectedCategories.has(cat) }"
-              unelevated
-              @click="toggleCategory(cat)"
-            />
-          </div>
+
+          <!-- Document in Categories -->
           <div class="row q-gutter-md q-mt-md justify-around">
             <div
               v-for="(doc, i) in searchStore.query
                 ? searchStore.results
-                : documentsStore.filteredDocuments.slice(0, 3)"
+                : documentsStore.filteredDocuments"
               :key="i"
-              class="card-wrapper"
+              class="card-wrapper-2"
             >
               <q-card class="my-card documentCard" rounded bordered>
                 <router-link
@@ -192,11 +274,11 @@
                 </router-link>
                 <q-btn
                   icon="bookmark_border"
-                  flat
                   dense
                   size="sm"
-                  color="primary"
+                  class="btn-bm"
                   @click="openBookmarkDialog(doc, 'document')"
+                  flat
                 />
               </q-card>
 
@@ -206,50 +288,66 @@
                   <div class="tooltip-box">{{ doc.metadata.title }}</div>
                 </div>
               </div>
-              <div class="q-mt-sm sub-font-2" style="color: black; font-weight: 200">
+              <div
+                class="q-mt-sm sub-font-2"
+                style="color: black; font-weight: 200; max-width: 10rem"
+              >
                 {{ doc.metadata.author }}
               </div>
 
               <!-- Bookmark Dialog -->
               <q-dialog v-model="dialogOpen">
-                <q-card style="min-width: 300px; max-width: 400px">
-                  <q-card-section>
-                    <div class="text-h6">Add to Collections</div>
+                <q-card class="add-to-collections">
+                  <q-card-section class="collection-header">
+                    <div class="sub-font-3" style="font-size: 18px; font-weight: 800">
+                      Choose a Collection
+                    </div>
                   </q-card-section>
-
-                  <q-separator />
-
-                  <q-card-section>
+                  <q-card-section class="collections-scroll-container">
                     <div v-if="userCollections.length > 0">
-                      <q-checkbox
+                      <div
                         v-for="collection in userCollections"
                         :key="collection.collection_id"
-                        v-model="selectedCollections"
-                        :val="collection.collection_id"
-                        :label="collection.collection_name"
-                        dense
-                        class="q-mb-sm"
-                      />
+                        class="q-py-sm flex items-center justify-between"
+                        style="
+                          font-family: 'Poppins', sans-serif;
+                          font-size: 16px;
+                          font-weight: 500;
+                        "
+                      >
+                        <span>{{ collection.collection_name }}</span>
+                        <q-checkbox
+                          v-model="selectedCollections"
+                          :val="collection.collection_id"
+                          dense
+                          color="primary"
+                        />
+                      </div>
                     </div>
+
                     <div v-else class="text-caption text-grey text-center">
                       You don’t have any collections yet.
                     </div>
                   </q-card-section>
 
-                  <q-card-actions align="right">
-                    <q-btn flat label="Cancel" v-close-popup @click="resetForm" />
+                  <q-card-actions class="collection-footer" align="center">
                     <q-btn label="Save" color="primary" @click="saveToSelectedCollections" />
+                    <q-btn flat label="Cancel" v-close-popup @click="resetForm" />
                   </q-card-actions>
                 </q-card>
               </q-dialog>
 
               <!-- Message Dialog -->
               <q-dialog v-model="notifyDialogOpen">
-                <q-card>
-                  <q-card-section class="text-h6">{{ notifyDialogTitle }}</q-card-section>
-                  <q-card-section>{{ notifyDialogMessage }}</q-card-section>
-                  <q-card-actions align="right">
-                    <q-btn flat label="OK" color="primary" v-close-popup />
+                <q-card class="sucess-add-to-collection">
+                  <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
+                    notifyDialogTitle
+                  }}</q-card-section>
+                  <q-card-section class="sub-font-3" style="font-weight: 400">{{
+                    notifyDialogMessage
+                  }}</q-card-section>
+                  <q-card-actions>
+                    <q-btn flat label="Close" class="btn-save" v-close-popup />
                   </q-card-actions>
                 </q-card>
               </q-dialog>
@@ -319,10 +417,10 @@ function onSort() {
       documentsStore.sortBy('uploaded_at', 'asc')
       break
     case 'Title A-Z':
-      documentsStore.sortBy('title', 'asc')
+      documentsStore.sortBy('title', 'desc')
       break
     case 'Title Z-A':
-      documentsStore.sortBy('title', 'desc')
+      documentsStore.sortBy('title', 'asc')
       break
   }
 }
@@ -334,6 +432,28 @@ function applyFilters() {
     date: date.value,
   })
 }
+
+//add-start
+function toggleAuthor(authorOption) {
+  author.value = authorOption
+  applyFilters()
+}
+
+function toggleDate(dateOption) {
+  date.value = dateOption
+  applyFilters()
+}
+
+function clearAuthor() {
+  author.value = ''
+  applyFilters()
+}
+
+function clearDate() {
+  date.value = ''
+  applyFilters()
+}
+//add -end
 
 function toggleCategory(cat) {
   if (cat === 'All') {

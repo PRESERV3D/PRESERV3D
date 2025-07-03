@@ -1,12 +1,11 @@
 <template>
   <q-page class="q-pa-md">
-
     <div class="layout-container">
       <div class="box-1 row items-center">
         <div class="col-7 q-gutter-xs">
           <p class="q-ml-xl admin-title">Discover Cultural Heritage in 3D & Digital Archives</p>
           <p class="q-ml-xl admin-subtitle">
-            Explore University artifacts, historic documents, and <br>
+            Explore University artifacts, historic documents, and <br />
             virtual museum exhibits.
           </p>
           <div class="q-ml-md q-gutter-lg">
@@ -23,108 +22,94 @@
         </div>
       </div>
 
-  <div class="box-2">
-  <p class="q-ml-lg admin-title-2">Recently Viewed</p>
-  <div class="q-px-md q-pb-md">
-    <div class="column q-gutter-xs">
-      <!-- Recently Viewed Item 1 -->
-      <div class="row items-center q-gutter-md recently-viewed-item">
-        <div class="circular-holder">
-          <q-img
-            src="src/assets/img/artifact1.png"
-            alt="Artifact 1"
-            class="circular-image"
-          />
-        </div>
-        <div class="col item-details">
-          <p class="artifact-name">PUP School Trophy</p>
-          <p class="view-info">Viewed 3 days ago</p>
-        </div>
-        <div class="action-icons">
-          <q-btn
-            flat
-            round
-            icon="visibility"
-            class="view-icon"
-            @click="viewArtifact('artifact1')"
-          />
-          <q-btn
-            flat
-            round
-            icon="star_border"
-            class="star-icon"
-            @click="toggleStar('artifact1')"
-          />
-        </div>
-      </div>
+      <div class="box-2">
+        <p class="q-ml-lg admin-title-2">Recently Viewed</p>
+        <div class="q-px-md q-pb-md">
+          <div class="column q-gutter-xs">
+            <!-- Recently Viewed Item 1 -->
+            <div class="row items-center q-gutter-md recently-viewed-item">
+              <div class="circular-holder">
+                <q-img src="src/assets/img/artifact1.png" alt="Artifact 1" class="circular-image" />
+              </div>
+              <div class="col item-details">
+                <p class="artifact-name">PUP School Trophy</p>
+                <p class="view-info">Viewed 3 days ago</p>
+              </div>
+              <div class="action-icons">
+                <q-btn
+                  flat
+                  round
+                  icon="visibility"
+                  class="view-icon"
+                  @click="viewArtifact('artifact1')"
+                />
+                <q-btn
+                  flat
+                  round
+                  icon="star_border"
+                  class="star-icon"
+                  @click="toggleStar('artifact1')"
+                />
+              </div>
+            </div>
 
-      <!-- Recently Viewed Item 2 -->
-      <div class="row items-center q-gutter-md recently-viewed-item">
-        <div class="circular-holder">
-          <q-img
-            src="src/assets/img/artifact2.png"
-            alt="Artifact 2"
-            class="circular-image"
-          />
-        </div>
-        <div class="col item-details">
-          <p class="artifact-name">PUP School Trophy</p>
-          <p class="view-info">Viewed 5 hours ago</p>
-        </div>
-        <div class="action-icons">
-          <q-btn
-            flat
-            round
-            icon="visibility"
-            class="view-icon"
-            @click="viewArtifact('artifact2')"
-          />
-          <q-btn
-            flat
-            round
-            icon="star_border"
-            class="star-icon"
-            @click="toggleStar('artifact2')"
-          />
-        </div>
-      </div>
+            <!-- Recently Viewed Item 2 -->
+            <div class="row items-center q-gutter-md recently-viewed-item">
+              <div class="circular-holder">
+                <q-img src="src/assets/img/artifact2.png" alt="Artifact 2" class="circular-image" />
+              </div>
+              <div class="col item-details">
+                <p class="artifact-name">PUP School Trophy</p>
+                <p class="view-info">Viewed 5 hours ago</p>
+              </div>
+              <div class="action-icons">
+                <q-btn
+                  flat
+                  round
+                  icon="visibility"
+                  class="view-icon"
+                  @click="viewArtifact('artifact2')"
+                />
+                <q-btn
+                  flat
+                  round
+                  icon="star_border"
+                  class="star-icon"
+                  @click="toggleStar('artifact2')"
+                />
+              </div>
+            </div>
 
-      <!-- Recently Viewed Item 3 -->
-      <div class="row items-center q-gutter-md recently-viewed-item">
-        <div class="circular-holder">
-          <q-img
-            src="src/assets/img/artifact3.png"
-            alt="Artifact 3"
-            class="circular-image"
-          />
-        </div>
-        <div class="col item-details">
-          <p class="artifact-name">PUP School Trophy</p>
-          <p class="view-info">Viewed 1 day ago</p>
-        </div>
-        <div class="action-icons">
-          <q-btn
-            flat
-            round
-            icon="visibility"
-            class="view-icon"
-            @click="viewArtifact('artifact3')"
-          />
-          <q-btn
-            flat
-            round
-            icon="star_border"
-            class="star-icon"
-            @click="toggleStar('artifact3')"
-          />
+            <!-- Recently Viewed Item 3 -->
+            <div class="row items-center q-gutter-md recently-viewed-item">
+              <div class="circular-holder">
+                <q-img src="src/assets/img/artifact3.png" alt="Artifact 3" class="circular-image" />
+              </div>
+              <div class="col item-details">
+                <p class="artifact-name">PUP School Trophy</p>
+                <p class="view-info">Viewed 1 day ago</p>
+              </div>
+              <div class="action-icons">
+                <q-btn
+                  flat
+                  round
+                  icon="visibility"
+                  class="view-icon"
+                  @click="viewArtifact('artifact3')"
+                />
+                <q-btn
+                  flat
+                  round
+                  icon="star_border"
+                  class="star-icon"
+                  @click="toggleStar('artifact3')"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
-    </div>
-
-
 
     <div class="layout-container q-my-lg">
       <div class="box-3 q-px-lg">
@@ -164,20 +149,22 @@
                     :to="{ name: 'view-artifact', params: { id: model.id } }"
                     class="artifact-title-link"
                   >
-                    <div class="text-subtitle2 artifact-title">{{ model.metadata?.title || model.file_name }}</div>
+                    <div class="text-subtitle2 artifact-title">
+                      {{ model.metadata?.title || model.file_name }}
+                    </div>
                   </router-link>
                   <div class="action-icons">
                     <q-icon
                       :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                       class="action-icon bookmark-icon"
-                      :class="{ 'bookmarked': model.bookmarked }"
+                      :class="{ bookmarked: model.bookmarked }"
                       size="18px"
                       @click.stop="toggleBookmark(model.id)"
                     />
                     <q-icon
                       :name="model.starred ? 'star' : 'star_border'"
                       class="action-icon star-icon"
-                      :class="{ 'starred': model.starred }"
+                      :class="{ starred: model.starred }"
                       size="18px"
                       @click.stop="toggleStar(model.id)"
                     />
@@ -190,7 +177,7 @@
       </div>
     </div>
 
-<!-- Collections Section -->
+    <!-- Collections Section -->
     <div class="layout-container q-my-lg">
       <div class="box-3 q-px-lg">
         <div class="row items-center justify-between q-mb-sm q-mt-sm">
@@ -220,7 +207,7 @@
                     v-for="option in filterOptions"
                     :key="option"
                     clickable
-                    @click="selectedFilter = option; showFilterMenu = false"
+                    @click="((selectedFilter = option), (showFilterMenu = false))"
                     :class="{ 'bg-grey-2': selectedFilter === option }"
                   >
                     <q-item-section>{{ option }}</q-item-section>
@@ -242,7 +229,7 @@
                     v-for="option in sortOptions"
                     :key="option"
                     clickable
-                    @click="selectedSort = option; showSortMenu = false"
+                    @click="((selectedSort = option), (showSortMenu = false))"
                     :class="{ 'bg-grey-2': selectedSort === option }"
                   >
                     <q-item-section>{{ option }}</q-item-section>
@@ -263,7 +250,11 @@
                   <div class="book-content" :class="{ 'has-image': collection.image }">
                     <!-- Show uploaded image as background if available -->
                     <div v-if="collection.image" class="book-image-overlay">
-                      <img :src="collection.image" :alt="collection.title" class="book-background-image" />
+                      <img
+                        :src="collection.image"
+                        :alt="collection.title"
+                        class="book-background-image"
+                      />
                     </div>
                     <!-- Show default icon if no image -->
                     <div v-else class="book-title-section">
@@ -287,12 +278,11 @@
 
         <!-- See All Link -->
         <div class="row justify-end q-pr-sm q-pb-sm">
-          <router-link to="/collections" class="see-all-link" style="margin-top: 0.5rem;">
+          <router-link to="/collections" class="see-all-link" style="margin-top: 0.5rem">
             See All
             <q-icon name="arrow_forward" size="16px" class="q-ml-xs" />
           </router-link>
         </div>
-
       </div>
     </div>
 
@@ -308,12 +298,7 @@
         <q-card-section class="row q-gutter-md" style="gap: 0.5rem">
           <div class="col-auto q-ml-md">
             <div class="upload-box" @click="triggerFileInput">
-              <img
-                v-if="previewImage"
-                :src="previewImage"
-                alt="Preview"
-                class="preview-image"
-              />
+              <img v-if="previewImage" :src="previewImage" alt="Preview" class="preview-image" />
               <div v-else class="upload">
                 <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon" />
                 <div>Upload Photo</div>
@@ -329,9 +314,7 @@
           </div>
 
           <div class="col-5 q-ml-lg">
-            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
-              COLLECTION NAME
-            </div>
+            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">COLLECTION NAME</div>
             <q-input
               v-model="newCollectionTitle"
               class="field-collection q-mb-md"
@@ -369,7 +352,6 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-
   </q-page>
 </template>
 
@@ -402,32 +384,32 @@ const collections = ref([
     id: 1,
     title: 'Collection 1',
     description: 'Default collection',
-    image: null
+    image: null,
   },
   {
     id: 2,
     title: 'Collection 2',
     description: 'Default collection',
-    image: null
+    image: null,
   },
   {
     id: 3,
     title: 'Collection 3',
     description: 'Default collection',
-    image: null
+    image: null,
   },
   {
     id: 4,
     title: 'Collection 4',
     description: 'Default collection',
-    image: null
+    image: null,
   },
   {
     id: 5,
     title: 'Collection 5',
     description: 'Default collection',
-    image: null
-  }
+    image: null,
+  },
 ])
 
 const filterOptions = ['All', 'Documents', 'PDFs', 'Images', 'Recent']
@@ -445,14 +427,14 @@ const viewArtifact = (artifactId) => {
 }
 
 const toggleStar = (modelId) => {
-  const model = modelStore.models.find(m => m.id === modelId)
+  const model = modelStore.models.find((m) => m.id === modelId)
   if (model) {
     model.starred = !model.starred
   }
 }
 
 const toggleBookmark = (modelId) => {
-  const model = modelStore.models.find(m => m.id === modelId)
+  const model = modelStore.models.find((m) => m.id === modelId)
   if (model) {
     model.bookmarked = !model.bookmarked
   }
@@ -475,7 +457,7 @@ const saveCollection = () => {
     id: Date.now(), // Use timestamp for unique ID
     title: newCollectionTitle.value,
     description: newCollectionDesc.value || 'No description provided',
-    image: previewImage.value // Store the uploaded image
+    image: previewImage.value, // Store the uploaded image
   }
 
   // Add to the beginning and keep only 5 collections
@@ -541,4 +523,3 @@ onMounted(async () => {
   }
 })
 </script>
-

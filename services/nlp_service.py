@@ -34,7 +34,7 @@ async def process_pdf(file: UploadFile = File(None), filename: str = Form(None),
 
     if raw_text:
         text = raw_text
-        print("Raw Text:", raw_text)    
+        print("Raw Text:", raw_text)   
     elif file:
         print("File:", file) 
         pdf_bytes = await file.read()

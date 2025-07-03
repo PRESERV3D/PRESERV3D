@@ -14,10 +14,6 @@
   font-weight: 600;
 }
 
-.card-wrapper {
-  perspective: 1000px;
-}
-
 .artifacts {
   width: 300px;
   height: 200px;
@@ -64,8 +60,13 @@
 }
 
 .card-wrapper {
+  perspective: 1000px;
   min-width: 0;
   flex: 1;
+}
+
+.card-wrapper-2 {
+  perspective: 1000px;
 }
 
 .card-wrapper:hover .my-card {
@@ -83,9 +84,12 @@
 }
 
 .documentCard {
-  width: 350px;
-  height: 500px;
-  overflow-y: scroll;
+  width: 12rem;
+  height: 15rem;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
+  border-radius: 10px;
 }
 
 .search {
@@ -318,7 +322,6 @@
   box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
 }
 
-
 .btn-1 {
   border-radius: 10px;
   background-color: rgba(136, 0, 0, 0.07);
@@ -335,7 +338,7 @@
 
 .box-3 {
   border-radius: 15px;
-  background: linear-gradient(127deg, #FFF 0.9%, #FFFCE9 88.33%);
+  background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
   flex: 2;
   min-width: 0;
   height: 35rem;
@@ -417,7 +420,7 @@
   height: 22rem;
   background-color: #000000;
   border-radius: 10px;
-  width: 100%; 
+  width: 100%;
 }
 
 .recent-card {
@@ -473,7 +476,7 @@
 .add-document-card {
   width: 100%;
   height: 20rem;
-  border-radius: 10px;
+  border-radius: 15px !important;
   background-color: #fbf4d0;
   padding: 1rem;
 }
@@ -483,7 +486,7 @@
   height: 14.5rem;
   background-color: transparent !important;
   border: 2px dashed #afafaf !important;
-  border-radius: 8px;
+  border-radius: 15px !important;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -570,21 +573,10 @@
 
 .box-view {
   position: relative;
-  padding: 15rem;
-  border-radius: 10px;
-  background-color: #ffffff;
-  width: auto !important;
-  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
-  z-index: 0;
-  margin-top: 0;
-}
-
-.box-view {
-  position: relative;
   padding: 2rem;
   border-radius: 10px;
   background-color: #ffffff;
-  width: 80%;
+  width: auto;
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
   z-index: 0;
   margin-top: 0;
@@ -739,7 +731,7 @@
 .add-collection-card {
   width: 32rem;
   height: 25.5rem;
-  border-radius: 10px;
+  border-radius: 15px !important;
   background-color: #fbf4d0;
   padding: 1rem;
 }
@@ -793,7 +785,7 @@
 }
 
 .btn-save {
-  width: 2rem;
+  width: 5rem;
   height: 1rem;
   border-radius: 5px;
   background-color: #880000;
@@ -1025,6 +1017,16 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  position: relative;
+}
+
+.circle-icon-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 25px; /* Make it much bigger */
+  z-index: 10;
 }
 
 .circular-image {
@@ -1119,7 +1121,6 @@
   color: #560505;
 }
 
-
 .title-row {
   display: flex;
   justify-content: space-between;
@@ -1135,7 +1136,6 @@
 .artifact-title-link:hover .artifact-title {
   color: #560505;
 }
-
 
 /* Filter and Sort Icon Buttons */
 .filter-sort-icon-btn {
@@ -1258,7 +1258,8 @@
 }
 
 /* See All Link and Filter/Sort Button Styles */
-.see-all-link, .filter-sort-btn {
+.see-all-link,
+.filter-sort-btn {
   font-family: 'Poppins', sans-serif;
   font-size: 14px;
   font-weight: 500;
@@ -1273,21 +1274,23 @@
   box-shadow: 0 2px 4px rgba(86, 5, 5, 0.15);
 }
 
-.see-all-link:hover, .filter-sort-btn:hover {
+.see-all-link:hover,
+.filter-sort-btn:hover {
   color: #ffffff;
   background-color: #0000005f;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(86, 5, 5, 0.2);
 }
 
-.see-all-link .q-icon, .filter-sort-btn .q-icon {
+.see-all-link .q-icon,
+.filter-sort-btn .q-icon {
   transition: transform 0.2s ease;
 }
 
-.see-all-link:hover .q-icon, .filter-sort-btn:hover .q-icon {
+.see-all-link:hover .q-icon,
+.filter-sort-btn:hover .q-icon {
   transform: translateX(2px);
 }
-
 
 /* Information icon overlay */
 .info-icon-overlay {
@@ -1325,7 +1328,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  border-radius: 0 20px 20px 0; 
+  border-radius: 0 20px 20px 0;
   overflow: hidden;
   z-index: 1;
 }
@@ -1339,10 +1342,12 @@
   bottom: 0;
   width: 20px; /* Width of the shadow effect */
   height: 100%;
-  background: linear-gradient(to right,
+  background: linear-gradient(
+    to right,
     rgba(0, 0, 0, 0.4) 0%,
     rgba(0, 0, 0, 0.2) 50%,
-    transparent 100%);
+    transparent 100%
+  );
   z-index: 2;
   border-top-left-radius: inherit;
   border-bottom-left-radius: inherit;
@@ -1555,4 +1560,132 @@
 .question-icon {
   width: 2rem;
   height: 2rem;
+}
+
+//
+
+.row-1 {
+  margin-left: 32rem;
+}
+
+.start-reading-btn {
+  background-color: #363636;
+  color: white;
+  border-radius: 20px;
+  padding: 1rem;
+  font-weight: 400;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  height: 2rem;
+  width: 10rem;
+  display: flex;
+  place-content: center;
+  align-items: center;
+}
+
+.btn-arrow-tilt {
+  width: 0.6rem;
+  height: 0.6rem;
+  object-fit: contain;
+}
+
+//
+
+.btn-bm {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  background-color: #880000;
+  border-radius: 50%;
+  color: white !important;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+//
+
+.add-to-collections {
+  width: 18rem;
+  height: 27rem;
+  border-radius: 15px !important;
+  background-color: #fbf4d0;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.collection-header {
+  border-bottom: 2px solid #e0dbc7;
+  flex-shrink: 0;
+  justify-items: center;
+}
+
+.collections-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 1rem;
+}
+
+.collection-footer {
+  padding: 1rem;
+  border-top: 2px solid #e0dbc7;
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+.sucess-add-to-collection {
+  width: 25rem;
+  height: 14rem;
+  border-radius: 15px !important;
+  background-color: #fbf4d0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.delete-notice {
+  width: 20rem;
+  height: 13rem;
+  border-radius: 15px !important;
+  background-color: #fbf4d0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+//sort and filter docu
+
+.sort-menu {
+  width: 8rem;
+  height: auto;
+  border-radius: 5px;
+  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+}
+
+.sort-option-item {
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+}
+
+.selected-option {
+  font-weight: 600;
+  background-color: #fbf4d0;
+  color: #000000;
+}
+
+//
+
+.back-button-top {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1000;
+  color: #880000;
 }

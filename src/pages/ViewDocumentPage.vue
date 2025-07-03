@@ -7,15 +7,21 @@
     <div v-else-if="doc">
       <div class="row q-mt-xs q-gutter-md justify-center items-start">
         <div class="col-auto flex flex-column items-start q-mt-sm">
-          <router-link to="/documents">Back</router-link>
+          <router-link to="/documents" class="back-button-top">
+            <q-btn flat icon="arrow_back" label="Back to Documents" />
+          </router-link>
         </div>
         <div class="col-auto">
-          <q-img :src="doc.preview_url" class="document-img" style="z-index: 1" />
+          <q-img
+            :src="doc.preview_url"
+            class="document-img"
+            style="margin-top: 1.5rem; z-index: 1"
+          />
         </div>
         <div class="col">
           <h2 class="document-title">{{ doc.metadata.title }}</h2>
           <div class="row items-center justify-center">
-            <p class="sub-font-3" style="font-size: 18px; margin: 0">
+            <p class="sub-font-3" style="font-size: 16px; margin: 0; max-width: 25rem">
               {{ doc.metadata.author }}
             </p>
             <div class="edit-delete-btns row q-gutter-sm">
@@ -24,6 +30,7 @@
               <q-btn label="Delete" class="actions" no-caps flat @click="showDialog = true" />
             </div>
 
+            <!-- Confirmation Dialog      -->
             <q-dialog v-model="showDialog" persistent>
               <q-card class="confirmation-delete">
                 <q-card-section class="column items-center">
@@ -37,7 +44,7 @@
                   </div>
                 </q-card-section>
                 <q-card-actions align="center">
-                  <q-btn label="Yes" class="btn-save" flat @click="showDialog = false" />
+                  <q-btn label="Yes" class="btn-save" flat @click="handleDelete" />
                   <q-btn
                     flat
                     label="No"
@@ -45,7 +52,6 @@
                     style="color: #000000"
                     v-close-popup
                     no-caps
-                    @click="handleCancel"
                   />
                 </q-card-actions>
               </q-card>
@@ -56,6 +62,16 @@
 
       <div class="preview-container">
         <div class="box-view">
+          <div class="row-1">
+            <q-btn class="start-reading-btn" no-caps>
+              Start Reading
+              <img
+                src="src/assets/img/arrow-tilt.png"
+                alt="Start Reading"
+                class="q-ml-sm btn-arrow-tilt"
+              />
+            </q-btn>
+          </div>
           <div class="row">
             <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
             <div class="tags">
@@ -112,13 +128,19 @@ const loading = ref(true)
 const showDialog = ref(false)
 const dialog = ref(false)
 const metadata = ref(null)
+
 async function handleEdit() {
-  metadata.value = { ...doc.value.metadata }
+  metadata.value = {
+    ...doc.value.metadata,
+    file_name: doc.value.file_name,
+  }
+
   dialog.value = true
 }
 
 async function saveMetadata(newMetadata) {
   try {
+    console.log(newMetadata.metadata)
     const { error } = await supabase
       .from('documents_metadata')
       .update({
@@ -140,11 +162,37 @@ async function saveMetadata(newMetadata) {
     } else {
       alert('Metadata saved successfully!')
       dialog.value = false
-      router.push({ name: 'dashboard' })
+
+      location.reload()
     }
   } catch (err) {
     console.error('Error saving metadata:', err)
     alert('Unexpected error occurred.')
+  }
+}
+
+async function handleDelete() {
+  try {
+    console.log('Trying to delete ID:', route.params.id)
+
+    const { data, error } = await supabase
+      .from('documents_metadata')
+      .delete()
+      .eq('id', route.params.id)
+
+    console.log(data)
+
+    if (error) {
+      console.error('Delete error:', error)
+      alert('Failed to delete the document.')
+    } else {
+      alert('Document deleted successfully.')
+      showDialog.value = false
+      router.push({ name: 'documents' })
+    }
+  } catch (err) {
+    console.error('Unexpected error during delete:', err)
+    alert('An unexpected error occurred.')
   }
 }
 

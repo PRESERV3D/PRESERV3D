@@ -46,6 +46,7 @@
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="text-primary q-px-sm"
+                  @click="logClick(doc.id, 'document')"
                 >
                   View Document
                 </router-link>
@@ -98,6 +99,7 @@
                   <router-link
                     :to="{ name: 'view-artifact', params: { id: model.id } }"
                     class="text-primary"
+                    @click="logClick(model.id, 'artifact')"
                   >
                     View Artifact
                   </router-link>
@@ -155,26 +157,32 @@
     </q-dialog>
 
     <!-- Delete Confirm Dialog -->
-    <q-dialog v-model="confirmDeleteOpen">
-      <q-card>
-        <q-card-section class="text-h6">Delete Collection</q-card-section>
-        <q-card-section>
-          Are you sure you want to delete the collection "{{ collection.collection_name }}"?
+    <q-dialog v-model="confirmDeleteOpen" persistent>
+      <q-card class="confirmation-delete">
+        <q-card-section class="column items-center">
+          <q-img src="src/assets/img/conf-delete.png" alt="question icon" class="question-icon" />
+          <div class="q-mt-md sub-font" style="color: #000000">
+            Are you sure you want to delete the collection "{{ collection.collection_name }}"?
+          </div>
         </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn label="Delete" color="negative" @click="deleteCollection" />
+        <q-card-actions align="center">
+          <q-btn label="Yes" class="btn-save" flat @click="deleteCollection" />
+          <q-btn flat label="No" class="sub-font-2" style="color: #000000" v-close-popup no-caps />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
     <!-- Message Dialog -->
     <q-dialog v-model="messageDialogOpen">
-      <q-card>
-        <q-card-section class="text-h6">{{ messageDialogTitle }}</q-card-section>
-        <q-card-section>{{ messageDialogContent }}</q-card-section>
+      <q-card class="delete-notice">
+        <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
+          messageDialogTitle
+        }}</q-card-section>
+        <q-card-section class="sub-font-3" style="font-weight: 400">{{
+          messageDialogContent
+        }}</q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="OK" color="primary" @click="handleMessageDialogClose" />
+          <q-btn flat label="Close" class="btn-save" @click="handleMessageDialogClose" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -263,6 +271,31 @@ async function fetchCollectionItems() {
       .in('id', artIds)
 
     artifacts.value = (arts || []).map((art) => ({ ...art, bookmarked: true }))
+  }
+}
+
+async function logClick(itemId, itemType) {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (authError || !userId) {
+    console.error('Auth error logging click:', authError)
+    return
+  }
+
+  try {
+    const { error } = await supabase.from('user_activity_log').insert({
+      user_id: userId,
+      item_id: itemId,
+      item_type: itemType,
+      clicked_at: new Date().toISOString(),
+    })
+
+    if (error) {
+      console.error('Error logging click:', error)
+    }
+  } catch (err) {
+    console.error('Error logging click:', err)
   }
 }
 
