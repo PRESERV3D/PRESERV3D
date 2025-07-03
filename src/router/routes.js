@@ -56,12 +56,12 @@ const routes = [
         component: () => import('src/pages/CollectionsPage.vue'),
         meta: { requiresAuth: true },
       },
-      {
-        path: 'collections2',
-        name: 'collections2',
-        component: () => import('src/pages/CollectionsPage2.vue'),
-        meta: { requiresAuth: true, allowedRoles: ['user'] },
-      },
+      // {
+      //   path: 'collections2',
+      //   name: 'collections2',
+      //   component: () => import('src/pages/CollectionsPage2.vue'),
+      //   meta: { requiresAuth: true, allowedRoles: ['user'] },
+      // },
       {
         path: 'collection/:id',
         component: () => import('pages/CollectionDetailsPage.vue'),

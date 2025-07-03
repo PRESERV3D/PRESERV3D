@@ -10,14 +10,42 @@
         </div>
         <div class="col">
           <h2 class="document-title">{{ doc.metadata.title }}</h2>
-          <div class="row items-baseline">
-            <p class="sub-font-3" style="font-size: 18px; margin-left: 0.5rem">
+          <div class="row items-center justify-center">
+            <p class="sub-font-3" style="font-size: 18px; margin: 0">
               {{ doc.metadata.author }}
             </p>
-            <div class="edit-delete-btns">
-              <p class="sub-font-5" style="font-size: 14px">Edit</p>
-              <p class="sub-font-5" style="font-size: 14px">Delete</p>
+            <div class="edit-delete-btns row q-gutter-sm">
+              <q-btn label="Edit" class="actions" no-caps flat @click="handleEdit" />
+
+              <q-btn label="Delete" class="actions" no-caps flat @click="showDialog = true" />
             </div>
+
+            <q-dialog v-model="showDialog" persistent>
+              <q-card class="confirmation-delete">
+                <q-card-section class="column items-center">
+                  <q-img
+                    src="src/assets/img/conf-delete.png"
+                    alt="question icon"
+                    class="question-icon"
+                  />
+                  <div class="q-mt-md sub-font" style="color: #000000">
+                    Are you sure you want to delete this?
+                  </div>
+                </q-card-section>
+                <q-card-actions align="center">
+                  <q-btn label="Yes" class="btn-save" flat @click="showDialog = false" />
+                  <q-btn
+                    flat
+                    label="No"
+                    class="sub-font-2"
+                    style="color: #000000"
+                    v-close-popup
+                    no-caps
+                    @click="handleCancel"
+                  />
+                </q-card-actions>
+              </q-card>
+            </q-dialog>
           </div>
         </div>
       </div>
@@ -46,7 +74,6 @@
               <div class="font-label">
                 <p><strong>Uploaded At:</strong> {{ formatDate(doc.uploaded_at) }}</p>
                 <p><strong>Updated At:</strong> {{ formatDate(doc.updated_at) }}</p>
-                <!-- <p><strong>Modified By:</strong>{{ doc.metadata.modified_by }}</p> -->
                 <p><strong>Date:</strong> {{ doc.metadata.date }}</p>
               </div>
             </div>
@@ -57,6 +84,12 @@
     <div v-else>
       <q-spinner />
     </div>
+    <ConfirmMetadata
+      v-model="dialog"
+      :metadata="metadata"
+      @confirm="saveMetadata"
+      @cancel="handleCancelMetadata"
+    />
   </q-page>
 </template>
 
@@ -65,9 +98,53 @@ import { useRoute } from 'vue-router'
 import { computed } from 'vue'
 import { useDocumentsStore } from 'stores/documentsStore'
 import PdfPreview from 'components/PdfPreview.vue'
+import { ref } from 'vue'
+import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+import { supabase } from 'boot/supabase'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const route = useRoute()
 const documentsStore = useDocumentsStore()
+const showDialog = ref(false)
+
+const dialog = ref(false)
+const metadata = ref(null)
+async function handleEdit() {
+  metadata.value = { ...doc.value.metadata }
+  dialog.value = true
+}
+
+async function saveMetadata(newMetadata) {
+  try {
+    const { error } = await supabase
+      .from('documents_metadata')
+      .update({
+        metadata: {
+          title: newMetadata.title,
+          author: newMetadata.author,
+          date: newMetadata.date,
+          summary: newMetadata.summary,
+          keywords: newMetadata.keywords,
+          categories: newMetadata.categories,
+        },
+        updated_at: new Date(),
+      })
+      .eq('file_name', newMetadata.file_name)
+
+    if (error) {
+      console.error('Failed to update metadata:', error)
+      alert('Failed to update metadata.')
+    } else {
+      alert('Metadata saved successfully!')
+      dialog.value = false
+      router.push({ name: 'dashboard' })
+    }
+  } catch (err) {
+    console.error('Error saving metadata:', err)
+    alert('Unexpected error occurred.')
+  }
+}
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)
