@@ -319,10 +319,10 @@ function onSort() {
       documentsStore.sortBy('uploaded_at', 'asc')
       break
     case 'Title A-Z':
-      documentsStore.sortBy('title', 'asc')
+      documentsStore.sortBy('title', 'desc')
       break
     case 'Title Z-A':
-      documentsStore.sortBy('title', 'desc')
+      documentsStore.sortBy('title', 'asc')
       break
   }
 }

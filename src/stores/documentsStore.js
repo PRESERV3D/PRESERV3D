@@ -13,20 +13,31 @@ export const useDocumentsStore = defineStore('documentsStore', {
     addDocument(doc) {
       this.documents.push(doc)
     },
-    sortBy(field, order = 'asc') {
+    sortBy(field, order) {
+      this.filteredDocuments = [...this.documents]
+
       const getValue = (doc) => {
-        if (field === 'title') return doc.metadata.title.toLowerCase() || ''
-        if (field === 'uploaded_at') return new Date(doc.uploaded_at)
+        if (field === 'title') {
+          return (doc.metadata?.title || '').trim().toLowerCase()
+        }
+        if (field === 'uploaded_at') {
+          return new Date(doc.uploaded_at || 0)
+        }
         return doc[field]
       }
 
-      this.filteredDocuments = [...this.filteredDocuments].sort((a, b) => {
+      this.filteredDocuments.sort((a, b) => {
         const valA = getValue(a)
         const valB = getValue(b)
 
-        if (valA < valB) return order === 'asc' ? -1 : 1
-        if (valA > valB) return order === 'desc' ? 1 : -1
-        return 0
+        if (field === 'title') {
+          return (
+            valA.localeCompare(valB, undefined, { sensitivity: 'base' }) *
+            (order === 'desc' ? 1 : -1)
+          )
+        } else if (field === 'uploaded_at') {
+          return (valA - valB) * (order === 'asc' ? 1 : -1)
+        }
       })
     },
     filterBy({ category, author, date }) {
