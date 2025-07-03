@@ -24,6 +24,7 @@
               <q-btn label="Delete" class="actions" no-caps flat @click="showDialog = true" />
             </div>
 
+            <!-- Confirmation Dialog      -->
             <q-dialog v-model="showDialog" persistent>
               <q-card class="confirmation-delete">
                 <q-card-section class="column items-center">
@@ -45,7 +46,6 @@
                     style="color: #000000"
                     v-close-popup
                     no-caps
-                    @click="handleCancel"
                   />
                 </q-card-actions>
               </q-card>
@@ -56,6 +56,16 @@
 
       <div class="preview-container">
         <div class="box-view">
+          <div class="row-1">
+            <q-btn class="start-reading-btn" no-caps>
+              Start Reading
+              <img
+                src="src/assets/img/arrow-tilt.png"
+                alt="Start Reading"
+                class="q-ml-sm btn-arrow-tilt"
+              />
+            </q-btn>
+          </div>
           <div class="row">
             <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
             <div class="tags">
