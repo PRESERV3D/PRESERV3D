@@ -287,7 +287,7 @@
 
         <!-- See All Link -->
         <div class="row justify-end q-pr-sm q-pb-sm">
-          <router-link to="/collections" class="see-all-link" style="margin-top: 0.5rem;">
+          <router-link to="/collections" class="see-all-link" style="margin-top: -0.5rem;">
             See All
             <q-icon name="arrow_forward" size="16px" class="q-ml-xs" />
           </router-link>
