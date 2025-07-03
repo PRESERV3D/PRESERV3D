@@ -37,7 +37,7 @@
                   </div>
                 </q-card-section>
                 <q-card-actions align="center">
-                  <q-btn label="Yes" class="btn-save" flat @click="showDialog = false" />
+                  <q-btn label="Yes" class="btn-save" flat @click="handleDelete" />
                   <q-btn
                     flat
                     label="No"
@@ -103,7 +103,9 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const route = useRoute()
 const doc = ref(null)
 const loading = ref(true)
@@ -150,6 +152,31 @@ async function saveMetadata(newMetadata) {
   } catch (err) {
     console.error('Error saving metadata:', err)
     alert('Unexpected error occurred.')
+  }
+}
+
+async function handleDelete() {
+  try {
+    console.log('Trying to delete ID:', route.params.id)
+
+    const { data, error } = await supabase
+      .from('documents_metadata')
+      .delete()
+      .eq('id', route.params.id)
+
+    console.log(data)
+
+    if (error) {
+      console.error('Delete error:', error)
+      alert('Failed to delete the document.')
+    } else {
+      alert('Document deleted successfully.')
+      showDialog.value = false
+      router.push({ name: 'documents' })
+    }
+  } catch (err) {
+    console.error('Unexpected error during delete:', err)
+    alert('An unexpected error occurred.')
   }
 }
 

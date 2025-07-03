@@ -83,9 +83,12 @@
 }
 
 .documentCard {
-  width: 350px;
-  height: 500px;
-  overflow-y: scroll;
+  width: 12rem;
+  height: 15rem;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
+  border-radius: 10px;
 }
 
 .search {
@@ -318,7 +321,6 @@
   box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
 }
 
-
 .btn-1 {
   border-radius: 10px;
   background-color: rgba(136, 0, 0, 0.07);
@@ -335,7 +337,7 @@
 
 .box-3 {
   border-radius: 15px;
-  background: linear-gradient(127deg, #FFF 0.9%, #FFFCE9 88.33%);
+  background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
   flex: 2;
   min-width: 0;
   height: 35rem;
@@ -417,7 +419,7 @@
   height: 22rem;
   background-color: #000000;
   border-radius: 10px;
-  width: 100%; 
+  width: 100%;
 }
 
 .recent-card {
@@ -1119,7 +1121,6 @@
   color: #560505;
 }
 
-
 .title-row {
   display: flex;
   justify-content: space-between;
@@ -1135,7 +1136,6 @@
 .artifact-title-link:hover .artifact-title {
   color: #560505;
 }
-
 
 /* Filter and Sort Icon Buttons */
 .filter-sort-icon-btn {
@@ -1258,7 +1258,8 @@
 }
 
 /* See All Link and Filter/Sort Button Styles */
-.see-all-link, .filter-sort-btn {
+.see-all-link,
+.filter-sort-btn {
   font-family: 'Poppins', sans-serif;
   font-size: 14px;
   font-weight: 500;
@@ -1273,21 +1274,23 @@
   box-shadow: 0 2px 4px rgba(86, 5, 5, 0.15);
 }
 
-.see-all-link:hover, .filter-sort-btn:hover {
+.see-all-link:hover,
+.filter-sort-btn:hover {
   color: #ffffff;
   background-color: #0000005f;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(86, 5, 5, 0.2);
 }
 
-.see-all-link .q-icon, .filter-sort-btn .q-icon {
+.see-all-link .q-icon,
+.filter-sort-btn .q-icon {
   transition: transform 0.2s ease;
 }
 
-.see-all-link:hover .q-icon, .filter-sort-btn:hover .q-icon {
+.see-all-link:hover .q-icon,
+.filter-sort-btn:hover .q-icon {
   transform: translateX(2px);
 }
-
 
 /* Information icon overlay */
 .info-icon-overlay {
@@ -1325,7 +1328,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  border-radius: 0 20px 20px 0; 
+  border-radius: 0 20px 20px 0;
   overflow: hidden;
   z-index: 1;
 }
@@ -1339,10 +1342,12 @@
   bottom: 0;
   width: 20px; /* Width of the shadow effect */
   height: 100%;
-  background: linear-gradient(to right,
+  background: linear-gradient(
+    to right,
     rgba(0, 0, 0, 0.4) 0%,
     rgba(0, 0, 0, 0.2) 50%,
-    transparent 100%);
+    transparent 100%
+  );
   z-index: 2;
   border-top-left-radius: inherit;
   border-bottom-left-radius: inherit;
