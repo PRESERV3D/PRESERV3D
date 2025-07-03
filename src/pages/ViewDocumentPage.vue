@@ -21,7 +21,7 @@
         <div class="col">
           <h2 class="document-title">{{ doc.metadata.title }}</h2>
           <div class="row items-center justify-center">
-            <p class="sub-font-3" style="font-size: 18px; margin: 0">
+            <p class="sub-font-3" style="font-size: 16px; margin: 0; max-width: 25rem">
               {{ doc.metadata.author }}
             </p>
             <div class="edit-delete-btns row q-gutter-sm">

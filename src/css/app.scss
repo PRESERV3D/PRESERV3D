@@ -65,6 +65,10 @@
   flex: 1;
 }
 
+.card-wrapper-2 {
+  perspective: 1000px;
+}
+
 .card-wrapper:hover .my-card {
   transform: scale(1.012);
 }

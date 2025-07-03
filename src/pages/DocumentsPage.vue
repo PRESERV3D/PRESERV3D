@@ -83,7 +83,7 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-
+    <!-- Book Highlights Section -->
     <div class="column q-py-md q-gutter-lg">
       <div class="box-highlights">
         <p class="q-ml-lg admin-title-2" style="font-size: 16px">Book Highlights</p>
@@ -256,13 +256,13 @@
           </div>
 
           <!-- Document in Categories -->
-          <div class="row q-ml-lg q-mt-md justify-start">
+          <div class="row q-gutter-md q-mt-md justify-around">
             <div
               v-for="(doc, i) in searchStore.query
                 ? searchStore.results
                 : documentsStore.filteredDocuments"
               :key="i"
-              class="card-wrapper"
+              class="card-wrapper-2"
             >
               <q-card class="my-card documentCard" rounded bordered>
                 <router-link
@@ -288,7 +288,10 @@
                   <div class="tooltip-box">{{ doc.metadata.title }}</div>
                 </div>
               </div>
-              <div class="q-mt-sm sub-font-2" style="color: black; font-weight: 200">
+              <div
+                class="q-mt-sm sub-font-2"
+                style="color: black; font-weight: 200; max-width: 10rem"
+              >
                 {{ doc.metadata.author }}
               </div>
 
