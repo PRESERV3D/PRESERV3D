@@ -1,11 +1,5 @@
 <template>
   <q-page class="q-pa-md">
-    <!-- Header -->
-    <div>
-      <p v-if="userStore.profile">Hello, {{ userStore.profile.first_name }}</p>
-      <p v-if="userStore.profile?.role === 'admin'">(Admin Access)</p>
-    </div>
-
     <!-- Recently Viewed  -->
     <div class="row justify-end q-mb-md">
       <div class="col-12 col-md-4">
@@ -182,7 +176,6 @@
 import { ref, onMounted } from 'vue'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
-import { useUserStore } from 'src/stores/user'
 
 const router = useRouter()
 const user = ref({ first_name: '' })
@@ -194,7 +187,6 @@ const previewImage = ref(null)
 const newCollectionTitle = ref('')
 const newCollectionDesc = ref('')
 const newCollection = ref({ coverFile: null })
-const userStore = useUserStore()
 const recentItems = ref([])
 
 onMounted(async () => {
