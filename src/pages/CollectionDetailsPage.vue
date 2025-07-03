@@ -38,7 +38,7 @@
           <div v-if="documents.length" class="row q-gutter-md q-mt-md">
             <div v-for="(doc, i) in documents" :key="i" class="card-wrapper">
               <q-card class="my-card documentCard" rounded bordered>
-                <PdfPreview :pdfUrl="doc.file_url" class="document" />
+                <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
                 <div class="metadata q-px-sm">
                   <h6>{{ doc.metadata?.title || 'Untitled' }}</h6>
                   <p class="q-mb-sm">Author: {{ doc.metadata?.author || 'Unknown' }}</p>
@@ -186,7 +186,6 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { uid } from 'quasar'
-import PdfPreview from 'components/PdfPreview.vue'
 import '@google/model-viewer'
 
 const route = useRoute()

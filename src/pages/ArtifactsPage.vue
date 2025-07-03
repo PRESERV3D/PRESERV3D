@@ -5,9 +5,49 @@
       <h5 class="q-mt-xs q-mb-lg">Lorem ipsum dolor sit, amet consectetur adipisicing elit.</h5>
     </div>
 
+    <div class="row q-col-gutter-sm items-center q-mb-md">
+      <q-select
+        filled
+        v-model="category"
+        :options="categoryOptions"
+        label="Category"
+        @update:model-value="applyFilters"
+        clearable
+        class="col-2"
+      />
+
+      <q-select
+        filled
+        v-model="author"
+        :options="authorOptions"
+        label="Author"
+        @update:model-value="applyFilters"
+        clearable
+        class="col-2"
+      />
+
+      <q-select
+        filled
+        v-model="date"
+        :options="dateOptions"
+        label="Year"
+        @update:model-value="applyFilters"
+        clearable
+        class="col-2"
+      />
+
+      <q-select
+        v-model="sortOption"
+        :options="sortOptions"
+        label="Sort by"
+        filled
+        @update:model-value="onSort"
+        class="col-3"
+      />
+    </div>
     <div class="row q-gutter-md q-mt-md">
       <div
-        v-for="(model, i) in searchStore.query ? searchStore.results : modelStore.models"
+        v-for="(model, i) in searchStore.query ? searchStore.results : modelStore.filteredModels"
         :key="i"
         class="card-wrapper"
       >
@@ -96,7 +136,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useModelStore } from 'stores/modelStore'
 import { useSearchStore } from 'stores/searchStore'
 import { supabase } from 'boot/supabase'
@@ -104,6 +144,15 @@ import '@google/model-viewer'
 
 const modelStore = useModelStore()
 const searchStore = useSearchStore()
+
+const category = ref('')
+const author = ref('')
+const date = ref('')
+const sortOption = ref('Newest')
+const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
+const categoryOptions = ref([])
+const authorOptions = ref([])
+const dateOptions = ref([])
 
 const dialogOpen = ref(false)
 const selectedModel = ref(null)
@@ -120,6 +169,31 @@ function showNotifyDialog(title, message) {
   notifyDialogTitle.value = title
   notifyDialogMessage.value = message
   notifyDialogOpen.value = true
+}
+
+function onSort() {
+  switch (sortOption.value) {
+    case 'Newest':
+      modelStore.sortBy('uploaded_at', 'desc')
+      break
+    case 'Oldest':
+      modelStore.sortBy('uploaded_at', 'asc')
+      break
+    case 'Title A-Z':
+      modelStore.sortBy('title', 'asc')
+      break
+    case 'Title Z-A':
+      modelStore.sortBy('title', 'desc')
+      break
+  }
+}
+
+function applyFilters() {
+  modelStore.filterBy({
+    category: category.value,
+    author: author.value,
+    date: date.value,
+  })
 }
 
 async function logClick(itemId, itemType) {
@@ -157,11 +231,69 @@ const fetchAllArtifacts = async () => {
 
     if (!error) {
       modelStore.setModels(data)
+
+      // Extract unique author and date values for filters
+      const authors = new Set()
+      const years = new Set()
+      const categories = new Set()
+
+      data.forEach((model) => {
+        if (model.metadata?.author) {
+          // Support multiple authors split by comma
+          const authorList = model.metadata.author.split(',').map((a) => a.trim())
+          authorList.forEach((a) => authors.add(a))
+        }
+
+        if (model.metadata?.date) years.add(model.metadata.date?.slice(0, 4)) // get year part
+
+        if (Array.isArray(model.metadata?.categories)) {
+          model.metadata.categories.forEach((cat) => categories.add(cat))
+        }
+      })
+
+      authorOptions.value = Array.from(authors)
+      categoryOptions.value = Array.from(categories)
+      dateOptions.value = Array.from(years).sort((a, b) => b - a)
     }
-  } catch (err) {
-    console.error('Error loading artifacts:', err)
+  } catch (error) {
+    console.error('Error loading artifacts:', error)
   }
 }
+
+// for populating filter options
+watch(
+  () => modelStore.filteredModels,
+  (mods) => {
+    const authors = new Set()
+    const years = new Set()
+    const categories = new Set()
+
+    mods.forEach((mod) => {
+      const meta = mod.metadata || {}
+
+      // Author
+      if (meta.author) {
+        meta.author.split(',').forEach((a) => authors.add(a.trim()))
+      }
+
+      // Date
+      if (meta.date) {
+        const year = meta.date.slice(0, 4)
+        years.add(year)
+      }
+
+      // Categories
+      if (Array.isArray(meta.categories)) {
+        meta.categories.forEach((cat) => categories.add(cat))
+      }
+    })
+
+    authorOptions.value = [...authors].sort()
+    categoryOptions.value = [...categories].sort()
+    dateOptions.value = [...years].sort((a, b) => b - a) // descending
+  },
+  { immediate: true },
+)
 
 const openBookmarkDialog = async (model, type = 'artifact') => {
   selectedModel.value = model

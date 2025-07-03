@@ -10,7 +10,7 @@
           <router-link to="/documents">Back</router-link>
         </div>
         <div class="col-auto">
-          <PdfPreview :pdfUrl="doc.file_url" class="document-img" style="z-index: 1" />
+          <q-img :src="doc.preview_url" class="document-img" style="z-index: 1" />
         </div>
         <div class="col">
           <h2 class="document-title">{{ doc.metadata.title }}</h2>
@@ -102,7 +102,6 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from 'boot/supabase'
-import PdfPreview from 'components/PdfPreview.vue'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import { useRouter } from 'vue-router'
 
