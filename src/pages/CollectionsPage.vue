@@ -4,7 +4,133 @@
       <div class="q-mt-xs title">Collections</div>
       <div class="q-mb-md sub-font-3 row items-baseline justify-between">
         <div class="q-ml-sm">Archival Materials grouped into a collection.</div>
-        <q-btn label="Add New" class="btn-add" no-caps @click="showDialog = true" />
+        <div class="artifact-btn">
+          <span class="showing-text">Showing </span>
+
+          <q-btn-dropdown
+            outline
+            color="black"
+            :label="itemsToShow === 'all' ? 'All' : itemsToShow.toString()"
+            size="sm"
+            class="q-ml-sm artifact-btn-style"
+          >
+            <q-list>
+              <q-item clickable v-close-popup @click="setItemsToShow('all')">
+                <q-item-section>All</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setItemsToShow(9)">
+                <q-item-section>9</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setItemsToShow(12)">
+                <q-item-section>12</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setItemsToShow(18)">
+                <q-item-section>18</q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+
+          <q-btn-dropdown
+            outline
+            color="black"
+            label="Filter"
+            icon="filter_list"
+            size="sm"
+            class="q-ml-sm artifact-btn-style"
+          >
+            <q-list class="filter-dropdown">
+              <q-item>
+                <q-item-section>
+                  <q-select
+                    v-model="categoryFilter"
+                    :options="categoryOptions"
+                    outlined
+                    label="Select Category"
+                    dense
+                    clearable
+                  />
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section>
+                  <q-select
+                    v-model="statusFilter"
+                    :options="statusOptions"
+                    outlined
+                    label="Select Status"
+                    dense
+                    clearable
+                  />
+                </q-item-section>
+              </q-item>
+              <q-separator />
+              <q-item clickable v-close-popup @click="clearFilters">
+                <q-item-section>
+                  <q-item-label>Clear All Filters</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-icon name="clear" />
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+
+          <q-btn-dropdown
+            outline
+            color="black"
+            label="Sort"
+            icon="sort"
+            size="sm"
+            class="q-ml-xs artifact-btn-style"
+          >
+            <q-list>
+              <q-item-label header>Sort by</q-item-label>
+              <q-item clickable v-close-popup @click="setSortBy('name')">
+                <q-item-section>
+                  <q-item-label>Name</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-icon v-if="sortBy === 'name'" name="check" color="primary" />
+                </q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setSortBy('popularity')">
+                <q-item-section>
+                  <q-item-label>Popularity</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-icon v-if="sortBy === 'popularity'" name="check" color="primary" />
+                </q-item-section>
+              </q-item>
+              <q-separator />
+              <q-item-label header>Order</q-item-label>
+              <q-item clickable v-close-popup @click="setSortOrder('asc')">
+                <q-item-section>
+                  <q-item-label>Ascending</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-icon v-if="sortOrder === 'asc'" name="check" color="primary" />
+                </q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setSortOrder('desc')">
+                <q-item-section>
+                  <q-item-label>Descending</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-icon v-if="sortOrder === 'desc'" name="check" color="primary" />
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+          <q-btn
+            @click="addNewCollection"
+            label="Add New"
+            icon="add_circle"
+            style="min-width: 150px"
+            class="add-new-btn"
+            no-caps
+            unelevated
+          />
+        </div>
       </div>
 
       <div class="box-collections">
