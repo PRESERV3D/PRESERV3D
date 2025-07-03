@@ -192,15 +192,15 @@
                         v-if="author"
                         flat
                         dense
-                        color="red"
+                        color="primary"
                         label="Clear Author"
                         @click="clearAuthor"
-                        class="q-mt-xs full-width"
+                        class="q-mt-xs sub-font-3 full-width"
                       />
                     </div>
                     <!-- Years Column (Right) -->
                     <div class="col-5">
-                      <div class="sub-font-3 q-mb-sm">Years</div>
+                      <div class="sub-font-3 q-mb-sm">Year</div>
                       <q-scroll-area style="height: 12rem; max-height: 15rem">
                         <q-list dense>
                           <q-item
@@ -226,10 +226,10 @@
                         v-if="date"
                         flat
                         dense
-                        color="red"
+                        color="primary"
                         label="Clear Year"
                         @click="clearDate"
-                        class="q-mt-xs full-width"
+                        class="q-mt-xs sub-font-3 full-width"
                       />
                     </div>
                   </div>
@@ -256,7 +256,7 @@
           </div>
 
           <!-- Document in Categories -->
-          <div class="row q-ml-lg q-mt-md">
+          <div class="row q-ml-lg q-mt-md justify-start">
             <div
               v-for="(doc, i) in searchStore.query
                 ? searchStore.results
