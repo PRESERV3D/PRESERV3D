@@ -9,7 +9,40 @@
 
     <div class="q-mb-md sub-font-3 row items-baseline justify-between">
       <div class="q-ml-sm">Archival Materials grouped into a collection.</div>
-      <q-btn label="Add New" class="btn-add" no-caps @click="showDialog = true" />
+      <div class="artifact-btn">
+        <q-btn-dropdown
+          outline
+          color="black"
+          :label="`Sort by: ${sortOption}`"
+          icon="sort"
+          size="sm"
+          class="q-ml-xs artifact-btn-style"
+          dense
+        >
+          <q-list>
+            <q-item
+              v-for="option in sortOptions"
+              :key="option"
+              clickable
+              v-close-popup
+              @click="setSortOption(option)"
+            >
+              <q-item-section>
+                <q-item-label>{{ option }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
+        <q-btn
+          @click="showDialog = true"
+          label="Add New"
+          icon="add_circle"
+          style="min-width: 9.375rem"
+          class="add-new-btn"
+          no-caps
+          unelevated
+        />
+      </div>
     </div>
 
     <!-- Loading Spinner -->
@@ -132,17 +165,17 @@ const user = ref({ first_name: '' })
 const collections = ref([])
 const isLoading = ref(true)
 const showDialog = ref(false)
-
 const fileInput = ref(null)
 const previewImage = ref(null)
 const newCollectionTitle = ref('')
 const newCollectionDesc = ref('')
-
 const newCollection = ref({
   coverFile: null,
 })
+const sortOption = ref('Newest to Oldest')
+const sortOptions = ['Alphabetical', 'Oldest to Newest', 'Newest to Oldest', 'Recently Updated']
 
-// Load user and their collections
+// Load user and collections
 onMounted(async () => {
   const {
     data: { user: authUser },
@@ -170,18 +203,53 @@ onMounted(async () => {
   await loadCollections(authUser.id)
 })
 
-// Load collections sorted from latest to oldest
+// Sorting
+function applySorting() {
+  if (!Array.isArray(collections.value)) return
+
+  switch (sortOption.value) {
+    case 'Recently Updated': {
+      const updated = collections.value.filter((c) => c.updated_at)
+      const neverUpdated = collections.value.filter((c) => !c.updated_at)
+
+      updated.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+      neverUpdated.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+      collections.value = [...updated, ...neverUpdated]
+      break
+    }
+
+    case 'Newest to Oldest':
+      collections.value.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      break
+
+    case 'Oldest to Newest':
+      collections.value.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      break
+
+    case 'Alphabetical':
+      collections.value.sort((a, b) => a.collection_name.localeCompare(b.collection_name))
+      break
+  }
+}
+
+function setSortOption(option) {
+  sortOption.value = option
+  applySorting()
+}
+
+// Fetch collections
 async function loadCollections(userId) {
   const { data, error } = await supabase
     .from('collections')
-    .select('collection_name, cover_url, collection_id')
+    .select('collection_name, cover_url, collection_id, created_at, updated_at')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false })
 
   if (error) {
     console.error('Error loading collections:', error)
   } else {
     collections.value = data
+    applySorting()
   }
 
   isLoading.value = false
