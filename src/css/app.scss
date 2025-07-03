@@ -1675,3 +1675,13 @@
   background-color: #fbf4d0;
   color: #000000;
 }
+
+//
+
+.back-button-top {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1000;
+  color: #880000;
+}

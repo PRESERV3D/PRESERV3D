@@ -7,10 +7,16 @@
     <div v-else-if="doc">
       <div class="row q-mt-xs q-gutter-md justify-center items-start">
         <div class="col-auto flex flex-column items-start q-mt-sm">
-          <router-link to="/documents">Back</router-link>
+          <router-link to="/documents" class="back-button-top">
+            <q-btn flat icon="arrow_back" label="Back to Documents" />
+          </router-link>
         </div>
         <div class="col-auto">
-          <q-img :src="doc.preview_url" class="document-img" style="z-index: 1" />
+          <q-img
+            :src="doc.preview_url"
+            class="document-img"
+            style="margin-top: 1.5rem; z-index: 1"
+          />
         </div>
         <div class="col">
           <h2 class="document-title">{{ doc.metadata.title }}</h2>
