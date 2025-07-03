@@ -155,26 +155,32 @@
     </q-dialog>
 
     <!-- Delete Confirm Dialog -->
-    <q-dialog v-model="confirmDeleteOpen">
-      <q-card>
-        <q-card-section class="text-h6">Delete Collection</q-card-section>
-        <q-card-section>
-          Are you sure you want to delete the collection "{{ collection.collection_name }}"?
+    <q-dialog v-model="confirmDeleteOpen" persistent>
+      <q-card class="confirmation-delete">
+        <q-card-section class="column items-center">
+          <q-img src="src/assets/img/conf-delete.png" alt="question icon" class="question-icon" />
+          <div class="q-mt-md sub-font" style="color: #000000">
+            Are you sure you want to delete the collection "{{ collection.collection_name }}"?
+          </div>
         </q-card-section>
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn label="Delete" color="negative" @click="deleteCollection" />
+        <q-card-actions align="center">
+          <q-btn label="Yes" class="btn-save" flat @click="deleteCollection" />
+          <q-btn flat label="No" class="sub-font-2" style="color: #000000" v-close-popup no-caps />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
     <!-- Message Dialog -->
     <q-dialog v-model="messageDialogOpen">
-      <q-card>
-        <q-card-section class="text-h6">{{ messageDialogTitle }}</q-card-section>
-        <q-card-section>{{ messageDialogContent }}</q-card-section>
+      <q-card class="delete-notice">
+        <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
+          messageDialogTitle
+        }}</q-card-section>
+        <q-card-section class="sub-font-3" style="font-weight: 400">{{
+          messageDialogContent
+        }}</q-card-section>
         <q-card-actions align="right">
-          <q-btn flat label="OK" color="primary" @click="handleMessageDialogClose" />
+          <q-btn flat label="Close" class="btn-save" @click="handleMessageDialogClose" />
         </q-card-actions>
       </q-card>
     </q-dialog>

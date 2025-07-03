@@ -24,6 +24,7 @@
               <q-btn label="Delete" class="actions" no-caps flat @click="showDialog = true" />
             </div>
 
+            <!-- Confirmation Dialog      -->
             <q-dialog v-model="showDialog" persistent>
               <q-card class="confirmation-delete">
                 <q-card-section class="column items-center">
@@ -45,7 +46,6 @@
                     style="color: #000000"
                     v-close-popup
                     no-caps
-                    @click="handleCancel"
                   />
                 </q-card-actions>
               </q-card>

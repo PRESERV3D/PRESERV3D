@@ -248,44 +248,57 @@
 
               <!-- Bookmark Dialog -->
               <q-dialog v-model="dialogOpen">
-                <q-card style="min-width: 300px; max-width: 400px">
-                  <q-card-section>
-                    <div class="text-h6">Add to Collections</div>
+                <q-card class="add-to-collections">
+                  <q-card-section class="collection-header">
+                    <div class="sub-font-3" style="font-size: 18px; font-weight: 800">
+                      Choose a Collection
+                    </div>
                   </q-card-section>
-
-                  <q-separator />
-
-                  <q-card-section>
+                  <q-card-section class="collections-scroll-container">
                     <div v-if="userCollections.length > 0">
-                      <q-checkbox
+                      <div
                         v-for="collection in userCollections"
                         :key="collection.collection_id"
-                        v-model="selectedCollections"
-                        :val="collection.collection_id"
-                        :label="collection.collection_name"
-                        dense
-                        class="q-mb-sm"
-                      />
+                        class="q-py-sm flex items-center justify-between"
+                        style="
+                          font-family: 'Poppins', sans-serif;
+                          font-size: 16px;
+                          font-weight: 500;
+                        "
+                      >
+                        <span>{{ collection.collection_name }}</span>
+                        <q-checkbox
+                          v-model="selectedCollections"
+                          :val="collection.collection_id"
+                          dense
+                          color="primary"
+                        />
+                      </div>
                     </div>
+
                     <div v-else class="text-caption text-grey text-center">
                       You don’t have any collections yet.
                     </div>
                   </q-card-section>
 
-                  <q-card-actions align="right">
-                    <q-btn flat label="Cancel" v-close-popup @click="resetForm" />
+                  <q-card-actions class="collection-footer" align="center">
                     <q-btn label="Save" color="primary" @click="saveToSelectedCollections" />
+                    <q-btn flat label="Cancel" v-close-popup @click="resetForm" />
                   </q-card-actions>
                 </q-card>
               </q-dialog>
 
               <!-- Message Dialog -->
               <q-dialog v-model="notifyDialogOpen">
-                <q-card>
-                  <q-card-section class="text-h6">{{ notifyDialogTitle }}</q-card-section>
-                  <q-card-section>{{ notifyDialogMessage }}</q-card-section>
-                  <q-card-actions align="right">
-                    <q-btn flat label="OK" color="primary" v-close-popup />
+                <q-card class="sucess-add-to-collection">
+                  <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
+                    notifyDialogTitle
+                  }}</q-card-section>
+                  <q-card-section class="sub-font-3" style="font-weight: 400">{{
+                    notifyDialogMessage
+                  }}</q-card-section>
+                  <q-card-actions>
+                    <q-btn flat label="Close" class="btn-save" v-close-popup />
                   </q-card-actions>
                 </q-card>
               </q-dialog>
