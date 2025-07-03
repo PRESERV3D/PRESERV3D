@@ -128,16 +128,6 @@
           <div class="row q-col-gutter-sm items-center q-mb-md">
             <q-select
               filled
-              v-model="category"
-              :options="categoryOptions"
-              label="Category"
-              @update:model-value="applyFilters"
-              clearable
-              class="col-2"
-            />
-
-            <q-select
-              filled
               v-model="author"
               :options="authorOptions"
               label="Author"
@@ -167,39 +157,13 @@
           </div>
           <div class="row q-gutter-md">
             <q-btn
-              label="All"
-              no-caps
+              v-for="cat in categoryOptions"
+              :key="cat"
+              :label="cat"
               class="btn-1"
-              :class="{ active: activeFilter === 'all' }"
-              @click="activeFilter = 'all'"
-            />
-            <q-btn
-              label="Journals"
-              no-caps
-              class="btn-1"
-              :class="{ active: activeFilter === 'journals' }"
-              @click="activeFilter = 'journals'"
-            />
-            <q-btn
-              label="Documents"
-              no-caps
-              class="btn-1"
-              :class="{ active: activeFilter === 'documents' }"
-              @click="activeFilter = 'documents'"
-            />
-            <q-btn
-              label="Historical Records"
-              no-caps
-              class="btn-1"
-              :class="{ active: activeFilter === 'historical records' }"
-              @click="activeFilter = 'historical records'"
-            />
-            <q-btn
-              label="Manuscripts"
-              no-caps
-              class="btn-1"
-              :class="{ active: activeFilter === 'manuscripts' }"
-              @click="activeFilter = 'manuscripts'"
+              :class="{ active: selectedCategories.has(cat) }"
+              unelevated
+              @click="toggleCategory(cat)"
             />
           </div>
           <div class="row q-gutter-md q-mt-md justify-around">
@@ -311,11 +275,12 @@ import { useSearchStore } from 'stores/searchStore'
 const searchStore = useSearchStore()
 const documentsStore = useDocumentsStore()
 
-const category = ref('')
+// const category = ref('')
 const author = ref('')
 const date = ref('')
 const sortOption = ref('Newest')
 const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
+const selectedCategories = ref(new Set(['All']))
 const categoryOptions = ref([])
 const authorOptions = ref([])
 const dateOptions = ref([])
@@ -356,10 +321,30 @@ function onSort() {
 
 function applyFilters() {
   documentsStore.filterBy({
-    category: category.value,
+    categories: Array.from(selectedCategories.value),
     author: author.value,
     date: date.value,
   })
+}
+
+function toggleCategory(cat) {
+  if (cat === 'All') {
+    // If "All" is clicked, reset all categories
+    selectedCategories.value = new Set(['All'])
+    return
+  }
+
+  if (selectedCategories.value.has(cat)) {
+    selectedCategories.value.delete(cat)
+  } else {
+    selectedCategories.value.add(cat)
+    selectedCategories.value.delete('All') // Remove "All" if any specific category is selected
+  }
+
+  // Reassign to trigger reactivity
+  selectedCategories.value = new Set(selectedCategories.value)
+
+  applyFilters()
 }
 
 async function logClick(itemId, itemType) {
@@ -405,7 +390,7 @@ const fetchAllDocuments = async () => {
     // Extract unique author and date values for filters
     const authors = new Set()
     const years = new Set()
-    const categories = new Set()
+    const categories = new Set(['All'])
 
     data.forEach((doc) => {
       if (doc.metadata?.author) {
@@ -422,7 +407,7 @@ const fetchAllDocuments = async () => {
     })
 
     authorOptions.value = Array.from(authors)
-    categoryOptions.value = Array.from(categories)
+    categoryOptions.value = [...Array.from(categories).sort()]
     dateOptions.value = Array.from(years).sort((a, b) => b - a)
   } catch (err) {
     console.error('Unexpected error while loading documents:', err)
@@ -435,7 +420,7 @@ watch(
   (docs) => {
     const authors = new Set()
     const years = new Set()
-    const categories = new Set()
+    const categories = new Set(['All'])
 
     docs.forEach((doc) => {
       const meta = doc.metadata || {}
