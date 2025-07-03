@@ -117,7 +117,7 @@
                 <div class="sub-details">
                   {{ doc.metadata.summary }}
                 </div>
-                <div class="q-mt-xs q-mb-xs flex justify-center">
+                <div class="q-mt-xs q-mb-xs flex justify-evenly">
                   <router-link
                     :to="{ name: 'view-document', params: { id: doc.id } }"
                     @click="logClick(doc.id, 'document')"
@@ -130,55 +130,137 @@
           </div>
         </div>
       </div>
+
+      <!-- Box Category -->
       <div class="box-category">
         <div class="q-pa-lg">
           <p class="admin-title-2" style="font-size: 16px; margin-top: 0">Category</p>
-          <div class="row q-col-gutter-sm items-center q-mb-md">
-            <q-select
-              filled
-              v-model="author"
-              :options="authorOptions"
-              label="Author"
-              @update:model-value="applyFilters"
-              clearable
-              class="col-2"
-            />
-
-            <q-select
-              filled
-              v-model="date"
-              :options="dateOptions"
-              label="Year"
-              @update:model-value="applyFilters"
-              clearable
-              class="col-2"
-            />
-
-            <q-select
-              v-model="sortOption"
-              :options="sortOptions"
-              label="Sort by"
-              filled
-              @update:model-value="onSort"
-              class="col-3"
-            />
+          <div class="row q-col-gutter-md q-mb-md justify-between items-center">
+            <!-- Category Section -->
+            <div class="row q-gutter-sm col-auto">
+              <q-btn
+                v-for="cat in categoryOptions"
+                :key="cat"
+                :label="cat"
+                class="btn-1"
+                :class="{ active: selectedCategories.has(cat) }"
+                unelevated
+                @click="toggleCategory(cat)"
+              />
+            </div>
+            <div class="row q-gutter-sm col-auto">
+              <!-- Filter Section -->
+              <q-btn
+                flat
+                round
+                icon="filter_list"
+                class="filter-sort-btn"
+                @click="showFilterMenu = !showFilterMenu"
+              >
+                <q-menu
+                  v-model="showFilterMenu"
+                  anchor="bottom right"
+                  self="top left"
+                  style="width: 25.5rem"
+                >
+                  <div class="row q-pa-md">
+                    <!-- Authors Column (Left) -->
+                    <div class="col-7 q-pr-sm">
+                      <div class="sub-font-3 q-mb-sm">Authors</div>
+                      <q-scroll-area style="height: 12rem; max-height: 15rem">
+                        <q-list dense>
+                          <q-item
+                            v-for="authorOption in authorOptions"
+                            :key="authorOption"
+                            clickable
+                            class="sub-font-2"
+                            style="color: #000000"
+                            @click="toggleAuthor(authorOption)"
+                          >
+                            <q-item-section avatar>
+                              <q-checkbox
+                                :model-value="author === authorOption"
+                                @update:model-value="toggleAuthor(authorOption)"
+                              />
+                            </q-item-section>
+                            <q-item-section>{{ authorOption }}</q-item-section>
+                          </q-item>
+                        </q-list>
+                      </q-scroll-area>
+                      <!-- Clear Authors -->
+                      <q-btn
+                        v-if="author"
+                        flat
+                        dense
+                        color="red"
+                        label="Clear Author"
+                        @click="clearAuthor"
+                        class="q-mt-xs full-width"
+                      />
+                    </div>
+                    <!-- Years Column (Right) -->
+                    <div class="col-5">
+                      <div class="sub-font-3 q-mb-sm">Years</div>
+                      <q-scroll-area style="height: 12rem; max-height: 15rem">
+                        <q-list dense>
+                          <q-item
+                            v-for="dateOption in dateOptions"
+                            :key="dateOption"
+                            clickable
+                            class="sub-font-2"
+                            style="color: #000000"
+                            @click="toggleDate(dateOption)"
+                          >
+                            <q-item-section avatar>
+                              <q-checkbox
+                                :model-value="date === dateOption"
+                                @update:model-value="toggleDate(dateOption)"
+                              />
+                            </q-item-section>
+                            <q-item-section>{{ dateOption }}</q-item-section>
+                          </q-item>
+                        </q-list>
+                      </q-scroll-area>
+                      <!-- Clear Years -->
+                      <q-btn
+                        v-if="date"
+                        flat
+                        dense
+                        color="red"
+                        label="Clear Year"
+                        @click="clearDate"
+                        class="q-mt-xs full-width"
+                      />
+                    </div>
+                  </div>
+                </q-menu>
+              </q-btn>
+              <!-- Sort Section -->
+              <q-btn flat round icon="sort" class="filter-sort-btn">
+                <q-menu anchor="bottom right" self="top left" class="sort-menu">
+                  <q-list dense>
+                    <q-item
+                      v-for="option in sortOptions"
+                      :key="option"
+                      clickable
+                      v-close-popup
+                      @click="((sortOption = option), onSort(option))"
+                      :class="['sort-option-item', { 'selected-option': sortOption === option }]"
+                    >
+                      <q-item-section>{{ option }}</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-menu>
+              </q-btn>
+            </div>
           </div>
-          <div class="row q-gutter-md">
-            <q-btn
-              v-for="cat in categoryOptions"
-              :key="cat"
-              :label="cat"
-              class="btn-1"
-              :class="{ active: selectedCategories.has(cat) }"
-              unelevated
-              @click="toggleCategory(cat)"
-            />
-          </div>
-          <div class="row q-gutter-md q-mt-md justify-around">
+
+          <!-- Document in Categories -->
+          <div class="row q-ml-lg q-mt-md">
             <div
               v-for="(doc, i) in searchStore.query
                 ? searchStore.results
-                : documentsStore.filteredDocuments.slice(0, 3)"
+                : documentsStore.filteredDocuments"
               :key="i"
               class="card-wrapper"
             >
@@ -347,6 +429,28 @@ function applyFilters() {
     date: date.value,
   })
 }
+
+//add-start
+function toggleAuthor(authorOption) {
+  author.value = authorOption
+  applyFilters()
+}
+
+function toggleDate(dateOption) {
+  date.value = dateOption
+  applyFilters()
+}
+
+function clearAuthor() {
+  author.value = ''
+  applyFilters()
+}
+
+function clearDate() {
+  date.value = ''
+  applyFilters()
+}
+//add -end
 
 function toggleCategory(cat) {
   if (cat === 'All') {
