@@ -47,6 +47,7 @@
   width: 300px;
   height: 200px;
   padding: 1rem;
+  transform: scale(1.3);
 }
 
 // ARTIFACTS IN THE USER DASHBOARD
@@ -1705,4 +1706,138 @@
     width: 160px;
     height: 220px;
   }
+}
+/* Collection Image Styles - Seamless integration with book design */
+.book-content.has-image {
+  background: none !important; /* Remove the gradient when image is present */
+  padding: 0 !important;
+}
+
+.book-image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 0 20px 20px 0; 
+  overflow: hidden;
+  z-index: 1;
+}
+
+.book-image-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 20px; /* Width of the shadow effect */
+  height: 100%;
+  background: linear-gradient(to right,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.2) 50%,
+    transparent 100%);
+  z-index: 2;
+  border-top-left-radius: inherit;
+  border-bottom-left-radius: inherit;
+}
+
+.book-background-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+/* Ensure the book-content maintains its original styling when no image */
+.book-content:not(.has-image) {
+  /* Keep original gradient and styling */
+}
+
+/* Popup upload collections */
+.add-collection-card {
+  width: 32rem;
+  height: 25.5rem;
+  border-radius: 10px;
+  background-color: #fbf4d0;
+  padding: 1rem;
+}
+
+.upload-box {
+  width: 11rem;
+  height: 14.5rem;
+  border-radius: 10px;
+  background-color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.upload-icon {
+  width: 4rem;
+  height: 4rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.upload {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  color: #928f8f;
+  font-size: 14px;
+  text-align: center;
+  padding: 1rem;
+  margin-top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.field-collection {
+  width: 15rem;
+  height: 2.5rem;
+  border-radius: 5px;
+  background-color: #ffffff;
+  border: 1px solid #928f8f;
+  box-shadow: 0 2px 6px rgba(86, 5, 5, 0.22);
+}
+
+.field-collection :deep(textarea) {
+  resize: none !important;
+}
+
+.btn-save {
+  min-width: 4rem;
+  height: 2rem;
+  border-radius: 5px;
+  background-color: #880000;
+  color: #fbf4d0;
+  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  padding: 0.25rem 1rem;
+}
+
+.sub-font-2 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: #560505;
+}
+
+.sub-font-3 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: #000000;
 }

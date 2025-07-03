@@ -138,14 +138,14 @@
             <q-card class="my-card" rounded bordered>
               <div class="card">
                 <!-- Information icon positioned in upper left -->
-                <q-btn
+                <!-- <q-btn
                   flat
                   round
                   icon="info_outline"
                   class="info-icon-overlay"
                   size="md"
                   @click.stop="showModelInfo(model.id)"
-                />
+                /> -->
                 <model-viewer
                   :src="model.file_url"
                   camera-controls
@@ -168,14 +168,16 @@
                   </router-link>
                   <div class="action-icons">
                     <q-icon
-                      name="bookmark_border"
+                      :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                       class="action-icon bookmark-icon"
+                      :class="{ 'bookmarked': model.bookmarked }"
                       size="18px"
                       @click.stop="toggleBookmark(model.id)"
                     />
                     <q-icon
-                      name="star_border"
+                      :name="model.starred ? 'star' : 'star_border'"
                       class="action-icon star-icon"
+                      :class="{ 'starred': model.starred }"
                       size="18px"
                       @click.stop="toggleStar(model.id)"
                     />
@@ -198,6 +200,7 @@
             <q-btn
               @click="addNewCollection"
               label="Add New"
+              icon="add_circle"
               style="min-width: 150px"
               class="add-new-btn"
               no-caps
@@ -250,15 +253,20 @@
           </div>
         </div>
 
-        <!-- Five Collections Section -->
+        <!-- Collections Section -->
         <div class="row q-gutter-xl q-pl-lg q-pr-sm q-mb-sm">
-          <div v-for="i in 5" :key="i" class="col card-wrapper">
+          <div v-for="collection in collections" :key="collection.id" class="col card-wrapper">
             <q-card class="my-card collection-card" flat>
               <div class="book-container">
                 <div class="book-cover">
                   <div class="book-spine"></div>
-                  <div class="book-content">
-                    <div class="book-title-section">
+                  <div class="book-content" :class="{ 'has-image': collection.image }">
+                    <!-- Show uploaded image as background if available -->
+                    <div v-if="collection.image" class="book-image-overlay">
+                      <img :src="collection.image" :alt="collection.title" class="book-background-image" />
+                    </div>
+                    <!-- Show default icon if no image -->
+                    <div v-else class="book-title-section">
                       <div class="book-icon">
                         <q-icon name="collections_bookmark" size="2rem" color="white" />
                       </div>
@@ -269,27 +277,10 @@
               <q-card-section class="q-pa-sm artifact-card-section">
                 <div class="title-row">
                   <div class="collection-title-link">
-                    <div class="text-subtitle2 artifact-title">Collection {{ i }}</div>
-                  </div>
-                  <div class="action-icons">
-                    <q-icon
-                      name="bookmark_border"
-                      class="action-icon bookmark-icon"
-                      size="18px"
-                      @click.stop="toggleBookmark('collection' + i)"
-                    />
-                    <q-icon
-                      name="star_border"
-                      class="action-icon star-icon"
-                      size="18px"
-                      @click.stop="toggleStar('collection' + i)"
-                    />
-
+                    <div class="text-subtitle2 artifact-title">{{ collection.title }}</div>
                   </div>
                 </div>
-
               </q-card-section>
-
             </q-card>
           </div>
         </div>
@@ -305,7 +296,79 @@
       </div>
     </div>
 
+    <!-- Add Collection Dialog -->
+    <q-dialog v-model="showDialog" persistent>
+      <q-card class="add-collection-card">
+        <q-card-section class="row justify-center items-center">
+          <div class="sub-font-3 text-center" style="font-size: 16px; font-weight: 700">
+            Add New Collection
+          </div>
+        </q-card-section>
 
+        <q-card-section class="row q-gutter-md" style="gap: 0.5rem">
+          <div class="col-auto q-ml-md">
+            <div class="upload-box" @click="triggerFileInput">
+              <img
+                v-if="previewImage"
+                :src="previewImage"
+                alt="Preview"
+                class="preview-image"
+              />
+              <div v-else class="upload">
+                <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon" />
+                <div>Upload Photo</div>
+              </div>
+              <input
+                type="file"
+                ref="fileInput"
+                accept="image/*"
+                @change="handleImageUpload"
+                style="display: none"
+              />
+            </div>
+          </div>
+
+          <div class="col-5 q-ml-lg">
+            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
+              COLLECTION NAME
+            </div>
+            <q-input
+              v-model="newCollectionTitle"
+              class="field-collection q-mb-md"
+              label="Enter Collection Name"
+              dense
+              outlined
+            />
+
+            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
+              SHORT DESCRIPTION
+            </div>
+            <q-input
+              v-model="newCollectionDesc"
+              type="textarea"
+              class="field-collection"
+              label="Enter Short Description"
+              dense
+              outlined
+              style="min-height: 8rem"
+            />
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn
+            flat
+            label="Cancel"
+            class="sub-font-2"
+            style="color: #000000"
+            v-close-popup
+            no-caps
+            @click="cancelAddCollection"
+          />
+          <q-btn label="Save" class="q-mr-sm btn-save" @click="saveCollection" no-caps />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
   </q-page>
 </template>
@@ -326,6 +389,47 @@ const selectedSort = ref('Recent')
 const showFilterMenu = ref(false)
 const showSortMenu = ref(false)
 
+// Collection dialog variables
+const showDialog = ref(false)
+const newCollectionTitle = ref('')
+const newCollectionDesc = ref('')
+const fileInput = ref(null)
+const previewImage = ref(null)
+
+// Collections data
+const collections = ref([
+  {
+    id: 1,
+    title: 'Collection 1',
+    description: 'Default collection',
+    image: null
+  },
+  {
+    id: 2,
+    title: 'Collection 2',
+    description: 'Default collection',
+    image: null
+  },
+  {
+    id: 3,
+    title: 'Collection 3',
+    description: 'Default collection',
+    image: null
+  },
+  {
+    id: 4,
+    title: 'Collection 4',
+    description: 'Default collection',
+    image: null
+  },
+  {
+    id: 5,
+    title: 'Collection 5',
+    description: 'Default collection',
+    image: null
+  }
+])
+
 const filterOptions = ['All', 'Documents', 'PDFs', 'Images', 'Recent']
 const sortOptions = ['Recent', 'Alphabetical', 'Author', 'Date Created']
 
@@ -334,29 +438,96 @@ const featuredModels = computed(() => {
   return modelStore.models.slice(0, 3)
 })
 
-
-
 // Methods for recently viewed items
 const viewArtifact = (artifactId) => {
   console.log('Viewing artifact:', artifactId)
   // Add view logic here
 }
 
-const toggleStar = (artifactId) => {
-  console.log('Toggling star for:', artifactId)
-  // Add star/favorite logic here
+const toggleStar = (modelId) => {
+  const model = modelStore.models.find(m => m.id === modelId)
+  if (model) {
+    model.starred = !model.starred
+  }
 }
 
-const toggleBookmark = (artifactId) => {
-  console.log('Toggling bookmark for:', artifactId)
-  // Add bookmark logic here
-
+const toggleBookmark = (modelId) => {
+  const model = modelStore.models.find(m => m.id === modelId)
+  if (model) {
+    model.bookmarked = !model.bookmarked
+  }
 }
 
+// Collection management methods
 const addNewCollection = () => {
-  console.log('Adding new collection')
-  // Add logic here to create a new collection
+  console.log('Opening add collection dialog')
+  showDialog.value = true
+}
 
+const saveCollection = () => {
+  if (!newCollectionTitle.value.trim()) {
+    console.log('Collection title is required')
+    return
+  }
+
+  // Add new collection to the LEFT side (beginning of array)
+  const newCollection = {
+    id: Date.now(), // Use timestamp for unique ID
+    title: newCollectionTitle.value,
+    description: newCollectionDesc.value || 'No description provided',
+    image: previewImage.value // Store the uploaded image
+  }
+
+  // Add to the beginning and keep only 5 collections
+  collections.value.unshift(newCollection)
+  if (collections.value.length > 5) {
+    collections.value = collections.value.slice(0, 5)
+  }
+
+  console.log('Collection added to left side:', newCollection)
+
+  // Clear form and close dialog
+  clearCollectionForm()
+  showDialog.value = false
+}
+
+const cancelAddCollection = () => {
+  clearCollectionForm()
+  showDialog.value = false
+}
+
+const clearCollectionForm = () => {
+  newCollectionTitle.value = ''
+  newCollectionDesc.value = ''
+  previewImage.value = null
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+const triggerFileInput = () => {
+  fileInput.value.click()
+}
+
+const handleImageUpload = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    console.log('Please select an image file')
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    previewImage.value = e.target.result
+    console.log('Image loaded successfully')
+  }
+  reader.onerror = (error) => {
+    console.error('Error reading file:', error)
+  }
+  reader.readAsDataURL(file)
 }
 
 onMounted(async () => {
@@ -371,209 +542,3 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
-
-
-
-
-
-
-
-.artifacts {
-  border-radius: 8px 8px 0 0;
-}
-
-.artifact-title {
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  color: #010101;
-  line-height: 1.3;
-  margin-bottom: 4px;
-  margin-left: 20px;
-}
-
-.view-link {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 400;
-  font-size: 12px;
-  text-decoration: none;
-  color: #880000;
-}
-
-.view-link:hover {
-  color: #560505;
-  text-decoration: underline;
-}
-
-.card-wrapper {
-  min-width: 0;
-  flex: 1;
-}
-
-/* Adjust box-3 height to accommodate artifacts */
-.box-4 {
-  border-radius: 15px;
-  background: linear-gradient(10deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
-  flex: 2;
-  min-width: 0;
-  height: auto;
-  min-height: 35rem;
-  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
-}
-
-/* Collections Book Style */
-.collection-card {
-  border: none;
-  background: transparent;
-  box-shadow: none;
-}
-
-.book-container {
-  perspective: 1000px;
-  height: 350px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.book-cover {
-  width: 100%;
-  height: 320px;
-  position: relative;
-  background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
-  border-radius: 0 20px 20px 0;
-  box-shadow:
-    0 8px 16px rgba(0, 0, 0, 0.3),
-    inset 0 0 20px rgba(0, 0, 0, 0.1),
-    0 0 0 2px rgba(8, 3, 0, 0.3);
-  transform: rotateY(-5deg) rotateX(2deg);
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.book-cover:hover {
-  transform: rotateY(-2deg) rotateX(1deg) translateY(-15px);
-  box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.4),
-    inset 0 0 20px rgba(0, 0, 0, 0.1),
-    0 0 0 2px rgba(139, 69, 19, 0.3);
-}
-
-.book-spine {
-  position: absolute;
-  left: -8px;
-  top: 0;
-  bottom: 0;
-  width: 15px;
-  background: linear-gradient(to right, #523518 0%, #381c08 100%);
-  border-radius: 0 0 0 15px;
-  box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.3);
-}
-
-.book-content {
-  padding: 20px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-}
-
-.book-title-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-}
-
-.book-icon {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-}
-
-.collection-title-link {
-  text-decoration: none;
-  flex: 1;
-}
-
-.add-new-btn {
-  background-color: #560505;
-  color: white;
-  border-radius: 12px;
-  padding: 8px 16px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.add-new-btn:hover {
-  background-color: #560505;
-  transform: translateY(-1px);
-}
-
-/* See All Link and Filter/Sort Button Styles */
-.see-all-link, .filter-sort-btn {
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: #560505;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  transition: all 0.2s ease;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background-color: #56050512;
-  box-shadow: 0 2px 4px rgba(86, 5, 5, 0.15);
-}
-
-.see-all-link:hover, .filter-sort-btn:hover {
-  color: #ffffff;
-  background-color: #0000005f;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(86, 5, 5, 0.2);
-}
-
-.see-all-link .q-icon, .filter-sort-btn .q-icon {
-  transition: transform 0.2s ease;
-}
-
-.see-all-link:hover .q-icon, .filter-sort-btn:hover .q-icon {
-  transform: translateX(2px);
-}
-
-
-/* Information icon overlay */
-.info-icon-overlay {
-  position: absolute;
-  top: 14px;
-  left: 12px;
-  z-index: 100;
-  color: #d6d6d6 !important;
-  width: 36px !important;
-  height: 36px !important;
-  border-radius: 50% !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(86, 5, 5, 0.1);
-  padding: 8px !important;
-  margin: 4px !important;
-  transition: all 0.2s ease;
-}
-
-.info-icon-overlay:hover {
-  background-color: #560505 !important;
-  color: white !important;
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(86, 5, 5, 0.25);
-}
-
-</style>
