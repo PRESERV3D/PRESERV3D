@@ -4,7 +4,15 @@
       <div class="q-mt-xs title">Documents</div>
       <div class="q-mb-md sub-font-3 row items-baseline justify-between">
         <div class="q-ml-sm">Browse selected digital books from the university archives.</div>
-        <q-btn label="Add New" class="btn-add" no-caps @click="showDialog = true" />
+        <q-btn
+          @click="showDialog = true"
+          label="Add New"
+          icon="add_circle"
+          style="min-width: 9.375rem"
+          class="add-new-btn"
+          no-caps
+          unelevated
+        />
       </div>
     </div>
 
