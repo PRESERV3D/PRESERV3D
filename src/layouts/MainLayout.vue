@@ -15,6 +15,7 @@
         :class="'sidebar-drawer'"
         content-class="drawer-content"
       >
+
         <div class="absolute-full flex column">
           <!-- Expanded State -->
           <div class="q-pa-md q-mb-md" v-show="!miniState">
@@ -105,7 +106,7 @@
               clearable
               clear-icon="close"
               @keyup.enter="performSearch"
-              style="width: 100%; max-width: 750px"
+              style="width: 100%; max-width: 830px;"
             >
               <template v-slot:prepend>
                 <q-icon name="search" @click="performSearch" class="cursor-pointer" />
@@ -195,7 +196,7 @@ const miniState = ref(true)
 const search = ref('')
 
 // User and notifications data
-const userName = ref('ADMIN')
+const userName = ref('USER')
 const notifications = ref([
   { id: 1, message: 'New message from Mrs. Beth', time: '5m ago' },
   { id: 2, message: '⚠️ Notice: The file you uploaded appears incomplete.', time: '1h ago' },
