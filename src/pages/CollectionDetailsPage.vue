@@ -46,6 +46,7 @@
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="text-primary q-px-sm"
+                  @click="logClick(doc.id, 'document')"
                 >
                   View Document
                 </router-link>
@@ -98,6 +99,7 @@
                   <router-link
                     :to="{ name: 'view-artifact', params: { id: model.id } }"
                     class="text-primary"
+                    @click="logClick(model.id, 'artifact')"
                   >
                     View Artifact
                   </router-link>
@@ -269,6 +271,31 @@ async function fetchCollectionItems() {
       .in('id', artIds)
 
     artifacts.value = (arts || []).map((art) => ({ ...art, bookmarked: true }))
+  }
+}
+
+async function logClick(itemId, itemType) {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (authError || !userId) {
+    console.error('Auth error logging click:', authError)
+    return
+  }
+
+  try {
+    const { error } = await supabase.from('user_activity_log').insert({
+      user_id: userId,
+      item_id: itemId,
+      item_type: itemType,
+      clicked_at: new Date().toISOString(),
+    })
+
+    if (error) {
+      console.error('Error logging click:', error)
+    }
+  } catch (err) {
+    console.error('Error logging click:', err)
   }
 }
 
