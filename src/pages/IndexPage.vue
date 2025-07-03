@@ -1,100 +1,240 @@
 <template>
   <q-page class="q-pa-md">
-    <!-- Header -->
-    <div>
-      <p v-if="userStore.profile">Hello, {{ userStore.profile.first_name }}</p>
-      <p v-if="userStore.profile?.role === 'admin'">(Admin Access)</p>
-    </div>
+    <!-- Header Section with User Greeting -->
+    <div class="layout-container">
+      <div class="box-1 row items-center">
+        <div class="col-7 q-gutter-xs">
+          <p class="q-ml-xl admin-title">
+            <span v-if="userStore.profile">Welcome Back, {{ userStore.profile.first_name }}!</span>
+            <span v-else>Discover Cultural Heritage in 3D & Digital Archives</span>
+          </p>
+          <p class="q-ml-xl admin-subtitle">
+            <span v-if="userStore.profile?.role === 'admin'">(Admin Access) - </span>
+            Explore University artifacts, historic documents, and <br>
+            virtual museum exhibits.
+          </p>
+          <div class="q-ml-md q-gutter-lg">
+            <q-btn to="/artifacts" label="Explore Artifacts" class="btn-explore" no-caps />
+            <q-btn to="/documents" label="Browse Documents" class="btn-document" no-caps />
+          </div>
+        </div>
+        <div class="col-5 q-gutter-xs">
+          <q-img
+            src="src/assets/img/trophy-document.png"
+            alt="Trophy and Document"
+            class="trophies"
+          />
+        </div>
+      </div>
 
-    <!-- Recently Viewed  -->
-    <div class="row justify-end q-mb-md">
-      <div class="col-12 col-md-4">
-        <q-card class="q-pa-md">
-          <div class="text-subtitle1 q-mb-sm">Recently Viewed</div>
 
-          <div v-if="recentItems.length > 0" class="column q-gutter-md">
-            <div v-for="(item, index) in recentItems.slice(0, 3)" :key="index">
-              <!-- Title row with icon and view button -->
-              <div class="row items-center justify-between">
-                <div class="row items-center q-gutter-sm">
-                  <div class="text-h6">
-                    <span v-if="item.item_type === 'artifact'">🏆</span>
-                    <span v-else-if="item.item_type === 'document'">📄</span>
-                  </div>
-                  <div class="text-body1">
-                    {{ item.metadata?.title || item.file_name }}
-                  </div>
-                </div>
-
+    <!-- Recently Viewed Section -->
+      <div class="box-2">
+        <p class="q-ml-lg admin-title-2">Recently Viewed</p>
+        <div class="q-px-md q-pb-md">
+          <div v-if="recentItems.length > 0" class="column q-gutter-xs">
+            <div v-for="(item, index) in recentItems.slice(0, 3)" :key="index" class="row items-center q-gutter-md recently-viewed-item">
+              <div class="circular-holder">
+                <q-img
+                  :src="item.file_url || 'src/assets/img/artifact1.png'"
+                  :alt="item.metadata?.title || item.file_name"
+                  class="circular-image"
+                />
+                <!-- Add span icons within the circle -->
+                <span v-if="item.item_type === 'artifact'" class="circle-icon-center">🏆</span>
+                <span v-else-if="item.item_type === 'document'" class="circle-icon-center">📄</span>
+              </div>
+              <div class="col item-details">
+                <p class="artifact-name">{{ item.metadata?.title || item.file_name }}</p>
+                <p class="view-info">Viewed {{ timeAgo(item.clicked_at) }}</p>
+              </div>
+              <div class="action-icons">
                 <q-btn
-                  dense
                   flat
                   round
-                  color="primary"
                   icon="visibility"
-                  @click="
-                    () => {
-                      logClick(item.id, item.item_type)
-                      viewItem(item)
-                    }
-                  "
+                  class="view-icon"
+                  @click="() => {
+                    logClick(item.id, item.item_type)
+                    viewItem(item)
+                  }"
                 />
-              </div>
-
-              <!-- Viewed time -->
-              <div class="text-caption text-grey q-ml-lg q-mt-xs">
-                Viewed {{ timeAgo(item.clicked_at) }}
+                <q-btn
+                  flat
+                  round
+                  :icon="item.starred ? 'star' : 'star_border'"
+                  class="star-icon"
+                  @click="toggleStar(item.id)"
+                />
               </div>
             </div>
           </div>
-
-          <div v-else class="text-caption text-grey">No recent views.</div>
-        </q-card>
+          <div v-else class="text-caption text-grey q-ml-lg">
+            No recent views.
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="q-mt-xs title">Collections</div>
-    <div class="q-mb-md sub-font-3 row items-baseline justify-between">
-      <div class="q-ml-sm">Archival Materials grouped into a collection.</div>
-      <q-btn label="Add New" class="btn-add" no-caps @click="showDialog = true" />
+    <!-- New in the Archives Section -->
+    <div class="layout-container q-my-lg">
+      <div class="box-3 q-px-lg">
+        <div class="row item-center justify-between q-mb-sm">
+          <p class="q-ml-lg admin-title-2">New in the Archives</p>
+        </div>
+
+        <!-- Loading Spinner for Featured Models -->
+        <div v-if="isLoadingModels" class="text-center q-my-md">
+          <q-spinner color="primary" size="lg" />
+        </div>
+
+        <!-- Three Artifacts Section -->
+        <div v-else class="row q-gutter-md q-px-sm q-mb-lg">
+          <div v-for="(model, i) in featuredModels" :key="i" class="col card-wrapper">
+            <q-card class="my-card" rounded bordered>
+              <div class="card">
+                <model-viewer
+                  :src="model.file_url"
+                  camera-controls
+                  loading="lazy"
+                  auto-rotate
+                  auto-rotate-delay="1500"
+                  rotation-per-second="10deg"
+                  shadow-intensity="1"
+                  class="artifacts"
+                  style="width: 100%; height: 400px"
+                />
+              </div>
+              <q-card-section class="q-pa-sm artifact-card-section">
+                <div class="title-row">
+                  <router-link
+                    :to="{ name: 'view-artifact', params: { id: model.id } }"
+                    class="artifact-title-link"
+                  >
+                    <div class="text-subtitle2 artifact-title">{{ model.metadata?.title || model.file_name }}</div>
+                  </router-link>
+                  <div class="action-icons">
+                    <q-icon
+                      :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
+                      class="action-icon bookmark-icon"
+                      :class="{ 'bookmarked': model.bookmarked }"
+                      size="18px"
+                      @click.stop="toggleBookmark(model.id)"
+                    />
+                    <q-icon
+                      :name="model.starred ? 'star' : 'star_border'"
+                      class="action-icon star-icon"
+                      :class="{ 'starred': model.starred }"
+                      size="18px"
+                      @click.stop="toggleStar(model.id)"
+                    />
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Collections Section -->
-    <div class="row q-col-gutter-lg">
-      <div class="col-12">
-        <!-- Loading Spinner -->
+    <div class="layout-container q-my-lg">
+      <div class="box-3 q-px-lg">
+        <div class="row items-center justify-between q-mb-sm q-mt-sm">
+          <p class="q-ml-lg admin-title-2">Collections</p>
+          <!-- Filter, Sort, and Add New button in the upper right -->
+          <div class="row q-gutter-sm items-center q-pr-sm">
+            <q-btn
+              @click="showDialog = true"
+              label="Add New"
+              icon="add_circle"
+              style="min-width: 150px"
+              class="add-new-btn"
+              no-caps
+              unelevated
+            />
+            <!-- Filter Icon Button with Menu -->
+            <q-btn
+              flat
+              round
+              icon="filter_list"
+              class="filter-sort-btn"
+              @click="showFilterMenu = !showFilterMenu"
+            >
+              <q-menu v-model="showFilterMenu" anchor="bottom right" self="top right">
+                <q-list dense>
+                  <q-item
+                    v-for="option in filterOptions"
+                    :key="option"
+                    clickable
+                    @click="selectedFilter = option; showFilterMenu = false"
+                    :class="{ 'bg-grey-2': selectedFilter === option }"
+                  >
+                    <q-item-section>{{ option }}</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
+            </q-btn>
+            <!-- Sort Icon Button with Menu -->
+            <q-btn
+              flat
+              round
+              icon="sort"
+              class="filter-sort-btn"
+              @click="showSortMenu = !showSortMenu"
+            >
+              <q-menu v-model="showSortMenu" anchor="bottom right" self="top right">
+                <q-list dense>
+                  <q-item
+                    v-for="option in sortOptions"
+                    :key="option"
+                    clickable
+                    @click="selectedSort = option; showSortMenu = false"
+                    :class="{ 'bg-grey-2': selectedSort === option }"
+                  >
+                    <q-item-section>{{ option }}</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
+            </q-btn>
+          </div>
+        </div>
+
+        <!-- Loading Spinner for Collections -->
         <div v-if="isLoading" class="text-center q-my-md">
           <q-spinner color="primary" size="lg" />
         </div>
 
-        <!-- Collection Display -->
+        <!-- Collections Display -->
         <div v-else>
-          <div v-if="collections.length > 0" class="box-collections">
-            <q-card
-              v-for="collection in collections.slice(0, 4)"
-              :key="collection.collection_id"
-              class="collectionCard"
-              @click="goToCollectionDetailsPage(collection.collection_id)"
-            >
-              <router-link :to="`/collection/${collection.collection_id}`" class="collection-link">
-                <img
-                  :src="collection.cover_url"
-                  :alt="collection.collection_name"
-                  class="collection-image"
-                  style="width: 100%; height: 200px; object-fit: cover"
-                />
-              </router-link>
-
-              <div class="q-mt-md fade-title-container">
-                <div class="q-mt-md sub-font fade-title" style="color: black; font-weight: 800">
-                  {{ collection.collection_name }}
-                  <div class="tooltip-box">{{ collection.collection_name }}</div>
+          <div v-if="collections.length > 0" class="row q-gutter-xl q-pl-lg q-pr-sm q-mb-sm">
+            <div v-for="collection in collections.slice(0, 5)" :key="collection.collection_id" class="col card-wrapper">
+              <q-card class="my-card collection-card" flat @click="goToCollectionDetailsPage(collection.collection_id)">
+                <div class="book-container">
+                  <div class="book-cover">
+                    <div class="book-spine"></div>
+                    <div class="book-content" :class="{ 'has-image': collection.cover_url }">
+                      <!-- Show uploaded image as background if available -->
+                      <div v-if="collection.cover_url" class="book-image-overlay">
+                        <img :src="collection.cover_url" :alt="collection.collection_name" class="book-background-image" />
+                      </div>
+                      <!-- Show default icon if no image -->
+                      <div v-else class="book-title-section">
+                        <div class="book-icon">
+                          <q-icon name="collections_bookmark" size="2rem" color="white" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </q-card>
-
-            <div class="row justify-end q-mt-sm">
-              <q-btn label="See All" color="primary" @click="goToCollectionsPage" />
+                <q-card-section class="q-pa-sm artifact-card-section">
+                  <div class="title-row">
+                    <div class="collection-title-link">
+                      <div class="text-subtitle2 artifact-title">{{ collection.collection_name }}</div>
+                    </div>
+                  </div>
+                </q-card-section>
+              </q-card>
             </div>
           </div>
 
@@ -102,10 +242,18 @@
             <p>No collections found.</p>
           </div>
         </div>
+
+        <!-- See All Link -->
+        <div class="row justify-end q-pr-sm q-pb-sm">
+          <router-link to="/collections" class="see-all-link" style="margin-top: 0.5rem;">
+            See All
+            <q-icon name="arrow_forward" size="16px" class="q-ml-xs" />
+          </router-link>
+        </div>
       </div>
     </div>
 
-    <!-- Add New Collection Dialog -->
+    <!-- Add Collection Dialog -->
     <q-dialog v-model="showDialog" persistent>
       <q-card class="add-collection-card">
         <q-card-section class="row justify-center items-center">
@@ -114,16 +262,17 @@
           </div>
         </q-card-section>
 
-        <q-card-section class="row q-col-gutter-md">
-          <div class="col-6">
-            <div class="upload-box" @click="triggerFilePicker">
-              <q-img
+        <q-card-section class="row q-gutter-md" style="gap: 0.5rem">
+          <div class="col-auto q-ml-md">
+            <div class="upload-box" @click="triggerFileInput">
+              <img
                 v-if="previewImage"
                 :src="previewImage"
-                style="width: 100%; height: 14.5rem; object-fit: cover; border-radius: 10px"
+                alt="Preview"
+                class="preview-image"
               />
-              <div v-else class="upload text-center q-pa-md">
-                <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon q-mb-sm" />
+              <div v-else class="upload">
+                <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon" />
                 <div>Upload Photo</div>
               </div>
               <input
@@ -136,8 +285,10 @@
             </div>
           </div>
 
-          <div class="col-5">
-            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">COLLECTION NAME</div>
+          <div class="col-5 q-ml-lg">
+            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
+              COLLECTION NAME
+            </div>
             <q-input
               v-model="newCollectionTitle"
               class="field-collection q-mb-md"
@@ -168,35 +319,56 @@
             class="sub-font-2"
             style="color: #000000"
             v-close-popup
-            @click="resetForm"
             no-caps
+            @click="resetForm"
           />
           <q-btn label="Save" class="q-mr-sm btn-save" @click="addCollection" no-caps />
         </q-card-actions>
       </q-card>
     </q-dialog>
+
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
 import { useUserStore } from 'src/stores/user'
+import { useModelStore } from 'stores/modelStore'
+import '@google/model-viewer'
 
 const router = useRouter()
-const user = ref({ first_name: '' })
+const userStore = useUserStore()
+const modelStore = useModelStore()
+
+// Reactive variables
 const collections = ref([])
+const recentItems = ref([])
 const isLoading = ref(true)
+const isLoadingModels = ref(true)
 const showDialog = ref(false)
 const fileInput = ref(null)
 const previewImage = ref(null)
 const newCollectionTitle = ref('')
 const newCollectionDesc = ref('')
 const newCollection = ref({ coverFile: null })
-const userStore = useUserStore()
-const recentItems = ref([])
 
+// Filter and Sort reactive variables
+const selectedFilter = ref('All')
+const selectedSort = ref('Recent')
+const showFilterMenu = ref(false)
+const showSortMenu = ref(false)
+
+const filterOptions = ['All', 'Documents', 'PDFs', 'Images', 'Recent']
+const sortOptions = ['Recent', 'Alphabetical', 'Author', 'Date Created']
+
+// Get first 3 models for featured display
+const featuredModels = computed(() => {
+  return modelStore.models.slice(0, 3)
+})
+
+// Initialize page
 onMounted(async () => {
   const {
     data: { user: authUser },
@@ -205,21 +377,39 @@ onMounted(async () => {
 
   if (authError || !authUser) {
     console.error('Auth error:', authError)
-    router.push('/user/login') // redirect if not authenticated
+    router.push('/user/login')
     return
   }
 
-  const { data: userData } = await supabase
-    .from('registered_users')
-    .select('first_name')
-    .eq('id', authUser.id)
-    .single()
+  // Load user profile
+  await userStore.fetchProfile()
 
-  user.value = userData
-  await loadCollections(authUser.id)
-  await loadRecentViews(authUser.id)
+  // Load all data
+  await Promise.all([
+    loadCollections(authUser.id),
+    loadRecentViews(authUser.id),
+    loadModels()
+  ])
 })
 
+// Load collections from Supabase
+async function loadCollections(userId) {
+  isLoading.value = true
+  const { data, error } = await supabase
+    .from('collections')
+    .select('collection_name, cover_url, collection_id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error loading collections:', error)
+  } else {
+    collections.value = data
+  }
+  isLoading.value = false
+}
+
+// Load recent views from Supabase
 async function loadRecentViews(userId) {
   const { data, error } = await supabase
     .from('user_activity_log')
@@ -263,51 +453,30 @@ async function loadRecentViews(userId) {
       clicked_at: d.clicked_at,
     }))
     .filter((item) => item?.file_url)
-  // Filter out any undefined if data not found
 }
 
-async function loadCollections(userId) {
-  isLoading.value = true
-  const { data, error } = await supabase
-    .from('collections')
-    .select('collection_name, cover_url, collection_id')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+// Load models (for featured artifacts)
+async function loadModels() {
+  isLoadingModels.value = true
+  try {
+    const { data, error } = await supabase
+      .from('artifacts_metadata')
+      .select('id, file_name, metadata, file_url')
+      .limit(3)
+      .order('created_at', { ascending: false })
 
-  if (error) {
-    console.error('Error loading collections:', error)
-  } else {
-    collections.value = data
+    if (error) {
+      console.error('Error loading models:', error)
+    } else {
+      modelStore.setModels(data)
+    }
+  } catch (err) {
+    console.error('Failed to load models:', err)
   }
-
-  isLoading.value = false
+  isLoadingModels.value = false
 }
 
-function goToCollectionsPage() {
-  router.push('/collections')
-}
-
-function goToCollectionDetailsPage(collectionId) {
-  router.push(`/collection/${collectionId}`)
-}
-
-function triggerFilePicker() {
-  fileInput.value.click()
-}
-
-function handleImageUpload(event) {
-  const file = event.target.files[0]
-  if (!file) return
-
-  newCollection.value.coverFile = file
-
-  const reader = new FileReader()
-  reader.onload = () => {
-    previewImage.value = reader.result
-  }
-  reader.readAsDataURL(file)
-}
-
+// Time ago helper function
 function timeAgo(dateString) {
   if (!dateString) return 'unknown time'
 
@@ -332,6 +501,7 @@ function timeAgo(dateString) {
   return `${years} year${years !== 1 ? 's' : ''} ago`
 }
 
+// Log click activity
 async function logClick(itemId, itemType) {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
@@ -356,6 +526,8 @@ async function logClick(itemId, itemType) {
     console.error('Error logging click:', err)
   }
 }
+
+// View item (artifact or document)
 async function viewItem(item) {
   if (item.item_type === 'artifact') {
     const { data, error } = await supabase
@@ -386,6 +558,47 @@ async function viewItem(item) {
 
     router.push(`/documents/${item.id}`)
   }
+}
+
+// Toggle star for models
+const toggleStar = async (modelId) => {
+  const model = modelStore.models.find(m => m.id === modelId)
+  if (model) {
+    model.starred = !model.starred
+    // TODO: Update in Supabase if needed
+  }
+}
+
+// Toggle bookmark for models
+const toggleBookmark = async (modelId) => {
+  const model = modelStore.models.find(m => m.id === modelId)
+  if (model) {
+    model.bookmarked = !model.bookmarked
+    // TODO: Update in Supabase if needed
+  }
+}
+
+// Navigation functions
+function goToCollectionDetailsPage(collectionId) {
+  router.push(`/collection/${collectionId}`)
+}
+
+// Collection management
+function triggerFileInput() {
+  fileInput.value.click()
+}
+
+function handleImageUpload(event) {
+  const file = event.target.files[0]
+  if (!file) return
+
+  newCollection.value.coverFile = file
+
+  const reader = new FileReader()
+  reader.onload = () => {
+    previewImage.value = reader.result
+  }
+  reader.readAsDataURL(file)
 }
 
 function resetForm() {
