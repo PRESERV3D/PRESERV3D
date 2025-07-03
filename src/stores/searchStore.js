@@ -16,7 +16,7 @@ export const useSearchStore = defineStore('search', {
 
       const { data, error } = await supabase
         .from(table)
-        .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
+        .select('id, file_name, file_url, preview_url, metadata, uploaded_at, updated_at')
         .ilike('search_text', `%${query}%`)
 
       if (error) {
