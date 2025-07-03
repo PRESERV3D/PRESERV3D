@@ -99,11 +99,11 @@
                 </router-link>
                 <q-btn
                   icon="bookmark_border"
-                  flat
                   dense
                   size="sm"
-                  color="primary"
+                  class="btn-bm"
                   @click="openBookmarkDialog(doc, 'document')"
+                  flat
                 />
               </q-card>
 
@@ -228,11 +228,11 @@
                 </router-link>
                 <q-btn
                   icon="bookmark_border"
-                  flat
                   dense
                   size="sm"
-                  color="primary"
+                  class="btn-bm"
                   @click="openBookmarkDialog(doc, 'document')"
+                  flat
                 />
               </q-card>
 
