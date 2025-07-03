@@ -6,7 +6,7 @@
           <router-link to="/documents">Back</router-link>
         </div>
         <div class="col-auto">
-          <PdfPreview :pdfUrl="doc.file_url" class="document-img" style="z-index: 1" />
+          <q-img :src="doc.preview_url" class="document-img" style="z-index: 1" />
         </div>
         <div class="col">
           <h2 class="document-title">{{ doc.metadata.title }}</h2>
@@ -64,7 +64,6 @@
 import { useRoute } from 'vue-router'
 import { computed } from 'vue'
 import { useDocumentsStore } from 'stores/documentsStore'
-import PdfPreview from 'components/PdfPreview.vue'
 
 const route = useRoute()
 const documentsStore = useDocumentsStore()
