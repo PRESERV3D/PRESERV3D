@@ -103,22 +103,26 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
-import { useRouter } from 'vue-router'
 
-const router = useRouter()
 const route = useRoute()
 const doc = ref(null)
 const loading = ref(true)
 const showDialog = ref(false)
 const dialog = ref(false)
 const metadata = ref(null)
+
 async function handleEdit() {
-  metadata.value = { ...doc.value.metadata }
+  metadata.value = {
+    ...doc.value.metadata,
+    file_name: doc.value.file_name,
+  }
+
   dialog.value = true
 }
 
 async function saveMetadata(newMetadata) {
   try {
+    console.log(newMetadata.metadata)
     const { error } = await supabase
       .from('documents_metadata')
       .update({
@@ -140,7 +144,8 @@ async function saveMetadata(newMetadata) {
     } else {
       alert('Metadata saved successfully!')
       dialog.value = false
-      router.push({ name: 'dashboard' })
+
+      location.reload()
     }
   } catch (err) {
     console.error('Error saving metadata:', err)
