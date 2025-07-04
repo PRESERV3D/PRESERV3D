@@ -84,10 +84,10 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-    <!-- Book Highlights Section -->
+    <!-- Document Highlights Section -->
     <div class="column q-py-md q-gutter-lg">
       <div class="box-highlights">
-        <p class="q-ml-lg admin-title-2" style="font-size: 16px">Book Highlights</p>
+        <p class="q-ml-lg admin-title-2" style="font-size: 16px">Document Highlights</p>
         <div class="row docs-gap justify-start">
           <div v-for="(doc, index) in documentsStore.documents.slice(0, 3)" :key="index">
             <div class="row q-mb-lg">
