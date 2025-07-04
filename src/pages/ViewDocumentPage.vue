@@ -20,7 +20,7 @@
         </div>
         <div class="col">
           <h2 class="document-title">{{ doc.metadata.title }}</h2>
-          <div class="row items-center justify-center">
+          <div class="row items-center">
             <p class="sub-font-3" style="font-size: 16px; margin: 0; max-width: 25rem">
               {{ doc.metadata.author }}
             </p>
