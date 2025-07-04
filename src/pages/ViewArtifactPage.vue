@@ -54,7 +54,7 @@
                   class="bookmark-icon q-mr-md"
                   :class="{ bookmarked: model.bookmarked }"
                   size="sm"
-                  @click.stop="toggleBookmark(model.id)"
+                  @click.stop="openBookmarkDialog(model, 'artifact')"
                 />
 
                 <!--                <q-icon-->
@@ -168,7 +168,7 @@
 
         <q-card-actions class="collection-footer" align="center">
           <q-btn label="Save" color="primary" @click="saveToSelectedCollections" />
-          <q-btn flat label="Cancel" v-close-popup @click="resetForm" />
+          <q-btn flat label="Cancel" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -205,7 +205,6 @@ const modelStore = useModelStore()
 const model = ref(null)
 const loading = ref(true)
 
-// Collection dialog state
 const dialogOpen = ref(false)
 const selectedModel = ref(null)
 const selectedItemType = ref('artifact')
@@ -213,7 +212,6 @@ const userCollections = ref([])
 const selectedCollections = ref([])
 const existingCollectionIds = ref([])
 
-// Notification dialog state
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
@@ -226,23 +224,23 @@ function formatDate(dateStr) {
   })}`
 }
 
-const toggleBookmark = async (modelId) => {
-  if (!model.value) return
+// const toggleBookmark = async (modelId) => {
+//   if (!model.value) return
 
-  // Toggle bookmark state
-  model.value.bookmarked = !model.value.bookmarked
+//   // Toggle bookmark state
+//   model.value.bookmarked = !model.value.bookmarked
 
-  // Update in store if model exists there
-  const storeModel = modelStore.models.find((m) => m.id === modelId)
-  if (storeModel) {
-    storeModel.bookmarked = model.value.bookmarked
-  }
+//   // Update in store if model exists there
+//   const storeModel = modelStore.models.find((m) => m.id === modelId)
+//   if (storeModel) {
+//     storeModel.bookmarked = model.value.bookmarked
+//   }
 
-  // If bookmarked, open collection dialog
-  if (model.value.bookmarked) {
-    openBookmarkDialog(model.value, 'artifact')
-  }
-}
+//   // If bookmarked, open collection dialog
+//   if (model.value.bookmarked) {
+//     openBookmarkDialog(model.value, 'artifact')
+//   }
+// }
 
 // const toggleStar = (modelId) => {
 //   if (!model.value) return
@@ -378,11 +376,6 @@ const saveToSelectedCollections = async () => {
     console.error('Unexpected error:', err)
     showNotifyDialog('Error', 'An unexpected error occurred.')
   }
-}
-
-const resetForm = () => {
-  selectedCollections.value = []
-  existingCollectionIds.value = []
 }
 
 const showNotifyDialog = (title, message) => {
