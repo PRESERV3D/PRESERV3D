@@ -101,54 +101,30 @@
             <div class="column">
               <p class="q-py-xs sub-font" style="font-size: 14px">Artifacts</p>
 
-              <div class="row items-center justify-between">
+              <div
+                v-for="(item, index) in topArtifacts"
+                :key="index"
+                class="row items-center justify-between"
+              >
                 <div class="row items-center q-gutter-sm">
-                  <p class="number">1</p>
-                  <p class="sub-font-2">Artifact Title 1</p>
+                  <p class="number">{{ index + 1 }}</p>
+                  <p class="sub-font-2">{{ item.title }}</p>
                 </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">9.5k views</p>
-              </div>
-
-              <div class="row items-center justify-between">
-                <div class="row items-center q-gutter-sm">
-                  <p class="number">2</p>
-                  <p class="sub-font-2">Artifact Title 2</p>
-                </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">7.2k views</p>
-              </div>
-
-              <div class="row items-center justify-between">
-                <div class="row items-center q-gutter-sm">
-                  <p class="number">3</p>
-                  <p class="sub-font-2">Artifact Title 3</p>
-                </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">6.8k views</p>
+                <p class="q-mr-md sub-font-2" style="font-size: 12px">{{ item.views }} views</p>
               </div>
 
               <p class="q-py-xs sub-font" style="font-size: 14px">Documents</p>
 
-              <div class="row items-center justify-between">
+              <div
+                v-for="(item, index) in topDocuments"
+                :key="index"
+                class="row items-center justify-between"
+              >
                 <div class="row items-center q-gutter-sm">
-                  <p class="number">1</p>
-                  <p class="sub-font-2">Document Title 1</p>
+                  <p class="number">{{ index + 1 }}</p>
+                  <p class="sub-font-2">{{ item.title }}</p>
                 </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">12.4k views</p>
-              </div>
-
-              <div class="row items-center justify-between">
-                <div class="row items-center q-gutter-sm">
-                  <p class="number">2</p>
-                  <p class="sub-font-2">Document Title 2</p>
-                </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">8.1k views</p>
-              </div>
-
-              <div class="row items-center justify-between">
-                <div class="row items-center q-gutter-sm">
-                  <p class="number">3</p>
-                  <p class="sub-font-2">Document Title 3</p>
-                </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">5.9k views</p>
+                <p class="q-mr-md sub-font-2" style="font-size: 12px">{{ item.views }} views</p>
               </div>
             </div>
           </div>
@@ -160,20 +136,50 @@
         <div class="q-pa-md">
           <div class="col q-gutter-lg q-px-sm">
             <div class="recent-box q-pa-sm flex column items-center">
-              <div class="recent-card"></div>
-              <div class="q-mt-md self-start sub-font-4" style="margin-left: 1rem">Title</div>
+              <div class="recent-card">
+                <q-img
+                  class="q-mx-auto"
+                  style="max-width: 200px; max-height: 250px"
+                  :src="
+                    recentStore.recentItems[currentIndex]?.preview_url ||
+                    recentStore.recentItems[currentIndex]?.file_url
+                  "
+                  :alt="recentStore.recentItems[currentIndex]?.metadata?.title || 'No Title'"
+                />
+              </div>
+
+              <div class="q-mt-md self-start sub-font-4" style="margin-left: 1rem">
+                {{ recentStore.recentItems[currentIndex]?.metadata?.title || 'Untitled' }}
+              </div>
+
               <div class="q-mt-sm self-start sub-font-2" style="margin-left: 1rem; color: #ffffff">
-                Date Added
+                {{
+                  new Date(recentStore.recentItems[currentIndex]?.uploaded_at).toLocaleDateString()
+                }}
               </div>
             </div>
           </div>
 
           <div class="row q-gutter-lg items-center justify-center">
-            <q-btn flat round class="arrow-button" @click="goBack">
+            <q-btn
+              flat
+              round
+              class="arrow-button"
+              @click="
+                currentIndex =
+                  (currentIndex - 1 + recentStore.recentItems.length) %
+                  recentStore.recentItems.length
+              "
+            >
               <img src="/icons/arrow_left.png" alt="back" class="btn-arrows" />
             </q-btn>
 
-            <q-btn flat round class="arrow-button" @click="goNext">
+            <q-btn
+              flat
+              round
+              class="arrow-button"
+              @click="currentIndex = (currentIndex + 1) % recentStore.recentItems.length"
+            >
               <img src="/icons/arrow_right.png" alt="next" class="btn-arrows" />
             </q-btn>
           </div>
@@ -186,6 +192,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { supabase } from 'boot/supabase'
+import { useRecentStore } from 'stores/recentStore'
 import {
   Chart,
   LineController,
@@ -219,9 +226,21 @@ const monthLabels = [
 ]
 Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale)
 
+let topArtifacts = ref([])
+const topDocuments = ref([])
+
+const recentStore = useRecentStore()
+const currentIndex = ref(0)
+
 onMounted(async () => {
   const chartData = await prepareChartData()
   const usersData = await prepareUsersData()
+  const { data: topArts } = await supabase.from('top_artifacts').select('*')
+  const { data: topDocus } = await supabase.from('top_documents').select('*')
+  await recentStore.fetchRecentUploads()
+
+  topArtifacts.value = topArts
+  topDocuments.value = topDocus
 
   // Update counts from chartData and usersData
   artifacts.value = chartData.artifactsCounts.reduce((sum, val) => sum + val, 0)
@@ -231,9 +250,6 @@ onMounted(async () => {
   initChart(chartData)
   initUsersPerMonthChart(usersData)
 })
-
-function goBack() {}
-function goNext() {}
 
 function initChart(data) {
   chartInstance = new Chart(uploadedArchives.value, {
@@ -372,17 +388,4 @@ async function prepareUsersData() {
     usersCounts,
   }
 }
-
-// async function mostViewed() {
-//   const { data: artifacts } = await supabase.from('artifacts_metadata').select('*')
-//   const { data: documents } = await supabase.from('documents_metadata').select('views')
-
-//   const artifactsViews = artifacts.reduce((sum, item) => sum + item.views, 0)
-//   const documentsViews = documents.reduce((sum, item) => sum + item.views, 0)
-
-//   return {
-//     artifactsViews,
-//     documentsViews,
-//   }
-// }
 </script>

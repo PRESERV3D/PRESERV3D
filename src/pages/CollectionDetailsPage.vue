@@ -114,7 +114,7 @@
                           class="action-icon bookmark-icon"
                           :class="{ 'bookmarked': artifact.bookmarked }"
                           size="18px"
-                          @click.stop="toggleBookmark(artifact.id)"
+                          @click.stop="toggleBookmark(artifact.id, 'artifact')"
                         />
                       </div>
                     </div>
@@ -181,7 +181,7 @@
                           class="action-icon bookmark-icon"
                           :class="{ 'bookmarked': document.bookmarked }"
                           size="18px"
-                          @click.stop="toggleBookmark(document.id)"
+                          @click.stop="toggleBookmark(document.id, 'document')"
                         />
                       </div>
                     </div>
@@ -301,6 +301,22 @@
       </q-card>
     </q-dialog>
 
+    <!-- Confirm Remove Item Dialog -->
+    <q-dialog v-model="confirmRemoveOpen" persistent>
+      <q-card class="confirmation-delete">
+        <q-card-section class="column items-center">
+          <q-img src="src/assets/img/conf-delete.png" alt="question icon" class="question-icon" />
+          <div class="q-mt-md sub-font" style="color: #000000; text-align: center">
+            Are you sure you want to remove "{{ itemToRemove.name }}" from the collection?
+          </div>
+        </q-card-section>
+        <q-card-actions align="center">
+          <q-btn label="Yes" class="btn-save" flat @click="removeItem" />
+          <q-btn flat label="No" class="sub-font-2" style="color: #000000" v-close-popup no-caps />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Notify Dialog -->
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
@@ -343,11 +359,18 @@ const messageDialogOpen = ref(false)
 const messageDialogTitle = ref('')
 const messageDialogContent = ref('')
 
-
 // Notify dialog states
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
+
+// Confirm remove dialog states
+const confirmRemoveOpen = ref(false)
+const itemToRemove = ref({
+  id: null,
+  type: '',
+  name: '',
+})
 
 // Edit dialog data
 const editData = ref({
@@ -373,12 +396,12 @@ function showMessageDialog(title, content) {
   messageDialogOpen.value = true
 }
 
-// Helper function to show notify dialogs (from documents page)
-// function showNotifyDialog(title, message) {
-//   notifyDialogTitle.value = title
-//   notifyDialogMessage.value = message
-//   notifyDialogOpen.value = true
-// }
+// Helper function to show notify dialogs
+function showNotifyDialog(title, message) {
+  notifyDialogTitle.value = title
+  notifyDialogMessage.value = message
+  notifyDialogOpen.value = true
+}
 
 // Mount lifecycle - fetch data
 onMounted(async () => {
@@ -460,7 +483,6 @@ async function logClick(itemId, itemType) {
     console.error('Error logging click:', err)
   }
 }
-
 
 // Edit dialog methods
 const triggerEditFileInput = () => {
@@ -582,35 +604,54 @@ async function removeFromCollection(itemId, itemType) {
   )
 }
 
-// Toggle bookmark - now with actual removal functionality
-const toggleBookmark = async (itemId) => {
-  // Try to find in artifacts first
-  const artifact = artifacts.value.find(a => a.id === itemId)
-  if (artifact) {
-    if (artifact.bookmarked) {
-      // If currently bookmarked, remove from collection
-      await removeFromCollection(itemId, 'artifact')
-    } else {
-      // If not bookmarked, just toggle the UI state
-      artifact.bookmarked = !artifact.bookmarked
+// Toggle bookmark - unified approach with confirmation dialog
+const toggleBookmark = (itemId, itemType) => {
+  const list = itemType === 'document' ? documents.value : artifacts.value
+  const item = list.find((el) => el.id === itemId)
+
+  if (item && item.bookmarked) {
+    // Show confirmation dialog for removal
+    itemToRemove.value = {
+      id: itemId,
+      type: itemType,
+      name: item?.metadata?.title || item?.file_name || 'Untitled',
     }
+    confirmRemoveOpen.value = true
+  } else {
+    // Just toggle the UI state (shouldn't happen in collection view)
+    if (item) {
+      item.bookmarked = !item.bookmarked
+    }
+  }
+}
+
+// Remove item after confirmation
+async function removeItem() {
+  const { id, type } = itemToRemove.value
+
+  const { error } = await supabase
+    .from('collection_items')
+    .delete()
+    .match({ collection_id: collectionId, item_id: id, item_type: type })
+
+  if (error) {
+    console.error('Remove failed:', error)
+    showMessageDialog('Delete Failed', `Failed to remove ${type} from collection.`)
     return
   }
 
-  // Try to find in documents
-  const document = documents.value.find(d => d.id === itemId)
-  if (document) {
-    if (document.bookmarked) {
-      // If currently bookmarked, remove from collection
-      await removeFromCollection(itemId, 'document')
-    } else {
-      // If not bookmarked, just toggle the UI state
-      document.bookmarked = !document.bookmarked
-    }
-    return
+  // Remove from display
+  if (type === 'document') {
+    documents.value = documents.value.filter((doc) => doc.id !== id)
+  } else {
+    artifacts.value = artifacts.value.filter((art) => art.id !== id)
   }
 
-  console.log('Item not found for bookmark toggle:', itemId)
+  confirmRemoveOpen.value = false
+  showMessageDialog(
+    'Removed',
+    `${type.charAt(0).toUpperCase() + type.slice(1)} "${itemToRemove.value.name}" removed from collection.`,
+  )
 }
 
 // Navigation methods

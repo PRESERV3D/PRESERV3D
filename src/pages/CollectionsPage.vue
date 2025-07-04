@@ -2,7 +2,7 @@
   <q-page class="q-pa-md">
     <div class="q-mt-xs title">Collections</div>
 
-    <div class="q-mb-md sub-font-3 row items-baseline justify-between">
+    <div class="q-mb-md subtitle row items-baseline justify-between">
       <div class="q-ml-sm">Archival Materials grouped into a collection.</div>
       <div class="artifact-btn">
         <q-btn-dropdown

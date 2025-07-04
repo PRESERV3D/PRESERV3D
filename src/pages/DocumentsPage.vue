@@ -31,7 +31,11 @@
             alt="Upload-Document"
             class="upload-icon-docu"
           />
-          <div v-if="!selectedFile" class="sub-font-3 text-center" style="font-weight: 200">
+          <div
+            v-if="!selectedFile"
+            class="sub-font-3 text-center"
+            style="font-size: 14px; font-weight: 200"
+          >
             <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
               DRAG and DROP files
             </div>
@@ -302,7 +306,7 @@
                   <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
                     notifyDialogTitle
                   }}</q-card-section>
-                  <q-card-section class="sub-font-3" style="font-weight: 400">{{
+                  <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
                     notifyDialogMessage
                   }}</q-card-section>
                   <q-card-actions>
@@ -799,7 +803,7 @@ async function saveMetadata(updatedMetadata) {
     } else {
       alert('Metadata saved successfully!')
       dialog.value = false
-      router.push({ name: 'dashboard' })
+      router.push({ name: 'admin-home' })
     }
   } catch (err) {
     console.error('Error saving metadata:', err)

@@ -116,7 +116,7 @@ async function loginUser() {
       alert('Welcome, Admin!')
       await router.push('/admindash')
     } else if (role === 'user') {
-      alert('Login successful!')
+      alert('Welcome, PUPian!')
       await router.push('/home')
     } else {
       alert('Access denied. Unknown role.')

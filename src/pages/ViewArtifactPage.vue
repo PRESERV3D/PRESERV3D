@@ -1,6 +1,5 @@
 <template>
   <q-page class="q-pa-md">
-
     <router-link to="/artifacts" class="back-button-top">
       <q-btn flat icon="arrow_back" label="Back to Artifacts" />
     </router-link>
@@ -10,12 +9,10 @@
     </div>
 
     <div v-else-if="model" class="artifact-detail-container">
-
       <!-- Artifact Name/Title at the top -->
       <h2 class="a-title q-mb-lg">{{ model.metadata.title }}</h2>
 
       <div class="main-content">
-
         <!-- Left Side: 3D Model Viewer Card -->
         <div class="artifact-card">
           <model-viewer
@@ -32,7 +29,6 @@
 
         <!-- Right Side: Information Panel -->
         <div class="info-section">
-
           <!-- Category Tag and Action Icons -->
           <div class="top-actions q-mb-lg">
             <div class="categories-container">
@@ -48,11 +44,7 @@
               </template>
               <template v-else>
                 <!-- Fallback placeholder category as there are no data yet -->
-                <q-chip
-                  class="q-mr-sm q-mt-xs category-tag"
-                >
-                  Uncategorized
-                </q-chip>
+                <q-chip class="q-mr-sm q-mt-xs category-tag"> Uncategorized </q-chip>
               </template>
 
               <!-- Action icons -->
@@ -60,18 +52,18 @@
                 <q-icon
                   :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                   class="bookmark-icon q-mr-md"
-                  :class="{ 'bookmarked': model.bookmarked }"
+                  :class="{ bookmarked: model.bookmarked }"
                   size="sm"
                   @click.stop="toggleBookmark(model.id)"
                 />
 
-<!--                <q-icon-->
-<!--                  :name="model.starred ? 'star' : 'star_border'"-->
-<!--                  class="star-icon"-->
-<!--                  :class="{ 'starred': model.starred }"-->
-<!--                  size="sm"-->
-<!--                  @click.stop="toggleStar(model.id)"-->
-<!--                />-->
+                <!--                <q-icon-->
+                <!--                  :name="model.starred ? 'star' : 'star_border'"-->
+                <!--                  class="star-icon"-->
+                <!--                  :class="{ 'starred': model.starred }"-->
+                <!--                  size="sm"-->
+                <!--                  @click.stop="toggleStar(model.id)"-->
+                <!--                />-->
               </div>
             </div>
           </div>
@@ -128,7 +120,9 @@
                   <div class="a-info-title2">Date Received:</div>
                 </div>
                 <div class="detail-value">
-                  <div class="a-info-subtitle">{{ formatDate(model.date_received || model.uploaded_at) }}</div>
+                  <div class="a-info-subtitle">
+                    {{ formatDate(model.date_received || model.uploaded_at) }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -183,11 +177,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
-        <q-card-section class="sub-font-3" style="font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
+        <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -239,7 +233,7 @@ const toggleBookmark = async (modelId) => {
   model.value.bookmarked = !model.value.bookmarked
 
   // Update in store if model exists there
-  const storeModel = modelStore.models.find(m => m.id === modelId)
+  const storeModel = modelStore.models.find((m) => m.id === modelId)
   if (storeModel) {
     storeModel.bookmarked = model.value.bookmarked
   }
