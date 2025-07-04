@@ -25,6 +25,7 @@
               :key="option"
               clickable
               v-close-popup
+              class="collection-sort-menu"
               @click="setSortOption(option)"
             >
               <q-item-section>
