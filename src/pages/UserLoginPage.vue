@@ -117,7 +117,7 @@ async function loginUser() {
       await router.push('/admindash')
     } else if (role === 'user') {
       alert('Login successful!')
-      await router.push('/userdash')
+      await router.push('/home')
     } else {
       alert('Access denied. Unknown role.')
       await supabase.auth.signOut()

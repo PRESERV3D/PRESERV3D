@@ -39,12 +39,6 @@ const routes = [
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
       {
-        path: 'userdash',
-        name: 'user-home',
-        component: () => import('pages/UserDashboard.vue'),
-        meta: { requiresAuth: true, allowedRoles: ['user'] }, // added
-      },
-      {
         path: 'documents/:id',
         name: 'view-document',
         component: () => import('pages/ViewDocumentPage.vue'),
