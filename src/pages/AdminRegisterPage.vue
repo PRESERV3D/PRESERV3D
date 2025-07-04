@@ -7,13 +7,16 @@
 
     <div class="column q-gutter-sm">
       <q-form @submit.prevent="registerAdmin">
-        <label class="names">First Name</label>
-        <q-input filled dense v-model="form.first_name" class="text-box" />
+        <div class="row items-center q-gutter-lg q-mt-xs">
+          <label class="names">First Name</label>
+          <q-input filled dense v-model="form.first_name" class="text-box" style="width: 25.8rem" />
+        </div>
+        <div class="row items-center q-gutter-lg q-mt-sm">
+          <label class="names">Last Name</label>
+          <q-input filled dense v-model="form.last_name" class="text-box" style="width: 25.8rem" />
+        </div>
 
-        <label class="names">Last Name</label>
-        <q-input filled dense v-model="form.last_name" class="text-box" />
-
-        <div class="row">
+        <div class="row q-mt-lg">
           <div class="col q-gutter-sm">
             <label class="names">Email</label>
             <q-input
@@ -36,6 +39,7 @@
 
         <label class="names">Password</label>
         <q-input
+          filled
           dense
           type="password"
           v-model="form.password"
