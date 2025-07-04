@@ -135,7 +135,7 @@
             </q-list>
           </q-btn-dropdown>
           <q-btn
-            @click="addNewCollection"
+            @click="showUploadDialog = true"
             label="Add New"
             icon="add_circle"
             style="min-width: 150px"
@@ -146,6 +146,79 @@
         </div>
       </div>
     </div>
+
+    <!-- Upload Dialog -->
+    <q-dialog v-model="showUploadDialog" persistent>
+      <q-card class="add-document-card">
+        <q-card-section
+          class="box-upload-docu"
+          @dragover.prevent="onDragOver"
+          @dragleave.prevent="onDragLeave"
+          @drop.prevent="onFileDrop"
+          :class="{ 'drag-over': isDragging }"
+        >
+          <q-img
+            src="src/assets/img/drag-drop-icon.png"
+            alt="Upload-Artifact"
+            class="upload-icon-docu"
+          />
+          <div
+            v-if="!selectedFile"
+            class="sub-font-3 text-center"
+            style="font-size: 14px; font-weight: 200"
+          >
+            <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
+              DRAG and DROP files
+            </div>
+            or <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a> on
+            your computer
+          </div>
+          <div v-else class="document-preview text-center">
+            <q-img src="src/assets/img/document-icon.png" alt="Artifact" class="document-icon" />
+            <div class="selected-document-name q-mt-md">
+              {{ selectedFile.name }}
+            </div>
+            <!-- Upload progress bar -->
+            <q-linear-progress
+              v-if="uploading"
+              :value="uploadProgress / 100"
+              color="primary"
+              class="q-mt-md full-width"
+            />
+          </div>
+          <input
+            type="file"
+            ref="fileInput"
+            accept=".glb"
+            style="display: none"
+            @change="handleFileChange"
+          />
+        </q-card-section>
+
+        <q-card-actions class="row q-ml-lg justify-between items-center">
+          <div></div>
+          <q-btn
+            v-if="!uploading"
+            label="Upload"
+            class="q-ml-xl q-mt-sm btn-save"
+            @click="handleUpload"
+            no-caps
+          />
+
+          <q-spinner v-else color="primary" size="2em" class="q-ml-xl q-mt-sm" />
+
+          <q-btn
+            flat
+            label="Cancel"
+            class="q-mt-sm sub-font-2"
+            style="color: #000000"
+            v-close-popup
+            no-caps
+            @click="handleCancel"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- Three Artifacts per Row Grid -->
     <div class="artifacts-grid">
@@ -268,11 +341,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          notifyDialogTitle
-        }}</q-card-section>
+            notifyDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-          notifyDialogMessage
-        }}</q-card-section>
+            notifyDialogMessage
+          }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -317,6 +390,14 @@ const existingCollectionIds = ref([])
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
+
+// Upload dialog state
+const showUploadDialog = ref(false)
+const selectedFile = ref(null)
+const fileInput = ref(null)
+const isDragging = ref(false)
+const uploading = ref(false)
+const uploadProgress = ref(0)
 
 // Computed properties
 const filteredModels = computed(() => {
@@ -406,13 +487,145 @@ const clearFilters = () => {
   applyFilters()
 }
 
-// const toggleStar = (modelId) => {
-//   const model = modelStore.models.find(m => m.id === modelId)
-//   if (model) {
-//     model.starred = !model.starred
-//     // You can add API call here to persist the change
-//   }
-// }
+// Upload dialog methods
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
+
+const handleFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    selectedFile.value = file
+  } else {
+    selectedFile.value = null
+  }
+}
+
+const onDragOver = () => {
+  isDragging.value = true
+}
+
+const onDragLeave = () => {
+  isDragging.value = false
+}
+
+const onFileDrop = (e) => {
+  isDragging.value = false
+  const files = e.dataTransfer.files
+  if (files.length > 0 && files[0].name.endsWith('.glb')) {
+    selectedFile.value = files[0]
+  } else {
+    alert('Only .glb files are allowed.')
+  }
+}
+
+const sanitizeFileName = (name) => {
+  return name.replace(/[^\w.-]/g, '_')
+}
+
+const handleUpload = async () => {
+  const file = selectedFile.value
+  const fileName = sanitizeFileName(file.name)
+  uploading.value = true
+  uploadProgress.value = 0
+
+  if (!file || !fileName.endsWith('.glb')) {
+    alert('Only .glb files are allowed.')
+    return
+  }
+
+  try {
+    const alreadyExists = await fileExists(fileName)
+
+    if (alreadyExists) {
+      alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
+      return
+    }
+
+    // Fake progress bar animation
+    const progressInterval = setInterval(() => {
+      if (uploadProgress.value < 90) {
+        uploadProgress.value += 1
+      }
+    }, 200)
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage.from('artifacts').upload(`${fileName}`, file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: 'model/gltf-binary',
+    })
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError)
+      alert('Upload failed.')
+      return
+    }
+
+    clearInterval(progressInterval)
+    uploadProgress.value = 100
+
+    const { data: urlData } = supabase.storage.from('artifacts').getPublicUrl(`${fileName}`)
+    const fileUrl = urlData.publicUrl
+
+    // Save metadata to artifacts_metadata table
+    const insertData = {
+      file_name: fileName,
+      file_url: fileUrl,
+      uploaded_at: new Date(),
+      updated_at: new Date(),
+      metadata: {
+        title: fileName.replace('.glb', ''),
+        author: '',
+        date: '',
+        summary: '',
+        keywords: [],
+        categories: [],
+      }
+    }
+
+    const { error: dbError } = await supabase.from('artifacts_metadata').insert([insertData])
+    if (dbError) {
+      console.error('Supabase insert error:', dbError)
+      alert('Upload succeeded but metadata failed to save.')
+      return
+    }
+
+    setTimeout(() => {
+      uploading.value = false
+      uploadProgress.value = 0
+      showUploadDialog.value = false
+      selectedFile.value = null
+      // Refresh the artifacts list
+      fetchAllArtifacts()
+    }, 1000)
+
+    alert('Artifact uploaded successfully!')
+  } catch (err) {
+    console.error('Upload failed:', err)
+    alert('Upload failed. See console for details.')
+  } finally {
+    uploading.value = false
+  }
+}
+
+const handleCancel = () => {
+  selectedFile.value = null
+  showUploadDialog.value = false
+}
+
+const fileExists = async (fileName) => {
+  const { data, error } = await supabase.from('artifacts_metadata').select('file_name').eq('file_name', fileName)
+
+  if (!data || data.length === 0) return false
+
+  if (error) {
+    console.error('Error checking file existence:', error)
+    return false
+  }
+
+  return !!data
+}
 
 // Collection dialog methods
 const openBookmarkDialog = async (model, type = 'artifact') => {
