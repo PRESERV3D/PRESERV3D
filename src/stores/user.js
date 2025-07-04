@@ -53,7 +53,6 @@ export const useUserStore = defineStore('user', {
 
       if (userData) {
         this.profile = { ...userData, role: 'user' }
-        console.log('User data:', userData)
         return
       }
 
@@ -67,7 +66,6 @@ export const useUserStore = defineStore('user', {
 
         if (adminData) {
           this.profile = { ...adminData, role: 'admin' }
-          console.log('Admin profile fetched:', this.profile)
           return
         }
 

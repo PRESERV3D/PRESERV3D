@@ -534,6 +534,7 @@ function timeAgo(dateString) {
 async function logClick(itemId, itemType) {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
+  const model = await modelStore.getModelById(itemId)
 
   if (authError || !userId) {
     console.error('Auth error logging click:', authError)
@@ -544,12 +545,19 @@ async function logClick(itemId, itemType) {
     const { error } = await supabase.from('user_activity_log').insert({
       user_id: userId,
       item_id: itemId,
+      title: model.title || 'Untitled',
       item_type: itemType,
       clicked_at: new Date().toISOString(),
     })
 
     if (error) {
+      throw error
+    }
+
+    if (error) {
       console.error('Error logging click:', error)
+    } else {
+      console.log('Click Logged')
     }
   } catch (err) {
     console.error('Error logging click:', err)
