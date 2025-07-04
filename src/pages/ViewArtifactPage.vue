@@ -77,7 +77,6 @@ onMounted(async () => {
     console.log('Fallback Model from Store:', model.value)
   } else {
     model.value = data
-    console.log('Model from Supabase:', model.value)
   }
 
   loading.value = false
