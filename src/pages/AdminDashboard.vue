@@ -101,54 +101,30 @@
             <div class="column">
               <p class="q-py-xs sub-font" style="font-size: 14px">Artifacts</p>
 
-              <div class="row items-center justify-between">
+              <div
+                v-for="(item, index) in topArtifacts"
+                :key="index"
+                class="row items-center justify-between"
+              >
                 <div class="row items-center q-gutter-sm">
-                  <p class="number">1</p>
-                  <p class="sub-font-2">Artifact Title 1</p>
+                  <p class="number">{{ index + 1 }}</p>
+                  <p class="sub-font-2">{{ item.title }}</p>
                 </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">9.5k views</p>
-              </div>
-
-              <div class="row items-center justify-between">
-                <div class="row items-center q-gutter-sm">
-                  <p class="number">2</p>
-                  <p class="sub-font-2">Artifact Title 2</p>
-                </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">7.2k views</p>
-              </div>
-
-              <div class="row items-center justify-between">
-                <div class="row items-center q-gutter-sm">
-                  <p class="number">3</p>
-                  <p class="sub-font-2">Artifact Title 3</p>
-                </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">6.8k views</p>
+                <p class="q-mr-md sub-font-2" style="font-size: 12px">{{ item.views }} views</p>
               </div>
 
               <p class="q-py-xs sub-font" style="font-size: 14px">Documents</p>
 
-              <div class="row items-center justify-between">
+              <div
+                v-for="(item, index) in topDocuments"
+                :key="index"
+                class="row items-center justify-between"
+              >
                 <div class="row items-center q-gutter-sm">
-                  <p class="number">1</p>
-                  <p class="sub-font-2">Document Title 1</p>
+                  <p class="number">{{ index + 1 }}</p>
+                  <p class="sub-font-2">{{ item.title }}</p>
                 </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">12.4k views</p>
-              </div>
-
-              <div class="row items-center justify-between">
-                <div class="row items-center q-gutter-sm">
-                  <p class="number">2</p>
-                  <p class="sub-font-2">Document Title 2</p>
-                </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">8.1k views</p>
-              </div>
-
-              <div class="row items-center justify-between">
-                <div class="row items-center q-gutter-sm">
-                  <p class="number">3</p>
-                  <p class="sub-font-2">Document Title 3</p>
-                </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">5.9k views</p>
+                <p class="q-mr-md sub-font-2" style="font-size: 12px">{{ item.views }} views</p>
               </div>
             </div>
           </div>
@@ -219,9 +195,17 @@ const monthLabels = [
 ]
 Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale)
 
+let topArtifacts = ref([])
+const topDocuments = ref([])
+
 onMounted(async () => {
   const chartData = await prepareChartData()
   const usersData = await prepareUsersData()
+  const { data: topArts } = await supabase.from('top_artifacts').select('*')
+  const { data: topDocus } = await supabase.from('top_documents').select('*')
+
+  topArtifacts.value = topArts
+  topDocuments.value = topDocus
 
   // Update counts from chartData and usersData
   artifacts.value = chartData.artifactsCounts.reduce((sum, val) => sum + val, 0)
@@ -372,17 +356,4 @@ async function prepareUsersData() {
     usersCounts,
   }
 }
-
-// async function mostViewed() {
-//   const { data: artifacts } = await supabase.from('artifacts_metadata').select('*')
-//   const { data: documents } = await supabase.from('documents_metadata').select('views')
-
-//   const artifactsViews = artifacts.reduce((sum, item) => sum + item.views, 0)
-//   const documentsViews = documents.reduce((sum, item) => sum + item.views, 0)
-
-//   return {
-//     artifactsViews,
-//     documentsViews,
-//   }
-// }
 </script>
