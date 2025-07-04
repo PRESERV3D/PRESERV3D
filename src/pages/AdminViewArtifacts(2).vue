@@ -37,39 +37,41 @@
           <div class="top-actions q-mb-lg">
             <div class="categories-container">
               <!-- Show categories if they exist, otherwise show fallback -->
-              <template v-if="model.metadata.categories && model.metadata.categories.length > 0">
-                <q-chip
-                  v-for="(category, i) in model.metadata.categories"
-                  :key="i"
-                  class="category-tag"
-                >
-                  {{ category }}
-                </q-chip>
-              </template>
-              <template v-else>
-                <!-- Fallback placeholder category as there are no data yet -->
-                <q-chip
-                  class="q-mr-sm q-mt-xs category-tag"
-                >
-                  Uncategorized
-                </q-chip>
-              </template>
+              <div class="categories-section">
+                <template v-if="model.metadata.categories && model.metadata.categories.length > 0">
+                  <q-chip
+                    v-for="(category, i) in model.metadata.categories"
+                    :key="i"
+                    class="category-tag"
+                  >
+                    {{ category }}
+                  </q-chip>
+                </template>
+                <template v-else>
+                  <!-- Fallback placeholder category as there are no data yet -->
+                  <q-chip
+                    class="q-mr-sm q-mt-xs category-tag"
+                  >
+                    Uncategorized
+                  </q-chip>
+                </template>
+              </div>
 
-              <!-- Action buttons -->
+              <!-- Action buttons moved to right edge -->
               <div class="action-buttons">
                 <q-btn
                   flat
                   label="Edit"
-                  color="primary"
-                  class="btn-save q-mr-sm"
+                  class="text-button q-mr-sm"
                   @click="editArtifact"
+                  no-caps
                 />
                 <q-btn
                   flat
                   label="Delete"
-                  color="negative"
-                  class="btn-save"
+                  class="text-button"
                   @click="deleteArtifact"
+                  no-caps
                 />
               </div>
             </div>
@@ -255,7 +257,7 @@ function formatDate(dateStr) {
 
 // Action button methods
 const editArtifact = () => {
-  router.push(`/admin-view-artifact/${model.value.id}`)
+  router.push(`/admin/artifacts/${model.value.id}`)
 }
 
 const deleteArtifact = () => {
@@ -294,84 +296,70 @@ const confirmDelete = async () => {
   }
 }
 
-const toggleBookmark = async (modelId) => {
-  if (!model.value) return
-
-  // Toggle bookmark state
-  model.value.bookmarked = !model.value.bookmarked
-
-  // Update in store if model exists there
-  const storeModel = modelStore.models.find(m => m.id === modelId)
-  if (storeModel) {
-    storeModel.bookmarked = model.value.bookmarked
-  }
-
-  // If bookmarked, open collection dialog
-  if (model.value.bookmarked) {
-    openBookmarkDialog(model.value, 'artifact')
-  }
-}
-
-// const toggleStar = (modelId) => {
+// const toggleBookmark = async (modelId) => {
 //   if (!model.value) return
 //
-//   // Toggle star state
-//   model.value.starred = !model.value.starred
+//   // Toggle bookmark state
+//   model.value.bookmarked = !model.value.bookmarked
 //
 //   // Update in store if model exists there
 //   const storeModel = modelStore.models.find(m => m.id === modelId)
 //   if (storeModel) {
-//     storeModel.starred = model.value.starred
+//     storeModel.bookmarked = model.value.bookmarked
+//   }
+//
+//   // If bookmarked, open collection dialog
+//   if (model.value.bookmarked) {
+//     openBookmarkDialog(model.value, 'artifact')
 //   }
 // }
 
 // Collection dialog methods
-const openBookmarkDialog = async (modelItem, type = 'artifact') => {
-  selectedModel.value = modelItem
-  selectedItemType.value = type
-  dialogOpen.value = true
+// const openBookmarkDialog = async (modelItem, type = 'artifact') => {
+//   selectedModel.value = modelItem
+//   selectedItemType.value = type
+//   dialogOpen.value = true
+//
+//   await loadUserCollections()
+//
+//   // Check existing collections for this item
+//   const { data: existingItems, error } = await supabase
+//     .from('collection_items')
+//     .select('collection_id')
+//     .eq('item_id', modelItem.id)
+//     .eq('item_type', type)
+//
+//   if (error) {
+//     console.error('Error checking existing collections:', error)
+//     selectedCollections.value = []
+//     existingCollectionIds.value = []
+//     return
+//   }
+//
+//   const existingIds = existingItems.map((item) => item.collection_id)
+//   selectedCollections.value = [...existingIds]
+//   existingCollectionIds.value = [...existingIds]
+// }
 
-  await loadUserCollections()
+// const loadUserCollections = async () => {
+//   const { data: authData, error: authError } = await supabase.auth.getUser()
+//   const userId = authData?.user?.id
+//
+//   if (authError || !userId) {
+//     console.error('Auth error loading collections:', authError)
+//     return
+//   }
 
-  // Check existing collections for this item
-  const { data: existingItems, error } = await supabase
-    .from('collection_items')
-    .select('collection_id')
-    .eq('item_id', modelItem.id)
-    .eq('item_type', type)
-
-  if (error) {
-    console.error('Error checking existing collections:', error)
-    selectedCollections.value = []
-    existingCollectionIds.value = []
-    return
-  }
-
-  const existingIds = existingItems.map((item) => item.collection_id)
-  selectedCollections.value = [...existingIds]
-  existingCollectionIds.value = [...existingIds]
-}
-
-const loadUserCollections = async () => {
-  const { data: authData, error: authError } = await supabase.auth.getUser()
-  const userId = authData?.user?.id
-
-  if (authError || !userId) {
-    console.error('Auth error loading collections:', authError)
-    return
-  }
-
-  const { data, error } = await supabase
-    .from('collections')
-    .select('collection_id, collection_name')
-    .eq('user_id', userId)
-
-  if (!error) {
-    userCollections.value = data
-  } else {
-    console.error('Failed to load collections:', error)
-  }
-}
+  // const { data, error } = await supabase
+  //   .from('collections')
+  //   .select('collection_id, collection_name')
+  //   .eq('user_id', userId)
+  //
+  // if (!error) {
+  //   userCollections.value = data
+  // } else {
+  //   console.error('Failed to load collections:', error)
+  // }
 
 const saveToSelectedCollections = async () => {
   const modelItem = selectedModel.value
@@ -483,3 +471,36 @@ onMounted(async () => {
   loading.value = false
 })
 </script>
+
+<style scoped>
+.categories-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.categories-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.action-buttons {
+  margin-left: auto;
+}
+
+.text-button {
+  color: black !important;
+  text-decoration: none;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 4px 8px;
+}
+
+.text-button:hover {
+  background: none !important;
+  color: #333 !important;
+}
+</style>

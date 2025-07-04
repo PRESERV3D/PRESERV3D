@@ -66,6 +66,19 @@ const routes = [
         component: () => import('pages/AdminArtifacts.vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
+      {
+        path: 'admin/artifacts/:id',
+        name: 'admin-view-artifact',
+        component: () => import('pages/AdminViewArtifacts.vue'),
+        meta: { requiresAuth: true,  allowedRoles: ['admin'] },
+      },
+      {
+      path: 'admin/artifacts2/:id',
+      name: 'admin-view2-artifact',
+      component: () => import('pages/AdminViewArtifacts(2).vue'),
+      meta: { requiresAuth: true,  allowedRoles: ['admin'] },
+      },
+
     ],
   },
   {
