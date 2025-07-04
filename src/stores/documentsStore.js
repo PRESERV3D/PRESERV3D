@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { supabase } from 'boot/supabase'
 
 export const useDocumentsStore = defineStore('documentsStore', {
   state: () => ({
@@ -59,6 +60,23 @@ export const useDocumentsStore = defineStore('documentsStore', {
     },
     resetFilters() {
       this.filteredDocuments = this.documents
+    },
+    async getDocById(id) {
+      try {
+        //get title from metadata if available
+        const { data } = await supabase
+          .from('documents_metadata')
+          .select('metadata->>title')
+          .eq('id', id)
+          .single()
+
+        if (data) {
+          return data
+        }
+      } catch (error) {
+        console.error('Error fetching artifact title:', error)
+        return null
+      }
     },
   },
 })

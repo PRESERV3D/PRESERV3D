@@ -145,14 +145,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useModelStore } from 'stores/modelStore'
 import { useSearchStore } from 'stores/searchStore'
+import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import '@google/model-viewer'
 
 const modelStore = useModelStore()
 const searchStore = useSearchStore()
+const userStore = useUserStore()
 
 const category = ref('')
 const author = ref('')
@@ -173,6 +175,13 @@ const existingCollectionIds = ref([])
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
+
+if (userStore.profile.role === undefined) {
+  userStore.fetchProfile()
+}
+
+const userRole = userStore.profile.role
+const isAdmin = computed(() => userRole === 'admin')
 
 function showNotifyDialog(title, message) {
   notifyDialogTitle.value = title
@@ -206,27 +215,37 @@ function applyFilters() {
 }
 
 async function logClick(itemId, itemType) {
-  const { data: authData, error: authError } = await supabase.auth.getUser()
-  const userId = authData?.user?.id
+  if (!isAdmin.value) {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    const userId = authData?.user?.id
+    const model = await modelStore.getModelById(itemId)
 
-  if (authError || !userId) {
-    console.error('Auth error logging click:', authError)
-    return
-  }
-
-  try {
-    const { error } = await supabase.from('user_activity_log').insert({
-      user_id: userId,
-      item_id: itemId,
-      item_type: itemType,
-      clicked_at: new Date().toISOString(),
-    })
-
-    if (error) {
-      console.error('Error logging click:', error)
+    if (authError || !userId) {
+      console.error('Auth error logging click:', authError)
+      return
     }
-  } catch (err) {
-    console.error('Error logging click:', err)
+
+    try {
+      const { error } = await supabase.from('user_activity_log').insert({
+        user_id: userId,
+        item_id: itemId,
+        title: model.title || 'Untitled',
+        item_type: itemType,
+        clicked_at: new Date().toISOString(),
+      })
+
+      if (error) {
+        throw error
+      }
+
+      if (error) {
+        console.error('Error logging click:', error)
+      } else {
+        console.log('Click Logged')
+      }
+    } catch (err) {
+      console.error('Error logging click:', err)
+    }
   }
 }
 

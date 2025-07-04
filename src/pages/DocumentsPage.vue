@@ -486,27 +486,37 @@ function toggleCategory(cat) {
 }
 
 async function logClick(itemId, itemType) {
-  const { data: authData, error: authError } = await supabase.auth.getUser()
-  const userId = authData?.user?.id
+  if (!isAdmin.value) {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    const userId = authData?.user?.id
+    const docu = await documentsStore.getDocById(itemId)
 
-  if (authError || !userId) {
-    console.error('Auth error logging click:', authError)
-    return
-  }
-
-  try {
-    const { error } = await supabase.from('user_activity_log').insert({
-      user_id: userId,
-      item_id: itemId,
-      item_type: itemType,
-      clicked_at: new Date().toISOString(),
-    })
-
-    if (error) {
-      console.error('Error logging click:', error)
+    if (authError || !userId) {
+      console.error('Auth error logging click:', authError)
+      return
     }
-  } catch (err) {
-    console.error('Error logging click:', err)
+
+    try {
+      const { error } = await supabase.from('user_activity_log').insert({
+        user_id: userId,
+        item_id: itemId,
+        title: docu.title || 'Untitled',
+        item_type: itemType,
+        clicked_at: new Date().toISOString(),
+      })
+
+      if (error) {
+        throw error
+      }
+
+      if (error) {
+        console.error('Error logging click:', error)
+      } else {
+        console.log('Click Logged')
+      }
+    } catch (err) {
+      console.error('Error logging click:', err)
+    }
   }
 }
 
