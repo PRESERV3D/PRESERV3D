@@ -803,7 +803,7 @@ async function saveMetadata(updatedMetadata) {
     } else {
       alert('Metadata saved successfully!')
       dialog.value = false
-      router.push({ name: 'dashboard' })
+      router.push({ name: 'admin-home' })
     }
   } catch (err) {
     console.error('Error saving metadata:', err)
