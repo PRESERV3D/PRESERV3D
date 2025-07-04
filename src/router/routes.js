@@ -61,6 +61,11 @@ const routes = [
         component: () => import('pages/CollectionDetailsPage.vue'),
         meta: { requiresAuth: true, allowedRoles: ['user'] },
       },
+      {
+        path: 'admin/artifacts',
+        component: () => import('pages/AdminArtifacts.vue'),
+        meta: { requiresAuth: true, allowedRoles: ['admin'] },
+      },
     ],
   },
   {
