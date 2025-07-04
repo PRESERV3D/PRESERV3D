@@ -6,7 +6,6 @@
         <div class="col-7 q-gutter-xs">
           <p class="q-ml-xl admin-title">
             <span v-if="userStore.profile">Welcome Back, {{ userStore.profile.first_name }}!</span>
-            <span v-else>Discover Cultural Heritage in 3D & Digital Archives</span>
           </p>
           <p class="q-ml-xl admin-subtitle">
             <span v-if="userStore.profile?.role === 'admin'">(Admin Access) - </span>
@@ -65,13 +64,13 @@
                   "
                 />
                 <!-- FIXED: Added item_type parameter to star toggle -->
-                <q-btn
+                <!--           <q-btn
                   flat
                   round
                   :icon="item.starred ? 'star' : 'star_border'"
                   class="star-icon"
                   @click="toggleStar(item.id, item.item_type)"
-                />
+                /> -->
               </div>
             </div>
           </div>
@@ -130,13 +129,13 @@
                       @click.stop="toggleBookmark(model.id, 'artifact')"
                     />
                     <!-- FIXED: Added 'artifact' parameter to star toggle -->
-                    <q-icon
+                    <!-- <q-icon
                       :name="model.starred ? 'star' : 'star_border'"
                       class="action-icon star-icon"
                       :class="{ starred: model.starred }"
                       size="18px"
                       @click.stop="toggleStar(model.id, 'artifact')"
-                    />
+                    /> -->
                   </div>
                 </div>
               </q-card-section>
@@ -535,6 +534,7 @@ function timeAgo(dateString) {
 async function logClick(itemId, itemType) {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
+  const model = await modelStore.getModelById(itemId)
 
   if (authError || !userId) {
     console.error('Auth error logging click:', authError)
@@ -545,12 +545,19 @@ async function logClick(itemId, itemType) {
     const { error } = await supabase.from('user_activity_log').insert({
       user_id: userId,
       item_id: itemId,
+      title: model.title || 'Untitled',
       item_type: itemType,
       clicked_at: new Date().toISOString(),
     })
 
     if (error) {
+      throw error
+    }
+
+    if (error) {
       console.error('Error logging click:', error)
+    } else {
+      console.log('Click Logged')
     }
   } catch (err) {
     console.error('Error logging click:', err)
@@ -596,32 +603,32 @@ async function viewItem(item) {
 }
 
 // FIXED: Toggle star with proper parameter handling and database updates
-const toggleStar = async (itemId, itemType = 'artifact') => {
-  try {
-    if (itemType === 'artifact') {
-      const model = modelStore.models.find((m) => m.id === itemId)
-      if (model) {
-        model.starred = !model.starred
-        // ADDED: Database update from INDEX page logic
-        await supabase
-          .from('artifacts_metadata')
-          .update({ starred: model.starred })
-          .eq('id', itemId)
-      }
-    } else {
-      // ADDED: Handle recent items star toggle
-      const item = recentItems.value.find((i) => i.id === itemId)
-      if (item) {
-        item.starred = !item.starred
-        // Update in appropriate table
-        const tableName = itemType === 'artifact' ? 'artifacts_metadata' : 'documents_metadata'
-        await supabase.from(tableName).update({ starred: item.starred }).eq('id', itemId)
-      }
-    }
-  } catch (err) {
-    console.error('Error toggling star:', err)
-  }
-}
+// const toggleStar = async (itemId, itemType = 'artifact') => {
+//   try {
+//     if (itemType === 'artifact') {
+//       const model = modelStore.models.find((m) => m.id === itemId)
+//       if (model) {
+//         model.starred = !model.starred
+//         // ADDED: Database update from INDEX page logic
+//         await supabase
+//           .from('artifacts_metadata')
+//           .update({ starred: model.starred })
+//           .eq('id', itemId)
+//       }
+//     } else {
+//       // ADDED: Handle recent items star toggle
+//       const item = recentItems.value.find((i) => i.id === itemId)
+//       if (item) {
+//         item.starred = !item.starred
+//         // Update in appropriate table
+//         const tableName = itemType === 'artifact' ? 'artifacts_metadata' : 'documents_metadata'
+//         await supabase.from(tableName).update({ starred: item.starred }).eq('id', itemId)
+//       }
+//     }
+//   } catch (err) {
+//     console.error('Error toggling star:', err)
+//   }
+// }
 
 // FIXED: Toggle bookmark with proper parameter handling and database updates
 const toggleBookmark = async (itemId, itemType = 'artifact') => {

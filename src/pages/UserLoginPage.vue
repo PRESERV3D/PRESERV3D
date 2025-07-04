@@ -116,7 +116,7 @@ async function loginUser() {
       alert('Welcome, Admin!')
       await router.push('/admindash')
     } else if (role === 'user') {
-      alert('Welcome to PRESERV3D!')
+      alert('Login successful!')
       await router.push('/home')
     } else {
       alert('Access denied. Unknown role.')

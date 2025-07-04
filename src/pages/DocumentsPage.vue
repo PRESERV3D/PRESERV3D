@@ -2,9 +2,10 @@
   <q-page class="q-pa-md">
     <div class="page-header">
       <div class="q-mt-xs title">Documents</div>
-      <div class="q-mb-md sub-font-3 row items-baseline justify-between">
+      <div class="q-mb-md subtitle row items-baseline justify-between">
         <div class="q-ml-sm">Browse selected digital books from the university archives.</div>
         <q-btn
+          v-if="isAdmin"
           @click="showDialog = true"
           label="Add New"
           icon="add_circle"
@@ -83,10 +84,10 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-    <!-- Book Highlights Section -->
+    <!-- Document Highlights Section -->
     <div class="column q-py-md q-gutter-lg">
       <div class="box-highlights">
-        <p class="q-ml-lg admin-title-2" style="font-size: 16px">Book Highlights</p>
+        <p class="q-ml-lg admin-title-2" style="font-size: 16px">Document Highlights</p>
         <div class="row docs-gap justify-start">
           <div v-for="(doc, index) in documentsStore.documents.slice(0, 3)" :key="index">
             <div class="row q-mb-lg">
@@ -150,104 +151,62 @@
             </div>
             <div class="row q-gutter-sm col-auto">
               <!-- Filter Section -->
-              <q-btn
-                flat
-                round
-                icon="filter_list"
-                class="filter-sort-btn"
-                @click="showFilterMenu = !showFilterMenu"
-              >
-                <q-menu
-                  v-model="showFilterMenu"
-                  anchor="bottom right"
-                  self="top left"
-                  style="width: 25.5rem"
-                >
-                  <div class="row q-pa-md">
-                    <!-- Authors Column (Left) -->
-                    <div class="col-7 q-pr-sm">
-                      <div class="sub-font-3 q-mb-sm">Authors</div>
-                      <q-scroll-area style="height: 12rem; max-height: 15rem">
-                        <q-list dense>
-                          <q-item
-                            v-for="authorOption in authorOptions"
-                            :key="authorOption"
-                            clickable
-                            class="sub-font-2"
-                            style="color: #000000"
-                            @click="toggleAuthor(authorOption)"
-                          >
-                            <q-item-section avatar>
-                              <q-checkbox
-                                :model-value="author === authorOption"
-                                @update:model-value="toggleAuthor(authorOption)"
-                              />
-                            </q-item-section>
-                            <q-item-section>{{ authorOption }}</q-item-section>
-                          </q-item>
-                        </q-list>
-                      </q-scroll-area>
-                      <!-- Clear Authors -->
-                      <q-btn
-                        v-if="author"
-                        flat
-                        dense
-                        color="primary"
-                        label="Clear Author"
-                        @click="clearAuthor"
-                        class="q-mt-xs sub-font-3 full-width"
-                      />
-                    </div>
-                    <!-- Years Column (Right) -->
-                    <div class="col-5">
-                      <div class="sub-font-3 q-mb-sm">Year</div>
-                      <q-scroll-area style="height: 12rem; max-height: 15rem">
-                        <q-list dense>
-                          <q-item
-                            v-for="dateOption in dateOptions"
-                            :key="dateOption"
-                            clickable
-                            class="sub-font-2"
-                            style="color: #000000"
-                            @click="toggleDate(dateOption)"
-                          >
-                            <q-item-section avatar>
-                              <q-checkbox
-                                :model-value="date === dateOption"
-                                @update:model-value="toggleDate(dateOption)"
-                              />
-                            </q-item-section>
-                            <q-item-section>{{ dateOption }}</q-item-section>
-                          </q-item>
-                        </q-list>
-                      </q-scroll-area>
-                      <!-- Clear Years -->
-                      <q-btn
-                        v-if="date"
-                        flat
-                        dense
-                        color="primary"
-                        label="Clear Year"
-                        @click="clearDate"
-                        class="q-mt-xs sub-font-3 full-width"
-                      />
-                    </div>
-                  </div>
+              <q-btn flat round icon="filter_list" class="filter-sort-btn">
+                <q-menu anchor="bottom right" self="top left" style="width: 15rem">
+                  <q-list>
+                    <q-item>
+                      <q-item-section>
+                        <q-select
+                          v-model="author"
+                          :options="authorOptions"
+                          outlined
+                          label="Select Author"
+                          dense
+                          clearable
+                          @update:model-value="applyFilters"
+                        />
+                      </q-item-section>
+                    </q-item>
+                    <q-item>
+                      <q-item-section>
+                        <q-select
+                          v-model="date"
+                          :options="dateOptions"
+                          outlined
+                          label="Select Year"
+                          dense
+                          clearable
+                          @update:model-value="applyFilters"
+                        />
+                      </q-item-section>
+                    </q-item>
+                    <q-separator />
+                    <q-item clickable v-close-popup @click="clearFilters">
+                      <q-item-section>
+                        <q-item-label>Clear All Filters</q-item-label>
+                      </q-item-section>
+                      <q-item-section side>
+                        <q-icon name="clear" />
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
                 </q-menu>
               </q-btn>
               <!-- Sort Section -->
               <q-btn flat round icon="sort" class="filter-sort-btn">
-                <q-menu anchor="bottom right" self="top left" class="sort-menu">
-                  <q-list dense>
+                <q-menu anchor="bottom right" self="top left" style="width: 10rem">
+                  <q-list>
                     <q-item
                       v-for="option in sortOptions"
                       :key="option"
                       clickable
                       v-close-popup
                       @click="((sortOption = option), onSort(option))"
-                      :class="['sort-option-item', { 'selected-option': sortOption === option }]"
                     >
                       <q-item-section>{{ option }}</q-item-section>
+                      <q-item-section side v-if="sortOption === option">
+                        <q-icon name="check" color="primary" />
+                      </q-item-section>
                     </q-item>
                   </q-list>
                 </q-menu>
@@ -367,19 +326,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useDocumentsStore } from 'stores/documentsStore'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
 import Tesseract from 'tesseract.js'
 import axios from 'axios'
 
-const showDialog = ref(false)
 import { useSearchStore } from 'stores/searchStore'
 
 const searchStore = useSearchStore()
 const documentsStore = useDocumentsStore()
+const userStore = useUserStore()
 
 // const category = ref('')
 const author = ref('')
@@ -391,6 +351,7 @@ const categoryOptions = ref([])
 const authorOptions = ref([])
 const dateOptions = ref([])
 
+const showDialog = ref(false)
 const dialogOpen = ref(false)
 const selectedDocument = ref(null)
 const selectedItemType = ref('document')
@@ -401,6 +362,13 @@ const existingCollectionIds = ref([])
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
+
+if (userStore.profile.role === undefined) {
+  userStore.fetchProfile()
+}
+
+const userRole = userStore.profile.role
+const isAdmin = computed(() => userRole === 'admin')
 
 function showNotifyDialog(title, message) {
   notifyDialogTitle.value = title
@@ -433,27 +401,13 @@ function applyFilters() {
   })
 }
 
-//add-start
-function toggleAuthor(authorOption) {
-  author.value = authorOption
+//Clear All Filters Function
+const clearFilters = () => {
+  author.value = null
+  date.value = null
   applyFilters()
 }
-
-function toggleDate(dateOption) {
-  date.value = dateOption
-  applyFilters()
-}
-
-function clearAuthor() {
-  author.value = ''
-  applyFilters()
-}
-
-function clearDate() {
-  date.value = ''
-  applyFilters()
-}
-//add -end
+//
 
 function toggleCategory(cat) {
   if (cat === 'All') {
@@ -476,27 +430,37 @@ function toggleCategory(cat) {
 }
 
 async function logClick(itemId, itemType) {
-  const { data: authData, error: authError } = await supabase.auth.getUser()
-  const userId = authData?.user?.id
+  if (!isAdmin.value) {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    const userId = authData?.user?.id
+    const docu = await documentsStore.getDocById(itemId)
 
-  if (authError || !userId) {
-    console.error('Auth error logging click:', authError)
-    return
-  }
-
-  try {
-    const { error } = await supabase.from('user_activity_log').insert({
-      user_id: userId,
-      item_id: itemId,
-      item_type: itemType,
-      clicked_at: new Date().toISOString(),
-    })
-
-    if (error) {
-      console.error('Error logging click:', error)
+    if (authError || !userId) {
+      console.error('Auth error logging click:', authError)
+      return
     }
-  } catch (err) {
-    console.error('Error logging click:', err)
+
+    try {
+      const { error } = await supabase.from('user_activity_log').insert({
+        user_id: userId,
+        item_id: itemId,
+        title: docu.title || 'Untitled',
+        item_type: itemType,
+        clicked_at: new Date().toISOString(),
+      })
+
+      if (error) {
+        throw error
+      }
+
+      if (error) {
+        console.error('Error logging click:', error)
+      } else {
+        console.log('Click Logged')
+      }
+    } catch (err) {
+      console.error('Error logging click:', err)
+    }
   }
 }
 

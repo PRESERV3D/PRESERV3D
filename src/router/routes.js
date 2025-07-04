@@ -38,12 +38,6 @@ const routes = [
         component: () => import('pages/AdminDashboard.vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
-      // {
-      //   path: 'userdash',
-      //   name: 'user-home',
-      //   component: () => import('pages/UserDashboard.vue'),
-      //   meta: { requiresAuth: true, allowedRoles: ['user'] }, // added
-      // },
       {
         path: 'documents/:id',
         name: 'view-document',
@@ -67,6 +61,11 @@ const routes = [
         component: () => import('pages/CollectionDetailsPage.vue'),
         meta: { requiresAuth: true, allowedRoles: ['user'] },
       },
+      // {
+      //   path: 'admin/artifacts',
+      //   component: () => import('pages/AdminArtifacts.vue'),
+      //   meta: { requiresAuth: true, allowedRoles: ['admin'] },
+      // },
     ],
   },
   {
@@ -99,6 +98,7 @@ const routes = [
     ],
   },
   // Always leave this as last one,
+  // but you can also remove it
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),
