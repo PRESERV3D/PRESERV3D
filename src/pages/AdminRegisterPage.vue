@@ -17,7 +17,7 @@
         </div>
 
         <div class="row q-mt-lg">
-          <div class="col q-gutter-sm">
+          <div class="col">
             <label class="names">Email</label>
             <q-input
               filled
@@ -31,7 +31,7 @@
               class="text-box-2 q-mr-lg"
             />
           </div>
-          <div class="col q-gutter-sm">
+          <div class="col">
             <label class="names">Contact Number</label>
             <q-input filled dense v-model="form.contact" class="text-box-2" />
           </div>
