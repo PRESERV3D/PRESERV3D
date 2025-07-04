@@ -2,8 +2,8 @@
   <q-page class="q-pa-md">
     <div class="page-header">
       <div class="q-mt-xs title">Documents</div>
-      <div class="q-mb-md subtitle row items-baseline justify-between">
-        <div class="q-ml-sm">Browse selected digital books from the university archives.</div>
+      <div class="row q-mb-md subtitle justify-between items-center">
+        Browse selected digital books from the university archives.
         <q-btn
           v-if="isAdmin"
           @click="showDialog = true"
