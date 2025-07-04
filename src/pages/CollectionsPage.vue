@@ -1,10 +1,5 @@
 <template>
   <q-page class="q-pa-md">
-    <!-- Header -->
-    <div class="row items-center justify-between">
-      <div class="text-h6">Hello, {{ user.first_name }}!</div>
-    </div>
-
     <div class="q-mt-xs title">Collections</div>
 
     <div class="q-mb-md sub-font-3 row items-baseline justify-between">
