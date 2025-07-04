@@ -1943,6 +1943,12 @@
   flex: 1;
 }
 
+.categories-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 
 .loading-container {
   display: flex;
@@ -2109,6 +2115,20 @@
   margin-left: auto;
 }
 
+.text-button {
+  color: black !important;
+  text-decoration: none;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 4px 8px;
+}
+
+.text-button:hover {
+  background: none !important;
+  color: #333 !important;
+}
+
 /* Layout and spacing */
 .category-tag {
   margin-right: 8px;
@@ -2117,6 +2137,9 @@
 
 .categories-container {
   flex: 1;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .detail-input {

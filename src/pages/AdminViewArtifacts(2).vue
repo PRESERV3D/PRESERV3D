@@ -472,35 +472,3 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
-.categories-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.categories-section {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.action-buttons {
-  margin-left: auto;
-}
-
-.text-button {
-  color: black !important;
-  text-decoration: none;
-  background: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 4px 8px;
-}
-
-.text-button:hover {
-  background: none !important;
-  color: #333 !important;
-}
-</style>
