@@ -397,11 +397,11 @@ function showMessageDialog(title, content) {
 }
 
 // Helper function to show notify dialogs
-function showNotifyDialog(title, message) {
-  notifyDialogTitle.value = title
-  notifyDialogMessage.value = message
-  notifyDialogOpen.value = true
-}
+// function showNotifyDialog(title, message) {
+//   notifyDialogTitle.value = title
+//   notifyDialogMessage.value = message
+//   notifyDialogOpen.value = true
+// }
 
 // Mount lifecycle - fetch data
 onMounted(async () => {
@@ -579,30 +579,30 @@ async function deleteCollection() {
 }
 
 // Remove from collection (function for actual removal)
-async function removeFromCollection(itemId, itemType) {
-  const { error } = await supabase
-    .from('collection_items')
-    .delete()
-    .match({ collection_id: collectionId, item_id: itemId, item_type: itemType })
-
-  if (error) {
-    console.error('Remove failed:', error)
-    showMessageDialog('Delete Failed', `Failed to remove ${itemType} from collection.`)
-    return
-  }
-
-  // Immediately remove item from display
-  if (itemType === 'document') {
-    documents.value = documents.value.filter((doc) => doc.id !== itemId)
-  } else if (itemType === 'artifact') {
-    artifacts.value = artifacts.value.filter((art) => art.id !== itemId)
-  }
-
-  showMessageDialog(
-    'Removed',
-    `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} removed from collection.`,
-  )
-}
+// async function removeFromCollection(itemId, itemType) {
+//   const { error } = await supabase
+//     .from('collection_items')
+//     .delete()
+//     .match({ collection_id: collectionId, item_id: itemId, item_type: itemType })
+//
+//   if (error) {
+//     console.error('Remove failed:', error)
+//     showMessageDialog('Delete Failed', `Failed to remove ${itemType} from collection.`)
+//     return
+//   }
+//
+//   // Immediately remove item from display
+//   if (itemType === 'document') {
+//     documents.value = documents.value.filter((doc) => doc.id !== itemId)
+//   } else if (itemType === 'artifact') {
+//     artifacts.value = artifacts.value.filter((art) => art.id !== itemId)
+//   }
+//
+//   showMessageDialog(
+//     'Removed',
+//     `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} removed from collection.`,
+//   )
+// }
 
 // Toggle bookmark - unified approach with confirmation dialog
 const toggleBookmark = (itemId, itemType) => {
