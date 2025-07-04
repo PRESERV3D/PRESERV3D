@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md form-container">
-    <div class="column items-center q-mb-md">
+    <div class="column items-center">
       <label class="form-title">SIGN UP</label>
       <label class="subtitle">Let's Get You Set Up</label>
     </div>
@@ -149,8 +149,8 @@
           />
         </div>
 
-        <div class="column items-center q-pt-xs">
-          <a @click="step--" class="names cursor-pointer">Back</a>
+        <div class="column items-center">
+          <a @click="step--" class="names cursor-pointer q-mb-sm">Back</a>
           <q-btn
             class="sign-up"
             push
@@ -161,7 +161,7 @@
           />
         </div>
 
-        <div class="column items-center q-mb-xs">
+        <div class="column items-center q-mt-sm">
           <label class="already">
             Already have an account?
             <a href="/user/login" class="signup-login-link">Log In</a>
