@@ -63,7 +63,7 @@
       <div class="preview-container">
         <div class="box-view">
           <div class="row-1">
-            <q-btn class="start-reading-btn" no-caps>
+            <q-btn :href="doc.file_url" target="_blank" class="start-reading-btn" no-caps>
               Start Reading
               <img
                 src="src/assets/img/arrow-tilt.png"
