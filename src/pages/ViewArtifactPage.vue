@@ -42,6 +42,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useModelStore } from 'stores/modelStore'
+// import { useUserStore } from 'stores/user'
 import '@google/model-viewer'
 
 const route = useRoute()
@@ -49,6 +50,10 @@ const model = ref(null)
 const loading = ref(true)
 
 const modelStore = useModelStore()
+// const userStore = useUserStore()
+
+// const userRole = userStore.profile.role
+// const isAdmin = computed(() => userRole === 'admin')
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)
