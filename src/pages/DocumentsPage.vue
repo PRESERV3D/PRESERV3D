@@ -18,9 +18,9 @@
     </div>
 
     <q-dialog v-model="showDialog" persistent>
-      <q-card class="add-document-card">
+      <q-card class="add-documentarti-card">
         <q-card-section
-          class="box-upload-docu"
+          class="box-upload-docuarti"
           @dragover.prevent="onDragOver"
           @dragleave.prevent="onDragLeave"
           @drop.prevent="onFileDrop"
@@ -42,7 +42,7 @@
             or <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a> on
             your computer
           </div>
-          <div v-else class="document-preview text-center">
+          <div v-else class="documentarti-preview text-center">
             <q-img src="src/assets/img/document-icon.png" alt="Document" class="document-icon" />
             <div class="selected-document-name q-mt-md">
               {{ selectedFile.name }}

@@ -134,6 +134,93 @@
               </q-item>
             </q-list>
           </q-btn-dropdown>
+          <q-btn
+            v-if="isAdmin"
+            @click="showDialog = true"
+            label="Add New"
+            icon="add_circle"
+            style="min-width: 9.375rem"
+            class="add-new-btn"
+            no-caps
+            unelevated
+          />
+
+          <q-dialog v-model="showDialog" persistent>
+            <q-card class="add-documentarti-card">
+              <q-card-section
+                class="box-upload-docuarti"
+                @dragover.prevent="onDragOver"
+                @dragleave.prevent="onDragLeave"
+                @drop.prevent="onFileDrop"
+                :class="{ 'drag-over': isDragging }"
+              >
+                <q-img
+                  src="src/assets/img/drag-drop-icon.png"
+                  alt="Upload-Artifacts"
+                  class="upload-icon-docu"
+                />
+                <div
+                  v-if="!selectedFile"
+                  class="sub-font-3 text-center"
+                  style="font-size: 14px; font-weight: 200"
+                >
+                  <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
+                    DRAG and DROP files
+                  </div>
+                  or
+                  <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a> on
+                  your computer
+                </div>
+                <div v-else class="documentarti-preview text-center">
+                  <q-img
+                    src="src/assets/img/document-icon.png"
+                    alt="Artifacts"
+                    class="document-icon"
+                  />
+                  <div class="selected-documentarti-name q-mt-md">
+                    {{ selectedFile.name }}
+                  </div>
+                  <!-- Upload progress bar -->
+                  <q-linear-progress
+                    v-if="uploading"
+                    :value="uploadProgress / 100"
+                    color="primary"
+                    class="q-mt-md full-width"
+                  />
+                </div>
+                <input
+                  type="file"
+                  ref="fileInput"
+                  accept=".pdf"
+                  style="display: none"
+                  @change="handleFileChange"
+                />
+              </q-card-section>
+
+              <q-card-actions class="row q-ml-lg justify-between items-center">
+                <div></div>
+                <q-btn
+                  v-if="!uploading"
+                  label="Upload"
+                  class="q-ml-xl q-mt-sm btn-save"
+                  @click="handleUpload"
+                  no-caps
+                />
+
+                <q-spinner v-else color="primary" size="2em" class="q-ml-xl q-mt-sm" />
+
+                <q-btn
+                  flat
+                  label="Cancel"
+                  class="q-mt-sm sub-font-2"
+                  style="color: #000000"
+                  v-close-popup
+                  no-caps
+                  @click="handleCancel"
+                />
+              </q-card-actions>
+            </q-card>
+          </q-dialog>
         </div>
       </div>
     </div>
