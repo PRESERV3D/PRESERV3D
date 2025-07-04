@@ -15,7 +15,6 @@
         :class="'sidebar-drawer'"
         content-class="drawer-content"
       >
-
         <div class="absolute-full flex column">
           <!-- Expanded State -->
           <div class="q-pa-md q-mb-md" v-show="!miniState">
@@ -23,7 +22,7 @@
               <img
                 src="\src\assets\img\logo.png"
                 alt="Your Logo"
-                style="max-width: 200px; max-height: 80px; object-fit: contain;"
+                style="max-width: 200px; max-height: 80px; object-fit: contain"
                 class="q-mb-sm"
               />
             </div>
@@ -34,7 +33,7 @@
             <img
               src="\src\assets\img\logo.png"
               alt="Logo"
-              style="width: 60px; height: 60px; object-fit: contain;"
+              style="width: 60px; height: 60px; object-fit: contain"
             />
           </div>
 
@@ -56,7 +55,7 @@
                   <img
                     :src="item.icon"
                     :alt="item.label"
-                    style="width: 30px; height: 30px; object-fit: contain;"
+                    style="width: 30px; height: 30px; object-fit: contain"
                     class="nav-icon"
                   />
                 </div>
@@ -106,13 +105,12 @@
               clearable
               clear-icon="close"
               @keyup.enter="performSearch"
-              style="width: 100%; max-width: 750px;"
+              style="width: 100%; max-width: 750px"
             >
               <template v-slot:prepend>
                 <q-icon name="search" @click="performSearch" class="cursor-pointer" />
               </template>
             </q-input>
-
 
             <!-- Notifications Button -->
             <q-btn flat round dense class="q-ml-md custom-spacing notif-btn">
@@ -121,13 +119,13 @@
                 floating
                 rounded
                 class="custom-badge"
-                style="background-color: #ff5722; color: white;"
+                style="background-color: #ff5722; color: white"
                 v-if="notificationCount > 0"
               >
                 {{ notificationCount }}
               </q-badge>
               <q-menu>
-                <q-list style="min-width: 150px;">
+                <q-list style="min-width: 150px">
                   <q-item-label header>Notifications</q-item-label>
                   <q-item v-if="notifications.length === 0">
                     <q-item-section>No new notifications</q-item-section>
@@ -149,11 +147,11 @@
             <!-- User Profile Button -->
             <q-btn flat round dense class="custom-spacing user-profile-btn">
               <q-avatar size="32px">
-                <img src="https://cdn.quasar.dev/img/avatar.png">
+                <img src="https://cdn.quasar.dev/img/avatar.png" />
               </q-avatar>
               <span class="q-ml-lg gt-sm username-bg">{{ userName }}</span>
               <q-menu>
-                <q-list style="min-width: 150px;">
+                <q-list style="min-width: 150px">
                   <q-item-label header>{{ userName }}</q-item-label>
                   <q-item clickable v-ripple @click="goToProfile">
                     <q-item-section avatar><q-icon name="person" /></q-item-section>
@@ -183,13 +181,14 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useQuasar } from 'quasar';
+import { useQuasar } from 'quasar'
+import { useUserStore } from 'stores/user'
 
-
-
-const router = useRouter();
+const userStore = useUserStore()
+const session = userStore.session
+const router = useRouter()
 const route = useRoute()
-const $q = useQuasar();
+const $q = useQuasar()
 
 const drawer = ref(false)
 const miniState = ref(true)
@@ -206,7 +205,7 @@ const notificationCount = computed(() => notifications.value.length)
 const navItems = [
   { name: 'home', label: 'Home', icon: '\\src\\assets\\icon\\home.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\src\\assets\\icon\\artifacts.png' },
-  { name: 'documents', label: 'Documents', icon: '\\src\\assets\\icon\\book.png' }
+  { name: 'documents', label: 'Documents', icon: '\\src\\assets\\icon\\book.png' },
 ]
 
 // Add a timeout to prevent rapid state changes
@@ -227,9 +226,24 @@ const activeItem = ref('home')
 const setActiveItem = (itemName) => {
   activeItem.value = itemName
 
-  // Navigate to the corresponding route
-  const targetRoute = `/${itemName}`
-  router.push(targetRoute)
+  if (itemName === 'home') {
+    const role = session.user.user_metadata?.role
+
+    if (role === 'admin') {
+      activeItem.value = 'home'
+      router.push('/admindash')
+      return
+    } else if (role === 'user') {
+      activeItem.value = 'home'
+      router.push('/home')
+      return
+    }
+    return
+  } else {
+    // Navigate to the corresponding route
+    const targetRoute = `/${itemName}`
+    router.push(targetRoute)
+  }
 }
 
 // Search functionality
@@ -239,7 +253,7 @@ const performSearch = () => {
     message: `Performing search for: "${search.value}"`,
     color: 'positive',
     icon: 'search',
-    position: 'top'
+    position: 'top',
   })
 }
 
