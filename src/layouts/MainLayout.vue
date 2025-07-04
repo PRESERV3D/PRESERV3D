@@ -105,7 +105,7 @@
               clearable
               clear-icon="close"
               @keyup.enter="performSearch"
-              style="width: 100%; max-width: 750px"
+              style="width: 100%; max-width: 830px"
             >
               <template v-slot:prepend>
                 <q-icon name="search" @click="performSearch" class="cursor-pointer" />
@@ -147,10 +147,13 @@
             <!-- User Profile Button -->
             <q-btn flat round dense class="custom-spacing user-profile-btn">
               <q-avatar size="32px">
-                <img src="https://cdn.quasar.dev/img/avatar.png" />
+                <img src="\src\assets\img\UserIcon.jpg" />
               </q-avatar>
-              <span class="q-ml-lg gt-sm username-bg">{{ userName }}</span>
-              <q-menu>
+              <div class="q-ml-lg gt-sm">
+                <div class="username-bg">{{ userName }}</div>
+                <div class="text-subtitle2 text-grey">{{ userRole }}</div>
+              </div>
+              <!-- <q-menu>
                 <q-list style="min-width: 150px">
                   <q-item-label header>{{ userName }}</q-item-label>
                   <q-item clickable v-ripple @click="goToProfile">
@@ -167,7 +170,7 @@
                     <q-item-section>Logout</q-item-section>
                   </q-item>
                 </q-list>
-              </q-menu>
+              </q-menu> -->
             </q-btn>
           </q-toolbar>
         </div>
@@ -179,23 +182,22 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useQuasar } from 'quasar'
-import { useUserStore } from 'stores/user'
+import { useUserStore } from 'src/stores/user'
+import { useSearchStore } from 'src/stores/searchStore'
 
 const userStore = useUserStore()
-const session = userStore.session
+const searchStore = useSearchStore()
 const router = useRouter()
 const route = useRoute()
-const $q = useQuasar()
+const session = userStore.session
 
 const drawer = ref(false)
 const miniState = ref(true)
 const search = ref('')
 
 // User and notifications data
-const userName = ref('ADMIN')
 const notifications = ref([
   { id: 1, message: 'New message from Mrs. Beth', time: '5m ago' },
   { id: 2, message: '⚠️ Notice: The file you uploaded appears incomplete.', time: '1h ago' },
@@ -207,6 +209,11 @@ const navItems = [
   { name: 'artifacts', label: 'Artifacts', icon: '\\src\\assets\\icon\\artifacts.png' },
   { name: 'documents', label: 'Documents', icon: '\\src\\assets\\icon\\book.png' },
 ]
+
+// Get profile data from userStore
+const userProfile = computed(() => userStore.profile || {})
+const userName = computed(() => userProfile.value.first_name || 'User')
+const userRole = computed(() => userProfile.value.role || 'Unknown')
 
 // Add a timeout to prevent rapid state changes
 let hoverTimeout = null
@@ -223,6 +230,7 @@ const onDrawerMouseLeave = () => {
 }
 
 const activeItem = ref('home')
+
 const setActiveItem = (itemName) => {
   activeItem.value = itemName
 
@@ -247,41 +255,55 @@ const setActiveItem = (itemName) => {
 }
 
 // Search functionality
-const performSearch = () => {
-  console.log('Searching for:', search.value)
-  $q.notify({
-    message: `Performing search for: "${search.value}"`,
-    color: 'positive',
-    icon: 'search',
-    position: 'top',
-  })
-}
+const performSearch = async () => {
+  const query = search.value
+  const currentPath = route.path
+  const isDocumentsPage = currentPath.includes('/documents')
 
-// Profile and user actions
-const goToProfile = () => {
-  console.log('Going to profile...')
-  router.push('/profile')
-}
+  const type = isDocumentsPage ? 'documents' : 'artifacts'
 
-const goToSettings = () => {
-  console.log('Going to settings...')
-  router.push('/settings')
-}
-
-const handleLogout = () => {
-  // Add logout logic here
-  console.log('Logging out...')
-
-  if (confirm('Are you sure you want to logout?')) {
-    router.push('/login')
+  if (!query.trim()) {
+    searchStore.clear()
+  } else {
+    await searchStore.search(query, type)
+    console.log('Search performed:', search.value, type)
   }
 }
 
+// Profile and user actions
+// const goToProfile = () => {
+//   console.log('Going to profile...')
+//   router.push('/profile')
+// }
+
+// const goToSettings = () => {
+//   console.log('Going to settings...')
+//   router.push('/settings')
+// }
+
+const handleLogout = async () => {
+  try {
+    if (confirm('Are you sure you want to logout?')) {
+      await userStore.signOut()
+      router.push('user/login')
+    }
+  } catch (error) {
+    console.error('Error signing out:', error)
+  }
+}
+
+// Watch search bar input and run query
+watch(search, async (query) => {
+  if (query === null || query === undefined) {
+    searchStore.clear()
+    return
+  }
+})
+
 onMounted(() => {
-  // Extract the route path without leading slash
+  // Extract the route path
   const currentPath = route.path.substring(1)
 
-  // If we're on the root path, set active to 'home'
   if (route.path === '/') {
     activeItem.value = 'home'
   }
