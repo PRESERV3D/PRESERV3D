@@ -110,9 +110,7 @@
                   <p class="number">{{ index + 1 }}</p>
                   <p class="sub-font-2">{{ item.title }}</p>
                 </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">
-                  {{ (item.views / 1000).toFixed(1) }} views
-                </p>
+                <p class="q-mr-md sub-font-2" style="font-size: 12px">{{ item.views }} views</p>
               </div>
 
               <p class="q-py-xs sub-font" style="font-size: 14px">Documents</p>
@@ -126,25 +124,7 @@
                   <p class="number">{{ index + 1 }}</p>
                   <p class="sub-font-2">{{ item.title }}</p>
                 </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">
-                  {{ (item.views / 1000).toFixed(1) }} views
-                </p>
-              </div>
-
-              <div class="row items-center justify-between">
-                <div class="row items-center q-gutter-sm">
-                  <p class="number">2</p>
-                  <p class="sub-font-2">Document Title 2</p>
-                </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">8.1k views</p>
-              </div>
-
-              <div class="row items-center justify-between">
-                <div class="row items-center q-gutter-sm">
-                  <p class="number">3</p>
-                  <p class="sub-font-2">Document Title 3</p>
-                </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">5.9k views</p>
+                <p class="q-mr-md sub-font-2" style="font-size: 12px">{{ item.views }} views</p>
               </div>
             </div>
           </div>
