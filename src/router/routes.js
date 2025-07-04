@@ -38,12 +38,12 @@ const routes = [
         component: () => import('pages/AdminDashboard.vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
-      {
-        path: 'userdash',
-        name: 'user-home',
-        component: () => import('pages/UserDashboard.vue'),
-        meta: { requiresAuth: true, allowedRoles: ['user'] }, // added
-      },
+      // {
+      //   path: 'userdash',
+      //   name: 'user-home',
+      //   component: () => import('pages/UserDashboard.vue'),
+      //   meta: { requiresAuth: true, allowedRoles: ['user'] }, // added
+      // },
       {
         path: 'documents/:id',
         name: 'view-document',

@@ -1,12 +1,42 @@
 <template>
   <q-page class="q-pa-md">
+    <!-- Header Section with User Greeting -->
+    <div class="layout-container">
+      <div class="box-1 row items-center">
+        <div class="col-7 q-gutter-xs">
+          <p class="q-ml-xl admin-title">
+            <span v-if="userStore.profile">Welcome Back, {{ userStore.profile.first_name }}!</span>
+            <span v-else>Discover Cultural Heritage in 3D & Digital Archives</span>
+          </p>
+          <p class="q-ml-xl admin-subtitle">
+            <span v-if="userStore.profile?.role === 'admin'">(Admin Access) - </span>
+            Explore University artifacts, historic documents, and <br />
+            virtual museum exhibits.
+          </p>
+          <div class="q-ml-md q-gutter-lg">
+            <q-btn to="/artifacts" label="Explore Artifacts" class="btn-explore" no-caps />
+            <q-btn to="/documents" label="Browse Documents" class="btn-document" no-caps />
+          </div>
+        </div>
+        <div class="col-5 q-gutter-xs">
+          <q-img
+            src="src/assets/img/trophy-document.png"
+            alt="Trophy and Document"
+            class="trophies"
+          />
+        </div>
+      </div>
 
-    <!-- Recently Viewed Section -->
+      <!-- Recently Viewed Section -->
       <div class="box-2">
         <p class="q-ml-lg admin-title-2">Recently Viewed</p>
         <div class="q-px-md q-pb-md">
           <div v-if="recentItems.length > 0" class="column q-gutter-xs">
-            <div v-for="(item, index) in recentItems.slice(0, 3)" :key="index" class="row items-center q-gutter-md recently-viewed-item">
+            <div
+              v-for="(item, index) in recentItems.slice(0, 3)"
+              :key="index"
+              class="row items-center q-gutter-md recently-viewed-item"
+            >
               <div class="circular-holder">
                 <q-img
                   :src="item.file_url || 'src/assets/img/artifact1.png'"
@@ -27,24 +57,25 @@
                   round
                   icon="visibility"
                   class="view-icon"
-                  @click="() => {
-                    logClick(item.id, item.item_type)
-                    viewItem(item)
-                  }"
+                  @click="
+                    () => {
+                      logClick(item.id, item.item_type)
+                      viewItem(item)
+                    }
+                  "
                 />
+                <!-- FIXED: Added item_type parameter to star toggle -->
                 <q-btn
                   flat
                   round
                   :icon="item.starred ? 'star' : 'star_border'"
                   class="star-icon"
-                  @click="toggleStar(item.id)"
+                  @click="toggleStar(item.id, item.item_type)"
                 />
               </div>
             </div>
           </div>
-          <div v-else class="text-caption text-grey q-ml-lg">
-            No recent views.
-          </div>
+          <div v-else class="text-caption text-grey q-ml-lg">No recent views.</div>
         </div>
       </div>
     </div>
@@ -83,23 +114,28 @@
                   <router-link
                     :to="{ name: 'view-artifact', params: { id: model.id } }"
                     class="artifact-title-link"
+                    @click="logClick(model.id, 'artifact')"
                   >
-                    <div class="text-subtitle2 artifact-title">{{ model.metadata?.title || model.file_name }}</div>
+                    <div class="text-subtitle2 artifact-title">
+                      {{ model.metadata?.title || model.file_name }}
+                    </div>
                   </router-link>
                   <div class="action-icons">
+                    <!-- FIXED: Added 'artifact' parameter to bookmark toggle -->
                     <q-icon
                       :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                       class="action-icon bookmark-icon"
-                      :class="{ 'bookmarked': model.bookmarked }"
+                      :class="{ bookmarked: model.bookmarked }"
                       size="18px"
-                      @click.stop="toggleBookmark(model.id)"
+                      @click.stop="toggleBookmark(model.id, 'artifact')"
                     />
+                    <!-- FIXED: Added 'artifact' parameter to star toggle -->
                     <q-icon
                       :name="model.starred ? 'star' : 'star_border'"
                       class="action-icon star-icon"
-                      :class="{ 'starred': model.starred }"
+                      :class="{ starred: model.starred }"
                       size="18px"
-                      @click.stop="toggleStar(model.id)"
+                      @click.stop="toggleStar(model.id, 'artifact')"
                     />
                   </div>
                 </div>
@@ -140,7 +176,7 @@
                     v-for="option in filterOptions"
                     :key="option"
                     clickable
-                    @click="selectedFilter = option; showFilterMenu = false"
+                    @click="selectFilter(option)"
                     :class="{ 'bg-grey-2': selectedFilter === option }"
                   >
                     <q-item-section>{{ option }}</q-item-section>
@@ -162,7 +198,7 @@
                     v-for="option in sortOptions"
                     :key="option"
                     clickable
-                    @click="selectedSort = option; showSortMenu = false"
+                    @click="selectSort(option)"
                     :class="{ 'bg-grey-2': selectedSort === option }"
                   >
                     <q-item-section>{{ option }}</q-item-section>
@@ -181,15 +217,27 @@
         <!-- Collections Display -->
         <div v-else>
           <div v-if="collections.length > 0" class="row q-gutter-xl q-pl-lg q-pr-sm q-mb-sm">
-            <div v-for="collection in collections.slice(0, 5)" :key="collection.collection_id" class="col card-wrapper">
-              <q-card class="my-card collection-card" flat @click="goToCollectionDetailsPage(collection.collection_id)">
+            <div
+              v-for="collection in collections.slice(0, 5)"
+              :key="collection.collection_id"
+              class="col card-wrapper"
+            >
+              <q-card
+                class="my-card collection-card"
+                flat
+                @click="goToCollectionDetailsPage(collection.collection_id)"
+              >
                 <div class="book-container">
                   <div class="book-cover">
                     <div class="book-spine"></div>
                     <div class="book-content" :class="{ 'has-image': collection.cover_url }">
                       <!-- Show uploaded image as background if available -->
                       <div v-if="collection.cover_url" class="book-image-overlay">
-                        <img :src="collection.cover_url" :alt="collection.collection_name" class="book-background-image" />
+                        <img
+                          :src="collection.cover_url"
+                          :alt="collection.collection_name"
+                          class="book-background-image"
+                        />
                       </div>
                       <!-- Show default icon if no image -->
                       <div v-else class="book-title-section">
@@ -203,7 +251,9 @@
                 <q-card-section class="q-pa-sm artifact-card-section">
                   <div class="title-row">
                     <div class="collection-title-link">
-                      <div class="text-subtitle2 artifact-title">{{ collection.collection_name }}</div>
+                      <div class="text-subtitle2 artifact-title">
+                        {{ collection.collection_name }}
+                      </div>
                     </div>
                   </div>
                 </q-card-section>
@@ -218,7 +268,7 @@
 
         <!-- See All Link -->
         <div class="row justify-end q-pr-sm q-pb-sm">
-          <router-link to="/collections" class="see-all-link" style="margin-top: 0.5rem;">
+          <router-link to="/collections" class="see-all-link" style="margin-top: 0.5rem">
             See All
             <q-icon name="arrow_forward" size="16px" class="q-ml-xs" />
           </router-link>
@@ -238,12 +288,7 @@
         <q-card-section class="row q-gutter-md" style="gap: 0.5rem">
           <div class="col-auto q-ml-md">
             <div class="upload-box" @click="triggerFileInput">
-              <img
-                v-if="previewImage"
-                :src="previewImage"
-                alt="Preview"
-                class="preview-image"
-              />
+              <img v-if="previewImage" :src="previewImage" alt="Preview" class="preview-image" />
               <div v-else class="upload">
                 <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon" />
                 <div>Upload Photo</div>
@@ -259,9 +304,7 @@
           </div>
 
           <div class="col-5 q-ml-lg">
-            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
-              COLLECTION NAME
-            </div>
+            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">COLLECTION NAME</div>
             <q-input
               v-model="newCollectionTitle"
               class="field-collection q-mb-md"
@@ -299,7 +342,6 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-
   </q-page>
 </template>
 
@@ -327,12 +369,13 @@ const newCollectionTitle = ref('')
 const newCollectionDesc = ref('')
 const newCollection = ref({ coverFile: null })
 
-// Filter and Sort reactive variables
+// ADDED: Filter and Sort reactive variables from INDEX page
 const selectedFilter = ref('All')
 const selectedSort = ref('Recent')
 const showFilterMenu = ref(false)
 const showSortMenu = ref(false)
 
+// ADDED: Filter and sort options from INDEX page
 const filterOptions = ['All', 'Documents', 'PDFs', 'Images', 'Recent']
 const sortOptions = ['Recent', 'Alphabetical', 'Author', 'Date Created']
 
@@ -343,100 +386,114 @@ const featuredModels = computed(() => {
 
 // Initialize page
 onMounted(async () => {
-  const {
-    data: { user: authUser },
-    error: authError,
-  } = await supabase.auth.getUser()
+  try {
+    // ADDED: Better error handling structure from INDEX page
+    const {
+      data: { user: authUser },
+      error: authError,
+    } = await supabase.auth.getUser()
 
-  if (authError || !authUser) {
-    console.error('Auth error:', authError)
-    router.push('/user/login')
-    return
+    if (authError || !authUser) {
+      console.error('Auth error:', authError)
+      router.push('/user/login')
+      return
+    }
+
+    // Load user profile
+    await userStore.fetchProfile()
+
+    // Load all data
+    await Promise.all([loadCollections(authUser.id), loadRecentViews(authUser.id), loadModels()])
+  } catch (err) {
+    // ADDED: Top-level error handling from INDEX page
+    console.error('Error initializing page:', err)
   }
-
-  // Load user profile
-  await userStore.fetchProfile()
-
-  // Load all data
-  await Promise.all([
-    loadCollections(authUser.id),
-    loadRecentViews(authUser.id),
-    loadModels()
-  ])
 })
 
 // Load collections from Supabase
 async function loadCollections(userId) {
   isLoading.value = true
-  const { data, error } = await supabase
-    .from('collections')
-    .select('collection_name, cover_url, collection_id')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+  try {
+    // ADDED: Try-catch wrapper for better error handling
+    const { data, error } = await supabase
+      .from('collections')
+      .select('collection_name, cover_url, collection_id')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
 
-  if (error) {
-    console.error('Error loading collections:', error)
-  } else {
-    collections.value = data
+    if (error) {
+      console.error('Error loading collections:', error)
+    } else {
+      collections.value = data
+    }
+  } catch (err) {
+    console.error('Error loading collections:', err)
   }
   isLoading.value = false
 }
 
-// Load recent views from Supabase
+// FIXED: Load recent views with proper database fields and error handling
 async function loadRecentViews(userId) {
-  const { data, error } = await supabase
-    .from('user_activity_log')
-    .select('item_id, item_type, clicked_at')
-    .eq('user_id', userId)
-    .order('clicked_at', { ascending: false })
-    .limit(5)
+  try {
+    const { data, error } = await supabase
+      .from('user_activity_log')
+      .select('item_id, item_type, clicked_at')
+      .eq('user_id', userId)
+      .order('clicked_at', { ascending: false })
+      .limit(5)
 
-  if (error) {
-    console.error('Failed to fetch recent views:', error)
-    return
+    if (error) {
+      console.error('Failed to fetch recent views:', error)
+      return
+    }
+
+    const artifactIds = data.filter((d) => d.item_type === 'artifact').map((d) => d.item_id)
+    const documentIds = data.filter((d) => d.item_type === 'document').map((d) => d.item_id)
+
+    // FIXED: Added uploaded_at and updated_at fields like INDEX page
+    const recentArtifactData = artifactIds.length
+      ? await supabase
+          .from('artifacts_metadata')
+          .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
+          .in('id', artifactIds)
+      : { data: [] }
+
+    const recentDocumentData = documentIds.length
+      ? await supabase
+          .from('documents_metadata')
+          .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
+          .in('id', documentIds)
+      : { data: [] }
+
+    // Combine and sort by original order
+    const idToItem = {}
+    for (const item of [...recentArtifactData.data, ...recentDocumentData.data]) {
+      idToItem[item.id] = item
+    }
+
+    recentItems.value = data
+      .map((d) => ({
+        ...idToItem[d.item_id],
+        item_type: d.item_type,
+        clicked_at: d.clicked_at,
+      }))
+      .filter((item) => item?.file_url)
+  } catch (err) {
+    // ADDED: Better error handling
+    console.error('Error loading recent views:', err)
   }
-
-  const artifactIds = data.filter((d) => d.item_type === 'artifact').map((d) => d.item_id)
-  const documentIds = data.filter((d) => d.item_type === 'document').map((d) => d.item_id)
-
-  const recentArtifactData = artifactIds.length
-    ? await supabase
-        .from('artifacts_metadata')
-        .select('id, file_name, metadata, file_url')
-        .in('id', artifactIds)
-    : { data: [] }
-
-  const recentDocumentData = documentIds.length
-    ? await supabase
-        .from('documents_metadata')
-        .select('id, file_name, metadata, file_url')
-        .in('id', documentIds)
-    : { data: [] }
-
-  // Combine and sort by original order
-  const idToItem = {}
-  for (const item of [...recentArtifactData.data, ...recentDocumentData.data]) {
-    idToItem[item.id] = item
-  }
-
-  recentItems.value = data
-    .map((d) => ({
-      ...idToItem[d.item_id],
-      item_type: d.item_type,
-      clicked_at: d.clicked_at,
-    }))
-    .filter((item) => item?.file_url)
 }
 
-// Load models (for featured artifacts)
+// FIXED: Load models with proper database structure and error handling
 async function loadModels() {
   isLoadingModels.value = true
   try {
+    // FIXED: Added uploaded_at and updated_at fields like INDEX page
     const { data, error } = await supabase
       .from('artifacts_metadata')
-      .select('id, file_name, metadata, file_url')
+      .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
       .limit(3)
-      .order('created_at', { ascending: false })
+      .order('uploaded_at', { ascending: false })
 
     if (error) {
       console.error('Error loading models:', error)
@@ -500,55 +557,100 @@ async function logClick(itemId, itemType) {
   }
 }
 
-// View item (artifact or document)
+// FIXED: View item with proper error handling from INDEX page
 async function viewItem(item) {
-  if (item.item_type === 'artifact') {
-    const { data, error } = await supabase
-      .from('artifacts_metadata')
-      .select('id')
-      .eq('id', item.id)
-      .single()
+  try {
+    if (item.item_type === 'artifact') {
+      const { data, error } = await supabase
+        .from('artifacts_metadata')
+        .select('id')
+        .eq('id', item.id)
+        .single()
 
-    if (error || !data) {
-      console.error('Artifact not found:', error)
-      return
+      if (error || !data) {
+        console.error('Artifact not found:', error)
+        return
+      }
+
+      router.push(`/artifacts/${item.id}`)
     }
 
-    router.push(`/artifacts/${item.id}`)
-  }
+    if (item.item_type === 'document') {
+      const { data, error } = await supabase
+        .from('documents_metadata')
+        .select('id')
+        .eq('id', item.id)
+        .single()
 
-  if (item.item_type === 'document') {
-    const { data, error } = await supabase
-      .from('documents_metadata')
-      .select('id')
-      .eq('id', item.id)
-      .single()
+      if (error || !data) {
+        console.error('Document not found:', error)
+        return
+      }
 
-    if (error || !data) {
-      console.error('Document not found:', error)
-      return
+      router.push(`/documents/${item.id}`)
     }
-
-    router.push(`/documents/${item.id}`)
+  } catch (err) {
+    // ADDED: Better error handling
+    console.error('Error viewing item:', err)
   }
 }
 
-// Toggle star for models
-const toggleStar = async (modelId) => {
-  const model = modelStore.models.find(m => m.id === modelId)
-  if (model) {
-    model.starred = !model.starred
-    // TODO: Update in Supabase if needed
+// FIXED: Toggle star with proper parameter handling and database updates
+const toggleStar = async (itemId, itemType = 'artifact') => {
+  try {
+    if (itemType === 'artifact') {
+      const model = modelStore.models.find((m) => m.id === itemId)
+      if (model) {
+        model.starred = !model.starred
+        // ADDED: Database update from INDEX page logic
+        await supabase
+          .from('artifacts_metadata')
+          .update({ starred: model.starred })
+          .eq('id', itemId)
+      }
+    } else {
+      // ADDED: Handle recent items star toggle
+      const item = recentItems.value.find((i) => i.id === itemId)
+      if (item) {
+        item.starred = !item.starred
+        // Update in appropriate table
+        const tableName = itemType === 'artifact' ? 'artifacts_metadata' : 'documents_metadata'
+        await supabase.from(tableName).update({ starred: item.starred }).eq('id', itemId)
+      }
+    }
+  } catch (err) {
+    console.error('Error toggling star:', err)
   }
 }
 
-// Toggle bookmark for models
-const toggleBookmark = async (modelId) => {
-  const model = modelStore.models.find(m => m.id === modelId)
-  if (model) {
-    model.bookmarked = !model.bookmarked
-    // TODO: Update in Supabase if needed
+// FIXED: Toggle bookmark with proper parameter handling and database updates
+const toggleBookmark = async (itemId, itemType = 'artifact') => {
+  try {
+    if (itemType === 'artifact') {
+      const model = modelStore.models.find((m) => m.id === itemId)
+      if (model) {
+        model.bookmarked = !model.bookmarked
+        // ADDED: Database update from INDEX page logic
+        await supabase
+          .from('artifacts_metadata')
+          .update({ bookmarked: model.bookmarked })
+          .eq('id', itemId)
+      }
+    }
+  } catch (err) {
+    console.error('Error toggling bookmark:', err)
   }
+}
+
+// FIXED: Added proper filter and sort handler functions
+const selectFilter = (option) => {
+  selectedFilter.value = option
+  showFilterMenu.value = false
+}
+
+const selectSort = (option) => {
+  selectedSort.value = option
+  showSortMenu.value = false
 }
 
 // Navigation functions
@@ -582,58 +684,64 @@ function resetForm() {
 }
 
 async function addCollection() {
-  const title = newCollectionTitle.value.trim()
-  const description = newCollectionDesc.value.trim()
+  try {
+    // ADDED: Better error handling structure
+    const title = newCollectionTitle.value.trim()
+    const description = newCollectionDesc.value.trim()
 
-  if (!title) {
-    console.warn('Collection title is required')
-    return
-  }
-
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser()
-
-  let coverUrl = ''
-
-  if (newCollection.value.coverFile) {
-    const file = newCollection.value.coverFile
-    const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('collection-covers')
-      .upload(fileName, file)
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-    } else {
-      const { data: publicUrlData } = supabase.storage
-        .from('collection-covers')
-        .getPublicUrl(fileName)
-
-      coverUrl = publicUrlData?.publicUrl ?? ''
+    if (!title) {
+      console.warn('Collection title is required')
+      return
     }
-  }
 
-  const defaultCover =
-    'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers/preservedcover.png'
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser()
 
-  const { error: insertError } = await supabase.from('collections').insert([
-    {
-      created_at: new Date().toISOString(),
-      collection_name: title,
-      description,
-      user_id: authUser.id,
-      cover_url: coverUrl || defaultCover,
-    },
-  ])
+    let coverUrl = ''
 
-  if (insertError) {
-    console.error('Insert error:', insertError)
-  } else {
-    showDialog.value = false
-    resetForm()
-    await loadCollections(authUser.id)
+    if (newCollection.value.coverFile) {
+      const file = newCollection.value.coverFile
+      const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('collection-covers')
+        .upload(fileName, file)
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+      } else {
+        const { data: publicUrlData } = supabase.storage
+          .from('collection-covers')
+          .getPublicUrl(fileName)
+
+        coverUrl = publicUrlData?.publicUrl ?? ''
+      }
+    }
+
+    const defaultCover =
+      'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers/preservedcover.png'
+
+    const { error: insertError } = await supabase.from('collections').insert([
+      {
+        created_at: new Date().toISOString(),
+        collection_name: title,
+        description,
+        user_id: authUser.id,
+        cover_url: coverUrl || defaultCover,
+      },
+    ])
+
+    if (insertError) {
+      console.error('Insert error:', insertError)
+    } else {
+      showDialog.value = false
+      resetForm()
+      await loadCollections(authUser.id)
+    }
+  } catch (err) {
+    // ADDED: Top-level error handling
+    console.error('Error adding collection:', err)
   }
 }
 </script>
