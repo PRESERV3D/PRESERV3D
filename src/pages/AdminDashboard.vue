@@ -137,7 +137,17 @@
           <div class="col q-gutter-lg q-px-sm">
             <div class="recent-box q-pa-sm flex column items-center">
               <div class="recent-card">
-                <q-img
+                <component
+                  :is="isGLB(currentItem?.file_name) ? 'model-viewer' : 'img'"
+                  v-bind="
+                    isGLB(currentItem?.file_name)
+                      ? modelViewerProps(currentItem.file_url)
+                      : imgProps(currentItem)
+                  "
+                  class="q-mx-auto"
+                  style="max-width: 200px; max-height: 250px"
+                />
+                <!-- <q-img
                   class="q-mx-auto"
                   style="max-width: 200px; max-height: 250px"
                   :src="
@@ -145,7 +155,7 @@
                     recentStore.recentItems[currentIndex]?.file_url
                   "
                   :alt="recentStore.recentItems[currentIndex]?.metadata?.title || 'No Title'"
-                />
+                /> -->
               </div>
 
               <div class="q-mt-md self-start sub-font-4" style="margin-left: 1rem">
@@ -190,7 +200,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
+import '@google/model-viewer'
 import { supabase } from 'boot/supabase'
 import { useRecentStore } from 'stores/recentStore'
 import {
@@ -231,6 +242,7 @@ const topDocuments = ref([])
 
 const recentStore = useRecentStore()
 const currentIndex = ref(0)
+const currentItem = computed(() => recentStore.recentItems[currentIndex.value])
 
 onMounted(async () => {
   const chartData = await prepareChartData()
@@ -386,6 +398,30 @@ async function prepareUsersData() {
 
   return {
     usersCounts,
+  }
+}
+
+// Recent Uploads
+function isGLB(filename) {
+  return filename?.toLowerCase().endsWith('.glb')
+}
+
+function modelViewerProps(url) {
+  return {
+    src: url,
+    alt: '3D Model',
+    autoRotate: true,
+    style: 'width: 200px; height: 250px; margin: auto;',
+  }
+}
+
+function imgProps(item) {
+  const src = item?.preview_url
+  const alt = item?.metadata?.title || 'No Title'
+
+  return {
+    src,
+    alt,
   }
 }
 </script>
