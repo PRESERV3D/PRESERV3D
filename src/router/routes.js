@@ -42,6 +42,7 @@ const routes = [
         path: 'userdash',
         name: 'user-home',
         component: () => import('pages/UserDashboard.vue'),
+        meta: { requiresAuth: true, allowedRoles: ['user'] }, // added
       },
       {
         path: 'documents/:id',

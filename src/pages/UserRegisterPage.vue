@@ -78,10 +78,11 @@
           <q-select
             dense
             v-model="form.college"
-            :options="collegeOptions"
+            :options="Object.keys(collegeDepartment)"
             lazy-rules
             :rules="[(val) => !!val || 'Please select your college.']"
             class="text-box"
+            @update:model-value="form.department = ''"
           />
 
           <div class="row items-center">
@@ -192,13 +193,43 @@ const form = ref({
   confirmPassword: '',
 })
 
-const collegeOptions = [
-  'College of Computer and Information Sciences',
-  'College of History',
-  'College of Arts and Sciences',
-]
+const collegeDepartment = {
+  'College of Computer and Information Sciences': [
+    'Bachelor of Science in Computer Science',
+    'Bachelor of Science in Information Technology',
+  ],
+  'College of Social Sciences and Development': [
+    'Bachelor of Arts in History',
+    'Bachelor of Arts in Sociology',
+    'Bachelor of Science in Cooperatives',
+    'Bachelor of Science in Economics',
+    'Bachelor of Science in Psychology',
+  ],
+  'College of Arts and Letters': [
+    'Bachelor of Arts in English Language Studies',
+    'Bachelor of Arts in Filipinology',
+    'Bachelor of Arts in Literary and Cultural Studies',
+    'Bachelor of Arts in Philosophy',
+    'Bachelor of Performing Arts major in Theater Arts',
+  ],
+  'College of Education': [
+    'Bachelor of Technology and Livelihood Education',
+    'Bachelor of Library and Information Science',
+    'Bachelor of Secondary Education',
+    'Bachelor of Elementary Education',
+    'Bachelor of Early Childhood Education',
+  ],
+  'College of Political Science and Public Administration': [
+    'Bachelor of Public Administration',
+    'Bachelor of Arts in International Studies',
+    'Bachelor of Arts in Political Economy',
+    'Bachelor of Arts in Political Science',
+  ],
+}
 
-const departmentOptions = ['Information Technology', 'Computer Science', 'Social Sciences']
+const departmentOptions = computed(() => {
+  return collegeDepartment[form.value.college] || []
+})
 
 // Password strength status
 const passwordStrength = computed(() => {
