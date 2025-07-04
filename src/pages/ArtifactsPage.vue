@@ -171,7 +171,7 @@
                 <!-- View Icon with Count -->
                 <div class="icon-with-count">
                   <q-icon name="visibility" class="action-icon view-icon" size="18px" />
-                  <span class="count-text">{{ model.view_count || 0 }}</span>
+                  <span class="count-text">{{ modelStore.viewCounts[model.id] || 0 }}</span>
                 </div>
 
                 <!-- Star Icon with Count -->
@@ -597,7 +597,6 @@ const fetchAllArtifacts = async () => {
         ...model,
         bookmarked: false,
         // starred: false,
-        view_count: Math.floor(Math.random() * 1000),
         // star_count: Math.floor(Math.random() * 100)
       }))
 
@@ -676,6 +675,8 @@ onMounted(async () => {
     if (!searchStore.query) {
       await fetchAllArtifacts()
     }
+
+    await modelStore.fetchViewCounts()
   } finally {
     loading.value = false
   }
