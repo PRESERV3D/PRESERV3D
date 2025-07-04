@@ -1,157 +1,271 @@
 <template>
   <q-page class="q-pa-md">
-    <!-- HEADER: Collection Info -->
-    <div class="row q-col-gutter-xl">
-      <div class="col-12 col-md-4">
-        <q-card class="q-pa-sm">
-          <img
-            :src="collection.cover_url"
-            alt="Collection Cover"
-            style="width: 100%; aspect-ratio: 3/4; object-fit: cover"
-          />
-          <q-card-section>
-            <div class="text-h6">{{ collection.collection_name }}</div>
-            <div class="text-subtitle2">{{ collection.description }}</div>
-          </q-card-section>
-          <q-card-actions align="right">
-            <q-btn flat label="Edit" icon="edit" color="primary" @click="openEditDialog" />
-            <q-btn flat label="Delete" icon="delete" color="negative" @click="confirmDelete" />
-          </q-card-actions>
-        </q-card>
-      </div>
-
-      <div class="col-12 col-md-8">
-        <!-- DOCUMENTS SECTION -->
-        <div class="q-mb-xl">
-          <div class="row items-center q-mb-sm">
-            <h5 class="text-h5 col">Documents</h5>
-            <q-btn
-              label="Add Document"
-              icon="add"
-              color="primary"
-              flat
-              @click="goToAddDocument"
-              class="q-ml-auto"
-            />
-          </div>
-
-          <div v-if="documents.length" class="row q-gutter-md q-mt-md">
-            <div v-for="(doc, i) in documents" :key="i" class="card-wrapper">
-              <q-card class="my-card documentCard" rounded bordered>
-                <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
-                <div class="metadata q-px-sm">
-                  <h6>{{ doc.metadata?.title || 'Untitled' }}</h6>
-                  <p class="q-mb-sm">Author: {{ doc.metadata?.author || 'Unknown' }}</p>
-                </div>
-                <router-link
-                  :to="{ name: 'view-document', params: { id: doc.id } }"
-                  class="text-primary q-px-sm"
-                  @click="logClick(doc.id, 'document')"
-                >
-                  View Document
-                </router-link>
-                <q-card-actions align="right">
-                  <q-btn
-                    flat
-                    :icon="'bookmark'"
-                    color="primary"
-                    @click="toggleBookmark(doc.id, 'document')"
-                  />
-                </q-card-actions>
-              </q-card>
-            </div>
-          </div>
-          <p v-else class="text-grey">No documents in this collection.</p>
+    <div class="collection-container">
+      <!-- Left Side - Collection Details -->
+      <div class="collection-details-section">
+        <!-- Collection Title -->
+        <div class="collection-title-section">
+          <h4 class="collection-name">{{ collection.collection_name }}</h4>
         </div>
 
-        <!-- ARTIFACTS SECTION -->
-        <div>
-          <div class="row items-center q-mb-sm">
-            <h5 class="text-h5 col">Artifacts</h5>
-            <q-btn
-              label="Add Artifact"
-              icon="add"
-              color="primary"
-              flat
-              @click="goToAddArtifact"
-              class="q-ml-auto"
-            />
-          </div>
-
-          <div v-if="artifacts.length" class="row q-gutter-md q-mt-md">
-            <div v-for="(model, i) in artifacts" :key="i" class="card-wrapper">
-              <q-card class="my-card" rounded bordered>
-                <div class="card">
-                  <model-viewer
-                    :src="model.file_url"
-                    camera-controls
-                    loading="lazy"
-                    auto-rotate
-                    auto-rotate-delay="1500"
-                    rotation-per-second="10deg"
-                    shadow-intensity="1"
-                    class="artifacts"
-                    style="width: 300px; height: 300px"
-                  />
+        <!-- Collection Navigation -->
+        <div class="collection-navigation">
+          <!-- Collection Cover -->
+          <div class="collection-cover-container">
+            <div class="book-container">
+              <div class="big-book-cover">
+                <div class="big-book-spine"></div>
+                <div class="book-content" :class="{ 'has-image': collection.cover_url }">
+                  <!-- Show uploaded image as background if available -->
+                  <div v-if="collection.cover_url" class="book-image-overlay">
+                    <img :src="collection.cover_url" :alt="collection.collection_name" class="book-background-image" />
+                  </div>
+                  <!-- Show default icon if no image -->
+                  <div v-else class="book-title-section">
+                    <div class="book-icon">
+                      <q-icon name="collections_bookmark" size="2rem" color="white" />
+                    </div>
+                  </div>
                 </div>
-                <q-card-section class="q-pa-sm">
-                  <div class="text-subtitle1">{{ model.metadata?.title || model.file_name }}</div>
-                  <router-link
-                    :to="{ name: 'view-artifact', params: { id: model.id } }"
-                    class="text-primary"
-                    @click="logClick(model.id, 'artifact')"
-                  >
-                    View Artifact
-                  </router-link>
-                </q-card-section>
-                <q-card-actions align="right">
-                  <q-btn
-                    flat
-                    :icon="'bookmark'"
-                    color="primary"
-                    @click="toggleBookmark(model.id, 'artifact')"
-                  />
-                </q-card-actions>
-              </q-card>
+              </div>
             </div>
           </div>
-          <p v-else class="text-grey">No artifacts in this collection.</p>
+        </div>
+
+        <!-- Collection Description -->
+        <div class="collection-description">
+          <p>{{ collection.description }}</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <q-btn
+            @click="goBack"
+            label="Back"
+            class="action-btn back-btn"
+            no-caps
+            unelevated
+          />
+          <div class="right-actions">
+            <q-btn
+              @click="openEditDialog"
+              label="Edit"
+              class="action-btn edit-btn"
+              no-caps
+              unelevated
+            />
+            <q-btn
+              @click="confirmDelete"
+              label="Delete"
+              class="action-btn delete-btn"
+              no-caps
+              unelevated
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Side - Combined Content -->
+      <div class="content-section">
+        <!-- Combined Artifacts and Documents Section -->
+        <div class="combined-content-section">
+          <!-- Artifacts Section -->
+          <div class="artifacts-subsection">
+            <div class="section-header">
+              <h5 class="section-title">Artifacts</h5>
+              <q-btn
+                icon="add_circle"
+                label="Add New"
+                class="add-new-btn"
+                no-caps
+                unelevated
+                @click="goToAddArtifact"
+              />
+            </div>
+
+            <div class="two-artifacts-grid">
+              <div v-for="artifact in displayedArtifacts" :key="artifact.id" class="artifact-card-wrapper">
+                <q-card class="my-card artifact-preview-card" rounded bordered>
+                  <div class="card">
+                    <model-viewer
+                      :src="artifact.file_url"
+                      camera-controls
+                      loading="lazy"
+                      auto-rotate
+                      auto-rotate-delay="1500"
+                      rotation-per-second="10deg"
+                      shadow-intensity="1"
+                      class="artifacts"
+                      style="width: 100%; height: 250px"
+                    />
+                  </div>
+                  <q-card-section class="q-pa-sm artifact-card-section">
+                    <div class="title-row">
+                      <router-link
+                        :to="{ name: 'view-artifact', params: { id: artifact.id } }"
+                        class="artifact-title-link"
+                        @click="logClick(artifact.id, 'artifact')"
+                      >
+                        <div class="text-subtitle2 artifact-title">{{ artifact.metadata?.title || artifact.file_name }}</div>
+                      </router-link>
+                      <div class="action-icons">
+                        <q-icon
+                          :name="artifact.bookmarked ? 'bookmark' : 'bookmark_border'"
+                          class="action-icon bookmark-icon"
+                          :class="{ 'bookmarked': artifact.bookmarked }"
+                          size="18px"
+                          @click.stop="toggleBookmark(artifact.id)"
+                        />
+                      </div>
+                    </div>
+                  </q-card-section>
+                </q-card>
+              </div>
+            </div>
+            <p v-if="!artifacts.length" class="text-grey">No artifacts in this collection.</p>
+          </div>
+
+          <!-- Documents Section with Previews -->
+          <div class="documents-subsection" style="margin-top: 2rem;">
+            <div class="section-header">
+              <h5 class="section-title">Documents</h5>
+              <q-btn
+                icon="add_circle"
+                label="Add New"
+                class="add-new-btn"
+                no-caps
+                unelevated
+                @click="goToAddDocument"
+              />
+            </div>
+
+            <div class="documents-grid">
+              <div v-for="document in displayedDocuments" :key="document.id" class="document-card-wrapper">
+                <q-card class="my-card document-preview-card" rounded bordered>
+                  <router-link
+                    :to="{ name: 'view-document', params: { id: document.id } }"
+                    class="document-link"
+                    @click="logClick(document.id, 'document')"
+                  >
+                    <!-- Document Preview Image -->
+                    <q-img
+                      :src="document.preview_url"
+                      :alt="document.metadata?.title || document.file_name || 'Document Preview'"
+                      class="document-preview-image"
+                      :style="{ width: '100%', height: '200px' }"
+                      loading="lazy"
+                    >
+                      <!-- Fallback if preview fails to load -->
+                      <template v-slot:error>
+                        <div class="document-preview-fallback">
+                          <q-icon name="description" size="3rem" color="#560505" />
+                          <div class="text-caption">Preview not available</div>
+                        </div>
+                      </template>
+                    </q-img>
+                  </router-link>
+                  <q-card-section class="q-pa-sm document-card-section">
+                    <div class="title-row">
+                      <router-link
+                        :to="{ name: 'view-document', params: { id: document.id } }"
+                        class="artifact-title-link"
+                        @click="logClick(document.id, 'document')"
+                      >
+                        <div class="text-subtitle2 artifact-title q-mr-sm">
+                          {{ document.metadata?.title || document.file_name || 'Untitled Document' }}
+                        </div>
+                      </router-link>
+                      <div class="action-icons">
+                        <q-icon
+                          :name="document.bookmarked ? 'bookmark' : 'bookmark_border'"
+                          class="action-icon bookmark-icon"
+                          :class="{ 'bookmarked': document.bookmarked }"
+                          size="18px"
+                          @click.stop="toggleBookmark(document.id)"
+                        />
+                      </div>
+                    </div>
+                    <p class="document-author" style="margin-left: 1.25rem">{{ document.metadata?.author || 'Unknown Author' }}</p>
+                  </q-card-section>
+                </q-card>
+              </div>
+            </div>
+            <p v-if="!documents.length" class="text-grey">No documents in this collection.</p>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Edit Dialog -->
-    <q-dialog v-model="editDialogOpen">
-      <q-card style="min-width: 350px">
-        <q-card-section>
-          <div class="text-h6">Edit Collection</div>
+    <!-- Edit Collection Dialog -->
+    <q-dialog v-model="editDialogOpen" persistent>
+      <q-card class="add-collection-card">
+        <q-card-section class="row justify-center items-center">
+          <div class="sub-font-3 text-center" style="font-size: 16px; font-weight: 700">
+            Edit Collection
+          </div>
         </q-card-section>
 
-        <q-card-section class="q-gutter-md column">
-          <q-input v-model="editData.collection_name" label="Collection Name" filled />
-          <q-input v-model="editData.description" label="Description" type="textarea" filled />
+        <q-card-section class="row q-gutter-md" style="gap: 0.5rem">
+          <div class="col-auto q-ml-md">
+            <div class="upload-box" @click="triggerEditFileInput">
+              <img
+                v-if="editData.cover_url"
+                :src="editData.cover_url"
+                alt="Preview"
+                class="preview-image"
+              />
+              <div v-else class="upload">
+                <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon" />
+                <div>Upload New Photo</div>
+              </div>
+              <input
+                type="file"
+                ref="editFileInput"
+                accept="image/*"
+                @change="handleEditImageUpload"
+                style="display: none"
+              />
+            </div>
+          </div>
 
-          <q-uploader
-            label="Upload Cover Image"
-            accept="image/*"
-            :max-files="1"
-            auto-upload
-            @added="handleCoverUpload"
-            class="q-mt-sm"
-          />
+          <div class="col-5 q-ml-lg">
+            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
+              COLLECTION NAME
+            </div>
+            <q-input
+              v-model="editData.collection_name"
+              class="field-collection q-mb-md"
+              label="Enter Collection Name"
+              dense
+              outlined
+            />
 
-          <img
-            v-if="editData.cover_url"
-            :src="editData.cover_url"
-            alt="Cover Preview"
-            style="width: 100%; max-height: 250px; object-fit: contain"
-            class="q-mt-sm"
-          />
+            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
+              SHORT DESCRIPTION
+            </div>
+            <q-input
+              v-model="editData.description"
+              type="textarea"
+              class="field-collection"
+              label="Enter Short Description"
+              dense
+              outlined
+              style="min-height: 8rem"
+            />
+          </div>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" v-close-popup />
-          <q-btn label="Save" color="primary" @click="updateCollection" />
+          <q-btn
+            flat
+            label="Cancel"
+            class="sub-font-2"
+            style="color: #000000"
+            v-close-popup
+            no-caps
+            @click="cancelEditCollection"
+          />
+          <q-btn label="Save" class="q-mr-sm btn-save" @click="updateCollection" no-caps />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -176,13 +290,28 @@
     <q-dialog v-model="messageDialogOpen">
       <q-card class="delete-notice">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          messageDialogTitle
-        }}</q-card-section>
+            messageDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-          messageDialogContent
-        }}</q-card-section>
+            messageDialogContent
+          }}</q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Close" class="btn-save" @click="handleMessageDialogClose" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Notify Dialog -->
+    <q-dialog v-model="notifyDialogOpen">
+      <q-card class="sucess-add-to-collection">
+        <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
+            notifyDialogTitle
+          }}</q-card-section>
+        <q-card-section class="sub-font-3" style="font-weight: 400">{{
+            notifyDialogMessage
+          }}</q-card-section>
+        <q-card-actions>
+          <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -190,7 +319,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { uid } from 'quasar'
@@ -199,34 +328,65 @@ import '@google/model-viewer'
 const route = useRoute()
 const router = useRouter()
 
+// Get collection ID from route params
 const collectionId = route.params.id
+
+// Data refs
 const collection = ref({})
 const documents = ref([])
 const artifacts = ref([])
 
+// Dialog states
 const editDialogOpen = ref(false)
 const confirmDeleteOpen = ref(false)
 const messageDialogOpen = ref(false)
 const messageDialogTitle = ref('')
 const messageDialogContent = ref('')
 
+
+// Notify dialog states
+const notifyDialogOpen = ref(false)
+const notifyDialogTitle = ref('')
+const notifyDialogMessage = ref('')
+
+// Edit dialog data
 const editData = ref({
   collection_name: '',
   description: '',
   cover_url: '',
 })
+const editFileInput = ref(null)
 
+// Computed properties for display
+const displayedArtifacts = computed(() => {
+  return artifacts.value.slice(0, 2) // Show first 2 artifacts
+})
+
+const displayedDocuments = computed(() => {
+  return documents.value.slice(0, 4) // Show first 4 documents
+})
+
+// Helper function to show message dialogs
 function showMessageDialog(title, content) {
   messageDialogTitle.value = title
   messageDialogContent.value = content
   messageDialogOpen.value = true
 }
 
+// Helper function to show notify dialogs (from documents page)
+// function showNotifyDialog(title, message) {
+//   notifyDialogTitle.value = title
+//   notifyDialogMessage.value = message
+//   notifyDialogOpen.value = true
+// }
+
+// Mount lifecycle - fetch data
 onMounted(async () => {
   await fetchCollectionInfo()
   await fetchCollectionItems()
 })
 
+// Fetch collection information
 async function fetchCollectionInfo() {
   const { data, error } = await supabase
     .from('collections')
@@ -241,6 +401,7 @@ async function fetchCollectionInfo() {
   }
 }
 
+// Fetch collection items (documents and artifacts) - Updated to include preview_url
 async function fetchCollectionItems() {
   const { data: items, error } = await supabase
     .from('collection_items')
@@ -258,10 +419,10 @@ async function fetchCollectionItems() {
   if (docIds.length) {
     const { data: docs } = await supabase
       .from('documents_metadata')
-      .select('id, file_name, file_url, metadata')
+      .select('id, file_name, file_url, preview_url, metadata')
       .in('id', docIds)
 
-    documents.value = (docs || []).map((doc) => ({ ...doc, bookmarked: true }))
+    documents.value = (docs || []).map((doc) => ({ ...doc, bookmarked: true, starred: false }))
   }
 
   if (artIds.length) {
@@ -270,10 +431,11 @@ async function fetchCollectionItems() {
       .select('id, file_name, file_url, metadata')
       .in('id', artIds)
 
-    artifacts.value = (arts || []).map((art) => ({ ...art, bookmarked: true }))
+    artifacts.value = (arts || []).map((art) => ({ ...art, bookmarked: true, starred: false }))
   }
 }
 
+// Log user clicks for analytics
 async function logClick(itemId, itemType) {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
@@ -299,15 +461,16 @@ async function logClick(itemId, itemType) {
   }
 }
 
-function openEditDialog() {
-  editData.value = { ...collection.value }
-  editDialogOpen.value = true
+
+// Edit dialog methods
+const triggerEditFileInput = () => {
+  editFileInput.value.click()
 }
 
-async function handleCoverUpload(files) {
-  if (!files.length) return
+const handleEditImageUpload = async (event) => {
+  const file = event.target.files[0]
+  if (!file || !file.type.startsWith('image/')) return
 
-  const file = files[0]
   const fileExt = file.name.split('.').pop()
   const filePath = `collection-covers/${uid()}.${fileExt}`
 
@@ -325,6 +488,21 @@ async function handleCoverUpload(files) {
   editData.value.cover_url = publicData.publicUrl
 }
 
+const openEditDialog = () => {
+  editData.value = { ...collection.value }
+  editDialogOpen.value = true
+}
+
+const cancelEditCollection = () => {
+  editData.value = {
+    collection_name: '',
+    description: '',
+    cover_url: '',
+  }
+  editDialogOpen.value = false
+}
+
+// Update collection
 async function updateCollection() {
   const { error } = await supabase
     .from('collections')
@@ -346,6 +524,7 @@ async function updateCollection() {
   }
 }
 
+// Delete collection
 function confirmDelete() {
   confirmDeleteOpen.value = true
 }
@@ -377,14 +556,15 @@ async function deleteCollection() {
   }
 }
 
-async function toggleBookmark(itemId, itemType) {
+// Remove from collection (function for actual removal)
+async function removeFromCollection(itemId, itemType) {
   const { error } = await supabase
     .from('collection_items')
     .delete()
     .match({ collection_id: collectionId, item_id: itemId, item_type: itemType })
 
   if (error) {
-    console.error('Unbookmark failed:', error)
+    console.error('Remove failed:', error)
     showMessageDialog('Delete Failed', `Failed to remove ${itemType} from collection.`)
     return
   }
@@ -400,6 +580,42 @@ async function toggleBookmark(itemId, itemType) {
     'Removed',
     `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} removed from collection.`,
   )
+}
+
+// Toggle bookmark - now with actual removal functionality
+const toggleBookmark = async (itemId) => {
+  // Try to find in artifacts first
+  const artifact = artifacts.value.find(a => a.id === itemId)
+  if (artifact) {
+    if (artifact.bookmarked) {
+      // If currently bookmarked, remove from collection
+      await removeFromCollection(itemId, 'artifact')
+    } else {
+      // If not bookmarked, just toggle the UI state
+      artifact.bookmarked = !artifact.bookmarked
+    }
+    return
+  }
+
+  // Try to find in documents
+  const document = documents.value.find(d => d.id === itemId)
+  if (document) {
+    if (document.bookmarked) {
+      // If currently bookmarked, remove from collection
+      await removeFromCollection(itemId, 'document')
+    } else {
+      // If not bookmarked, just toggle the UI state
+      document.bookmarked = !document.bookmarked
+    }
+    return
+  }
+
+  console.log('Item not found for bookmark toggle:', itemId)
+}
+
+// Navigation methods
+const goBack = () => {
+  router.go(-1)
 }
 
 async function handleMessageDialogClose() {
