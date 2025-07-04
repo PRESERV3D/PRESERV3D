@@ -186,6 +186,22 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- Confirm Remove Item Dialog -->
+    <q-dialog v-model="confirmRemoveOpen" persistent>
+      <q-card class="confirmation-delete">
+        <q-card-section class="column items-center">
+          <q-img src="src/assets/img/conf-delete.png" alt="question icon" class="question-icon" />
+          <div class="q-mt-md sub-font" style="color: #000000; text-align: center">
+            Are you sure you want to remove "{{ itemToRemove.name }}" from the collection?
+          </div>
+        </q-card-section>
+        <q-card-actions align="center">
+          <q-btn label="Yes" class="btn-save" flat @click="removeItem" />
+          <q-btn flat label="No" class="sub-font-2" style="color: #000000" v-close-popup no-caps />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -214,6 +230,13 @@ const editData = ref({
   collection_name: '',
   description: '',
   cover_url: '',
+})
+
+const confirmRemoveOpen = ref(false)
+const itemToRemove = ref({
+  id: null,
+  type: '',
+  name: '',
 })
 
 function showMessageDialog(title, content) {
@@ -377,28 +400,44 @@ async function deleteCollection() {
   }
 }
 
-async function toggleBookmark(itemId, itemType) {
+function toggleBookmark(itemId, itemType) {
+  const list = itemType === 'document' ? documents.value : artifacts.value
+  const item = list.find((el) => el.id === itemId)
+
+  itemToRemove.value = {
+    id: itemId,
+    type: itemType,
+    name: item?.metadata?.title || item?.file_name || 'Untitled',
+  }
+
+  confirmRemoveOpen.value = true
+}
+
+async function removeItem() {
+  const { id, type } = itemToRemove.value
+
   const { error } = await supabase
     .from('collection_items')
     .delete()
-    .match({ collection_id: collectionId, item_id: itemId, item_type: itemType })
+    .match({ collection_id: collectionId, item_id: id, item_type: type })
 
   if (error) {
     console.error('Unbookmark failed:', error)
-    showMessageDialog('Delete Failed', `Failed to remove ${itemType} from collection.`)
+    showMessageDialog('Delete Failed', `Failed to remove ${type} from collection.`)
     return
   }
 
-  // Immediately remove item from display
-  if (itemType === 'document') {
-    documents.value = documents.value.filter((doc) => doc.id !== itemId)
-  } else if (itemType === 'artifact') {
-    artifacts.value = artifacts.value.filter((art) => art.id !== itemId)
+  if (type === 'document') {
+    documents.value = documents.value.filter((doc) => doc.id !== id)
+  } else {
+    artifacts.value = artifacts.value.filter((art) => art.id !== id)
   }
+
+  confirmRemoveOpen.value = false
 
   showMessageDialog(
     'Removed',
-    `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} removed from collection.`,
+    `${type.charAt(0).toUpperCase() + type.slice(1)} "${itemToRemove.value.name}" removed from collection.`,
   )
 }
 
