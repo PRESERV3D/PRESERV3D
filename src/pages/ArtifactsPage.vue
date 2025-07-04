@@ -261,7 +261,7 @@
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
           notifyDialogTitle
         }}</q-card-section>
-        <q-card-section class="sub-font-3" style="font-weight: 400">{{
+        <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
           notifyDialogMessage
         }}</q-card-section>
         <q-card-actions>
