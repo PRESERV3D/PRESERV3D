@@ -391,7 +391,8 @@
 }
 
 .trophies {
-  max-width: 80%;
+  height: 15rem;
+  width: 15rem;
 }
 
 .box-legend {
@@ -471,6 +472,11 @@
   color: #ffffff;
 }
 
+.graph {
+  width: 20rem;
+  align-self: center;
+}
+
 .box-3 {
   border-radius: 15px;
   background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
@@ -478,6 +484,11 @@
   min-width: 0;
   height: 35rem;
   box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+}
+
+.users-graph {
+  margin-top: 5rem;
+  width: 22rem;
 }
 
 .btn-report {
@@ -520,13 +531,12 @@
 .box-4 {
   border-radius: 15px;
   background: linear-gradient(25deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
-  margin-left: 2rem;
-  flex: 2;
+  margin-left: 3rem;
+  flex: 1;
   min-width: 0;
-  min-height: 35rem;
+  height: 35rem;
   height: auto;
   box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
-
   justify-content: center;
 }
 
@@ -555,7 +565,7 @@
   height: 22rem;
   background-color: #000000;
   border-radius: 10px;
-  width: 100%;
+  width: 15rem;
 }
 
 .recent-card {

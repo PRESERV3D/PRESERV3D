@@ -140,6 +140,7 @@ async function registerAdmin() {
         data: {
           role: 'admin',
         },
+        redirectTo: 'http://localhost:9000/#/user/login',
       },
     })
 
