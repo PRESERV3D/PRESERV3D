@@ -168,7 +168,7 @@ async function registerAdmin() {
       }
 
       alert('Registration successful! Please check your email to confirm your account.')
-      router.push('/admin/login')
+      router.push('/user/login')
     }
   } catch (err) {
     console.error(err)

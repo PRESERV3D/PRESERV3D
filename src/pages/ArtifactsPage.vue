@@ -232,7 +232,6 @@
           <div class="card">
             <model-viewer
               :src="model.file_url"
-              camera-controls
               loading="lazy"
               auto-rotate
               auto-rotate-delay="1500"
