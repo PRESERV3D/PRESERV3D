@@ -120,7 +120,7 @@
                 <div class="q-mr-md sub-font-2" style="font-size: 12px">{{ item.views }} views</div>
               </div>
 
-              <div class="q-mt-sm sub-font" style="font-size: 14px">Documents</div>
+              <div class="q-mt-sm q-mb-md sub-font" style="font-size: 14px">Documents</div>
 
               <div
                 v-for="(item, index) in topDocuments"
@@ -168,7 +168,7 @@
                   </div>
                 </div>
               </div>
-              <div class="q-mt-sm self-start sub-font-2" style="margin-left: 1rem; color: #ffffff">
+              <div class="q-mt-sm self-start sub-font-2" style="color: #ffffff">
                 {{
                   new Date(recentStore.recentItems[currentIndex]?.uploaded_at).toLocaleDateString()
                 }}
