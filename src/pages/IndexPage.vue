@@ -6,7 +6,6 @@
         <div class="col-7 q-gutter-xs">
           <p class="q-ml-xl admin-title">
             <span v-if="userStore.profile">Welcome Back, {{ userStore.profile.first_name }}!</span>
-            <span v-else>Discover Cultural Heritage in 3D & Digital Archives</span>
           </p>
           <p class="q-ml-xl admin-subtitle">
             <span v-if="userStore.profile?.role === 'admin'">(Admin Access) - </span>
