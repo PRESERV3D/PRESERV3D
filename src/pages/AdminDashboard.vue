@@ -2,18 +2,18 @@
   <q-page class="q-pa-md">
     <div class="row q-gutter-sm">
       <div class="q-mt-xs box-1 row items-center">
-        <div class="col-7 q-gutter-xs">
+        <div class="col-7">
           <p class="q-ml-xl admin-title">Explore & Manage Cultural Heritage Assets</p>
           <p class="q-ml-xl admin-subtitle">
             Access digital artifacts, document, and research <br />
             tools — all in one place.
           </p>
-          <div class="q-ml-md q-gutter-lg">
+          <div class="row q-ml-md q-gutter-lg">
             <q-btn to="/artifacts" label="Explore Artifacts" class="btn-explore" no-caps />
             <q-btn to="/documents" label="Browse Documents" class="btn-document" no-caps />
           </div>
         </div>
-        <div class="col-5 q-gutter-xs">
+        <div class="col-5">
           <q-img
             src="src/assets/img/trophy-document.png"
             alt="Trophy and Document"
@@ -24,30 +24,32 @@
 
       <div class="q-mt-xs box-2">
         <p class="q-ml-lg admin-title-2">Uploaded Archives</p>
-        <div class="row q-gutter-md q-ml-sm">
-          <q-btn
-            label="All"
-            no-caps
-            class="btn-1"
-            :class="{ active: activeFilter === 'all' }"
-            @click="activeFilter = 'all'"
-          />
-          <q-btn
-            label="Artifacts"
-            no-caps
-            class="btn-1"
-            :class="{ active: activeFilter === 'artifacts' }"
-            @click="activeFilter = 'artifacts'"
-          />
-          <q-btn
-            label="Documents"
-            no-caps
-            class="btn-1"
-            :class="{ active: activeFilter === 'documents' }"
-            @click="activeFilter = 'documents'"
-          />
+        <div class="column">
+          <div class="row q-gutter-md q-ml-sm">
+            <q-btn
+              label="All"
+              no-caps
+              class="btn-1"
+              :class="{ active: activeFilter === 'all' }"
+              @click="activeFilter = 'all'"
+            />
+            <q-btn
+              label="Artifacts"
+              no-caps
+              class="btn-1"
+              :class="{ active: activeFilter === 'artifacts' }"
+              @click="activeFilter = 'artifacts'"
+            />
+            <q-btn
+              label="Documents"
+              no-caps
+              class="btn-1"
+              :class="{ active: activeFilter === 'documents' }"
+              @click="activeFilter = 'documents'"
+            />
+          </div>
           <!-- Uploaded Archives Line Graph -->
-          <div>
+          <div class="q-mt-md graph">
             <canvas ref="uploadedArchives"></canvas>
           </div>
         </div>
@@ -81,50 +83,60 @@
             <p class="q-ml-md sub-font">Users per Month</p>
             <div class="row q-py-sm justify-center q-gutter-md">
               <!-- To be removed -->
-              <div class="box-legend" style="background-color: #880000"></div>
+              <!-- <div class="box-legend" style="background-color: #880000"></div>
               <p class="q-ml-sm sub-font" style="font-size: 12px">PUP Students</p>
               <div class="box-legend" style="background-color: #efaf00"></div>
               <p class="q-ml-sm sub-font" style="font-size: 12px">PUP Faculty</p>
               <div class="box-legend" style="background-color: #3d86ff"></div>
-              <p class="q-ml-sm sub-font" style="font-size: 12px">Visitors</p>
+              <p class="q-ml-sm sub-font" style="font-size: 12px">Visitors</p> -->
               <!--  -->
 
               <!-- Users per Month Line Graph -->
-              <div>
+              <div class="users-graph">
                 <canvas ref="usersPerMonth"></canvas>
               </div>
             </div>
           </div>
 
           <div class="col-6">
-            <p class="sub-font">Most Viewed Artifacts Materials</p>
+            <div class="q-mb-lg sub-font">Most Viewed Artifacts Materials</div>
             <div class="column">
-              <p class="q-py-xs sub-font" style="font-size: 14px">Artifacts</p>
+              <div class="q-mb-md sub-font" style="font-size: 14px">Artifacts</div>
 
               <div
                 v-for="(item, index) in topArtifacts"
                 :key="index"
                 class="row items-center justify-between"
               >
-                <div class="row items-center q-gutter-sm">
-                  <p class="number">{{ index + 1 }}</p>
-                  <p class="sub-font-2">{{ item.title }}</p>
+                <div class="row q-mb-md items-center q-gutter-sm">
+                  <div class="number">{{ index + 1 }}</div>
+                  <div class="fade-title-container" style="max-width: 12rem">
+                    <div class="sub-font-2 fade-title">
+                      {{ item.title }}
+                      <div class="tooltip-box">{{ item.title }}</div>
+                    </div>
+                  </div>
                 </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">{{ item.views }} views</p>
+                <div class="q-mr-md sub-font-2" style="font-size: 12px">{{ item.views }} views</div>
               </div>
 
-              <p class="q-py-xs sub-font" style="font-size: 14px">Documents</p>
+              <p class="q-mt-sm sub-font" style="font-size: 14px">Documents</p>
 
               <div
                 v-for="(item, index) in topDocuments"
                 :key="index"
                 class="row items-center justify-between"
               >
-                <div class="row items-center q-gutter-sm">
-                  <p class="number">{{ index + 1 }}</p>
-                  <p class="sub-font-2">{{ item.title }}</p>
+                <div class="row q-mb-md items-center q-gutter-sm">
+                  <div class="number">{{ index + 1 }}</div>
+                  <div class="fade-title-container" style="max-width: 12rem">
+                    <div class="sub-font-2 fade-title">
+                      {{ item.title }}
+                      <div class="tooltip-box">{{ item.title }}</div>
+                    </div>
+                  </div>
                 </div>
-                <p class="q-mr-md sub-font-2" style="font-size: 12px">{{ item.views }} views</p>
+                <div class="q-mr-md sub-font-2" style="font-size: 12px">{{ item.views }} views</div>
               </div>
             </div>
           </div>
@@ -133,26 +145,32 @@
 
       <div class="box-4">
         <p class="q-ml-lg admin-title-2">Recently Uploaded</p>
-        <div class="q-pa-md">
-          <div class="col q-gutter-lg q-px-sm">
-            <div class="recent-box q-pa-sm flex column items-center">
-              <div class="recent-card"></div>
-              <div class="q-mt-md self-start sub-font-4" style="margin-left: 1rem">Title</div>
-              <div class="q-mt-sm self-start sub-font-2" style="margin-left: 1rem; color: #ffffff">
-                Date Added
+
+        <div class="column q-mt-lg items-center">
+          <div class="recent-box q-pa-xs column items-center">
+            <div class="recent-card"></div>
+            <div class="q-mt-md self-start" style="margin-left: 1rem">
+              <div class="fade-title-container" style="max-width: 10rem">
+                <div class="sub-font-4 fade-title">
+                  Long Title Sample, Like really Long
+                  <div class="tooltip-box">Long Title Sample, Like really Long</div>
+                </div>
               </div>
             </div>
+            <div class="q-mt-sm self-start sub-font-2" style="margin-left: 1rem; color: #ffffff">
+              Date Added
+            </div>
           </div>
+        </div>
 
-          <div class="row q-gutter-lg items-center justify-center">
-            <q-btn flat round class="arrow-button" @click="goBack">
-              <img src="/icons/arrow_left.png" alt="back" class="btn-arrows" />
-            </q-btn>
+        <div class="row q-gutter-lg items-center justify-center">
+          <q-btn flat round class="arrow-button" @click="goBack">
+            <img src="/icons/arrow_left.png" alt="back" class="btn-arrows" />
+          </q-btn>
 
-            <q-btn flat round class="arrow-button" @click="goNext">
-              <img src="/icons/arrow_right.png" alt="next" class="btn-arrows" />
-            </q-btn>
-          </div>
+          <q-btn flat round class="arrow-button" @click="goNext">
+            <img src="/icons/arrow_right.png" alt="next" class="btn-arrows" />
+          </q-btn>
         </div>
       </div>
     </div>
