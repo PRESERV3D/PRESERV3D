@@ -20,11 +20,11 @@
         </div>
         <div class="col">
           <h2 class="document-title">{{ doc.metadata.title }}</h2>
-          <div class="row items-center justify-center">
+          <div class="row items-center">
             <p class="sub-font-3" style="font-size: 16px; margin: 0; max-width: 25rem">
               {{ doc.metadata.author }}
             </p>
-            <div class="edit-delete-btns row q-gutter-sm">
+            <div v-if="isAdmin" class="edit-delete-btns row q-gutter-sm">
               <q-btn label="Edit" class="actions" no-caps flat @click="handleEdit" />
 
               <q-btn label="Delete" class="actions" no-caps flat @click="showDialog = true" />
@@ -115,10 +115,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+import { useUserStore } from 'stores/user'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -128,6 +129,10 @@ const loading = ref(true)
 const showDialog = ref(false)
 const dialog = ref(false)
 const metadata = ref(null)
+const userStore = useUserStore()
+
+const userRole = userStore.profile.role
+const isAdmin = computed(() => userRole === 'admin')
 
 async function handleEdit() {
   metadata.value = {

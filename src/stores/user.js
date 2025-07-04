@@ -13,18 +13,33 @@ export const useUserStore = defineStore('user', {
       supabase.auth.getSession().then(({ data: { session } }) => {
         this.session = session
         if (session?.user) {
-          this.fetchProfile(session.user.id)
+          this.fetchUserAndProfile()
         }
       })
 
-      supabase.auth.onAuthStateChange((_, session) => {
-        this.session = session
-        if (session?.user) {
-          this.fetchProfile(session.user.id)
-        } else {
-          this.profile = null
-        }
-      })
+      // supabase.auth.onAuthStateChange((_, session) => {
+      //   this.session = session
+      //   if (session?.user) {
+      //     this.fetchUserAndProfile()
+      //   } else {
+      //     this.profile = null
+      //   }
+      // })
+    },
+
+    // Fetch user and profile data when authenticated
+    async fetchUserAndProfile() {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser()
+
+      if (error || !user) {
+        console.error('No authenticated user:', error)
+        return
+      }
+
+      await this.fetchProfile(user.id)
     },
 
     // Fetch user or admin profile
@@ -38,23 +53,30 @@ export const useUserStore = defineStore('user', {
 
       if (userData) {
         this.profile = { ...userData, role: 'user' }
+        console.log('User data:', userData)
         return
       }
 
-      // Next, check if user is in registered_admins
-      const { data: adminData, error: adminError } = await supabase
-        .from('registered_admins')
-        .select('*')
-        .eq('id', userId)
-        .single()
+      if (!userData) {
+        // Next, check if user is in registered_admins
+        const { data: adminData, error: adminError } = await supabase
+          .from('registered_admins')
+          .select('*')
+          .eq('id', userId)
+          .single()
 
-      if (adminData) {
-        this.profile = { ...adminData, role: 'admin' }
-        return
+        if (adminData) {
+          this.profile = { ...adminData, role: 'admin' }
+          console.log('Admin profile fetched:', this.profile)
+          return
+        }
+
+        if (adminError) {
+          console.error('Error fetching admin profile:', adminError)
+        }
       }
 
-      console.error('Failed to fetch profile from both tables:', userError || adminError)
-      this.profile = null
+      console.error('Failed to fetch profile from both tables:', userError)
     },
 
     // Manually fetch session + profile (e.g., on page reload)

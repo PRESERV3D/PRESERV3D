@@ -5,6 +5,7 @@
       <div class="q-mb-md sub-font-3 row items-baseline justify-between">
         <div class="q-ml-sm">Browse selected digital books from the university archives.</div>
         <q-btn
+          v-if="isAdmin"
           @click="showDialog = true"
           label="Add New"
           icon="add_circle"
@@ -83,10 +84,10 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-    <!-- Book Highlights Section -->
+    <!-- Document Highlights Section -->
     <div class="column q-py-md q-gutter-lg">
       <div class="box-highlights">
-        <p class="q-ml-lg admin-title-2" style="font-size: 16px">Book Highlights</p>
+        <p class="q-ml-lg admin-title-2" style="font-size: 16px">Document Highlights</p>
         <div class="row docs-gap justify-start">
           <div v-for="(doc, index) in documentsStore.documents.slice(0, 3)" :key="index">
             <div class="row q-mb-lg">
@@ -367,19 +368,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useDocumentsStore } from 'stores/documentsStore'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
 import Tesseract from 'tesseract.js'
 import axios from 'axios'
 
-const showDialog = ref(false)
 import { useSearchStore } from 'stores/searchStore'
 
 const searchStore = useSearchStore()
 const documentsStore = useDocumentsStore()
+const userStore = useUserStore()
 
 // const category = ref('')
 const author = ref('')
@@ -391,6 +393,7 @@ const categoryOptions = ref([])
 const authorOptions = ref([])
 const dateOptions = ref([])
 
+const showDialog = ref(false)
 const dialogOpen = ref(false)
 const selectedDocument = ref(null)
 const selectedItemType = ref('document')
@@ -401,6 +404,13 @@ const existingCollectionIds = ref([])
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
+
+if (userStore.profile.role === undefined) {
+  userStore.fetchProfile()
+}
+
+const userRole = userStore.profile.role
+const isAdmin = computed(() => userRole === 'admin')
 
 function showNotifyDialog(title, message) {
   notifyDialogTitle.value = title
