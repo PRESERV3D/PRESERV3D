@@ -149,11 +149,7 @@
 
     <!-- Three Artifacts per Row Grid -->
     <div class="artifacts-grid">
-      <div
-        v-for="(model, i) in displayedModels"
-        :key="i"
-        class="artifact-card-wrapper"
-      >
+      <div v-for="(model, i) in displayedModels" :key="i" class="artifact-card-wrapper">
         <q-card class="my-card" rounded bordered>
           <div class="card">
             <model-viewer
@@ -176,16 +172,14 @@
                 class="artifact-title-link"
                 @click="logClick(model.id, 'artifact')"
               >
-                <div class="text-subtitle2 artifact-title">{{ model.metadata?.title || model.file_name }}</div>
+                <div class="text-subtitle2 artifact-title">
+                  {{ model.metadata?.title || model.file_name }}
+                </div>
               </router-link>
               <div class="action-icons">
                 <!-- View Icon with Count -->
                 <div class="icon-with-count">
-                  <q-icon
-                    name="visibility"
-                    class="action-icon view-icon"
-                    size="18px"
-                  />
+                  <q-icon name="visibility" class="action-icon view-icon" size="18px" />
                   <span class="count-text">{{ model.view_count || 0 }}</span>
                 </div>
 
@@ -274,11 +268,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
-        <q-card-section class="sub-font-3" style="font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
+        <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -589,7 +583,7 @@ const fetchAllArtifacts = async () => {
 
     if (!error) {
       // Add some mock data for demonstration compatibility
-      const enhancedModels = data.map(model => ({
+      const enhancedModels = data.map((model) => ({
         ...model,
         bookmarked: false,
         // starred: false,
