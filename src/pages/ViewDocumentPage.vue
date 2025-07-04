@@ -30,14 +30,6 @@
               <q-btn label="Delete" class="actions" no-caps flat @click="showDialog = true" />
             </div>
 
-            <q-icon
-              :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
-              class="bookmark-icon q-ml-md"
-              :class="{ bookmarked: doc.bookmarked }"
-              size="sm"
-              @click.stop="openBookmarkDialog(doc, 'document')"
-            />
-
             <!-- Confirmation Dialog      -->
             <q-dialog v-model="showDialog" persistent>
               <q-card class="confirmation-delete">
@@ -70,7 +62,7 @@
 
       <div class="preview-container">
         <div class="box-view">
-          <div class="row-1">
+          <div class="row-1 justify-between items-center">
             <q-btn :href="doc.file_url" target="_blank" class="start-reading-btn" no-caps>
               Start Reading
               <img
@@ -79,6 +71,13 @@
                 class="q-ml-sm btn-arrow-tilt"
               />
             </q-btn>
+            <q-icon
+              :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
+              class="bookmark-icon q-ml-md q-mr-md"
+              :class="{ bookmarked: doc.bookmarked }"
+              size="sm"
+              @click.stop="openBookmarkDialog(doc, 'document')"
+            />
           </div>
           <div class="row">
             <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
