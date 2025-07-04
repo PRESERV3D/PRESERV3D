@@ -2,54 +2,148 @@
   <q-page class="q-pa-md">
     <div class="page-header">
       <h2 class="q-mb-sm title">Artifacts</h2>
-      <h5 class="q-mt-xs q-mb-lg">Lorem ipsum dolor sit, amet consectetur adipisicing elit.</h5>
+      <div class="subtitle-btn-row">
+        <h5 class="q-mt-xs q-mb-lg subtitle">Discover preserved treasures in immersive 3D.</h5>
+        <div class="artifact-btn">
+          <span class="showing-text">Showing </span>
+
+          <q-btn-dropdown
+            outline
+            color="black"
+            :label="itemsToShow === 'all' ? 'All' : itemsToShow.toString()"
+            size="sm"
+            class="q-ml-sm artifact-btn-style"
+          >
+            <q-list>
+              <q-item clickable v-close-popup @click="setItemsToShow('all')">
+                <q-item-section>All</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setItemsToShow(9)">
+                <q-item-section>9</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setItemsToShow(12)">
+                <q-item-section>12</q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setItemsToShow(18)">
+                <q-item-section>18</q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+
+          <q-btn-dropdown
+            outline
+            color="black"
+            label="Filter"
+            icon="filter_list"
+            size="sm"
+            class="q-ml-sm artifact-btn-style"
+          >
+            <q-list class="filter-dropdown">
+              <q-item>
+                <q-item-section>
+                  <q-select
+                    v-model="categoryFilter"
+                    :options="categoryOptions"
+                    outlined
+                    label="Select Category"
+                    dense
+                    clearable
+                    @update:model-value="applyFilters"
+                  />
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section>
+                  <q-select
+                    v-model="authorFilter"
+                    :options="authorOptions"
+                    outlined
+                    label="Select Author"
+                    dense
+                    clearable
+                    @update:model-value="applyFilters"
+                  />
+                </q-item-section>
+              </q-item>
+              <q-item>
+                <q-item-section>
+                  <q-select
+                    v-model="dateFilter"
+                    :options="dateOptions"
+                    outlined
+                    label="Select Year"
+                    dense
+                    clearable
+                    @update:model-value="applyFilters"
+                  />
+                </q-item-section>
+              </q-item>
+              <q-separator />
+              <q-item clickable v-close-popup @click="clearFilters">
+                <q-item-section>
+                  <q-item-label>Clear All Filters</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-icon name="clear" />
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+
+          <q-btn-dropdown
+            outline
+            color="black"
+            label="Sort"
+            icon="sort"
+            size="sm"
+            class="q-ml-xs artifact-btn-style"
+          >
+            <q-list>
+              <q-item-label header>Sort by</q-item-label>
+              <q-item clickable v-close-popup @click="setSortOption('Newest')">
+                <q-item-section>
+                  <q-item-label>Newest</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-icon v-if="sortOption === 'Newest'" name="check" color="primary" />
+                </q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setSortOption('Oldest')">
+                <q-item-section>
+                  <q-item-label>Oldest</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-icon v-if="sortOption === 'Oldest'" name="check" color="primary" />
+                </q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setSortOption('Title A-Z')">
+                <q-item-section>
+                  <q-item-label>Title A-Z</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-icon v-if="sortOption === 'Title A-Z'" name="check" color="primary" />
+                </q-item-section>
+              </q-item>
+              <q-item clickable v-close-popup @click="setSortOption('Title Z-A')">
+                <q-item-section>
+                  <q-item-label>Title Z-A</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-icon v-if="sortOption === 'Title Z-A'" name="check" color="primary" />
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+        </div>
+      </div>
     </div>
 
-    <div class="row q-col-gutter-sm items-center q-mb-md">
-      <q-select
-        filled
-        v-model="category"
-        :options="categoryOptions"
-        label="Category"
-        @update:model-value="applyFilters"
-        clearable
-        class="col-2"
-      />
-
-      <q-select
-        filled
-        v-model="author"
-        :options="authorOptions"
-        label="Author"
-        @update:model-value="applyFilters"
-        clearable
-        class="col-2"
-      />
-
-      <q-select
-        filled
-        v-model="date"
-        :options="dateOptions"
-        label="Year"
-        @update:model-value="applyFilters"
-        clearable
-        class="col-2"
-      />
-
-      <q-select
-        v-model="sortOption"
-        :options="sortOptions"
-        label="Sort by"
-        filled
-        @update:model-value="onSort"
-        class="col-3"
-      />
-    </div>
-    <div class="row q-gutter-md q-mt-md">
+    <!-- Three Artifacts per Row Grid -->
+    <div class="artifacts-grid">
       <div
-        v-for="(model, i) in searchStore.query ? searchStore.results : modelStore.filteredModels"
+        v-for="(model, i) in displayedModels"
         :key="i"
-        class="card-wrapper"
+        class="artifact-card-wrapper"
       >
         <q-card class="my-card" rounded bordered>
           <div class="card">
@@ -62,31 +156,71 @@
               rotation-per-second="10deg"
               shadow-intensity="1"
               class="artifacts"
-              style="width: 300px; height: 300px"
+              style="width: 100%; height: 400px"
             />
           </div>
-          <q-card-section class="q-pa-sm">
-            <div class="text-subtitle1">{{ model.metadata?.title || model.file_name }}</div>
-            <div class="row items-center q-gutter-sm">
+
+          <q-card-section class="q-pa-sm artifact-card-section">
+            <div class="artifact-title-icon-row">
               <router-link
                 :to="{ name: 'view-artifact', params: { id: model.id } }"
-                class="text-primary"
+                class="artifact-title-link"
                 @click="logClick(model.id, 'artifact')"
               >
-                View Artifact
+                <div class="text-subtitle2 artifact-title">{{ model.metadata?.title || model.file_name }}</div>
               </router-link>
-              <q-btn
-                icon="bookmark_border"
-                flat
-                dense
-                size="sm"
-                color="primary"
-                @click="openBookmarkDialog(model, 'artifact')"
-              />
+              <div class="action-icons">
+                <!-- View Icon with Count -->
+                <div class="icon-with-count">
+                  <q-icon
+                    name="visibility"
+                    class="action-icon view-icon"
+                    size="18px"
+                  />
+                  <span class="count-text">{{ model.view_count || 0 }}</span>
+                </div>
+
+                <!-- Star Icon with Count -->
+                <div class="icon-with-count">
+                  <q-icon
+                    :name="model.starred ? 'star' : 'star_border'"
+                    class="action-icon star-icon"
+                    :class="{ 'starred': model.starred }"
+                    size="18px"
+                    @click.stop="toggleStar(model.id)"
+                  />
+                  <span class="count-text">{{ model.star_count || 0 }}</span>
+                </div>
+
+                <!-- Bookmark Icon -->
+                <q-icon
+                  name="bookmark_border"
+                  class="action-icon bookmark-icon"
+                  size="18px"
+                  @click.stop="openBookmarkDialog(model, 'artifact')"
+                />
+              </div>
             </div>
           </q-card-section>
         </q-card>
       </div>
+    </div>
+
+    <!-- Show All -->
+    <div v-if="hasMoreItems" class="text-center q-mt-lg">
+      <q-btn
+        outline
+        color="primary"
+        :label="`Show All ${sortedModels.length} Items`"
+        @click="setItemsToShow('all')"
+      />
+    </div>
+
+    <!-- Empty State -->
+    <div v-if="displayedModels.length === 0 && !loading" class="text-center q-mt-xl">
+      <q-icon name="inventory_2" size="4rem" color="grey-5" />
+      <div class="text-h6 q-mt-md text-grey-6">No artifacts found</div>
+      <div class="text-body2 text-grey-5">Try adjusting your filters or search terms</div>
     </div>
 
     <!-- Bookmark Dialog -->
@@ -116,7 +250,7 @@
           </div>
 
           <div v-else class="text-caption text-grey text-center">
-            You don’t have any collections yet.
+            You don't have any collections yet.
           </div>
         </q-card-section>
 
@@ -145,7 +279,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useModelStore } from 'stores/modelStore'
 import { useSearchStore } from 'stores/searchStore'
 import { supabase } from 'boot/supabase'
@@ -154,15 +288,21 @@ import '@google/model-viewer'
 const modelStore = useModelStore()
 const searchStore = useSearchStore()
 
-const category = ref('')
-const author = ref('')
-const date = ref('')
+// Reactive data
+const loading = ref(false)
+const searchQuery = ref('')
+const categoryFilter = ref(null)
+const authorFilter = ref(null)
+const dateFilter = ref(null)
 const sortOption = ref('Newest')
-const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
+const itemsToShow = ref('all')
+
+// Filter options - will be populated from data
 const categoryOptions = ref([])
 const authorOptions = ref([])
 const dateOptions = ref([])
 
+// Collection dialog state
 const dialogOpen = ref(false)
 const selectedModel = ref(null)
 const selectedItemType = ref('artifact')
@@ -170,17 +310,67 @@ const userCollections = ref([])
 const selectedCollections = ref([])
 const existingCollectionIds = ref([])
 
+// Notification dialog state
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
-function showNotifyDialog(title, message) {
-  notifyDialogTitle.value = title
-  notifyDialogMessage.value = message
-  notifyDialogOpen.value = true
+// Computed properties
+const filteredModels = computed(() => {
+  return searchStore.query ? searchStore.results : modelStore.filteredModels
+})
+
+const sortedModels = computed(() => {
+  const models = [...filteredModels.value]
+
+  return models.sort((a, b) => {
+    let aValue, bValue
+
+    switch (sortOption.value) {
+      case 'Newest':
+        aValue = new Date(a.uploaded_at || a.created_at || 0)
+        bValue = new Date(b.uploaded_at || b.created_at || 0)
+        return bValue - aValue
+      case 'Oldest':
+        aValue = new Date(a.uploaded_at || a.created_at || 0)
+        bValue = new Date(b.uploaded_at || b.created_at || 0)
+        return aValue - bValue
+      case 'Title A-Z':
+        aValue = (a.metadata?.title || a.file_name).toLowerCase()
+        bValue = (b.metadata?.title || b.file_name).toLowerCase()
+        return aValue.localeCompare(bValue)
+      case 'Title Z-A':
+        aValue = (a.metadata?.title || a.file_name).toLowerCase()
+        bValue = (b.metadata?.title || b.file_name).toLowerCase()
+        return bValue.localeCompare(aValue)
+      default:
+        return 0
+    }
+  })
+})
+
+const displayedModels = computed(() => {
+  if (itemsToShow.value === 'all') {
+    return sortedModels.value
+  }
+  return sortedModels.value.slice(0, itemsToShow.value)
+})
+
+const hasMoreItems = computed(() => {
+  return itemsToShow.value !== 'all' && sortedModels.value.length > itemsToShow.value
+})
+
+// Methods
+const setItemsToShow = (value) => {
+  itemsToShow.value = value
 }
 
-function onSort() {
+const setSortOption = (value) => {
+  sortOption.value = value
+  onSort()
+}
+
+const onSort = () => {
   switch (sortOption.value) {
     case 'Newest':
       modelStore.sortBy('uploaded_at', 'desc')
@@ -197,113 +387,31 @@ function onSort() {
   }
 }
 
-function applyFilters() {
+const applyFilters = () => {
   modelStore.filterBy({
-    category: category.value,
-    author: author.value,
-    date: date.value,
+    category: categoryFilter.value,
+    author: authorFilter.value,
+    date: dateFilter.value,
   })
 }
 
-async function logClick(itemId, itemType) {
-  const { data: authData, error: authError } = await supabase.auth.getUser()
-  const userId = authData?.user?.id
+const clearFilters = () => {
+  searchQuery.value = ''
+  categoryFilter.value = null
+  authorFilter.value = null
+  dateFilter.value = null
+  applyFilters()
+}
 
-  if (authError || !userId) {
-    console.error('Auth error logging click:', authError)
-    return
-  }
-
-  try {
-    const { error } = await supabase.from('user_activity_log').insert({
-      user_id: userId,
-      item_id: itemId,
-      item_type: itemType,
-      clicked_at: new Date().toISOString(),
-    })
-
-    if (error) {
-      console.error('Error logging click:', error)
-    }
-  } catch (err) {
-    console.error('Error logging click:', err)
+const toggleStar = (modelId) => {
+  const model = modelStore.models.find(m => m.id === modelId)
+  if (model) {
+    model.starred = !model.starred
+    // You can add API call here to persist the change
   }
 }
 
-// Fetch all artifacts from Supabase
-const fetchAllArtifacts = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('artifacts_metadata')
-      .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
-      .order('uploaded_at', { ascending: false })
-
-    if (!error) {
-      modelStore.setModels(data)
-
-      // Extract unique author and date values for filters
-      const authors = new Set()
-      const years = new Set()
-      const categories = new Set()
-
-      data.forEach((model) => {
-        if (model.metadata?.author) {
-          // Support multiple authors split by comma
-          const authorList = model.metadata.author.split(',').map((a) => a.trim())
-          authorList.forEach((a) => authors.add(a))
-        }
-
-        if (model.metadata?.date) years.add(model.metadata.date?.slice(0, 4)) // get year part
-
-        if (Array.isArray(model.metadata?.categories)) {
-          model.metadata.categories.forEach((cat) => categories.add(cat))
-        }
-      })
-
-      authorOptions.value = Array.from(authors)
-      categoryOptions.value = Array.from(categories)
-      dateOptions.value = Array.from(years).sort((a, b) => b - a)
-    }
-  } catch (error) {
-    console.error('Error loading artifacts:', error)
-  }
-}
-
-// for populating filter options
-watch(
-  () => modelStore.filteredModels,
-  (mods) => {
-    const authors = new Set()
-    const years = new Set()
-    const categories = new Set()
-
-    mods.forEach((mod) => {
-      const meta = mod.metadata || {}
-
-      // Author
-      if (meta.author) {
-        meta.author.split(',').forEach((a) => authors.add(a.trim()))
-      }
-
-      // Date
-      if (meta.date) {
-        const year = meta.date.slice(0, 4)
-        years.add(year)
-      }
-
-      // Categories
-      if (Array.isArray(meta.categories)) {
-        meta.categories.forEach((cat) => categories.add(cat))
-      }
-    })
-
-    authorOptions.value = [...authors].sort()
-    categoryOptions.value = [...categories].sort()
-    dateOptions.value = [...years].sort((a, b) => b - a) // descending
-  },
-  { immediate: true },
-)
-
+// Collection dialog methods
 const openBookmarkDialog = async (model, type = 'artifact') => {
   selectedModel.value = model
   selectedItemType.value = type
@@ -311,6 +419,7 @@ const openBookmarkDialog = async (model, type = 'artifact') => {
 
   await loadUserCollections()
 
+  // Check existing collections for this item
   const { data: existingItems, error } = await supabase
     .from('collection_items')
     .select('collection_id')
@@ -329,7 +438,7 @@ const openBookmarkDialog = async (model, type = 'artifact') => {
   existingCollectionIds.value = [...existingIds]
 }
 
-async function loadUserCollections() {
+const loadUserCollections = async () => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
 
@@ -350,7 +459,7 @@ async function loadUserCollections() {
   }
 }
 
-async function saveToSelectedCollections() {
+const saveToSelectedCollections = async () => {
   const model = selectedModel.value
 
   if (!model) return
@@ -425,15 +534,137 @@ async function saveToSelectedCollections() {
   }
 }
 
-function resetForm() {
+const resetForm = () => {
   selectedCollections.value = []
   existingCollectionIds.value = []
 }
 
-// Initial load
+const showNotifyDialog = (title, message) => {
+  notifyDialogTitle.value = title
+  notifyDialogMessage.value = message
+  notifyDialogOpen.value = true
+}
+
+const logClick = async (itemId, itemType) => {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (authError || !userId) {
+    console.error('Auth error logging click:', authError)
+    return
+  }
+
+  try {
+    const { error } = await supabase.from('user_activity_log').insert({
+      user_id: userId,
+      item_id: itemId,
+      item_type: itemType,
+      clicked_at: new Date().toISOString(),
+    })
+
+    if (error) {
+      console.error('Error logging click:', error)
+    }
+  } catch (err) {
+    console.error('Error logging click:', err)
+  }
+}
+
+// Fetch all artifacts from Supabase
+const fetchAllArtifacts = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('artifacts_metadata')
+      .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
+      .order('uploaded_at', { ascending: false })
+
+    if (!error) {
+      // Add some mock data for demonstration compatibility
+      const enhancedModels = data.map(model => ({
+        ...model,
+        bookmarked: false,
+        starred: false,
+        view_count: Math.floor(Math.random() * 1000),
+        star_count: Math.floor(Math.random() * 100)
+      }))
+
+      modelStore.setModels(enhancedModels)
+
+      // Extract unique values for filters
+      const authors = new Set()
+      const years = new Set()
+      const categories = new Set()
+
+      data.forEach((model) => {
+        if (model.metadata?.author) {
+          const authorList = model.metadata.author.split(',').map((a) => a.trim())
+          authorList.forEach((a) => authors.add(a))
+        }
+
+        if (model.metadata?.date) years.add(model.metadata.date?.slice(0, 4))
+
+        if (Array.isArray(model.metadata?.categories)) {
+          model.metadata.categories.forEach((cat) => categories.add(cat))
+        }
+      })
+
+      authorOptions.value = Array.from(authors)
+      categoryOptions.value = Array.from(categories)
+      dateOptions.value = Array.from(years).sort((a, b) => b - a)
+    }
+  } catch (error) {
+    console.error('Error loading artifacts:', error)
+  }
+}
+
+// Watch for filter changes
+watch(
+  () => modelStore.filteredModels,
+  (mods) => {
+    const authors = new Set()
+    const years = new Set()
+    const categories = new Set()
+
+    mods.forEach((mod) => {
+      const meta = mod.metadata || {}
+
+      if (meta.author) {
+        meta.author.split(',').forEach((a) => authors.add(a.trim()))
+      }
+
+      if (meta.date) {
+        const year = meta.date.slice(0, 4)
+        years.add(year)
+      }
+
+      if (Array.isArray(meta.categories)) {
+        meta.categories.forEach((cat) => categories.add(cat))
+      }
+    })
+
+    authorOptions.value = [...authors].sort()
+    categoryOptions.value = [...categories].sort()
+    dateOptions.value = [...years].sort((a, b) => b - a)
+  },
+  { immediate: true },
+)
+
+// Watch for filter changes and reset items to show
+watch([categoryFilter, authorFilter, dateFilter], () => {
+  if (itemsToShow.value !== 'all') {
+    itemsToShow.value = 'all'
+  }
+})
+
+// Initialize
 onMounted(async () => {
-  if (!searchStore.query) {
-    await fetchAllArtifacts()
+  loading.value = true
+  try {
+    if (!searchStore.query) {
+      await fetchAllArtifacts()
+    }
+  } finally {
+    loading.value = false
   }
 })
 
