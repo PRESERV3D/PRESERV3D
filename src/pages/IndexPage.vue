@@ -119,14 +119,14 @@
                     </div>
                   </router-link>
                   <div class="action-icons">
-                    <!-- FIXED: Added 'artifact' parameter to bookmark toggle -->
+                    <!-- FIXED: Added 'artifact' parameter to bookmark toggle
                     <q-icon
                       :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                       class="action-icon bookmark-icon"
                       :class="{ bookmarked: model.bookmarked }"
                       size="18px"
                       @click.stop="toggleBookmark(model.id, 'artifact')"
-                    />
+                    /> -->
                     <!-- FIXED: Added 'artifact' parameter to star toggle -->
                     <!-- <q-icon
                       :name="model.starred ? 'star' : 'star_border'"
@@ -631,23 +631,23 @@ async function viewItem(item) {
 // }
 
 // FIXED: Toggle bookmark with proper parameter handling and database updates
-const toggleBookmark = async (itemId, itemType = 'artifact') => {
-  try {
-    if (itemType === 'artifact') {
-      const model = modelStore.models.find((m) => m.id === itemId)
-      if (model) {
-        model.bookmarked = !model.bookmarked
-        // ADDED: Database update from INDEX page logic
-        await supabase
-          .from('artifacts_metadata')
-          .update({ bookmarked: model.bookmarked })
-          .eq('id', itemId)
-      }
-    }
-  } catch (err) {
-    console.error('Error toggling bookmark:', err)
-  }
-}
+// const toggleBookmark = async (itemId, itemType = 'artifact') => {
+//   try {
+//     if (itemType === 'artifact') {
+//       const model = modelStore.models.find((m) => m.id === itemId)
+//       if (model) {
+//         model.bookmarked = !model.bookmarked
+//         // ADDED: Database update from INDEX page logic
+//         await supabase
+//           .from('artifacts_metadata')
+//           .update({ bookmarked: model.bookmarked })
+//           .eq('id', itemId)
+//       }
+//     }
+//   } catch (err) {
+//     console.error('Error toggling bookmark:', err)
+//   }
+// }
 
 // FIXED: Added proper filter and sort handler functions
 // const selectFilter = (option) => {
