@@ -755,6 +755,8 @@ const handleUpload = async () => {
     alert('Upload failed. See console for details.')
   } finally {
     loading.value = false
+    uploading.value = false
+    uploadProgress.value = 0
   }
 }
 
@@ -832,6 +834,8 @@ async function handleCancelMetadata(cancelledData) {
     console.error('Failed to cancel and delete metadata:', err)
   } finally {
     dialog.value = false
+    uploading.value = false
+    uploadProgress.value = 0
   }
 }
 
