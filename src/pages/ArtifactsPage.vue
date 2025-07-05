@@ -828,7 +828,8 @@ function onDragLeave() {
 function onFileDrop(e) {
   isDragging.value = false
   const files = e.dataTransfer.files
-  if (files.length > 0 && files[0].type === 'model/gltf-binary') {
+  console.log(files)
+  if (files.length > 0 && files[0].name.endsWith('.glb')) {
     selectedFile.value = files[0]
   } else {
     alert('Only GLB files are allowed.')

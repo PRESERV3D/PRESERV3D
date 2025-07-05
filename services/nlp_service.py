@@ -31,6 +31,7 @@ nlp = spacy.load("en_core_web_sm")
 @app.post("/process-text")
 async def process_pdf(file: UploadFile = File(None), filename: str = Form(None), raw_text: str = Form(None)):
     print("Processing file:", filename)
+    preview = None
 
     if raw_text:
         text = raw_text
@@ -44,6 +45,7 @@ async def process_pdf(file: UploadFile = File(None), filename: str = Form(None),
         # OCR fallback
         if isinstance(result, dict) and result.get("status") == "ocr_required":
             result["filename"] = filename or file.filename
+            result["preview"] = preview
             return result
 
         text = result

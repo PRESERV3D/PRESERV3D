@@ -161,7 +161,7 @@
               unelevated
             />
             <!-- Filter Icon Button with Menu -->
-            <q-btn
+            <!-- <q-btn
               flat
               round
               icon="filter_list"
@@ -182,7 +182,7 @@
                 </q-list>
               </q-menu>
             </q-btn>
-            <!-- Sort Icon Button with Menu -->
+            Sort Icon Button with Menu
             <q-btn
               flat
               round
@@ -204,9 +204,10 @@
                 </q-list>
               </q-menu>
             </q-btn>
+
+            -->
           </div>
         </div>
-
         <!-- Loading Spinner for Collections -->
         <div v-if="isLoading" class="text-center q-my-md">
           <q-spinner color="primary" size="lg" />
@@ -368,14 +369,14 @@ const newCollectionDesc = ref('')
 const newCollection = ref({ coverFile: null })
 
 // ADDED: Filter and Sort reactive variables from INDEX page
-const selectedFilter = ref('All')
-const selectedSort = ref('Recent')
-const showFilterMenu = ref(false)
-const showSortMenu = ref(false)
+// const selectedFilter = ref('All')
+// const selectedSort = ref('Recent')
+// // const showFilterMenu = ref(false)
+// const showSortMenu = ref(false)
 
 // ADDED: Filter and sort options from INDEX page
-const filterOptions = ['All', 'Documents', 'PDFs', 'Images', 'Recent']
-const sortOptions = ['Recent', 'Alphabetical', 'Author', 'Date Created']
+// const filterOptions = ['All', 'Documents', 'PDFs', 'Images', 'Recent']
+// const sortOptions = ['Recent', 'Alphabetical', 'Author', 'Date Created']
 
 // Get first 3 models for featured display
 const featuredModels = computed(() => {
@@ -649,15 +650,15 @@ const toggleBookmark = async (itemId, itemType = 'artifact') => {
 }
 
 // FIXED: Added proper filter and sort handler functions
-const selectFilter = (option) => {
-  selectedFilter.value = option
-  showFilterMenu.value = false
-}
+// const selectFilter = (option) => {
+//   selectedFilter.value = option
+//   showFilterMenu.value = false
+// }
 
-const selectSort = (option) => {
-  selectedSort.value = option
-  showSortMenu.value = false
-}
+// const selectSort = (option) => {
+//   selectedSort.value = option
+//   showSortMenu.value = false
+// }
 
 // Navigation functions
 function goToCollectionDetailsPage(collectionId) {
