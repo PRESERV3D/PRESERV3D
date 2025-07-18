@@ -6,17 +6,15 @@
         show-if-above
         :mini="miniState"
         mini-to-overlay
-        :mini-width="90"
+        :mini-width="120"
         @mouseenter="onDrawerMouseEnter"
         @mouseleave="onDrawerMouseLeave"
         :width="280"
-        :breakpoint="768"
+        :breakpoint="500"
         bordered
         :class="'sidebar-drawer'"
         content-class="drawer-content"
       >
-
-
         <div class="absolute-full flex column">
           <!-- Expanded State -->
           <div class="q-pa-md q-mb-md" v-show="!miniState">
@@ -24,26 +22,22 @@
               <img
                 src="\src\assets\img\logo.png"
                 alt="Your Logo"
-                style="max-width: 100px; max-height: 80px; object-fit: contain;"
+                style="max-width: 200px; max-height: 80px; object-fit: contain"
                 class="q-mb-sm"
               />
             </div>
           </div>
-
 
           <!-- Mini State -->
           <div class="q-pa-lg q-mb-sm text-center" v-show="miniState">
             <img
               src="\src\assets\img\logo.png"
               alt="Logo"
-              style="width: 45px; height: 45px; object-fit: contain;"
-              class="q-mt-sm"
+              style="width: 60px; height: 60px; object-fit: contain"
             />
           </div>
 
-
           <div class="col" />
-
 
           <!-- Navigation -->
           <q-list padding :class="{ 'text-center': miniState }">
@@ -61,7 +55,7 @@
                   <img
                     :src="item.icon"
                     :alt="item.label"
-                    style="width: 28px; height: 28px; object-fit: contain;"
+                    style="width: 30px; height: 30px; object-fit: contain"
                     class="nav-icon"
                   />
                 </div>
@@ -72,9 +66,7 @@
             </q-item>
           </q-list>
 
-
           <div class="col" />
-
 
           <!-- Logout -->
           <div class="q-pa-md">
@@ -99,7 +91,6 @@
         </div>
       </q-drawer>
 
-
       <q-page-container>
         <div class="search-toolbar q-py-md q-px-md">
           <q-toolbar class="bg-transparent">
@@ -114,15 +105,12 @@
               clearable
               clear-icon="close"
               @keyup.enter="performSearch"
-              style="width: 100%; max-width: 830px;"
+              style="width: 100%; max-width: 830px"
             >
               <template v-slot:prepend>
                 <q-icon name="search" @click="performSearch" class="cursor-pointer" />
               </template>
             </q-input>
-
-
-
 
             <!-- Notifications Button -->
             <q-btn flat round dense class="q-ml-md custom-spacing notif-btn">
@@ -131,13 +119,13 @@
                 floating
                 rounded
                 class="custom-badge"
-                style="background-color: #ff5722; color: white;"
+                style="background-color: #ff5722; color: white"
                 v-if="notificationCount > 0"
               >
                 {{ notificationCount }}
               </q-badge>
               <q-menu>
-                <q-list style="min-width: 150px;">
+                <q-list style="min-width: 150px">
                   <q-item-label header>Notifications</q-item-label>
                   <q-item v-if="notifications.length === 0">
                     <q-item-section>No new notifications</q-item-section>
@@ -154,34 +142,38 @@
               </q-menu>
             </q-btn>
 
-
             <q-space />
 
-
             <!-- User Profile Button -->
-             <q-btn flat round dense class="custom-spacing user-profile-btn">
+            <q-btn flat round dense class="custom-spacing user-profile-btn">
               <q-avatar size="32px">
-                <img src="https://cdn.quasar.dev/img/avatar.png">
+                <img src="\src\assets\img\UserIcon.jpg" />
               </q-avatar>
-              <span class="q-ml-lg gt-sm username-bg">{{ userName }}</span>
-              <q-menu>
-                <q-list style="min-width: 150px;">
-                  <!-- <q-item-label header>{{ userName }}</q-item-label> -->
-                  <!-- <q-item clickable v-ripple @click="goToProfile">
+              <div class="q-ml-lg gt-sm">
+                <div class="username-bg">{{ userName }}</div>
+                <div class="text-subtitle2 text-grey">{{ userRole }}</div>
+              </div>
+              <!-- <q-menu>
+                <q-list style="min-width: 150px">
+                  <q-item-label header>{{ userName }}</q-item-label>
+                  <q-item clickable v-ripple @click="goToProfile">
                     <q-item-section avatar><q-icon name="person" /></q-item-section>
                     <q-item-section>Profile</q-item-section>
                   </q-item>
-                  <q-separator /> -->
-                  <!-- <q-item clickable v-ripple @click="handleLogout">
+                  <q-item clickable v-ripple @click="goToSettings">
+                    <q-item-section avatar><q-icon name="settings" /></q-item-section>
+                    <q-item-section>Settings</q-item-section>
+                  </q-item>
+                  <q-separator />
+                  <q-item clickable v-ripple @click="handleLogout">
                     <q-item-section avatar><q-icon name="logout" /></q-item-section>
                     <q-item-section>Logout</q-item-section>
-                  </q-item> -->
+                  </q-item>
                 </q-list>
-              </q-menu>
+              </q-menu> -->
             </q-btn>
           </q-toolbar>
         </div>
-
 
         <router-view />
       </q-page-container>
@@ -189,47 +181,47 @@
   </div>
 </template>
 
-
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useQuasar } from 'quasar';
+import { useUserStore } from 'src/stores/user'
+import { useSearchStore } from 'src/stores/searchStore'
 
-const router = useRouter();
+const userStore = useUserStore()
+const searchStore = useSearchStore()
+const router = useRouter()
 const route = useRoute()
-const $q = useQuasar();
-
+const session = userStore.session
 
 const drawer = ref(false)
 const miniState = ref(true)
 const search = ref('')
 
-
 // User and notifications data
-const userName = ref('ADMIN')
 const notifications = ref([
   { id: 1, message: 'New message from Mrs. Beth', time: '5m ago' },
   { id: 2, message: '⚠️ Notice: The file you uploaded appears incomplete.', time: '1h ago' },
 ])
 
-
 const notificationCount = computed(() => notifications.value.length)
 const navItems = [
   { name: 'home', label: 'Home', icon: '\\src\\assets\\icon\\home.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\src\\assets\\icon\\artifacts.png' },
-  { name: 'documents', label: 'Documents', icon: '\\src\\assets\\icon\\book.png' }
+  { name: 'documents', label: 'Documents', icon: '\\src\\assets\\icon\\book.png' },
 ]
 
+// Get profile data from userStore
+const userProfile = computed(() => userStore.profile || {})
+const userName = computed(() => userProfile.value.first_name || 'User')
+const userRole = computed(() => userProfile.value.role || 'Unknown')
 
 // Add a timeout to prevent rapid state changes
 let hoverTimeout = null
-
 
 const onDrawerMouseEnter = () => {
   if (hoverTimeout) clearTimeout(hoverTimeout)
   miniState.value = false
 }
-
 
 const onDrawerMouseLeave = () => {
   if (hoverTimeout) clearTimeout(hoverTimeout)
@@ -237,56 +229,81 @@ const onDrawerMouseLeave = () => {
   miniState.value = true
 }
 
-
 const activeItem = ref('home')
+
 const setActiveItem = (itemName) => {
   activeItem.value = itemName
 
+  if (itemName === 'home') {
+    const role = session.user.user_metadata?.role
 
-  // Navigate to the corresponding route
-  const targetRoute = `/${itemName}`
-  router.push(targetRoute)
+    if (role === 'admin') {
+      activeItem.value = 'home'
+      router.push('/admindash')
+      return
+    } else if (role === 'user') {
+      activeItem.value = 'home'
+      router.push('/home')
+      return
+    }
+    return
+  } else {
+    // Navigate to the corresponding route
+    const targetRoute = `/${itemName}`
+    router.push(targetRoute)
+  }
 }
-
 
 // Search functionality
-const performSearch = () => {
-  console.log('Searching for:', search.value)
-  $q.notify({
-    message: `Performing search for: "${search.value}"`,
-    color: 'positive',
-    icon: 'search',
-    position: 'top'
-  })
+const performSearch = async () => {
+  const query = search.value
+  const currentPath = route.path
+  const isDocumentsPage = currentPath.includes('/documents')
+
+  const type = isDocumentsPage ? 'documents' : 'artifacts'
+
+  if (!query.trim()) {
+    searchStore.clear()
+  } else {
+    await searchStore.search(query, type)
+    console.log('Search performed:', search.value, type)
+  }
 }
 
-
-// // Profile and user actions
+// Profile and user actions
 // const goToProfile = () => {
 //   console.log('Going to profile...')
 //   router.push('/profile')
 // }
 
+// const goToSettings = () => {
+//   console.log('Going to settings...')
+//   router.push('/settings')
+// }
 
-
-
-const handleLogout = () => {
-  // Add logout logic here
-  console.log('Logging out...')
-
-
-  if (confirm('Are you sure you want to logout?')) {
-    router.push('/login')
+const handleLogout = async () => {
+  try {
+    if (confirm('Are you sure you want to logout?')) {
+      await userStore.signOut()
+      router.push('user/login')
+    }
+  } catch (error) {
+    console.error('Error signing out:', error)
   }
 }
 
+// Watch search bar input and run query
+watch(search, async (query) => {
+  if (query === null || query === undefined) {
+    searchStore.clear()
+    return
+  }
+})
 
 onMounted(() => {
-  // Extract the route path without leading slash
+  // Extract the route path
   const currentPath = route.path.substring(1)
 
-
-  // If we're on the root path, set active to 'home'
   if (route.path === '/') {
     activeItem.value = 'home'
   }

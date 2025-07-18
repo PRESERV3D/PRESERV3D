@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md form-container">
-    <div class="column items-center q-mb-md">
+    <div class="column items-center">
       <label class="form-title">SIGN UP</label>
       <label class="subtitle">Let's Get You Set Up</label>
     </div>
@@ -78,10 +78,11 @@
           <q-select
             dense
             v-model="form.college"
-            :options="collegeOptions"
+            :options="Object.keys(collegeDepartment)"
             lazy-rules
             :rules="[(val) => !!val || 'Please select your college.']"
             class="text-box"
+            @update:model-value="form.department = ''"
           />
 
           <div class="row items-center">
@@ -148,22 +149,22 @@
           />
         </div>
 
-        <div class="column items-center q-pt-xs">
-          <a @click="step--" class="names cursor-pointer">Back</a>
+        <div class="column items-center">
+          <a @click="step--" class="names cursor-pointer q-mb-sm">Back</a>
           <q-btn
             class="sign-up"
             push
             color="primary"
             text-color="white"
             label="SIGN UP"
-            @click="handleSubmit"
+            @click="registerUser"
           />
         </div>
 
-        <div class="column items-center q-mb-xs">
+        <div class="column items-center q-mt-sm">
           <label class="already">
             Already have an account?
-            <a href="/login" class="signup-login-link">Log In</a>
+            <a href="/user/login" class="signup-login-link">Log In</a>
           </label>
         </div>
       </div>
@@ -174,9 +175,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { supabase } from 'boot/supabase'
 
 const router = useRouter()
-
 const step = ref(1)
 
 const form = ref({
@@ -192,13 +193,43 @@ const form = ref({
   confirmPassword: '',
 })
 
-const collegeOptions = [
-  'College of Computer and Information Sciences',
-  'College of History',
-  'College of Arts and Sciences',
-]
+const collegeDepartment = {
+  'College of Computer and Information Sciences': [
+    'Bachelor of Science in Computer Science',
+    'Bachelor of Science in Information Technology',
+  ],
+  'College of Social Sciences and Development': [
+    'Bachelor of Arts in History',
+    'Bachelor of Arts in Sociology',
+    'Bachelor of Science in Cooperatives',
+    'Bachelor of Science in Economics',
+    'Bachelor of Science in Psychology',
+  ],
+  'College of Arts and Letters': [
+    'Bachelor of Arts in English Language Studies',
+    'Bachelor of Arts in Filipinology',
+    'Bachelor of Arts in Literary and Cultural Studies',
+    'Bachelor of Arts in Philosophy',
+    'Bachelor of Performing Arts major in Theater Arts',
+  ],
+  'College of Education': [
+    'Bachelor of Technology and Livelihood Education',
+    'Bachelor of Library and Information Science',
+    'Bachelor of Secondary Education',
+    'Bachelor of Elementary Education',
+    'Bachelor of Early Childhood Education',
+  ],
+  'College of Political Science and Public Administration': [
+    'Bachelor of Public Administration',
+    'Bachelor of Arts in International Studies',
+    'Bachelor of Arts in Political Economy',
+    'Bachelor of Arts in Political Science',
+  ],
+}
 
-const departmentOptions = ['Information Technology', 'Computer Science', 'Social Sciences']
+const departmentOptions = computed(() => {
+  return collegeDepartment[form.value.college] || []
+})
 
 // Password strength status
 const passwordStrength = computed(() => {
@@ -221,55 +252,97 @@ const passwordStrengthColor = computed(() =>
 function validateStepOne() {
   const { first_name, last_name, email, contact } = form.value
 
-  const isValidEmail = email && email.includes('@iskolarngbayan.pup.edu.ph')
-
   if (!first_name || !last_name || !email || !contact) {
     alert('Please fill out all required fields.')
     return
   }
 
-  if (!isValidEmail) {
+  if (!email.includes('@iskolarngbayan.pup.edu.ph')) {
     alert('Please use your PUP email only.')
     return
   }
 
-  // Go to step two if all checks pass
   step.value++
 }
 
 // Register user
 async function registerUser() {
-  const { college, department, year_section, password, confirmPassword } = form.value
+  const {
+    first_name,
+    last_name,
+    email,
+    contact,
+    college,
+    department,
+    year_section,
+    is_alumni,
+    password,
+    confirmPassword,
+  } = form.value
+
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/
+  if (!passwordRegex.test(password)) {
+    alert(
+      'Password must be at least 8 characters long and contain an uppercase letter, a number, and a special character.',
+    )
+    return
+  }
 
   if (password !== confirmPassword) {
     alert('Passwords do not match!')
     return
   }
 
-  if (!college || !department || !year_section || !password || !confirmPassword) {
+  if (!college || !department || !year_section) {
     alert('Please fill out all required fields.')
     return
   }
 
   try {
-    const response = await fetch('http://localhost:3000/register-user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form.value),
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          role: 'user',
+        },
+        redirectTo: 'http://localhost:9000/#/user/login',
+      },
     })
 
-    const data = await response.json()
-
-    if (!response.ok) {
-      alert(data.error || 'Registration failed.')
-    } else {
-      alert('Registration successful!')
-      console.log(data)
-      router.push('/user-login')
+    if (error) {
+      alert(error.message)
+      return
     }
-  } catch (error) {
-    alert('An error occurred.')
-    console.error(error)
+
+    if (data.user) {
+      const { error: profileError } = await supabase.from('registered_users').insert([
+        {
+          id: data.user.id,
+          first_name,
+          last_name,
+          email,
+          contact,
+          college,
+          department,
+          year_section,
+          is_alumni,
+          created_at: new Date(),
+        },
+      ])
+
+      if (profileError) {
+        console.error(profileError)
+        alert('User created, but failed to save profile.')
+        return
+      }
+
+      alert('Registration successful! Please check your email to confirm your account.')
+      router.push('/user/login')
+    }
+  } catch (err) {
+    console.error('Unexpected error:', err)
+    alert('An unexpected error occurred.')
   }
 }
 </script>

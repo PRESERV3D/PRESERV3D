@@ -1,56 +1,39 @@
 <template>
   <div class="q-pa-md form-container">
-    <div class="column items-center q-mb-md">
+    <div class="column items-center">
       <label class="form-title">SIGN UP</label>
       <label class="subtitle">Let's Get You Set Up</label>
     </div>
+
     <div class="column q-gutter-sm">
       <q-form @submit.prevent="registerAdmin">
-        <label class="names">First Name</label>
-        <q-input
-          filled
-          dense
-          v-model="form.first_name"
-          lazy-rules
-          :rules="[(val) => !!val || 'Please enter your first name.']"
-          class="text-box"
-        />
-        <label class="names">Last Name</label>
-        <q-input
-          filled
-          dense
-          v-model="form.last_name"
-          lazy-rules
-          :rules="[(val) => !!val || 'Please enter your last name.']"
-          class="text-box"
-        />
-        <div class="row">
-          <div class="col q-gutter-sm">
+        <div class="row items-center q-gutter-lg q-mt-xs">
+          <label class="names">First Name</label>
+          <q-input filled dense v-model="form.first_name" class="text-box" style="width: 25.8rem" />
+        </div>
+        <div class="row items-center q-gutter-lg q-mt-sm">
+          <label class="names">Last Name</label>
+          <q-input filled dense v-model="form.last_name" class="text-box" style="width: 25.8rem" />
+        </div>
+
+        <div class="row q-mt-lg">
+          <div class="col">
             <label class="names">Email</label>
             <q-input
               filled
               dense
-              v-model="form.email"
               type="email"
-              lazy-rules
+              v-model="form.email"
               :rules="[
-                (val) => !!val || 'Please enter your email.',
-                (val) =>
-                  val.includes('@iskolarngbayan.pup.edu.ph') || 'Please use your PUP email only.',
+                (val) => !!val || 'Email required',
+                (val) => val.includes('@iskolarngbayan.pup.edu.ph') || 'Use your PUP email only',
               ]"
               class="text-box-2 q-mr-lg"
             />
           </div>
-          <div class="col q-gutter-sm">
+          <div class="col">
             <label class="names">Contact Number</label>
-            <q-input
-              filled
-              dense
-              v-model="form.contact"
-              lazy-rules
-              :rules="[(val) => !!val || 'Please enter your contact number.']"
-              class="text-box-2"
-            />
+            <q-input filled dense v-model="form.contact" class="text-box-2" />
           </div>
         </div>
 
@@ -58,50 +41,40 @@
         <q-input
           filled
           dense
-          v-model="form.password"
           type="password"
+          v-model="form.password"
           :hint="passwordStrength"
           :color="passwordStrengthColor"
-          lazy-rules
-          :rules="[
-            (val) => !!val || 'Please enter your password.',
-            (val) => val.length >= 8 || 'Must be at least 8 characters long.',
-            (val) =>
-              (/[A-Z]/.test(val) && /[0-9]/.test(val) && /[^a-zA-Z0-9]/.test(val)) ||
-              'Must contain an uppercase letter, a number, and a special character.',
-          ]"
           class="text-box"
         />
+
         <label class="names">Confirm Password</label>
         <q-input
           filled
           dense
-          v-model="form.confirmPassword"
           type="password"
-          lazy-rules
+          v-model="form.confirmPassword"
           :rules="[
-            (val) => !!val || 'Please confirm your password.',
-            (val) => val === form.password || 'Passwords do not match.',
+            (val) => !!val || 'Confirm your password',
+            (val) => val === form.password || 'Passwords do not match',
           ]"
           class="text-box"
         />
-        <div class="column items-center q-pt-xs">
+        <div class="column items-center">
           <q-btn
             class="sign-up"
             push
             color="primary"
             text-color="white"
             label="SIGN UP"
-            @click="registerAdmin"
+            type="submit"
           />
         </div>
 
-        <div class="column items-center q-mb-xs">
+        <div class="column items-center q-mt-md">
           <label class="already">
             Already have an account?
-            <router-link to="/admin/login" name="admin-login" class="signup-login-link"
-              >Log In</router-link
-            >
+            <router-link to="/admin/login" class="signup-login-link">Log In</router-link>
           </label>
         </div>
       </q-form>
@@ -112,6 +85,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { supabase } from 'boot/supabase'
 
 const router = useRouter()
 
@@ -124,17 +98,12 @@ const form = ref({
   confirmPassword: '',
 })
 
-// Password strength status
+// Password strength
 const passwordStrength = computed(() => {
   const pwd = form.value.password
-  if (!pwd) return ''
-
-  const hasUpper = /[A-Z]/.test(pwd)
-  const hasNumber = /[0-9]/.test(pwd)
-  const hasSpecial = /[^a-zA-Z0-9]/.test(pwd)
-  const isLongEnough = pwd.length >= 8
-
-  return hasUpper && hasNumber && hasSpecial && isLongEnough ? 'Strong' : 'Weak'
+  const strong =
+    /[A-Z]/.test(pwd) && /[0-9]/.test(pwd) && /[^a-zA-Z0-9]/.test(pwd) && pwd.length >= 8
+  return pwd ? (strong ? 'Strong' : 'Weak') : ''
 })
 
 const passwordStrengthColor = computed(() =>
@@ -145,15 +114,8 @@ const passwordStrengthColor = computed(() =>
 async function registerAdmin() {
   const { first_name, last_name, email, contact, password, confirmPassword } = form.value
 
-  const isValidEmail = email && email.includes('@iskolarngbayan.pup.edu.ph')
-
-  if (!isValidEmail) {
+  if (!email.includes('@iskolarngbayan.pup.edu.ph')) {
     alert('Please use your PUP email only.')
-    return
-  }
-
-  if (!first_name || !last_name || !email || !contact || !password || !confirmPassword) {
-    alert('Please fill out all required fields.')
     return
   }
 
@@ -162,24 +124,55 @@ async function registerAdmin() {
     return
   }
 
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/
+  if (!passwordRegex.test(password)) {
+    alert(
+      'Password must be at least 8 characters and include uppercase, number, and special character.',
+    )
+    return
+  }
+
   try {
-    const response = await fetch('http://localhost:3000/register-admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form.value),
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          role: 'admin',
+        },
+        redirectTo: 'http://localhost:9000/#/user/login',
+      },
     })
 
-    const data = await response.json()
-
-    if (!response.ok) {
-      alert(data.error || 'Registration failed.')
-    } else {
-      alert('Registration successful!')
-      router.push('/admin/login')
+    if (error) {
+      alert(error.message)
+      return
     }
-  } catch (error) {
-    alert('An error occurred.')
-    console.error(error)
+
+    if (data.user) {
+      const { error: insertError } = await supabase.from('registered_admins').insert([
+        {
+          id: data.user.id,
+          first_name,
+          last_name,
+          email,
+          contact,
+          created_at: new Date(),
+        },
+      ])
+
+      if (insertError) {
+        console.error(insertError)
+        alert('User created, but failed to save admin profile.')
+        return
+      }
+
+      alert('Registration successful! Please check your email to confirm your account.')
+      router.push('/user/login')
+    }
+  } catch (err) {
+    console.error(err)
+    alert('An unexpected error occurred.')
   }
 }
 </script>

@@ -146,7 +146,9 @@ createQuasarApp(createApp, quasarUserOptions)
       
       import('boot/axios'),
       
-      import('boot/pinia')
+      import('boot/pinia'),
+      
+      import('boot/supabase')
       
     ]).then(bootFiles => {
       const boot = mapFn(bootFiles).filter(entry => typeof entry === 'function')
