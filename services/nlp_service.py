@@ -1,29 +1,65 @@
-from fastapi import FastAPI, UploadFile, File, Form
 import fitz  # PyMuPDF
 import spacy
 import re
+import os
+import requests
+import base64
+import io
+from io import BytesIO
+from PIL import Image
+from fastapi import FastAPI, UploadFile, File, Form
 from transformers import pipeline
 from keybert import KeyBERT
 from dateutil.parser import parse as date_parse
-import os
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:9000"],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 kw_model = KeyBERT('all-MiniLM-L6-v2')
 nlp = spacy.load("en_core_web_sm")
 
-@app.post("/process-pdf")
-async def process_pdf(file: UploadFile = File(...), filename: str = Form(None)):
-    pdf_bytes = await file.read()
-    text = extract_text(pdf_bytes)
+@app.post("/process-text")
+async def process_pdf(file: UploadFile = File(None), filename: str = Form(None), raw_text: str = Form(None)):
+    print("Processing file:", filename)
+    preview = None
 
-    summary = summarizer(text[:4000])[0]['summary_text']
+    if raw_text:
+        text = raw_text
+        print("Raw Text:", raw_text)   
+    elif file:
+        print("File:", file) 
+        pdf_bytes = await file.read()
+        result = extract_text(pdf_bytes, file.filename)
+        preview = pdf_preview(pdf_bytes, file.filename)
+
+        # OCR fallback
+        if isinstance(result, dict) and result.get("status") == "ocr_required":
+            result["filename"] = filename or file.filename
+            result["preview"] = preview
+            return result
+
+        text = result
+    else:
+        return {"error": "No file or raw text provided"}
+
+    summary = summarizer(text[:3000])[0]['summary_text']
     keywords = kw_model.extract_keywords(text, top_n=5)
     metadata = extract_metadata(text, filename)
     categories = classify_text(text)
 
     return {
         "file_name": filename or file.filename,
+        "preview": preview,
         "title": metadata.get("title"),
         "author": metadata.get("author"),
         "date": metadata.get("date"),
@@ -31,13 +67,49 @@ async def process_pdf(file: UploadFile = File(...), filename: str = Form(None)):
         "keywords": [kw for kw, _ in keywords],
         "categories": categories
     }
-
-def extract_text(pdf_bytes):
+    
+def pdf_preview(pdf_bytes, filename=None):
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
+    print("Generating PDF preview...")
+
+    if len(doc) == 0:
+        return {"error": "Empty PDF document"}
+
+    # Render first page to image
+    page = doc[0]
+    pix = page.get_pixmap(dpi=150)
+    img_bytes = pix.tobytes("png")
+
+    encoded = base64.b64encode(img_bytes).decode("utf-8")
+
+    return encoded if encoded else {"error": "Failed to generate preview"}
+
+def extract_text(pdf_bytes, filename=None):
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    full_text = ""
+    print("Extracting text from PDF...")
+
+    for page in doc[:2]:  # Limit to first 2 pages for performance
+        text = page.get_text()
+        if text.strip():  # If text exists, use it
+            print(f"Extracted text from page {page.number + 1}")
+            full_text += text
+            print("Extracted text: ", full_text[:1000])  # Print first 1000 chars for debugging
+        else:
+            # Render page to image
+            print("Converting to image...")
+            pix = page.get_pixmap(dpi=300)
+            img_bytes = pix.tobytes("png")
+
+            encoded = base64.b64encode(img_bytes).decode("utf-8")
+
+            return {
+                "status": "ocr_required",
+                "image_base64": encoded,
+                "filename": filename
+            }
+
+    return full_text
 
 def extract_metadata(text, filename=None):
     doc = nlp(text)

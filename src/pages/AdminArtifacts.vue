@@ -135,95 +135,90 @@
             </q-list>
           </q-btn-dropdown>
           <q-btn
-            v-if="isAdmin"
-            @click="showDialog = true"
+            @click="showUploadDialog = true"
             label="Add New"
             icon="add_circle"
-            style="min-width: 9.375rem"
+            style="min-width: 150px"
             class="add-new-btn"
             no-caps
             unelevated
           />
-
-          <q-dialog v-model="showDialog" persistent>
-            <q-card class="add-documentarti-card">
-              <q-card-section
-                class="box-upload-docuarti"
-                @dragover.prevent="onDragOver"
-                @dragleave.prevent="onDragLeave"
-                @drop.prevent="onFileDrop"
-                :class="{ 'drag-over': isDragging }"
-              >
-                <q-img
-                  src="src/assets/img/drag-drop-icon.png"
-                  alt="Upload-Artifacts"
-                  class="upload-icon-docu"
-                />
-                <div
-                  v-if="!selectedFile"
-                  class="sub-font-3 text-center"
-                  style="font-size: 14px; font-weight: 200"
-                >
-                  <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
-                    DRAG and DROP files
-                  </div>
-                  or
-                  <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a> on
-                  your computer
-                </div>
-                <div v-else class="documentarti-preview text-center">
-                  <q-img
-                    src="src/assets/img/document-icon.png"
-                    alt="Artifacts"
-                    class="document-icon"
-                  />
-                  <div class="selected-documentarti-name q-mt-md">
-                    {{ selectedFile.name }}
-                  </div>
-                  <!-- Upload progress bar -->
-                  <q-linear-progress
-                    v-if="uploading"
-                    :value="uploadProgress / 100"
-                    color="primary"
-                    class="q-mt-md full-width"
-                  />
-                </div>
-                <input
-                  type="file"
-                  ref="fileInput"
-                  accept=".glb"
-                  style="display: none"
-                  @change="handleFileChange"
-                />
-              </q-card-section>
-
-              <q-card-actions class="row q-ml-lg justify-between items-center">
-                <div></div>
-                <q-btn
-                  v-if="!uploading"
-                  label="Upload"
-                  class="q-ml-xl q-mt-sm btn-save"
-                  @click="handleUpload"
-                  no-caps
-                />
-
-                <q-spinner v-else color="primary" size="2em" class="q-ml-xl q-mt-sm" />
-
-                <q-btn
-                  flat
-                  label="Cancel"
-                  class="q-mt-sm sub-font-2"
-                  style="color: #000000"
-                  v-close-popup
-                  no-caps
-                  @click="handleCancel"
-                />
-              </q-card-actions>
-            </q-card>
-          </q-dialog>
         </div>
       </div>
     </div>
+
+    <!-- Upload Dialog -->
+    <q-dialog v-model="showUploadDialog" persistent>
+      <q-card class="add-document-card">
+        <q-card-section
+          class="box-upload-docu"
+          @dragover.prevent="onDragOver"
+          @dragleave.prevent="onDragLeave"
+          @drop.prevent="onFileDrop"
+          :class="{ 'drag-over': isDragging }"
+        >
+          <q-img
+            src="src/assets/img/drag-drop-icon.png"
+            alt="Upload-Artifact"
+            class="upload-icon-docu"
+          />
+          <div
+            v-if="!selectedFile"
+            class="sub-font-3 text-center"
+            style="font-size: 14px; font-weight: 200"
+          >
+            <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
+              DRAG and DROP files
+            </div>
+            or <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a> on
+            your computer
+          </div>
+          <div v-else class="document-preview text-center">
+            <q-img src="src/assets/img/document-icon.png" alt="Artifact" class="document-icon" />
+            <div class="selected-document-name q-mt-md">
+              {{ selectedFile.name }}
+            </div>
+            <!-- Upload progress bar -->
+            <q-linear-progress
+              v-if="uploading"
+              :value="uploadProgress / 100"
+              color="primary"
+              class="q-mt-md full-width"
+            />
+          </div>
+          <input
+            type="file"
+            ref="fileInput"
+            accept=".glb"
+            style="display: none"
+            @change="handleFileChange"
+          />
+        </q-card-section>
+
+        <q-card-actions class="row q-ml-lg justify-between items-center">
+          <div></div>
+          <q-btn
+            v-if="!uploading"
+            label="Upload"
+            class="q-ml-xl q-mt-sm btn-save"
+            @click="handleUpload"
+            no-caps
+          />
+
+          <q-spinner v-else color="primary" size="2em" class="q-ml-xl q-mt-sm" />
+
+          <q-btn
+            flat
+            label="Cancel"
+            class="q-mt-sm sub-font-2"
+            style="color: #000000"
+            v-close-popup
+            no-caps
+            @click="handleCancel"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- Three Artifacts per Row Grid -->
     <div class="artifacts-grid">
@@ -232,6 +227,7 @@
           <div class="card">
             <model-viewer
               :src="model.file_url"
+              camera-controls
               loading="lazy"
               auto-rotate
               auto-rotate-delay="1500"
@@ -257,7 +253,7 @@
                 <!-- View Icon with Count -->
                 <div class="icon-with-count">
                   <q-icon name="visibility" class="action-icon view-icon" size="18px" />
-                  <span class="count-text">{{ modelStore.viewCounts[model.id] || 0 }}</span>
+                  <span class="count-text">{{ model.view_count || 0 }}</span>
                 </div>
 
                 <!-- Star Icon with Count -->
@@ -345,23 +341,16 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          notifyDialogTitle
-        }}</q-card-section>
+            notifyDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-          notifyDialogMessage
-        }}</q-card-section>
+            notifyDialogMessage
+          }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
-
-    <ConfirmMetadata
-      v-model="dialog"
-      :metadata="metadata"
-      @confirm="saveMetadata"
-      @cancel="handleCancelMetadata"
-    />
   </q-page>
 </template>
 
@@ -369,19 +358,14 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useModelStore } from 'stores/modelStore'
 import { useSearchStore } from 'stores/searchStore'
-import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
-import { useRouter } from 'vue-router'
-import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import '@google/model-viewer'
-
-const router = useRouter()
 
 const modelStore = useModelStore()
 const searchStore = useSearchStore()
-const userStore = useUserStore()
 
 // Reactive data
+const loading = ref(false)
 const searchQuery = ref('')
 const categoryFilter = ref(null)
 const authorFilter = ref(null)
@@ -393,16 +377,6 @@ const itemsToShow = ref('all')
 const categoryOptions = ref([])
 const authorOptions = ref([])
 const dateOptions = ref([])
-
-// Dialog for upload pop up
-const showDialog = ref(false)
-const selectedFile = ref(null)
-const fileInput = ref(null)
-const isDragging = ref(false)
-const dialog = ref(false)
-const loading = ref(false)
-const uploading = ref(false)
-const uploadProgress = ref(0)
 
 // Collection dialog state
 const dialogOpen = ref(false)
@@ -417,17 +391,18 @@ const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
+// Upload dialog state
+const showUploadDialog = ref(false)
+const selectedFile = ref(null)
+const fileInput = ref(null)
+const isDragging = ref(false)
+const uploading = ref(false)
+const uploadProgress = ref(0)
+
 // Computed properties
 const filteredModels = computed(() => {
   return searchStore.query ? searchStore.results : modelStore.filteredModels
 })
-
-if (userStore.profile.role === undefined) {
-  userStore.fetchProfile()
-}
-
-const userRole = userStore.profile.role
-const isAdmin = computed(() => userRole === 'admin')
 
 const sortedModels = computed(() => {
   const models = [...filteredModels.value]
@@ -512,13 +487,145 @@ const clearFilters = () => {
   applyFilters()
 }
 
-// const toggleStar = (modelId) => {
-//   const model = modelStore.models.find(m => m.id === modelId)
-//   if (model) {
-//     model.starred = !model.starred
-//     // You can add API call here to persist the change
-//   }
-// }
+// Upload dialog methods
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
+
+const handleFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    selectedFile.value = file
+  } else {
+    selectedFile.value = null
+  }
+}
+
+const onDragOver = () => {
+  isDragging.value = true
+}
+
+const onDragLeave = () => {
+  isDragging.value = false
+}
+
+const onFileDrop = (e) => {
+  isDragging.value = false
+  const files = e.dataTransfer.files
+  if (files.length > 0 && files[0].name.endsWith('.glb')) {
+    selectedFile.value = files[0]
+  } else {
+    alert('Only .glb files are allowed.')
+  }
+}
+
+const sanitizeFileName = (name) => {
+  return name.replace(/[^\w.-]/g, '_')
+}
+
+const handleUpload = async () => {
+  const file = selectedFile.value
+  const fileName = sanitizeFileName(file.name)
+  uploading.value = true
+  uploadProgress.value = 0
+
+  if (!file || !fileName.endsWith('.glb')) {
+    alert('Only .glb files are allowed.')
+    return
+  }
+
+  try {
+    const alreadyExists = await fileExists(fileName)
+
+    if (alreadyExists) {
+      alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
+      return
+    }
+
+    // Fake progress bar animation
+    const progressInterval = setInterval(() => {
+      if (uploadProgress.value < 90) {
+        uploadProgress.value += 1
+      }
+    }, 200)
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage.from('artifacts').upload(`${fileName}`, file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: 'model/gltf-binary',
+    })
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError)
+      alert('Upload failed.')
+      return
+    }
+
+    clearInterval(progressInterval)
+    uploadProgress.value = 100
+
+    const { data: urlData } = supabase.storage.from('artifacts').getPublicUrl(`${fileName}`)
+    const fileUrl = urlData.publicUrl
+
+    // Save metadata to artifacts_metadata table
+    const insertData = {
+      file_name: fileName,
+      file_url: fileUrl,
+      uploaded_at: new Date(),
+      updated_at: new Date(),
+      metadata: {
+        title: fileName.replace('.glb', ''),
+        author: '',
+        date: '',
+        summary: '',
+        keywords: [],
+        categories: [],
+      }
+    }
+
+    const { error: dbError } = await supabase.from('artifacts_metadata').insert([insertData])
+    if (dbError) {
+      console.error('Supabase insert error:', dbError)
+      alert('Upload succeeded but metadata failed to save.')
+      return
+    }
+
+    setTimeout(() => {
+      uploading.value = false
+      uploadProgress.value = 0
+      showUploadDialog.value = false
+      selectedFile.value = null
+      // Refresh the artifacts list
+      fetchAllArtifacts()
+    }, 1000)
+
+    alert('Artifact uploaded successfully!')
+  } catch (err) {
+    console.error('Upload failed:', err)
+    alert('Upload failed. See console for details.')
+  } finally {
+    uploading.value = false
+  }
+}
+
+const handleCancel = () => {
+  selectedFile.value = null
+  showUploadDialog.value = false
+}
+
+const fileExists = async (fileName) => {
+  const { data, error } = await supabase.from('artifacts_metadata').select('file_name').eq('file_name', fileName)
+
+  if (!data || data.length === 0) return false
+
+  if (error) {
+    console.error('Error checking file existence:', error)
+    return false
+  }
+
+  return !!data
+}
 
 // Collection dialog methods
 const openBookmarkDialog = async (model, type = 'artifact') => {
@@ -654,38 +761,28 @@ const showNotifyDialog = (title, message) => {
   notifyDialogOpen.value = true
 }
 
-async function logClick(itemId, itemType) {
-  if (!isAdmin.value) {
-    const { data: authData, error: authError } = await supabase.auth.getUser()
-    const userId = authData?.user?.id
-    const model = await modelStore.getModelById(itemId)
+const logClick = async (itemId, itemType) => {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
 
-    if (authError || !userId) {
-      console.error('Auth error logging click:', authError)
-      return
+  if (authError || !userId) {
+    console.error('Auth error logging click:', authError)
+    return
+  }
+
+  try {
+    const { error } = await supabase.from('user_activity_log').insert({
+      user_id: userId,
+      item_id: itemId,
+      item_type: itemType,
+      clicked_at: new Date().toISOString(),
+    })
+
+    if (error) {
+      console.error('Error logging click:', error)
     }
-
-    try {
-      const { error } = await supabase.from('user_activity_log').insert({
-        user_id: userId,
-        item_id: itemId,
-        title: model.title || 'Untitled',
-        item_type: itemType,
-        clicked_at: new Date().toISOString(),
-      })
-
-      if (error) {
-        throw error
-      }
-
-      if (error) {
-        console.error('Error logging click:', error)
-      } else {
-        console.log('Click Logged')
-      }
-    } catch (err) {
-      console.error('Error logging click:', err)
-    }
+  } catch (err) {
+    console.error('Error logging click:', err)
   }
 }
 
@@ -703,6 +800,7 @@ const fetchAllArtifacts = async () => {
         ...model,
         bookmarked: false,
         // starred: false,
+        view_count: Math.floor(Math.random() * 1000),
         // star_count: Math.floor(Math.random() * 100)
       }))
 
@@ -781,8 +879,6 @@ onMounted(async () => {
     if (!searchStore.query) {
       await fetchAllArtifacts()
     }
-
-    await modelStore.fetchViewCounts()
   } finally {
     loading.value = false
   }
@@ -791,215 +887,4 @@ onMounted(async () => {
 onUnmounted(() => {
   searchStore.clear()
 })
-
-// Upload
-const metadata = ref({
-  file_name: '',
-  file_url: '',
-  title: '',
-  author: '',
-  date: '',
-  summary: '',
-  keywords: [],
-  categories: [],
-})
-
-function triggerFileInput() {
-  fileInput.value?.click()
-}
-
-function handleFileChange(event) {
-  const file = event.target.files[0]
-  if (file) {
-    selectedFile.value = file
-  } else {
-    selectedFile.value = null
-  }
-}
-
-function onDragOver() {
-  isDragging.value = true
-}
-
-function onDragLeave() {
-  isDragging.value = false
-}
-
-function onFileDrop(e) {
-  isDragging.value = false
-  const files = e.dataTransfer.files
-  console.log(files)
-  if (files.length > 0 && files[0].name.endsWith('.glb')) {
-    selectedFile.value = files[0]
-  } else {
-    alert('Only GLB files are allowed.')
-  }
-}
-
-function sanitizeFileName(name) {
-  return name.replace(/[^\w.-]/g, '_') // Replace all non-alphanumeric/underscore/dot/dash characters with _
-}
-
-const handleUpload = async () => {
-  const file = selectedFile.value
-  const fileName = sanitizeFileName(file.name)
-  uploading.value = true
-  uploadProgress.value = 0
-
-  if (!file || !fileName.endsWith('.glb')) {
-    alert('Only .glb files are allowed.')
-    return
-  }
-
-  loading.value = true
-
-  try {
-    const alreadyExists = await fileExists(fileName)
-
-    if (alreadyExists) {
-      alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
-      return
-    }
-
-    // Fake progress bar animation
-    const progressInterval = setInterval(() => {
-      if (uploadProgress.value < 90) {
-        uploadProgress.value += 1
-      }
-    }, 200)
-
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from('artifacts')
-      .upload(`${fileName}`, file, {
-        cacheControl: '3600',
-        upsert: true,
-        contentType: 'model/gltf-binary',
-      })
-
-    clearInterval(progressInterval)
-    uploadProgress.value = 100
-
-    const { data: urlData } = supabase.storage.from('artifacts').getPublicUrl(`${fileName}`)
-    const fileUrl = urlData.publicUrl
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-      alert('Upload failed.')
-      return
-    }
-
-    // Save metadata
-    const insertData = {
-      file_name: fileName,
-      file_url: fileUrl,
-      uploaded_at: new Date(),
-      updated_at: new Date(),
-    }
-
-    const { error: dbError } = await supabase.from('artifacts_metadata').insert([insertData])
-    if (dbError) {
-      console.error('Supabase insert error:', dbError)
-      alert('Upload succeeded but metadata failed to save.')
-      return
-    } else {
-      console.log('Upload Success')
-    }
-
-    setTimeout(() => {
-      uploading.value = false
-      uploadProgress.value = 0
-    }, 1000)
-
-    // Open metadata confirmation dialog
-    metadata.value = {
-      file_name: fileName,
-      file_url: fileUrl,
-      title: '',
-      author: '',
-      date: '',
-      summary: '',
-      keywords: [],
-      categories: [],
-    }
-
-    dialog.value = true
-  } catch (err) {
-    console.error('Upload failed:', err)
-    alert('Upload failed. See console for details.')
-  } finally {
-    loading.value = false
-  }
-}
-
-async function fileExists(fileName) {
-  const { data, error } = await supabase
-    .from('artifacts_metadata')
-    .select('file_name')
-    .eq('file_name', fileName)
-
-  if (!data || data.length === 0) return false
-
-  if (error) {
-    console.error('Error checking file existence:', error)
-    return false
-  }
-
-  return !!data
-}
-
-async function saveMetadata(updatedMetadata) {
-  console.log('Saving metadata: ', updatedMetadata)
-  try {
-    const { error } = await supabase
-      .from('artifacts_metadata')
-      .update({
-        metadata: {
-          title: updatedMetadata.title,
-          author: updatedMetadata.author,
-          date: updatedMetadata.date,
-          summary: updatedMetadata.summary,
-          keywords: updatedMetadata.keywords,
-          categories: updatedMetadata.categories,
-        },
-        updated_at: new Date(),
-      })
-      .eq('file_name', metadata.value.file_name)
-
-    if (error) {
-      console.error('Failed to update metadata:', error)
-      alert('Failed to update metadata.')
-    } else {
-      alert('Metadata saved successfully!')
-      dialog.value = false
-      router.push({ name: 'admin-home' })
-    }
-  } catch (err) {
-    console.error('Error saving metadata:', err)
-    alert('Unexpected error occurred.')
-  }
-}
-
-async function handleCancelMetadata(cancelledData) {
-  try {
-    const fileName = cancelledData.file_name
-
-    const { error } = await supabase.from('artifacts_metadata').delete().eq('file_name', fileName)
-
-    if (error) {
-      console.error('Error deleting cancelled metadata:', error)
-    } else {
-      console.log('Cancelled metadata removed successfully.')
-    }
-  } catch (err) {
-    console.error('Failed to cancel and delete metadata:', err)
-  } finally {
-    dialog.value = false
-  }
-}
-
-function handleCancel() {
-  selectedFile.value = null
-  showDialog.value = false
-}
 </script>

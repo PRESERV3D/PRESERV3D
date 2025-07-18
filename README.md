@@ -5,9 +5,15 @@ Information System for PUP Library Archives
 ## Install the dependencies
 
 ```bash
-yarn
-# or
 npm install
+```
+
+### Install Quasar CLI globally and local dependencies
+
+```bash
+npm install -g @quasar/cli
+
+npm install @quasar/cli
 ```
 
 ### Start the app in development mode (hot-code reloading, error reporting, etc.)
@@ -28,8 +34,11 @@ node server.js
 ```bash
 cd services
 
+# Create a virtual environment for Python dependencies
+python -m venv venv
+
 # Activate the virtual environment
-.\.venv\Scripts\activate
+.\venv\Scripts\activate
 
 # Install the required Python packages
 pip install -r requirements.txt
