@@ -78,6 +78,12 @@ const routes = [
         component: () => import('pages/AdminViewArtifacts(2).vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
+      {
+        path: 'document-scanner',
+        name: 'document-scanner',
+        component: () => import('pages/DocumentScannerPage.vue'),
+        // meta: { requiresAuth: true, allowedRoles: ['admin'] },
+      },
     ],
   },
   {

@@ -41,7 +41,6 @@ export default defineConfig((/* ctx */) => {
       // vueRouterBase,
       // vueDevtools,
       // vueOptionsAPI: false,
-
       // rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
 
       // publicPath: '/',
