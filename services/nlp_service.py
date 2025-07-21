@@ -29,13 +29,11 @@ kw_model = KeyBERT('all-MiniLM-L6-v2')
 nlp = spacy.load("en_core_web_sm")
 
 @app.post("/process-text")
-async def process_pdf(file: UploadFile = File(None), filename: str = Form(None), raw_text: str = Form(None)):
+async def process_pdf(file: UploadFile = File(None), filename: str = Form(None), raw_text: str = Form(None), preview: str = Form(None)):
     print("Processing file:", filename)
-    preview = None
 
     if raw_text:
         text = raw_text
-        print("Raw Text:", raw_text)   
     elif file:
         print("File:", file) 
         pdf_bytes = await file.read()
@@ -81,15 +79,14 @@ def pdf_preview(pdf_bytes, filename=None):
     img_bytes = pix.tobytes("png")
 
     encoded = base64.b64encode(img_bytes).decode("utf-8")
-
-    return encoded if encoded else {"error": "Failed to generate preview"}
+    return f"data:image/png;base64,{encoded}" if encoded else {"error": "Failed to generate preview"}
 
 def extract_text(pdf_bytes, filename=None):
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     full_text = ""
     print("Extracting text from PDF...")
 
-    for page in doc[:2]:  # Limit to first 2 pages for performance
+    for page in doc[:3]:  # Limit to first 3 pages for performance
         text = page.get_text()
         if text.strip():  # If text exists, use it
             print(f"Extracted text from page {page.number + 1}")

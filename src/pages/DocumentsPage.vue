@@ -607,15 +607,14 @@ const handleUpload = async () => {
   uploading.value = true
   uploadProgress.value = 0
 
-  if (!file || (!fileName.endsWith('.pdf') && !fileName.endsWith('.glb'))) {
-    alert('Only .pdf and .glb files are allowed.')
+  if (!file || !fileName.endsWith('.pdf')) {
+    alert('Only .pdf files are allowed.')
     return
   }
 
   loading.value = true
-  const isPdf = fileName.endsWith('.pdf')
-  const folder = isPdf ? 'documents' : 'artifacts'
-  const bucket = folder
+  const bucket = 'documents'
+
   try {
     const alreadyExists = await fileExists(fileName)
 
@@ -632,49 +631,49 @@ const handleUpload = async () => {
     }, 200)
 
     // NLP processing for PDFs
-    if (isPdf) {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('filename', fileName)
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('filename', fileName)
 
-      const response = await axios.post('http://localhost:8000/process-text', formData)
+    const response = await axios.post('http://localhost:8000/process-text', formData)
 
-      if (response.data.status === 'ocr_required') {
-        console.log('Fallback to OCR...')
-        const base64Image = response.data.image_base64
+    if (response.data.status === 'ocr_required') {
+      console.log('Fallback to OCR...')
+      console.log(response.data)
+      const base64Image = response.data.image_base64
+      const previewImage = response.data.preview
 
-        // OCR the image
-        const result = await Tesseract.recognize(`data:image/png;base64,${base64Image}`, 'eng', {
-          tessedit_char_whitelist:
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,;:!?()[]{}-_"\'',
-        })
-        const text = result.data.text
+      // OCR the image
+      const result = await Tesseract.recognize(`data:image/png;base64,${base64Image}`, 'eng', {
+        tessedit_char_whitelist:
+          'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,;:!?()[]{}-_"\'',
+      })
+      const text = result.data.text
 
-        // Send extracted text to FastAPI for NLP
-        const nlpForm = new FormData()
-        nlpForm.append('filename', file.name)
-        nlpForm.append('raw_text', text)
+      // Send extracted text to FastAPI for NLP
+      const nlpForm = new FormData()
+      nlpForm.append('filename', file.name)
+      nlpForm.append('raw_text', text)
+      nlpForm.append('preview', previewImage)
 
-        nlpMetadata = await axios.post('http://localhost:8000/process-text', nlpForm)
-      } else {
-        // Use the metadata returned from FastAPI
-        nlpMetadata = response.data
-      }
-      console.log('NLP Metadata:', nlpMetadata)
+      nlpMetadata = await axios.post('http://localhost:8000/process-text', nlpForm)
+    } else {
+      // Use the metadata returned from FastAPI
+      nlpMetadata = response
     }
+    console.log('NLP Metadata:', nlpMetadata.data)
 
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage.from(bucket).upload(`${fileName}`, file, {
       cacheControl: '3600',
       upsert: true,
-      contentType: isPdf ? 'application/pdf' : 'model/gltf-binary',
+      contentType: 'application/pdf',
     })
 
     const previewBlob = await (async () => {
-      const base64 = nlpMetadata.preview
-      const byteCharacters = atob(base64)
-      const byteNumbers = Array.from(byteCharacters).map((char) => char.charCodeAt(0))
-      const byteArray = new Uint8Array(byteNumbers)
+      const base64 = nlpMetadata.data.preview.replace(/^data:image\/png;base64,/, '')
+      const binary = atob(base64)
+      const byteArray = Uint8Array.from(binary, (c) => c.charCodeAt(0))
       return new Blob([byteArray], { type: 'image/png' })
     })()
 
@@ -713,24 +712,23 @@ const handleUpload = async () => {
     }
 
     // Save metadata
-    const supabaseTable = isPdf ? 'documents_metadata' : 'artifacts_metadata'
-
     const insertData = {
       file_name: fileName,
       file_url: fileUrl,
       uploaded_at: new Date(),
       updated_at: new Date(),
-      ...(isPdf && { preview_url: previewUrl, metadata: nlpMetadata }),
+      preview_url: previewUrl,
+      metadata: nlpMetadata.data,
     }
 
-    const { error: dbError } = await supabase.from(supabaseTable).insert([insertData])
+    const { error: dbError } = await supabase.from('documents_metadata').insert([insertData])
     if (dbError) {
       console.error('Supabase insert error:', dbError)
       alert('Upload succeeded but metadata failed to save.')
       return
     }
 
-    console.log('Metadata', nlpMetadata)
+    console.log('Metadata', nlpMetadata.data)
 
     setTimeout(() => {
       uploading.value = false
@@ -741,12 +739,12 @@ const handleUpload = async () => {
     metadata.value = {
       file_name: fileName,
       file_url: fileUrl,
-      title: nlpMetadata.title || '',
-      author: nlpMetadata.author || '',
-      date: nlpMetadata.date || '',
-      summary: nlpMetadata.summary || '',
-      keywords: nlpMetadata.keywords || [],
-      categories: nlpMetadata.categories || [],
+      title: nlpMetadata.data.title || '',
+      author: nlpMetadata.data.author || '',
+      date: nlpMetadata.data.date || '',
+      summary: nlpMetadata.data.summary || '',
+      keywords: nlpMetadata.data.keywords || [],
+      categories: nlpMetadata.data.categories || [],
     }
 
     dialog.value = true
@@ -761,13 +759,10 @@ const handleUpload = async () => {
 }
 
 async function fileExists(fileName) {
-  const isPDF = fileName.toLowerCase().endsWith('.pdf')
-  const isGLB = fileName.toLowerCase().endsWith('.glb')
-  const table = isPDF ? 'documents_metadata' : isGLB ? 'artifacts_metadata' : null
-
-  if (!table) return false
-
-  const { data, error } = await supabase.from(table).select('file_name').eq('file_name', fileName)
+  const { data, error } = await supabase
+    .from('documents_metadata')
+    .select('file_name')
+    .eq('file_name', fileName)
 
   if (!data || data.length === 0) return false
 
@@ -780,12 +775,10 @@ async function fileExists(fileName) {
 }
 
 async function saveMetadata(updatedMetadata) {
-  const isPdf = metadata.value.file_name.endsWith('.pdf')
-  const table = isPdf ? 'documents_metadata' : 'artifacts_metadata'
   console.log('Saving metadata: ', updatedMetadata)
   try {
     const { error } = await supabase
-      .from(table)
+      .from('documents_metadata')
       .update({
         metadata: {
           title: updatedMetadata.title,
@@ -816,14 +809,10 @@ async function saveMetadata(updatedMetadata) {
 async function handleCancelMetadata(cancelledData) {
   try {
     const fileName = cancelledData.file_name
-    const isPDF = fileName.toLowerCase().endsWith('.pdf')
-    const isGLB = fileName.toLowerCase().endsWith('.glb')
 
-    const table = isPDF ? 'documents_metadata' : isGLB ? 'artifacts_metadata' : null
+    if (!fileName) return
 
-    if (!table || !fileName) return
-
-    const { error } = await supabase.from(table).delete().eq('file_name', fileName)
+    const { error } = await supabase.from('documents_metadata').delete().eq('file_name', fileName)
 
     if (error) {
       console.error('Error deleting cancelled metadata:', error)
@@ -842,6 +831,8 @@ async function handleCancelMetadata(cancelledData) {
 function handleCancel() {
   selectedFile.value = null
   showDialog.value = false
+  uploading.value = false
+  uploadProgress.value = 0
 }
 
 const openBookmarkDialog = async (doc, type = 'document') => {
