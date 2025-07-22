@@ -3,8 +3,8 @@
     <div class="row q-gutter-sm">
       <div class="q-mt-xs box-1 row items-center">
         <div class="col-7">
-          <p class="q-ml-xl admin-title">Explore & Manage Cultural Heritage Assets</p>
-          <p class="q-ml-xl admin-subtitle">
+          <p class="q-ml-xl dash-title">Explore & Manage Cultural Heritage Assets</p>
+          <p class="q-ml-xl dash-subtitle">
             Access digital artifacts, document, and research <br />
             tools — all in one place.
           </p>
@@ -207,21 +207,6 @@
 </template>
 
 <style scoped>
-.admin-title {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 500;
-  font-size: 32px;
-  color: #fefcf3;
-  margin-top: 1rem;
-}
-
-.admin-subtitle {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 100;
-  font-size: 16px;
-  color: #fefcf3;
-}
-
 .sub-font {
   font-family: 'Poppins', sans-serif;
   font-weight: 500;

@@ -371,6 +371,29 @@ document-title-2 {
 
 //dashboard css
 
+.dash-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 32px;
+  color: #fefcf3;
+  margin-top: 1rem;
+}
+
+.dash-subtitle {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 100;
+  font-size: 16px;
+  color: #fefcf3;
+}
+
+.title-font-2 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  color: #560505;
+  margin-top: 1.3rem;
+}
+
 .btn-explore {
   background-color: #010101;
   font-family: 'Poppins', sans-serif;
@@ -420,14 +443,6 @@ document-title-2 {
   min-width: 0;
   height: 35rem;
   box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
-}
-
-.title-font-2 {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 20px;
-  color: #560505;
-  margin-top: 1.3rem;
 }
 
 .btn-1 {
@@ -1313,6 +1328,7 @@ document-title-2 {
 }
 
 /* Popup upload collections */
+
 .add-collection-card {
   width: 32rem;
   height: 25.5rem;
@@ -1399,6 +1415,7 @@ document-title-2 {
   font-size: 14px;
   color: #000000;
 }
+
 //
 
 .documentarti-preview {
