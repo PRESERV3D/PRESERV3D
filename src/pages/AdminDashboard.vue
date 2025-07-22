@@ -81,15 +81,14 @@
         <div class="row q-py-md">
           <div class="col-6">
             <p class="q-ml-md sub-font">Users per Month</p>
-            <div class="row q-py-sm justify-center q-gutter-md">
-              <!-- To be removed -->
-              <!-- <div class="box-legend" style="background-color: #880000"></div>
+            <div class="row q-py-lg justify-center q-gutter-md">
+              <!--users-->
+              <div class="box-legend" style="background-color: #880000"></div>
               <p class="q-ml-sm sub-font" style="font-size: 12px">PUP Students</p>
               <div class="box-legend" style="background-color: #efaf00"></div>
               <p class="q-ml-sm sub-font" style="font-size: 12px">PUP Faculty</p>
               <div class="box-legend" style="background-color: #3d86ff"></div>
-              <p class="q-ml-sm sub-font" style="font-size: 12px">Visitors</p> -->
-              <!--  -->
+              <p class="q-ml-sm sub-font" style="font-size: 12px">Visitors</p>
 
               <!-- Users per Month Line Graph -->
               <div class="users-graph">
@@ -434,13 +433,6 @@ function imgProps(item) {
 </script>
 
 <style scoped>
-.sub-font {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 500;
-  font-size: 16px;
-  color: #560505;
-}
-
 .trophies {
   height: 15rem;
   width: 15rem;
@@ -473,7 +465,7 @@ function imgProps(item) {
 }
 
 .users-graph {
-  margin-top: 5rem;
+  margin-top: 2rem;
   width: 22rem;
 }
 

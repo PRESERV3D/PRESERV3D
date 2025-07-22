@@ -155,71 +155,83 @@
             </div>
             <div class="row q-gutter-sm col-auto">
               <!-- Filter Section -->
-              <q-btn flat round icon="filter_list" class="filter-sort-btn">
-                <q-menu anchor="bottom right" self="top left" style="width: 15rem">
-                  <q-list>
-                    <q-item>
-                      <q-item-section>
-                        <q-select
-                          v-model="author"
-                          :options="authorOptions"
-                          outlined
-                          label="Select Author"
-                          dense
-                          clearable
-                          @update:model-value="applyFilters"
-                        />
-                      </q-item-section>
-                    </q-item>
-                    <q-item>
-                      <q-item-section>
-                        <q-select
-                          v-model="date"
-                          :options="dateOptions"
-                          outlined
-                          label="Select Year"
-                          dense
-                          clearable
-                          @update:model-value="applyFilters"
-                        />
-                      </q-item-section>
-                    </q-item>
-                    <q-separator />
-                    <q-item clickable v-close-popup @click="clearFilters">
-                      <q-item-section>
-                        <q-item-label>Clear All Filters</q-item-label>
-                      </q-item-section>
-                      <q-item-section side>
-                        <q-icon name="clear" />
-                      </q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-menu>
-              </q-btn>
+
+              <q-btn-dropdown
+                outline
+                color="black"
+                label="Filter"
+                icon="filter_list"
+                size="sm"
+                class="artifact-btn-style"
+              >
+                <q-list>
+                  <q-item>
+                    <q-item-section>
+                      <q-select
+                        v-model="author"
+                        :options="authorOptions"
+                        outlined
+                        label="Select Author"
+                        dense
+                        clearable
+                        @update:model-value="applyFilters"
+                      />
+                    </q-item-section>
+                  </q-item>
+                  <q-item>
+                    <q-item-section>
+                      <q-select
+                        v-model="date"
+                        :options="dateOptions"
+                        outlined
+                        label="Select Year"
+                        dense
+                        clearable
+                        @update:model-value="applyFilters"
+                      />
+                    </q-item-section>
+                  </q-item>
+                  <q-separator />
+                  <q-item clickable v-close-popup @click="clearFilters">
+                    <q-item-section>
+                      <q-item-label>Clear All Filters</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                      <q-icon name="clear" />
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-dropdown>
               <!-- Sort Section -->
-              <q-btn flat round icon="sort" class="filter-sort-btn">
-                <q-menu anchor="bottom right" self="top left" style="width: 10rem">
-                  <q-list>
-                    <q-item
-                      v-for="option in sortOptions"
-                      :key="option"
-                      clickable
-                      v-close-popup
-                      @click="((sortOption = option), onSort(option))"
-                    >
-                      <q-item-section>{{ option }}</q-item-section>
-                      <q-item-section side v-if="sortOption === option">
-                        <q-icon name="check" color="primary" />
-                      </q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-menu>
-              </q-btn>
+              <q-btn-dropdown
+                outline
+                color="black"
+                :label="`Sort by: ${sortOption}`"
+                icon="sort"
+                size="sm"
+                class="q-ml-md artifact-btn-style"
+                dense
+              >
+                <q-list>
+                  <q-item
+                    v-for="option in sortOptions"
+                    :key="option"
+                    clickable
+                    v-close-popup
+                    @click="((sortOption = option), onSort(option))"
+                  >
+                    <q-item-section>{{ option }}</q-item-section>
+                    <q-item-section side v-if="sortOption === option">
+                      <q-icon name="check" color="primary" />
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-dropdown>
             </div>
           </div>
 
           <!-- Document in Categories -->
-          <div class="row q-gutter-md q-mt-md justify-around">
+          <div class="row q-gutter-md q-ma-md justify-between">
             <div
               v-for="(doc, i) in searchStore.query
                 ? searchStore.results
@@ -1036,5 +1048,19 @@ onUnmounted(() => {
 .now-read-btn:hover {
   background-color: rgba(255, 255, 255, 0.1);
   border-color: #ffffff;
+}
+
+.btn-bm {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  background-color: #880000;
+  border-radius: 50%;
+  color: white !important;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

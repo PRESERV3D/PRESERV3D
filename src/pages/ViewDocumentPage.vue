@@ -508,6 +508,13 @@ onMounted(async () => {
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
 }
 
+.actions {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #880000;
+}
+
 .row-1 {
   margin-left: 30.5rem;
   display: flex;

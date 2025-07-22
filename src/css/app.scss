@@ -103,15 +103,6 @@ document-title-2 {
   transform: scale(1.012);
 }
 
-.my-card {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-}
-
 .my-card:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
@@ -342,6 +333,12 @@ document-title-2 {
 }
 
 //fonts
+.sub-font {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  color: #560505;
+}
 
 .sub-font-2 {
   font-family: 'Poppins', sans-serif;
@@ -1403,13 +1400,6 @@ document-title-2 {
 
 //
 
-.actions {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 500;
-  font-size: 14px;
-  color: #880000;
-}
-
 .confirmation-delete {
   font-family: 'Poppins', sans-serif;
   font-weight: 500;
@@ -1424,20 +1414,6 @@ document-title-2 {
 .question-icon {
   width: 2rem;
   height: 2rem;
-}
-
-.btn-bm {
-  position: absolute;
-  bottom: 0.5rem;
-  left: 0.5rem;
-  background-color: #880000;
-  border-radius: 50%;
-  color: white !important;
-  width: 1.5rem;
-  height: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 //
