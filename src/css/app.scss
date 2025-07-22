@@ -496,7 +496,6 @@ document-title-2 {
   background-color: rgb(251, 251, 251);
   color: black;
   padding: 0.5rem;
-  font-size: 12px;
   position: absolute;
   top: calc(100% + 2px);
   left: 2;
@@ -1269,52 +1268,6 @@ document-title-2 {
   width: 2rem;
   height: 2rem;
 }
-
-// start-> docpage
-
-.row-1 {
-  margin-left: 32rem;
-  display: flex;
-}
-
-.start-reading-btn {
-  background-color: #363636;
-  color: white;
-  border-radius: 20px;
-  padding: 1rem;
-  font-weight: 400;
-  font-size: 14px;
-  font-family: 'Poppins', sans-serif;
-  height: 2rem;
-  width: 10rem;
-  display: flex;
-  place-content: center;
-  align-items: center;
-}
-
-.btn-arrow-tilt {
-  width: 0.6rem;
-  height: 0.6rem;
-  object-fit: contain;
-}
-
-// end-> docpage
-
-.btn-bm {
-  position: absolute;
-  bottom: 0.5rem;
-  left: 0.5rem;
-  background-color: #880000;
-  border-radius: 50%;
-  color: white !important;
-  width: 1.5rem;
-  height: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-//
 
 .add-to-collections {
   width: 18rem;
