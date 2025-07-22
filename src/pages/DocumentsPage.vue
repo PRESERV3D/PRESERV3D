@@ -156,7 +156,6 @@
             </div>
             <div class="row q-gutter-sm col-auto">
               <!-- Filter Section -->
-
               <q-btn-dropdown
                 outline
                 color="black"
@@ -219,6 +218,7 @@
                     :key="option"
                     clickable
                     v-close-popup
+                    class="collection-sort-menu"
                     @click="((sortOption = option), onSort(option))"
                   >
                     <q-item-section>{{ option }}</q-item-section>
@@ -1064,5 +1064,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.docs-gap {
+  margin-left: 2.5rem;
+  margin-bottom: 0.5rem;
+  gap: 2rem;
 }
 </style>
