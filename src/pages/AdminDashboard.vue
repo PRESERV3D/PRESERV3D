@@ -136,7 +136,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="q-mr-md sub-font-2" style="font-size: 12px">{{ item.views }} views</div>
+                <div class="q-mr-md sub-font-2">{{ item.views }} views</div>
               </div>
             </div>
           </div>
@@ -220,6 +220,13 @@
   font-weight: 100;
   font-size: 16px;
   color: #fefcf3;
+}
+
+.sub-font {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  color: #560505;
 }
 
 .trophies {
