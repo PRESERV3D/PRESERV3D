@@ -8,17 +8,17 @@
     <div class="column q-gutter-sm">
       <q-form @submit.prevent="registerAdmin">
         <div class="row items-center q-gutter-lg q-mt-xs">
-          <label class="names">First Name</label>
+          <label class="labelNames">First Name</label>
           <q-input filled dense v-model="form.first_name" class="text-box" style="width: 25.8rem" />
         </div>
         <div class="row items-center q-gutter-lg q-mt-sm">
-          <label class="names">Last Name</label>
+          <label class="labelNames">Last Name</label>
           <q-input filled dense v-model="form.last_name" class="text-box" style="width: 25.8rem" />
         </div>
 
         <div class="row q-mt-lg">
           <div class="col">
-            <label class="names">Email</label>
+            <label class="labelNames">Email</label>
             <q-input
               filled
               dense
@@ -32,12 +32,12 @@
             />
           </div>
           <div class="col">
-            <label class="names">Contact Number</label>
+            <label class="labelNames">Contact Number</label>
             <q-input filled dense v-model="form.contact" class="text-box-2" />
           </div>
         </div>
 
-        <label class="names">Password</label>
+        <label class="labelNames">Password</label>
         <q-input
           filled
           dense
@@ -48,7 +48,7 @@
           class="text-box"
         />
 
-        <label class="names">Confirm Password</label>
+        <label class="labelNames">Confirm Password</label>
         <q-input
           filled
           dense
