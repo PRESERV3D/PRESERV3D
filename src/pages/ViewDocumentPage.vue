@@ -72,6 +72,7 @@
               />
             </q-btn>
             <q-icon
+              v-if="!isAdmin"
               :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
               class="bookmark-icon q-ml-md q-mr-md"
               :class="{ bookmarked: doc.bookmarked }"

@@ -103,6 +103,7 @@
                   <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
                 </router-link>
                 <q-btn
+                  v-if="!isAdmin"
                   icon="bookmark_border"
                   dense
                   size="sm"
@@ -248,6 +249,7 @@
                   <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
                 </router-link>
                 <q-btn
+                  v-if="!isAdmin"
                   icon="bookmark_border"
                   dense
                   size="sm"
