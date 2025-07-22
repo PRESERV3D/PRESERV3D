@@ -331,3 +331,37 @@ async function addCollection() {
   }
 }
 </script>
+
+<style scoped>
+.box-collections {
+  border-radius: 10px;
+  background-color: #ffffff;
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-wrap: wrap;
+  padding-top: 4rem;
+  padding-bottom: 3.5rem;
+  padding-left: 1.5rem;
+  gap: 3rem;
+  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+}
+
+.collection-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.collection-image {
+  width: 15rem;
+  height: 14.5rem;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.upload-icon {
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 1rem;
+}
+</style>

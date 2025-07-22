@@ -512,32 +512,6 @@ document-title-2 {
 
 //collection page
 
-.box-collections {
-  border-radius: 10px;
-  background-color: #ffffff;
-  width: 100%;
-  height: auto;
-  display: flex;
-  flex-wrap: wrap;
-  padding-top: 4rem;
-  padding-bottom: 3.5rem;
-  padding-left: 1.5rem;
-  gap: 3rem;
-  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
-}
-
-.collection-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.collection-image {
-  width: 15rem;
-  height: 14.5rem;
-  object-fit: cover;
-  border-radius: 10px;
-}
-
 .add-collection-card {
   width: 32rem;
   height: 25.5rem;
@@ -546,29 +520,11 @@ document-title-2 {
   padding: 1rem;
 }
 
-.upload-box {
-  width: 11rem;
-  height: 14.5rem;
-  border-radius: 10px;
-  background-color: #ffffff;
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
 .preview-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   border-radius: 10px;
-}
-
-.upload-icon {
-  width: 4rem;
-  height: 4rem;
-  margin-top: 0.5rem;
-  margin-bottom: 1rem;
 }
 
 .upload {
@@ -579,19 +535,6 @@ document-title-2 {
   text-align: center;
   padding: 1rem;
   margin-top: 2.5rem;
-}
-
-.field-collection {
-  width: 15rem;
-  height: 2.5rem;
-  border-radius: 5px;
-  background-color: #ffffff;
-  border: 1px solid #928f8f;
-  box-shadow: 0 2px 6px rgba(86, 5, 5, 0.22);
-}
-
-.field-collection textarea {
-  resize: none !important;
 }
 
 .btn-save {
@@ -1079,55 +1022,6 @@ document-title-2 {
   /* Keep original gradient and styling */
 }
 
-/* Popup upload collections */
-.add-collection-card {
-  width: 32rem;
-  height: 25.5rem;
-  border-radius: 10px;
-  background-color: #fbf4d0;
-  padding: 1rem;
-}
-
-.upload-box {
-  width: 11rem;
-  height: 14.5rem;
-  border-radius: 10px;
-  background-color: #ffffff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.preview-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 10px;
-}
-
-.upload-icon {
-  width: 4rem;
-  height: 4rem;
-  margin-top: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.upload {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 400;
-  color: #928f8f;
-  font-size: 14px;
-  text-align: center;
-  padding: 1rem;
-  margin-top: 2.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
 .field-collection {
   width: 15rem;
   height: 2.5rem;
@@ -1153,19 +1047,6 @@ document-title-2 {
   padding: 0.25rem 1rem;
 }
 
-.sub-font-2 {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 400;
-  font-size: 12px;
-  color: #560505;
-}
-
-.sub-font-3 {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  color: #000000;
-}
 //
 
 .documentarti-preview {
@@ -1259,9 +1140,10 @@ document-title-2 {
   font-size: 16px;
   color: #560505;
   margin-top: 1rem;
-  border-radius: 10px;
+  border-radius: 10px !important;
   background-color: #fbf4d0;
   padding: 1rem;
+  text-align: center;
 }
 
 .question-icon {
@@ -2042,15 +1924,6 @@ document-title-2 {
   /* Keep original gradient and styling */
 }
 
-/* Popup upload collections */
-.add-collection-card {
-  width: 32rem;
-  height: 25.5rem;
-  border-radius: 10px;
-  background-color: #fbf4d0;
-  padding: 1rem;
-}
-
 .upload-box {
   width: 11rem;
   height: 14.5rem;
@@ -2061,73 +1934,6 @@ document-title-2 {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-}
-
-.preview-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 10px;
-}
-
-.upload-icon {
-  width: 4rem;
-  height: 4rem;
-  margin-top: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.upload {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 400;
-  color: #928f8f;
-  font-size: 14px;
-  text-align: center;
-  padding: 1rem;
-  margin-top: 2.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.field-collection {
-  width: 15rem;
-  height: 2.5rem;
-  border-radius: 5px;
-  background-color: #ffffff;
-  border: 1px solid #928f8f;
-  box-shadow: 0 2px 6px rgba(86, 5, 5, 0.22);
-}
-
-.field-collection :deep(textarea) {
-  resize: none !important;
-}
-
-.btn-save {
-  min-width: 4rem;
-  height: 2rem;
-  border-radius: 5px;
-  background-color: #880000;
-  color: #fbf4d0;
-  font-size: 12px;
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  padding: 0.25rem 1rem;
-}
-
-.sub-font-2 {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 400;
-  font-size: 12px;
-  color: #560505;
-}
-
-.sub-font-3 {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  color: #000000;
 }
 
 /* BIG Book image styles */
