@@ -156,7 +156,6 @@
             </div>
             <div class="row q-gutter-sm col-auto">
               <!-- Filter Section -->
-
               <q-btn-dropdown
                 outline
                 color="black"
