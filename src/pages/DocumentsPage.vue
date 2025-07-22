@@ -1064,4 +1064,10 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
 }
+
+.docs-gap {
+  margin-left: 2.5rem;
+  margin-bottom: 0.5rem;
+  gap: 2rem;
+}
 </style>
