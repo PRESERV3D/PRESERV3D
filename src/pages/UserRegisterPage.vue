@@ -2,7 +2,7 @@
   <div class="q-pa-md form-container">
     <div class="column items-center">
       <label class="form-title">SIGN UP</label>
-      <label class="subtitle">Let's Get You Set Up</label>
+      <label class="subtitle-logsign">Let's Get You Set Up</label>
     </div>
 
     <q-form @submit.prevent="registerUser">
