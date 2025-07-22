@@ -15,9 +15,10 @@
       </div>
     </div>
 
-    <div class="row justify-end q-mt-md">
-      <router-link to="/admin/login" class="login-back-font">Back to Log In</router-link>
-    </div>
+    <!-- Back to Log In link, now placed outside and anchored to bottom-right -->
+    <router-link to="/admin/login" class="login-back-font fixed-bottom-right">
+      Back to Log In
+    </router-link>
   </div>
 </template>
 
@@ -35,12 +36,18 @@
   border-radius: 15px;
   box-shadow: 0 10px 4px rgba(0, 0, 0, 0.2);
 }
+
 .login-back-font {
   font-family: 'Poppins', sans-serif;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 16px;
   color: #000000;
   text-decoration: none;
-  margin-top: 3rem;
+}
+
+.fixed-bottom-right {
+  position: fixed;
+  bottom: 3rem;
+  right: 5rem;
 }
 </style>
