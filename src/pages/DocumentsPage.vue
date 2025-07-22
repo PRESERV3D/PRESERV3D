@@ -553,6 +553,7 @@ const loading = ref(false)
 const uploading = ref(false)
 const uploadProgress = ref(0)
 const router = useRouter()
+const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 
 const metadata = ref({
   file_name: '',
@@ -564,19 +565,90 @@ const metadata = ref({
   keywords: [],
   categories: [],
 })
-let nlpMetadata = {}
+// let nlpMetadata = {}
+
+function sanitizeFileName(name) {
+  return name.replace(/[^\w.-]/g, '_')
+}
+
+async function fileExists(fileName) {
+  const { data, error } = await supabase
+    .from('documents_metadata')
+    .select('file_name')
+    .eq('file_name', fileName)
+
+  if (error) {
+    console.error('Error checking file existence:', error)
+    return false
+  }
+
+  return !!data?.length
+}
+
+async function uploadFileToSupabase(file, fileName) {
+  const { error } = await supabase.storage.from('documents').upload(fileName, file, {
+    cacheControl: '3600',
+    upsert: true,
+    contentType: 'application/pdf',
+  })
+  return error
+}
+
+async function uploadPreviewImage(base64Image, previewFileName) {
+  const binary = atob(base64Image)
+  const byteArray = Uint8Array.from(binary, (c) => c.charCodeAt(0))
+  const blob = new Blob([byteArray], { type: 'image/png' })
+
+  const { error } = await supabase.storage.from('pdf-previews').upload(previewFileName, blob, {
+    contentType: 'image/png',
+    upsert: true,
+  })
+
+  return error
+}
+
+async function processFileWithNLP(file, fileName) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('filename', fileName)
+  return await axios.post('http://localhost:8000/process-text', formData)
+}
+
+async function processImageWithOCR(base64Image, fileName, preview) {
+  const result = await Tesseract.recognize(`data:image/png;base64,${base64Image}`, 'eng', {
+    tessedit_char_whitelist:
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,;:!?()[]{}-_"\'',
+  })
+
+  const text = result.data.text
+  const nlpForm = new FormData()
+  nlpForm.append('filename', fileName)
+  nlpForm.append('raw_text', text)
+  nlpForm.append('preview', preview)
+
+  return await axios.post('http://localhost:8000/process-text', nlpForm)
+}
+
+async function saveMetadataToDB(fileName, fileUrl, previewUrl, metadata) {
+  return await supabase.from('documents_metadata').insert([
+    {
+      file_name: fileName,
+      file_url: fileUrl,
+      preview_url: previewUrl,
+      metadata,
+      uploaded_by: user,
+      uploaded_at: new Date(),
+      updated_at: new Date(),
+    },
+  ])
+}
 
 function triggerFileInput() {
   fileInput.value?.click()
 }
 
 function handleFileChange(event) {
-  const file = event.target.files[0]
-  if (file) {
-    selectedFile.value = file
-  } else {
-    selectedFile.value = null
-  }
+  selectedFile.value = event.target.files[0] || null
 }
 
 function onDragOver() {
@@ -589,193 +661,39 @@ function onDragLeave() {
 
 function onFileDrop(e) {
   isDragging.value = false
-  const files = e.dataTransfer.files
-  if (files.length > 0 && files[0].type === 'application/pdf') {
-    selectedFile.value = files[0]
+  const file = e.dataTransfer.files[0]
+  if (file?.type === 'application/pdf') {
+    selectedFile.value = file
   } else {
     alert('Only PDF files are allowed.')
   }
 }
 
-function sanitizeFileName(name) {
-  return name.replace(/[^\w.-]/g, '_') // Replace all non-alphanumeric/underscore/dot/dash characters with _
+function handleCancel() {
+  selectedFile.value = null
+  showDialog.value = false
+  uploading.value = false
+  uploadProgress.value = 0
 }
 
-const handleUpload = async () => {
-  const file = selectedFile.value
-  const fileName = sanitizeFileName(file.name)
-  uploading.value = true
-  uploadProgress.value = 0
-
-  if (!file || !fileName.endsWith('.pdf')) {
-    alert('Only .pdf files are allowed.')
-    return
-  }
-
-  loading.value = true
-  const bucket = 'documents'
+async function handleCancelMetadata(cancelledData) {
+  const fileName = cancelledData?.file_name
+  if (!fileName) return
 
   try {
-    const alreadyExists = await fileExists(fileName)
-
-    if (alreadyExists) {
-      alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
-      return
-    }
-
-    // Fake progress bar animation
-    const progressInterval = setInterval(() => {
-      if (uploadProgress.value < 90) {
-        uploadProgress.value += 1
-      }
-    }, 200)
-
-    // NLP processing for PDFs
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('filename', fileName)
-
-    const response = await axios.post('http://localhost:8000/process-text', formData)
-
-    if (response.data.status === 'ocr_required') {
-      console.log('Fallback to OCR...')
-      console.log(response.data)
-      const base64Image = response.data.image_base64
-      const previewImage = response.data.preview
-
-      // OCR the image
-      const result = await Tesseract.recognize(`data:image/png;base64,${base64Image}`, 'eng', {
-        tessedit_char_whitelist:
-          'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,;:!?()[]{}-_"\'',
-      })
-      const text = result.data.text
-
-      // Send extracted text to FastAPI for NLP
-      const nlpForm = new FormData()
-      nlpForm.append('filename', file.name)
-      nlpForm.append('raw_text', text)
-      nlpForm.append('preview', previewImage)
-
-      nlpMetadata = await axios.post('http://localhost:8000/process-text', nlpForm)
-    } else {
-      // Use the metadata returned from FastAPI
-      nlpMetadata = response
-    }
-    console.log('NLP Metadata:', nlpMetadata.data)
-
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage.from(bucket).upload(`${fileName}`, file, {
-      cacheControl: '3600',
-      upsert: true,
-      contentType: 'application/pdf',
-    })
-
-    const previewBlob = await (async () => {
-      const base64 = nlpMetadata.data.preview.replace(/^data:image\/png;base64,/, '')
-      const binary = atob(base64)
-      const byteArray = Uint8Array.from(binary, (c) => c.charCodeAt(0))
-      return new Blob([byteArray], { type: 'image/png' })
-    })()
-
-    const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
-
-    const { data, error } = await supabase.storage
-      .from('pdf-previews')
-      .upload(previewFileName, previewBlob, {
-        contentType: 'image/png',
-        upsert: true,
-      })
-
-    if (error) {
-      console.error('Upload error:', error)
-      alert('Failed to upload preview.')
-      return
-    }
-
-    console.log('Upload successful:', data)
-
-    clearInterval(progressInterval)
-    uploadProgress.value = 100
-
-    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(`${fileName}`)
-    const fileUrl = urlData.publicUrl
-
-    const { data: previewData } = supabase.storage
-      .from('pdf-previews')
-      .getPublicUrl(`${previewFileName}`)
-    const previewUrl = previewData.publicUrl
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-      alert('Upload failed.')
-      return
-    }
-
-    // Save metadata
-    const insertData = {
-      file_name: fileName,
-      file_url: fileUrl,
-      uploaded_at: new Date(),
-      updated_at: new Date(),
-      preview_url: previewUrl,
-      metadata: nlpMetadata.data,
-    }
-
-    const { error: dbError } = await supabase.from('documents_metadata').insert([insertData])
-    if (dbError) {
-      console.error('Supabase insert error:', dbError)
-      alert('Upload succeeded but metadata failed to save.')
-      return
-    }
-
-    console.log('Metadata', nlpMetadata.data)
-
-    setTimeout(() => {
-      uploading.value = false
-      uploadProgress.value = 0
-    }, 1000)
-
-    // Open metadata confirmation dialog
-    metadata.value = {
-      file_name: fileName,
-      file_url: fileUrl,
-      title: nlpMetadata.data.title || '',
-      author: nlpMetadata.data.author || '',
-      date: nlpMetadata.data.date || '',
-      summary: nlpMetadata.data.summary || '',
-      keywords: nlpMetadata.data.keywords || [],
-      categories: nlpMetadata.data.categories || [],
-    }
-
-    dialog.value = true
+    const { error } = await supabase.from('documents_metadata').delete().eq('file_name', fileName)
+    if (error) console.error('Error deleting cancelled metadata:', error)
+    else console.log('Cancelled metadata removed.')
   } catch (err) {
-    console.error('Upload failed:', err)
-    alert('Upload failed. See console for details.')
+    console.error('Failed to cancel and delete metadata:', err)
   } finally {
-    loading.value = false
+    dialog.value = false
     uploading.value = false
     uploadProgress.value = 0
   }
 }
 
-async function fileExists(fileName) {
-  const { data, error } = await supabase
-    .from('documents_metadata')
-    .select('file_name')
-    .eq('file_name', fileName)
-
-  if (!data || data.length === 0) return false
-
-  if (error) {
-    console.error('Error checking file existence:', error)
-    return false
-  }
-
-  return !!data
-}
-
 async function saveMetadata(updatedMetadata) {
-  console.log('Saving metadata: ', updatedMetadata)
   try {
     const { error } = await supabase
       .from('documents_metadata')
@@ -806,33 +724,83 @@ async function saveMetadata(updatedMetadata) {
   }
 }
 
-async function handleCancelMetadata(cancelledData) {
+const handleUpload = async () => {
+  const file = selectedFile.value
+  const fileName = sanitizeFileName(file?.name || '')
+
+  uploading.value = true
+  uploadProgress.value = 0
+
+  if (!file || !file.name.endsWith('.pdf')) {
+    alert('Only .pdf files are allowed.')
+    return
+  }
+
+  loading.value = true
+
   try {
-    const fileName = cancelledData.file_name
-
-    if (!fileName) return
-
-    const { error } = await supabase.from('documents_metadata').delete().eq('file_name', fileName)
-
-    if (error) {
-      console.error('Error deleting cancelled metadata:', error)
-    } else {
-      console.log('Cancelled metadata removed successfully.')
+    const exists = await fileExists(fileName)
+    if (exists) {
+      alert(`A file named "${fileName}" already exists.`)
+      return
     }
+
+    const progressInterval = setInterval(() => {
+      if (uploadProgress.value < 90) uploadProgress.value += 1
+    }, 200)
+
+    let response = await processFileWithNLP(file, fileName)
+    if (response.data.status === 'ocr_required') {
+      response = await processImageWithOCR(
+        response.data.image_base64,
+        fileName,
+        response.data.preview,
+      )
+    }
+
+    const nlpData = response.data
+    const uploadError = await uploadFileToSupabase(file, fileName)
+    if (uploadError) throw uploadError
+
+    const base64Preview = nlpData.preview.replace(/^data:image\/png;base64,/, '')
+    const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
+    const previewUploadError = await uploadPreviewImage(base64Preview, previewFileName)
+    if (previewUploadError) throw previewUploadError
+
+    clearInterval(progressInterval)
+    uploadProgress.value = 100
+
+    const fileUrl = supabase.storage.from('documents').getPublicUrl(fileName).data.publicUrl
+    const previewUrl = supabase.storage.from('pdf-previews').getPublicUrl(previewFileName)
+      .data.publicUrl
+
+    const { error: dbError } = await saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData)
+    if (dbError) {
+      console.error('DB error:', dbError)
+      alert('Upload succeeded but metadata failed to save.')
+      return
+    }
+
+    metadata.value = {
+      file_name: fileName,
+      file_url: fileUrl,
+      title: nlpData.title || '',
+      author: nlpData.author || '',
+      date: nlpData.date || '',
+      summary: nlpData.summary || '',
+      keywords: nlpData.keywords || [],
+      categories: nlpData.categories || [],
+    }
+
+    dialog.value = true
   } catch (err) {
-    console.error('Failed to cancel and delete metadata:', err)
+    console.error('Upload failed:', err)
+    alert('Upload failed. See console for details.')
   } finally {
-    dialog.value = false
     uploading.value = false
+    loading.value = false
     uploadProgress.value = 0
   }
-}
-
-function handleCancel() {
-  selectedFile.value = null
-  showDialog.value = false
-  uploading.value = false
-  uploadProgress.value = 0
 }
 
 const openBookmarkDialog = async (doc, type = 'document') => {
