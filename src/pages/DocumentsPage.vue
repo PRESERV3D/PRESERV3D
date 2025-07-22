@@ -218,6 +218,7 @@
                     :key="option"
                     clickable
                     v-close-popup
+                    class="collection-sort-menu"
                     @click="((sortOption = option), onSort(option))"
                   >
                     <q-item-section>{{ option }}</q-item-section>
