@@ -3,7 +3,7 @@
     <div class="column items-center q-mb-md">
       <label class="form-title">SIGN UP</label>
       <label class="subtitle-logsign">Choose Role</label>
-      <div class="column q-gutter-lg q-py-xl">
+      <div class="column q-gutter-lg q-mt-md">
         <q-btn label="PUP Student" class="roles-box" no-caps />
         <q-btn label="PUP Faculty" class="roles-box" no-caps />
         <q-btn
@@ -14,7 +14,7 @@
         />
       </div>
     </div>
-    <!-- Back to Login link -->
+
     <div class="row justify-end q-mt-md">
       <router-link to="/admin/login" class="login-back-font">Back to Log In</router-link>
     </div>
@@ -38,8 +38,9 @@
 .login-back-font {
   font-family: 'Poppins', sans-serif;
   font-weight: 500;
-  font-size: 16px;
-  color: #616161;
+  font-size: 14px;
+  color: #000000;
   text-decoration: none;
+  margin-top: 3rem;
 }
 </style>
