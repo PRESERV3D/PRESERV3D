@@ -888,3 +888,16 @@ onUnmounted(() => {
   searchStore.clear()
 })
 </script>
+
+<style scoped>
+
+.view-icon {
+  color: #7c7c7c;
+  font-size: 18px;
+}
+
+.view-icon:hover {
+  background-color: rgba(136, 0, 0, 0.1);
+}
+
+</style>

@@ -1,3 +1,4 @@
+<!--USER DASHBOARD-->
 <template>
   <q-page class="q-pa-md">
     <!-- Header Section with User Greeting -->
@@ -64,13 +65,13 @@
                   "
                 />
                 <!-- FIXED: Added item_type parameter to star toggle -->
-                <!--           <q-btn
+                <q-btn
                   flat
                   round
                   :icon="item.starred ? 'star' : 'star_border'"
                   class="star-icon"
                   @click="toggleStar(item.id, item.item_type)"
-                /> -->
+                />
               </div>
             </div>
           </div>
@@ -119,22 +120,23 @@
                     </div>
                   </router-link>
                   <div class="action-icons">
-                    <!-- FIXED: Added 'artifact' parameter to bookmark toggle
+<!--FIXED: Added 'artifact' parameter to bookmark toggle-->
                     <q-icon
                       :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                       class="action-icon bookmark-icon"
                       :class="{ bookmarked: model.bookmarked }"
                       size="18px"
                       @click.stop="toggleBookmark(model.id, 'artifact')"
-                    /> -->
-                    <!-- FIXED: Added 'artifact' parameter to star toggle -->
-                    <!-- <q-icon
+                      />
+
+<!-- FIXED: Added 'artifact' parameter to star toggle -->
+                    <q-icon
                       :name="model.starred ? 'star' : 'star_border'"
                       class="action-icon star-icon"
                       :class="{ starred: model.starred }"
                       size="18px"
                       @click.stop="toggleStar(model.id, 'artifact')"
-                    /> -->
+                    />
                   </div>
                 </div>
               </q-card-section>
@@ -181,8 +183,9 @@
                   </q-item>
                 </q-list>
               </q-menu>
-            </q-btn>
-            Sort Icon Button with Menu
+            </q-btn> -->
+
+<!--            Sort Icon Button with Menu-->
             <q-btn
               flat
               round
@@ -205,7 +208,7 @@
               </q-menu>
             </q-btn>
 
-            -->
+
           </div>
         </div>
         <!-- Loading Spinner for Collections -->
@@ -370,9 +373,9 @@ const newCollection = ref({ coverFile: null })
 
 // ADDED: Filter and Sort reactive variables from INDEX page
 // const selectedFilter = ref('All')
-// const selectedSort = ref('Recent')
+const selectedSort = ref('Recent')
 // // const showFilterMenu = ref(false)
-// const showSortMenu = ref(false)
+const showSortMenu = ref(false)
 
 // ADDED: Filter and sort options from INDEX page
 // const filterOptions = ['All', 'Documents', 'PDFs', 'Images', 'Recent']
@@ -603,51 +606,51 @@ async function viewItem(item) {
 }
 
 // FIXED: Toggle star with proper parameter handling and database updates
-// const toggleStar = async (itemId, itemType = 'artifact') => {
-//   try {
-//     if (itemType === 'artifact') {
-//       const model = modelStore.models.find((m) => m.id === itemId)
-//       if (model) {
-//         model.starred = !model.starred
-//         // ADDED: Database update from INDEX page logic
-//         await supabase
-//           .from('artifacts_metadata')
-//           .update({ starred: model.starred })
-//           .eq('id', itemId)
-//       }
-//     } else {
-//       // ADDED: Handle recent items star toggle
-//       const item = recentItems.value.find((i) => i.id === itemId)
-//       if (item) {
-//         item.starred = !item.starred
-//         // Update in appropriate table
-//         const tableName = itemType === 'artifact' ? 'artifacts_metadata' : 'documents_metadata'
-//         await supabase.from(tableName).update({ starred: item.starred }).eq('id', itemId)
-//       }
-//     }
-//   } catch (err) {
-//     console.error('Error toggling star:', err)
-//   }
-// }
+const toggleStar = async (itemId, itemType = 'artifact') => {
+  try {
+    if (itemType === 'artifact') {
+      const model = modelStore.models.find((m) => m.id === itemId)
+      if (model) {
+        model.starred = !model.starred
+        // ADDED: Database update from INDEX page logic
+        await supabase
+          .from('artifacts_metadata')
+          .update({ starred: model.starred })
+          .eq('id', itemId)
+      }
+    } else {
+      // ADDED: Handle recent items star toggle
+      const item = recentItems.value.find((i) => i.id === itemId)
+      if (item) {
+        item.starred = !item.starred
+        // Update in appropriate table
+        const tableName = itemType === 'artifact' ? 'artifacts_metadata' : 'documents_metadata'
+        await supabase.from(tableName).update({ starred: item.starred }).eq('id', itemId)
+      }
+    }
+  } catch (err) {
+    console.error('Error toggling star:', err)
+  }
+}
 
 // FIXED: Toggle bookmark with proper parameter handling and database updates
-// const toggleBookmark = async (itemId, itemType = 'artifact') => {
-//   try {
-//     if (itemType === 'artifact') {
-//       const model = modelStore.models.find((m) => m.id === itemId)
-//       if (model) {
-//         model.bookmarked = !model.bookmarked
-//         // ADDED: Database update from INDEX page logic
-//         await supabase
-//           .from('artifacts_metadata')
-//           .update({ bookmarked: model.bookmarked })
-//           .eq('id', itemId)
-//       }
-//     }
-//   } catch (err) {
-//     console.error('Error toggling bookmark:', err)
-//   }
-// }
+const toggleBookmark = async (itemId, itemType = 'artifact') => {
+  try {
+    if (itemType === 'artifact') {
+      const model = modelStore.models.find((m) => m.id === itemId)
+      if (model) {
+        model.bookmarked = !model.bookmarked
+        // ADDED: Database update from INDEX page logic
+        await supabase
+          .from('artifacts_metadata')
+          .update({ bookmarked: model.bookmarked })
+          .eq('id', itemId)
+      }
+    }
+  } catch (err) {
+    console.error('Error toggling bookmark:', err)
+  }
+}
 
 // FIXED: Added proper filter and sort handler functions
 // const selectFilter = (option) => {
@@ -655,10 +658,10 @@ async function viewItem(item) {
 //   showFilterMenu.value = false
 // }
 
-// const selectSort = (option) => {
-//   selectedSort.value = option
-//   showSortMenu.value = false
-// }
+const selectSort = (option) => {
+  selectedSort.value = option
+  showSortMenu.value = false
+}
 
 // Navigation functions
 function goToCollectionDetailsPage(collectionId) {
@@ -752,3 +755,126 @@ async function addCollection() {
   }
 }
 </script>
+
+<style scoped>
+
+.card {
+  background: #121212 !important;
+  background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%) !important;
+  position: relative;
+  flex: 1;
+}
+
+.card {
+  transition: transform 0.3s ease;
+  will-change: transform;
+  transform: scale(1);
+}
+
+
+.card-wrapper:hover .my-card {
+  transform: scale(1.012);
+}
+
+.my-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.my-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.artifact-card-section {
+  flex-shrink: 0;
+}
+
+/* STYLING
+/* Recently Viewed Item Styles */
+.recently-viewed-item {
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.recently-viewed-item:hover {
+  background-color: rgba(136, 0, 0, 0.05);
+}
+
+.circular-holder {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: rgba(136, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.circle-icon-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 25px; /* Make it much bigger */
+  z-index: 10;
+}
+
+.circular-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.item-details {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.artifact-name {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #560505;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.view-info {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: #7c7c7c;
+  margin: 0;
+  margin-top: 2px;
+}
+
+
+.view-icon {
+  color: #7c7c7c;
+  font-size: 18px;
+}
+
+.view-icon:hover {
+  background-color: rgba(136, 0, 0, 0.1);
+}
+
+
+.artifact-title-link {
+  text-decoration: none;
+  flex: 1;
+}
+
+.artifact-title-link:hover {
+  color: #560505;
+}
+
+</style>
