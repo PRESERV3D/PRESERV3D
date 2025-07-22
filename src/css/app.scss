@@ -413,6 +413,23 @@ document-title-2 {
   box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
 }
 
+.box-3 {
+  border-radius: 15px;
+  background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
+  flex: 2;
+  min-width: 0;
+  height: 35rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+}
+
+.title-font-2 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  color: #560505;
+  margin-top: 1.3rem;
+}
+
 .btn-1 {
   border-radius: 10px;
   background-color: rgba(136, 0, 0, 0.07);
@@ -425,20 +442,6 @@ document-title-2 {
 .btn-1.active {
   background-color: #880000;
   color: #ffffff;
-}
-
-.graph {
-  width: 20rem;
-  align-self: center;
-}
-
-.box-3 {
-  border-radius: 15px;
-  background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
-  flex: 2;
-  min-width: 0;
-  height: 35rem;
-  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
 }
 
 .layout-container {

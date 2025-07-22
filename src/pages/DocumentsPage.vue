@@ -91,7 +91,7 @@
     <!-- Document Highlights Section -->
     <div class="column q-py-md q-gutter-lg">
       <div class="box-highlights">
-        <p class="q-ml-lg admin-title-2" style="font-size: 16px">Document Highlights</p>
+        <p class="q-ml-lg title-font-2" style="font-size: 16px">Document Highlights</p>
         <div class="row docs-gap justify-start">
           <div v-for="(doc, index) in documentsStore.documents.slice(0, 3)" :key="index">
             <div class="row q-mb-lg">
@@ -139,7 +139,7 @@
       <!-- Box Category -->
       <div class="box-category">
         <div class="q-pa-lg">
-          <p class="admin-title-2" style="font-size: 16px; margin-top: 0">Category</p>
+          <p class="title-font-2" style="font-size: 16px; margin-top: 0">Category</p>
           <div class="row q-col-gutter-md q-mb-md justify-between items-center">
             <!-- Category Section -->
             <div class="row q-gutter-sm col-auto">

@@ -23,7 +23,7 @@
       </div>
 
       <div class="q-mt-xs box-2">
-        <p class="q-ml-lg admin-title-2">Uploaded Archives</p>
+        <p class="q-ml-lg title-font-2">Uploaded Archives</p>
         <div class="column">
           <div class="row q-gutter-md q-ml-sm">
             <q-btn
@@ -59,7 +59,7 @@
     <div class="row q-my-lg">
       <div class="column box-3 q-px-lg">
         <div class="row item-center justify-between q-mb-sm">
-          <p class="q-ml-md admin-title-2">Reports</p>
+          <p class="q-ml-md title-font-2">Reports</p>
           <!-- <div class="q-mt-md">
               <q-btn label="Generate Report" class="btn-report" no-caps />
             </div> -->
@@ -144,7 +144,7 @@
       </div>
 
       <div class="box-4">
-        <p class="q-ml-lg admin-title-2">Recently Uploaded</p>
+        <p class="q-ml-lg title-font-2">Recently Uploaded</p>
 
         <div class="column q-mt-lg items-center">
           <div class="recent-box q-pa-xs column items-center">
@@ -215,14 +215,6 @@
   margin-top: 1rem;
 }
 
-.admin-title-2 {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 20px;
-  color: #560505;
-  margin-top: 1.3rem;
-}
-
 .admin-subtitle {
   font-family: 'Poppins', sans-serif;
   font-weight: 100;
@@ -233,6 +225,11 @@
 .trophies {
   height: 15rem;
   width: 15rem;
+}
+
+.graph {
+  width: 20rem;
+  align-self: center;
 }
 
 .box-legend {
