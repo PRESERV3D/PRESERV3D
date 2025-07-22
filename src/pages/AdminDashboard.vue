@@ -206,138 +206,6 @@
   </q-page>
 </template>
 
-<style scoped>
-.sub-font {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 500;
-  font-size: 16px;
-  color: #560505;
-}
-
-.trophies {
-  height: 15rem;
-  width: 15rem;
-}
-
-.graph {
-  width: 20rem;
-  align-self: center;
-}
-
-.box-legend {
-  margin-top: 1.1rem;
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-}
-
-.number {
-  background-color: rgba(204, 172, 0, 0.2);
-  color: #560505;
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  width: 25px;
-  height: 25px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.users-graph {
-  margin-top: 5rem;
-  width: 22rem;
-}
-
-.btn-report {
-  border-radius: 7px;
-  background-color: rgba(204, 172, 0, 0.7);
-  color: #121212;
-  font-size: 12px;
-  font-family: 'Poppins', sans-serif;
-  font-weight: 500;
-  height: 2rem;
-  width: 9rem;
-  margin-right: 0.5rem;
-}
-
-.box-report {
-  background-color: rgba(136, 0, 0, 0.07);
-  border-radius: 12px;
-  height: 4.5rem;
-  font-family: 'Poppins', sans-serif;
-  color: #7c7c7c;
-  display: flex;
-  text-align: center;
-  align-items: center;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.number-report {
-  font-weight: 600;
-  font-size: 28px;
-  color: #121212;
-  margin-top: 1rem;
-}
-
-.label {
-  font-size: 12px;
-  margin-bottom: 1rem;
-}
-
-.box-4 {
-  border-radius: 15px;
-  background: linear-gradient(25deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
-  margin-left: 3rem;
-  flex: 1;
-  min-width: 0;
-  height: 35rem;
-  height: auto;
-  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
-  justify-content: center;
-}
-.recent-box {
-  width: 15rem;
-  height: 22rem;
-  background-color: #000000;
-  border-radius: 10px;
-  width: 15rem;
-}
-
-.recent-card {
-  margin-top: 0.5rem;
-  width: 13rem;
-  height: 15rem;
-  border-radius: 10px;
-  background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
-  flex-shrink: 0;
-}
-.arrow-button {
-  margin-top: 3.5rem;
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.3s ease;
-  border: 2px solid transparent;
-}
-
-.arrow-button:hover {
-  border: 2px solid rgba(0, 0, 0, 0.5);
-  background-color: transparent;
-}
-
-.btn-arrows {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  pointer-events: none;
-}
-</style>
-
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import '@google/model-viewer'
@@ -564,3 +432,135 @@ function imgProps(item) {
   }
 }
 </script>
+
+<style scoped>
+.sub-font {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  color: #560505;
+}
+
+.trophies {
+  height: 15rem;
+  width: 15rem;
+}
+
+.graph {
+  width: 20rem;
+  align-self: center;
+}
+
+.box-legend {
+  margin-top: 1.1rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.number {
+  background-color: rgba(204, 172, 0, 0.2);
+  color: #560505;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.users-graph {
+  margin-top: 5rem;
+  width: 22rem;
+}
+
+.btn-report {
+  border-radius: 7px;
+  background-color: rgba(204, 172, 0, 0.7);
+  color: #121212;
+  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  height: 2rem;
+  width: 9rem;
+  margin-right: 0.5rem;
+}
+
+.box-report {
+  background-color: rgba(136, 0, 0, 0.07);
+  border-radius: 12px;
+  height: 4.5rem;
+  font-family: 'Poppins', sans-serif;
+  color: #7c7c7c;
+  display: flex;
+  text-align: center;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.number-report {
+  font-weight: 600;
+  font-size: 28px;
+  color: #121212;
+  margin-top: 1rem;
+}
+
+.label {
+  font-size: 12px;
+  margin-bottom: 1rem;
+}
+
+.box-4 {
+  border-radius: 15px;
+  background: linear-gradient(25deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
+  margin-left: 3rem;
+  flex: 1;
+  min-width: 0;
+  height: 35rem;
+  height: auto;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+  justify-content: center;
+}
+.recent-box {
+  width: 15rem;
+  height: 22rem;
+  background-color: #000000;
+  border-radius: 10px;
+  width: 15rem;
+}
+
+.recent-card {
+  margin-top: 0.5rem;
+  width: 13rem;
+  height: 15rem;
+  border-radius: 10px;
+  background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
+  flex-shrink: 0;
+}
+.arrow-button {
+  margin-top: 3.5rem;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.arrow-button:hover {
+  border: 2px solid rgba(0, 0, 0, 0.5);
+  background-color: transparent;
+}
+
+.btn-arrows {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  pointer-events: none;
+}
+</style>

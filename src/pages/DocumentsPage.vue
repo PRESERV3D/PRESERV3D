@@ -329,73 +329,6 @@
   </q-page>
 </template>
 
-<style scoped>
-.box-highlights {
-  border-radius: 10px;
-  background-color: #ffffff;
-  width: auto;
-  height: auto;
-  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
-}
-
-.box-category {
-  border-radius: 10px;
-  background-color: #ffffff;
-  width: auto;
-  height: auto;
-  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
-}
-
-.bg-highlights-details {
-  background-color: #880000;
-  width: 13rem;
-  height: 12rem;
-  margin-top: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 5px 5px 3px #bab7b7;
-}
-
-.title-highlight {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 800;
-  font-size: 18px;
-  color: #ffffff;
-  padding: 1.5rem 1rem 0.2rem 1rem;
-}
-
-.sub-details {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 200;
-  font-size: 10px;
-  color: #ffffff;
-  line-height: 1rem;
-  padding: 0.5rem 1rem 1rem 1rem;
-  height: 5rem;
-  overflow: hidden;
-  position: relative;
-  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-  -webkit-mask-image: -webkit-linear-gradient(to bottom, black 60%, transparent 100%);
-}
-
-.now-read-btn {
-  font-family: 'Poppins', sans-serif;
-  font-size: 10px;
-  font-weight: 200;
-  color: white;
-  background-color: transparent;
-  border: 1px solid white;
-  padding: 0.3rem 1rem;
-  width: 8rem;
-  text-transform: none;
-  transition: 0.3s ease;
-}
-
-.now-read-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: #ffffff;
-}
-</style>
-
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useDocumentsStore } from 'stores/documentsStore'
@@ -1038,3 +971,70 @@ onUnmounted(() => {
   searchStore.clear()
 })
 </script>
+
+<style scoped>
+.box-highlights {
+  border-radius: 10px;
+  background-color: #ffffff;
+  width: auto;
+  height: auto;
+  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+}
+
+.box-category {
+  border-radius: 10px;
+  background-color: #ffffff;
+  width: auto;
+  height: auto;
+  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+}
+
+.bg-highlights-details {
+  background-color: #880000;
+  width: 13rem;
+  height: 12rem;
+  margin-top: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 5px 5px 3px #bab7b7;
+}
+
+.title-highlight {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  color: #ffffff;
+  padding: 1.5rem 1rem 0.2rem 1rem;
+}
+
+.sub-details {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 200;
+  font-size: 10px;
+  color: #ffffff;
+  line-height: 1rem;
+  padding: 0.5rem 1rem 1rem 1rem;
+  height: 5rem;
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  -webkit-mask-image: -webkit-linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+.now-read-btn {
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  font-weight: 200;
+  color: white;
+  background-color: transparent;
+  border: 1px solid white;
+  padding: 0.3rem 1rem;
+  width: 8rem;
+  text-transform: none;
+  transition: 0.3s ease;
+}
+
+.now-read-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: #ffffff;
+}
+</style>
