@@ -6,7 +6,7 @@
     </div>
     <q-form @submit.prevent="loginAdmin">
       <div class="column q-gutter-sm">
-        <label class="names">Email</label>
+        <label class="labelNames">Email</label>
         <q-input
           filled
           v-model="form.email"
@@ -18,7 +18,7 @@
           ]"
           class="login-text-box"
         />
-        <label class="names">Password</label>
+        <label class="labelNames">Password</label>
         <q-input
           filled
           v-model="form.password"

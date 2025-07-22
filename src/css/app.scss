@@ -157,7 +157,10 @@ document-title-2 {
     align-items: flex-start;
   }
 
-
+  .artifact-btn {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 //
@@ -593,10 +596,12 @@ document-title-2 {
   box-sizing: border-box;
 }
 
+// startline (to be rename and moved only in document page
 .upload-icon-docu {
   width: 6rem;
   height: 6rem;
 }
+// endline
 
 .drag-over {
   border: 2px dashed #1976d2;
@@ -1150,7 +1155,8 @@ document-title-2 {
   margin-bottom: 0.5rem;
 }
 
-.artifact-title-link {
+.artifact-title-link,
+.document-title-2-link {
   text-decoration: none;
   flex: 1;
 }

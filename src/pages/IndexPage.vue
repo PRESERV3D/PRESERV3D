@@ -5,10 +5,10 @@
     <div class="layout-container">
       <div class="box-1 row items-center">
         <div class="col-7 q-gutter-xs">
-          <p class="q-ml-xl admin-title">
+          <p class="q-ml-xl dash-title">
             <span v-if="userStore.profile">Welcome Back, {{ userStore.profile.first_name }}!</span>
           </p>
-          <p class="q-ml-xl admin-subtitle">
+          <p class="q-ml-xl dash-subtitle">
             <span v-if="userStore.profile?.role === 'admin'">(Admin Access) - </span>
             Explore University artifacts, historic documents, and <br />
             virtual museum exhibits.
@@ -29,7 +29,7 @@
 
       <!-- Recently Viewed Section -->
       <div class="box-2">
-        <p class="q-ml-lg admin-title-2">Recently Viewed</p>
+        <p class="q-ml-lg title-font-2">Recently Viewed</p>
         <div class="q-px-md q-pb-md">
           <div v-if="recentItems.length > 0" class="column q-gutter-xs">
             <div
@@ -84,7 +84,7 @@
     <div class="layout-container q-my-lg">
       <div class="box-3 q-px-lg">
         <div class="row item-center justify-between q-mb-sm">
-          <p class="q-ml-lg admin-title-2">New in the Archives</p>
+          <p class="q-ml-lg title-font-2">New in the Archives</p>
         </div>
 
         <!-- Loading Spinner for Featured Models -->
@@ -150,7 +150,7 @@
     <div class="layout-container q-my-lg">
       <div class="box-3 q-px-lg">
         <div class="row items-center justify-between q-mb-sm q-mt-sm">
-          <p class="q-ml-lg admin-title-2">Collections</p>
+          <p class="q-ml-lg title-font-2">Collections</p>
           <!-- Filter, Sort, and Add New button in the upper right -->
           <div class="row q-gutter-sm items-center q-pr-sm">
             <q-btn
