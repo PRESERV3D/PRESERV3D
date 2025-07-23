@@ -4,7 +4,7 @@
       <label class="form-title">SIGN UP</label>
       <label class="subtitle-logsign">Choose Role</label>
       <div class="column q-gutter-lg q-mt-md">
-        <q-btn label="PUP Student" class="roles-box" no-caps />
+        <q-btn label="PUP Student" class="roles-box" no-caps @click="goToStudentRegister" />
         <q-btn label="PUP Faculty" class="roles-box" no-caps />
         <q-btn
           label="Visitor"
@@ -22,7 +22,15 @@
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+function goToStudentRegister() {
+  router.push('/user/register')
+}
+</script>
 
 <style scoped>
 .roles-box {
