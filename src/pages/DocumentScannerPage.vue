@@ -57,6 +57,11 @@
         <q-card-actions align="right">
           <q-btn flat label="Cancel" color="secondary" v-close-popup />
           <q-btn label="Save PDF" color="primary" @click="confirmExport" />
+          <q-btn
+            label="Upload to Documents"
+            color="deep-purple"
+            @click="() => confirmExport({ uploadPdf: true })"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -66,7 +71,9 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { jsPDF } from 'jspdf'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const scannedImages = ref([])
 const transformedImage = ref(null)
 const video = ref(null)
@@ -458,7 +465,7 @@ function openExportDialog() {
   pdfFileName.value = 'scanned-document'
 }
 
-async function confirmExport() {
+async function confirmExport({ uploadPdf = false } = {}) {
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -500,12 +507,17 @@ async function confirmExport() {
     pdf.addImage(dataUrl, 'JPEG', x, y, width, height)
   })
 
-  pdf.save(`${pdfFileName.value || 'scanned-document'}.pdf`)
+  // For uploading
+  const pdfBlob = pdf.output('blob')
+  const file = new File([pdfBlob], `${pdfFileName.value}.pdf`, {
+    type: 'application/pdf',
+  })
 
-  // Reset states
-  showExportDialog.value = false
-  scannedImages.value = []
-  formattedPdfSize.value = '0 MB'
+  if (uploadPdf) {
+    router.replace({ name: 'documents', state: { scannedFile: file } })
+  } else {
+    pdf.save(`${pdfFileName.value || 'scanned-document'}.pdf`)
+  }
 
   resetScan()
 }
