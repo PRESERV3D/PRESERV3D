@@ -17,6 +17,7 @@
       </div>
     </div>
 
+    <!-- Upload Dialog -->
     <q-dialog v-model="showDialog" persistent>
       <q-card class="add-documentarti-card">
         <q-card-section
@@ -43,6 +44,14 @@
             your computer
           </div>
           <div v-else class="documentarti-preview text-center">
+            <q-btn
+              dense
+              round
+              flat
+              icon="close"
+              class="thumbnail-delete"
+              @click="deleteSelectedFile"
+            />
             <q-img src="src/assets/img/document-icon.png" alt="Document" class="document-icon" />
             <div class="selected-document-name q-mt-md">
               {{ selectedFile.name }}
@@ -69,8 +78,17 @@
           <q-btn
             v-if="!uploading"
             label="Upload"
+            :disabled="selectedFile === null"
             class="q-ml-xl q-mt-sm btn-save"
             @click="handleUpload"
+            no-caps
+          />
+
+          <q-btn
+            label="Scan"
+            v-if="!uploading"
+            class="q-ml-xl q-mt-sm btn-save"
+            @click="handleScan"
             no-caps
           />
 
@@ -100,7 +118,11 @@
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
                 >
-                  <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
+                  <q-img
+                    :src="doc.preview_url + '?t=' + Date.now()"
+                    alt="Document Preview"
+                    class="document"
+                  />
                 </router-link>
                 <q-btn
                   icon="bookmark_border"
@@ -127,7 +149,7 @@
                     :to="{ name: 'view-document', params: { id: doc.id } }"
                     @click="logClick(doc.id, 'document')"
                   >
-                    <q-btn label="Now Read" class="now-read-btn" unelevated no-caps />
+                    <q-btn label="Read Now" class="now-read-btn" unelevated no-caps />
                   </router-link>
                 </div>
               </div>
@@ -233,7 +255,11 @@
                   class="document-link"
                   @click="logClick(doc.id, 'document')"
                 >
-                  <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
+                  <q-img
+                    :src="doc.preview_url + '?t=' + Date.now()"
+                    alt="Document Preview"
+                    class="document"
+                  />
                 </router-link>
                 <q-btn
                   icon="bookmark_border"
@@ -332,14 +358,13 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useDocumentsStore } from 'stores/documentsStore'
-import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
+import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import Tesseract from 'tesseract.js'
 import axios from 'axios'
-
-import { useSearchStore } from 'stores/searchStore'
 
 const searchStore = useSearchStore()
 const documentsStore = useDocumentsStore()
@@ -373,6 +398,24 @@ if (userStore.profile.role === undefined) {
 
 const userRole = userStore.profile.role
 const isAdmin = computed(() => userRole === 'admin')
+
+// Initial load
+onMounted(async () => {
+  if (!searchStore.query) {
+    await fetchAllDocuments()
+  }
+
+  const scannedFile = history.state?.scannedFile
+  if (scannedFile) {
+    selectedFile.value = scannedFile
+    history.replaceState({}, '', '/documents') // Clear the state after using it
+    showDialog.value = true
+  }
+})
+
+onUnmounted(() => {
+  searchStore.clear()
+})
 
 function showNotifyDialog(title, message) {
   notifyDialogTitle.value = title
@@ -565,7 +608,6 @@ const metadata = ref({
   keywords: [],
   categories: [],
 })
-// let nlpMetadata = {}
 
 function sanitizeFileName(name) {
   return name.replace(/[^\w.-]/g, '_')
@@ -594,11 +636,35 @@ async function uploadFileToSupabase(file, fileName) {
   return error
 }
 
-async function uploadPreviewImage(base64Image, previewFileName) {
-  const binary = atob(base64Image)
-  const byteArray = Uint8Array.from(binary, (c) => c.charCodeAt(0))
+async function generatePdfPreview(file) {
+  // Set the worker source
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${window.pdfjsLib.version}/pdf.worker.min.js`
+
+  const arrayBuffer = await file.arrayBuffer()
+  const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise
+
+  const page = await pdf.getPage(1)
+  const scale = 1.5
+  const viewport = page.getViewport({ scale })
+
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
+  canvas.width = viewport.width
+  canvas.height = viewport.height
+
+  await page.render({ canvasContext: context, viewport }).promise
+
+  // Return base64 string (data URL)
+  return canvas.toDataURL('image/png')
+}
+
+async function uploadPreviewImage(previewDataUrl, previewFileName) {
+  // Remove base64 prefix and convert to binary
+  const base64Data = previewDataUrl.replace(/^data:image\/png;base64,/, '')
+  const byteArray = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))
   const blob = new Blob([byteArray], { type: 'image/png' })
 
+  // Upload using the correct filename
   const { error } = await supabase.storage.from('pdf-previews').upload(previewFileName, blob, {
     contentType: 'image/png',
     upsert: true,
@@ -614,17 +680,22 @@ async function processFileWithNLP(file, fileName) {
   return await axios.post('http://localhost:8000/process-text', formData)
 }
 
-async function processImageWithOCR(base64Image, fileName, preview) {
+async function processImageWithOCR(base64Image, fileName) {
   const result = await Tesseract.recognize(`data:image/png;base64,${base64Image}`, 'eng', {
     tessedit_char_whitelist:
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,;:!?()[]{}-_"\'',
   })
 
   const text = result.data.text
+
+  if (!text || text.trim() === '') {
+    alert('OCR failed — no text detected. Please try again.')
+    return
+  }
+
   const nlpForm = new FormData()
   nlpForm.append('filename', fileName)
   nlpForm.append('raw_text', text)
-  nlpForm.append('preview', preview)
 
   return await axios.post('http://localhost:8000/process-text', nlpForm)
 }
@@ -666,7 +737,15 @@ function onFileDrop(e) {
     selectedFile.value = file
   } else {
     alert('Only PDF files are allowed.')
+    uploading.value = false
   }
+}
+
+function deleteSelectedFile() {
+  selectedFile.value = null
+  isDragging.value = false
+  uploading.value = false
+  uploadProgress.value = 0
 }
 
 function handleCancel() {
@@ -724,6 +803,10 @@ async function saveMetadata(updatedMetadata) {
   }
 }
 
+const handleScan = () => {
+  router.push({ name: 'document-scanner' })
+}
+
 const handleUpload = async () => {
   const file = selectedFile.value
   const fileName = sanitizeFileName(file?.name || '')
@@ -750,22 +833,22 @@ const handleUpload = async () => {
     }, 200)
 
     let response = await processFileWithNLP(file, fileName)
-    if (response.data.status === 'ocr_required') {
-      response = await processImageWithOCR(
-        response.data.image_base64,
-        fileName,
-        response.data.preview,
-      )
-    }
 
+    if (response.data.status === 'ocr_required') {
+      response = await processImageWithOCR(response.data.image_base64, fileName)
+    }
+    console.log('NLP Response:', response.data)
     const nlpData = response.data
+
+    // Generate preview
+    const preview = await generatePdfPreview(file)
+    const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
+
+    const previewUploadError = await uploadPreviewImage(preview, previewFileName)
+    if (previewUploadError) throw previewUploadError
+
     const uploadError = await uploadFileToSupabase(file, fileName)
     if (uploadError) throw uploadError
-
-    const base64Preview = nlpData.preview.replace(/^data:image\/png;base64,/, '')
-    const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
-    const previewUploadError = await uploadPreviewImage(base64Preview, previewFileName)
-    if (previewUploadError) throw previewUploadError
 
     clearInterval(progressInterval)
     uploadProgress.value = 100
@@ -927,15 +1010,4 @@ function resetForm() {
   selectedCollections.value = []
   existingCollectionIds.value = []
 }
-
-// Initial load
-onMounted(async () => {
-  if (!searchStore.query) {
-    await fetchAllDocuments()
-  }
-})
-
-onUnmounted(() => {
-  searchStore.clear()
-})
 </script>

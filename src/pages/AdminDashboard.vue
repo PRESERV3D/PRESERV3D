@@ -423,7 +423,7 @@ function modelViewerProps(url) {
 }
 
 function imgProps(item) {
-  const src = item?.preview_url
+  const src = item?.preview_url + '?t=' + Date.now()
   const alt = item?.metadata?.title || 'No Title'
 
   return {
