@@ -758,24 +758,6 @@ async function addCollection() {
 
 <style scoped>
 
-.card {
-  background: #121212 !important;
-  background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%) !important;
-  position: relative;
-  flex: 1;
-}
-
-.card {
-  transition: transform 0.3s ease;
-  will-change: transform;
-  transform: scale(1);
-}
-
-
-.card-wrapper:hover .my-card {
-  transform: scale(1.012);
-}
-
 .my-card {
   height: 100%;
   display: flex;
