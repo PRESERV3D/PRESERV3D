@@ -5,18 +5,19 @@
       <label class="subtitle-logsign">Choose Role</label>
       <div class="column q-gutter-lg q-mt-md">
         <q-btn label="PUP Student" class="roles-box" no-caps @click="goToStudentRegister" />
-        <q-btn label="PUP Faculty" class="roles-box" no-caps />
+        <q-btn label="PUP Faculty" class="roles-box" no-caps @click="goToFacultyRegister" />
         <q-btn
           label="Visitor"
           class="roles-box"
           style="background-color: #ccac00; color: #560505"
           no-caps
+          @click="goToVisitorRegister"
         />
       </div>
     </div>
 
     <!-- Back to Log In link, now placed outside and anchored to bottom-right -->
-    <router-link to="/admin/login" class="login-back-font fixed-bottom-right">
+    <router-link to="/user/login" class="login-back-font fixed-bottom-right">
       Back to Log In
     </router-link>
   </div>
@@ -29,6 +30,12 @@ const router = useRouter()
 
 function goToStudentRegister() {
   router.push('/user/register')
+}
+function goToFacultyRegister() {
+  router.push('/user/faculty')
+}
+function goToVisitorRegister() {
+  router.push('/user/visitor')
 }
 </script>
 

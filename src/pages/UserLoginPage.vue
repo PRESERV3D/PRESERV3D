@@ -49,7 +49,7 @@
       <div class="column items-center q-mt-md">
         <label class="already">
           Don't have an account?
-          <router-link to="/user/register" name="user-register" class="signup-login-link">
+          <router-link to="/user/register-option" name="user-options" class="signup-login-link">
             Sign Up
           </router-link>
         </label>

@@ -10,7 +10,6 @@
         <div class="column q-gutter-sm">
           <label class="labelNames">First Name</label>
           <q-input
-            filled
             dense
             v-model="form.first_name"
             lazy-rules
@@ -19,7 +18,6 @@
           />
           <label class="labelNames">Last Name</label>
           <q-input
-            filled
             dense
             v-model="form.last_name"
             lazy-rules
@@ -42,7 +40,6 @@
           />
           <label class="labelNames">Contact Number</label>
           <q-input
-            filled
             dense
             v-model="form.contact"
             lazy-rules

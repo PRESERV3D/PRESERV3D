@@ -95,6 +95,16 @@ const routes = [
         name: 'user-register',
         component: () => import('pages/UserRegisterPage.vue'),
       },
+      {
+        path: 'faculty',
+        name: 'faculty-register',
+        component: () => import('pages/UserFacultyPage.vue'),
+      },
+      {
+        path: 'visitor',
+        name: 'visitor-register',
+        component: () => import('pages/UserVisitorPage.vue'),
+      },
     ],
   },
 
