@@ -50,6 +50,7 @@
               <!-- Action icons -->
               <div class="action-icons">
                 <q-icon
+                  v-if="!isAdmin"
                   :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                   class="bookmark-icon q-mr-md"
                   :class="{ bookmarked: model.bookmarked }"
@@ -191,16 +192,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useModelStore } from 'stores/modelStore'
-// import { useUserStore } from 'stores/user'
+import { useUserStore } from 'stores/user'
 import '@google/model-viewer'
 
 const route = useRoute()
 const modelStore = useModelStore()
-// const userStore = useUserStore()
+const userStore = useUserStore()
+
+const userRole = userStore.profile.role
+const isAdmin = computed(() => userRole === 'admin')
 
 const model = ref(null)
 const loading = ref(true)

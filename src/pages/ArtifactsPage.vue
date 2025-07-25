@@ -191,7 +191,7 @@
                 <input
                   type="file"
                   ref="fileInput"
-                  accept=".pdf"
+                  accept=".glb"
                   style="display: none"
                   @change="handleFileChange"
                 />
@@ -356,6 +356,13 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <ConfirmMetadata
+      v-model="dialog"
+      :metadata="metadata"
+      @confirm="saveMetadata"
+      @cancel="handleCancelMetadata"
+    />
   </q-page>
 </template>
 
@@ -365,14 +372,17 @@ import { useModelStore } from 'stores/modelStore'
 import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
+import { useRouter } from 'vue-router'
+import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import '@google/model-viewer'
+
+const router = useRouter()
 
 const modelStore = useModelStore()
 const searchStore = useSearchStore()
 const userStore = useUserStore()
 
 // Reactive data
-const loading = ref(false)
 const searchQuery = ref('')
 const categoryFilter = ref(null)
 const authorFilter = ref(null)
@@ -384,6 +394,16 @@ const itemsToShow = ref('all')
 const categoryOptions = ref([])
 const authorOptions = ref([])
 const dateOptions = ref([])
+
+// Dialog for upload pop up
+const showDialog = ref(false)
+const selectedFile = ref(null)
+const fileInput = ref(null)
+const isDragging = ref(false)
+const dialog = ref(false)
+const loading = ref(false)
+const uploading = ref(false)
+const uploadProgress = ref(0)
 
 // Collection dialog state
 const dialogOpen = ref(false)
@@ -921,4 +941,215 @@ onMounted(async () => {
 onUnmounted(() => {
   searchStore.clear()
 })
+
+// Upload
+const metadata = ref({
+  file_name: '',
+  file_url: '',
+  title: '',
+  author: '',
+  date: '',
+  summary: '',
+  keywords: [],
+  categories: [],
+})
+
+function triggerFileInput() {
+  fileInput.value?.click()
+}
+
+function handleFileChange(event) {
+  const file = event.target.files[0]
+  if (file) {
+    selectedFile.value = file
+  } else {
+    selectedFile.value = null
+  }
+}
+
+function onDragOver() {
+  isDragging.value = true
+}
+
+function onDragLeave() {
+  isDragging.value = false
+}
+
+function onFileDrop(e) {
+  isDragging.value = false
+  const files = e.dataTransfer.files
+  console.log(files)
+  if (files.length > 0 && files[0].name.endsWith('.glb')) {
+    selectedFile.value = files[0]
+  } else {
+    alert('Only GLB files are allowed.')
+  }
+}
+
+function sanitizeFileName(name) {
+  return name.replace(/[^\w.-]/g, '_') // Replace all non-alphanumeric/underscore/dot/dash characters with _
+}
+
+const handleUpload = async () => {
+  const file = selectedFile.value
+  const fileName = sanitizeFileName(file.name)
+  uploading.value = true
+  uploadProgress.value = 0
+
+  if (!file || !fileName.endsWith('.glb')) {
+    alert('Only .glb files are allowed.')
+    return
+  }
+
+  loading.value = true
+
+  try {
+    const alreadyExists = await fileExists(fileName)
+
+    if (alreadyExists) {
+      alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
+      return
+    }
+
+    // Fake progress bar animation
+    const progressInterval = setInterval(() => {
+      if (uploadProgress.value < 90) {
+        uploadProgress.value += 1
+      }
+    }, 200)
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('artifacts')
+      .upload(`${fileName}`, file, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType: 'model/gltf-binary',
+      })
+
+    clearInterval(progressInterval)
+    uploadProgress.value = 100
+
+    const { data: urlData } = supabase.storage.from('artifacts').getPublicUrl(`${fileName}`)
+    const fileUrl = urlData.publicUrl
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError)
+      alert('Upload failed.')
+      return
+    }
+
+    // Save metadata
+    const insertData = {
+      file_name: fileName,
+      file_url: fileUrl,
+      uploaded_at: new Date(),
+      updated_at: new Date(),
+    }
+
+    const { error: dbError } = await supabase.from('artifacts_metadata').insert([insertData])
+    if (dbError) {
+      console.error('Supabase insert error:', dbError)
+      alert('Upload succeeded but metadata failed to save.')
+      return
+    } else {
+      console.log('Upload Success')
+    }
+
+    setTimeout(() => {
+      uploading.value = false
+      uploadProgress.value = 0
+    }, 1000)
+
+    // Open metadata confirmation dialog
+    metadata.value = {
+      file_name: fileName,
+      file_url: fileUrl,
+      title: '',
+      author: '',
+      date: '',
+      summary: '',
+      keywords: [],
+      categories: [],
+    }
+
+    dialog.value = true
+  } catch (err) {
+    console.error('Upload failed:', err)
+    alert('Upload failed. See console for details.')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function fileExists(fileName) {
+  const { data, error } = await supabase
+    .from('artifacts_metadata')
+    .select('file_name')
+    .eq('file_name', fileName)
+
+  if (!data || data.length === 0) return false
+
+  if (error) {
+    console.error('Error checking file existence:', error)
+    return false
+  }
+
+  return !!data
+}
+
+async function saveMetadata(updatedMetadata) {
+  console.log('Saving metadata: ', updatedMetadata)
+  try {
+    const { error } = await supabase
+      .from('artifacts_metadata')
+      .update({
+        metadata: {
+          title: updatedMetadata.title,
+          author: updatedMetadata.author,
+          date: updatedMetadata.date,
+          summary: updatedMetadata.summary,
+          keywords: updatedMetadata.keywords,
+          categories: updatedMetadata.categories,
+        },
+        updated_at: new Date(),
+      })
+      .eq('file_name', metadata.value.file_name)
+
+    if (error) {
+      console.error('Failed to update metadata:', error)
+      alert('Failed to update metadata.')
+    } else {
+      alert('Metadata saved successfully!')
+      dialog.value = false
+      router.push({ name: 'admin-home' })
+    }
+  } catch (err) {
+    console.error('Error saving metadata:', err)
+    alert('Unexpected error occurred.')
+  }
+}
+
+async function handleCancelMetadata(cancelledData) {
+  try {
+    const fileName = cancelledData.file_name
+
+    const { error } = await supabase.from('artifacts_metadata').delete().eq('file_name', fileName)
+
+    if (error) {
+      console.error('Error deleting cancelled metadata:', error)
+    } else {
+      console.log('Cancelled metadata removed successfully.')
+    }
+  } catch (err) {
+    console.error('Failed to cancel and delete metadata:', err)
+  } finally {
+    dialog.value = false
+  }
+}
+
+function handleCancel() {
+  selectedFile.value = null
+  showDialog.value = false
+}
 </script>
