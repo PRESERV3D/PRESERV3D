@@ -122,6 +122,34 @@ async function loginUser() {
       alert('Access denied. Unknown role.')
       await supabase.auth.signOut()
     }
+
+    // ADDED: Ensure Favorites collection exists
+    const { data: favoritesCollection } = await supabase
+      .from('collections')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    if (!favoritesCollection) {
+      const { error: insertError } = await supabase.from('collections').insert([
+        {
+          collection_name: 'Favorites',
+          description: 'Items you marked as favorite will appear here.',
+          user_id: user.id,
+          is_default: true,
+          is_locked: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          cover_url:
+            'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers/favoritescover.png',
+        },
+      ])
+
+      if (insertError) {
+        console.error('Insert collection failed:', insertError)
+      }
+    }
   } catch (err) {
     console.error('Login error:', err)
     alert('An unexpected error occurred. Check the console for details.')

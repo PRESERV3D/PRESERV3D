@@ -6,6 +6,7 @@ export const useModelStore = defineStore('modelStore', {
     models: [],
     filteredModels: [],
     viewCounts: {}, // { [item_id]: view_count }
+    starCounts: {}, // { [item_id]: star_count }
   }),
   actions: {
     setModels(mods) {
@@ -15,6 +16,10 @@ export const useModelStore = defineStore('modelStore', {
     addModel(model) {
       this.models.push(model)
     },
+    updateStarCount(itemId, newCount) {
+      this.starCounts[itemId] = newCount
+    },
+
     async fetchViewCounts() {
       const { data, error } = await supabase
         .from('most_viewed_artifacts')
@@ -28,6 +33,22 @@ export const useModelStore = defineStore('modelStore', {
       // Build a lookup map: { id: count }
       this.viewCounts = data.reduce((acc, row) => {
         acc[row.item_id] = row.view_count
+        return acc
+      }, {})
+    },
+    async fetchStarCounts() {
+      // ADDED: Fetch star counts
+      const { data, error } = await supabase
+        .from('artifacts_star_count')
+        .select('item_id, star_count')
+
+      if (error) {
+        console.error('Error fetching star counts:', error)
+        return
+      }
+
+      this.starCounts = data.reduce((acc, row) => {
+        acc[row.item_id] = row.star_count
         return acc
       }, {})
     },
@@ -47,6 +68,7 @@ export const useModelStore = defineStore('modelStore', {
         return 0
       })
     },
+
     filterBy({ category, author, date }) {
       this.filteredModels = this.models.filter((mod) => {
         const meta = mod.metadata || {}
@@ -64,9 +86,11 @@ export const useModelStore = defineStore('modelStore', {
         return matchesCategory && matchesAuthor && matchesDate
       })
     },
+
     resetFilters() {
       this.filteredModels = this.models
     },
+
     async getModelById(id) {
       try {
         //get title from metadata if available

@@ -337,6 +337,26 @@ async function registerUser() {
         return
       }
 
+      const { error: favoritesCollectionError } = await supabase.from('collections').insert([
+        {
+          collection_name: 'Favorites',
+          description: 'Items you marked as favorite will appear here.',
+          user_id: data.user.id,
+          is_default: true,
+          is_locked: true,
+          created_at: new Date(),
+          updated_at: new Date(),
+          cover_url:
+            'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers//favoritescover.png',
+        },
+      ])
+
+      if (favoritesCollectionError) {
+        console.error(favoritesCollectionError)
+        alert('User created, but failed to create Favorites collection.')
+        return
+      }
+
       alert('Registration successful! Please check your email to confirm your account.')
       router.push('/user/login')
     }
