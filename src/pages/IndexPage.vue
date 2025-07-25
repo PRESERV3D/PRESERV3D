@@ -251,8 +251,20 @@
                 <q-card-section class="q-pa-sm artifact-card-section">
                   <div class="title-row">
                     <div class="collection-title-link">
-                      <div class="text-subtitle2 artifact-title">
+                      <div
+                        class="text-subtitle2 artifact-title row items-center title-with-tooltip"
+                      >
                         {{ collection.collection_name }}
+
+                        <!-- ADDED: Pinned icon for Favorites -->
+                        <q-icon
+                          v-if="collection.collection_name === 'Favorites'"
+                          name="push_pin"
+                          class="q-ml-xs text-primary"
+                          size="18px"
+                        />
+
+                        <div class="tooltip-box">{{ collection.collection_name }}</div>
                       </div>
                     </div>
                   </div>
@@ -484,11 +496,11 @@ const showNotifyDialog = (title, message) => {
   notifyDialogOpen.value = true
 }
 
-// Load collections from Supabase
+// FIXED: Load collections from Supabase
 async function loadCollections(userId) {
   isLoading.value = true
   try {
-    // ADDED: Try-catch wrapper for better error handling
+    // Try-catch wrapper for better error handling
     const { data, error } = await supabase
       .from('collections')
       .select('collection_name, cover_url, collection_id')
@@ -498,7 +510,12 @@ async function loadCollections(userId) {
     if (error) {
       console.error('Error loading collections:', error)
     } else {
-      collections.value = data
+      // Separate and pin the "Favorites" collection
+      const favorites = data.find((c) => c.collection_name === 'Favorites')
+      const others = data.filter((c) => c.collection_name !== 'Favorites')
+
+      // Combine and assign to collections
+      collections.value = favorites ? [favorites, ...others] : others
     }
   } catch (err) {
     console.error('Error loading collections:', err)
