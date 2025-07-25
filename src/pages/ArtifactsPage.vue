@@ -261,16 +261,16 @@
                 </div>
 
                 <!-- Star Icon with Count -->
-                <!--                <div class="icon-with-count">-->
-                <!--                  <q-icon-->
-                <!--                    :name="model.starred ? 'star' : 'star_border'"-->
-                <!--                    class="action-icon star-icon"-->
-                <!--                    :class="{ 'starred': model.starred }"-->
-                <!--                    size="18px"-->
-                <!--                    @click.stop="toggleStar(model.id)"-->
-                <!--                  />-->
-                <!--                  <span class="count-text">{{ model.star_count || 0 }}</span>-->
-                <!--                </div>-->
+                <div class="icon-with-count">
+                  <q-icon
+                    :name="model.starred ? 'star' : 'star_border'"
+                    class="action-icon star-icon"
+                    :class="{ 'starred': model.starred }"
+                    size="18px"
+                    @click.stop="toggleStar(model.id)"
+                  />
+                  <span class="count-text">{{ model.star_count || 0 }}</span>
+                </div>
 
                 <!-- Bookmark Icon -->
                 <q-icon
@@ -512,13 +512,12 @@ const clearFilters = () => {
   applyFilters()
 }
 
-// const toggleStar = (modelId) => {
-//   const model = modelStore.models.find(m => m.id === modelId)
-//   if (model) {
-//     model.starred = !model.starred
-//     // You can add API call here to persist the change
-//   }
-// }
+const toggleStar = (modelId) => {
+  const model = modelStore.models.find(m => m.id === modelId)
+  if (model) {
+    model.starred = !model.starred
+  }
+}
 
 // Collection dialog methods
 const openBookmarkDialog = async (model, type = 'artifact') => {
