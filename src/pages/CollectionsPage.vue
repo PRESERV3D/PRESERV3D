@@ -65,10 +65,18 @@
 
           <div class="q-mt-md fade-title-container">
             <div
-              class="sub-font fade-title"
+              class="sub-font fade-title row items-center"
               style="color: black; font-weight: 600; margin-left: 3rem"
             >
               {{ collection.collection_name }}
+              <!-- ADDED: Pinned icon for Favorites -->
+              <q-icon
+                v-if="collection.collection_name === 'Favorites'"
+                name="push_pin"
+                class="q-ml-xs text-primary"
+                size="18px"
+              >
+              </q-icon>
               <div class="tooltip-box">{{ collection.collection_name }}</div>
             </div>
           </div>
@@ -199,32 +207,44 @@ onMounted(async () => {
   await loadCollections(authUser.id)
 })
 
-// Sorting
+// FIXED: Sorting
 function applySorting() {
   if (!Array.isArray(collections.value)) return
 
+  // Clone the array to prevent mutation issues
+  const allCollections = [...collections.value]
+
+  // Separate "Favorites" collection first
+  const favorites = allCollections.find((c) => c.collection_name === 'Favorites')
+  const others = allCollections.filter((c) => c.collection_name !== 'Favorites')
+
   switch (sortOption.value) {
     case 'Recently Updated': {
-      const updated = collections.value.filter((c) => c.updated_at)
-      const neverUpdated = collections.value.filter((c) => !c.updated_at)
+      const updated = others.filter((c) => c.updated_at)
+      const neverUpdated = others.filter((c) => !c.updated_at)
 
       updated.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
       neverUpdated.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
-      collections.value = [...updated, ...neverUpdated]
+      collections.value = favorites
+        ? [favorites, ...updated, ...neverUpdated]
+        : [...updated, ...neverUpdated]
       break
     }
 
     case 'Newest to Oldest':
-      collections.value.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      others.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      collections.value = favorites ? [favorites, ...others] : others
       break
 
     case 'Oldest to Newest':
-      collections.value.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      others.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      collections.value = favorites ? [favorites, ...others] : others
       break
 
     case 'Alphabetical':
-      collections.value.sort((a, b) => a.collection_name.localeCompare(b.collection_name))
+      others.sort((a, b) => a.collection_name.localeCompare(b.collection_name))
+      collections.value = favorites ? [favorites, ...others] : others
       break
   }
 }
@@ -234,7 +254,7 @@ function setSortOption(option) {
   applySorting()
 }
 
-// Fetch collections
+// FIXED: Load collections from Supabase
 async function loadCollections(userId) {
   const { data, error } = await supabase
     .from('collections')
@@ -244,28 +264,18 @@ async function loadCollections(userId) {
   if (error) {
     console.error('Error loading collections:', error)
   } else {
-    collections.value = data
+    // Separate and pin the "Favorites" collection
+    const favorites = data.find((c) => c.collection_name === 'Favorites')
+    const others = data.filter((c) => c.collection_name !== 'Favorites')
+
+    // Combine and assign to collections
+    collections.value = favorites ? [favorites, ...others] : others
+
+    // Apply sorting
     applySorting()
   }
 
   isLoading.value = false
-}
-
-function triggerFileInput() {
-  fileInput.value.click()
-}
-
-function handleImageUpload(event) {
-  const file = event.target.files[0]
-  if (!file) return
-
-  newCollection.value.coverFile = file
-
-  const reader = new FileReader()
-  reader.onload = () => {
-    previewImage.value = reader.result
-  }
-  reader.readAsDataURL(file)
 }
 
 function resetForm() {
