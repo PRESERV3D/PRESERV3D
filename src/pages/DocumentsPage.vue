@@ -24,20 +24,17 @@
           <!-- Camera Section -->
           <q-card-section
             class="two-box-upload-docuarti camera-section"
-            @click="openCamera"
+            v-if="!selectedFile"
+            @click="handleScan"
           >
-            <q-img
-              src="src/assets/img/camera.png"
-              alt="Camera"
-              class="upload-icon-docu"
-            />
+            <q-img src="src/assets/img/camera.png" alt="Camera" class="upload-icon-docu" />
             <q-btn
               outline
               label="Use Camera"
               class="camera-btn"
-              @click="openCamera"
+              @click="handleScan"
               no-caps
-              style="color: #560505; border-radius: 4px; padding: 4px 24px;"
+              style="color: #560505; border-radius: 4px; padding: 4px 24px"
             />
           </q-card-section>
 
@@ -75,11 +72,7 @@
                 class="thumbnail-delete"
                 @click="deleteSelectedFile"
               />
-              <q-img
-                src="src/assets/img/document-icon.png"
-                alt="Document"
-                class="document-icon"
-              />
+              <q-img src="src/assets/img/document-icon.png" alt="Document" class="document-icon" />
               <div class="selected-document-name q-mt-md">
                 {{ selectedFile.name }}
               </div>
@@ -115,20 +108,7 @@
               no-caps
             />
 
-            <q-btn
-              label="Scan"
-              v-if="!uploading"
-              class="q-ml-xl q-mt-sm btn-save"
-              @click="handleScan"
-              no-caps
-            />
-
-            <q-spinner
-              v-else
-              color="primary"
-              size="2em"
-              class="q-ml-xl q-mt-sm"
-            />
+            <q-spinner v-else color="primary" size="2em" class="q-ml-xl q-mt-sm" />
           </div>
 
           <q-btn
@@ -1169,5 +1149,4 @@ function resetForm() {
   overflow: hidden;
   box-sizing: border-box;
 }
-
 </style>
