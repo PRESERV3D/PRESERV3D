@@ -2,7 +2,7 @@
   <div class="q-pa-md form-container">
     <div class="column items-center">
       <label class="form-title">SIGN UP</label>
-      <label class="subtitle">Let's Get You Set Up</label>
+      <label class="subtitle-logsign">Let's Get You Set Up</label>
     </div>
 
     <q-form @submit.prevent="registerUser">
@@ -10,7 +10,6 @@
         <div class="column q-gutter-sm">
           <label class="labelNames">First Name</label>
           <q-input
-            filled
             dense
             v-model="form.first_name"
             lazy-rules
@@ -19,7 +18,6 @@
           />
           <label class="labelNames">Last Name</label>
           <q-input
-            filled
             dense
             v-model="form.last_name"
             lazy-rules
@@ -42,7 +40,6 @@
           />
           <label class="labelNames">Contact Number</label>
           <q-input
-            filled
             dense
             v-model="form.contact"
             lazy-rules
