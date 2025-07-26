@@ -217,6 +217,25 @@
           </label>
         </div>
       </div>
+      <!-- STEP 3: Evaluating Profile Creation -->
+      <div v-if="step === 3" class="column items-center q-my-md q-gutter-md">
+        <q-img
+          src="src/assets/img/hourglass.png"
+          alt="Pending"
+          class="trophies"
+          style="max-width: 150px"
+        />
+
+        <div class="q-my-md evaluating-title">EVALUATING PROFILE CREATION</div>
+
+        <div class="subtitle-logsign text-center" style="max-width: 360px; margin: 0 auto">
+          Your request has been sent. Please allow 3–5 business days for processing.
+          <div class="q-mt-xl">
+            <!-- change this route to landing page -->
+            <router-link to="/user/login" class="sub-font"> Back to Log In </router-link>
+          </div>
+        </div>
+      </div>
     </q-form>
   </div>
 </template>
@@ -257,6 +276,7 @@ function validateStepOne() {
 
 // Example registerUser function (implement your actual registration logic)
 function registerUser() {
+  step.value = 3
   // Add your registration logic here
 }
 
@@ -297,5 +317,24 @@ const showDialog = ref(false)
   font-size: 10px;
   font-style: italic;
   color: #560505;
+}
+.evaluating-title {
+  font-family: 'Poppins', sans-serif;
+  color: #560505;
+  font-size: 32px;
+  font-weight: 700;
+  max-width: 25rem;
+  text-align: center;
+}
+
+.evaluating-sub {
+  font-family: 'Poppins', sans-serif;
+  color: #616161;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.sub-font {
+  text-decoration: none;
 }
 </style>
