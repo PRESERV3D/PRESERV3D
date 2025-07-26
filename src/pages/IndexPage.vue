@@ -758,6 +758,16 @@ async function addCollection() {
 
 <style scoped>
 
+.layout-container {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.layout-container.no-gap {
+  gap: 0;
+}
+
 .my-card {
   height: 100%;
   display: flex;
@@ -857,6 +867,12 @@ async function addCollection() {
 
 .artifact-title-link:hover {
   color: #560505;
+}
+
+.collection-card {
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 </style>

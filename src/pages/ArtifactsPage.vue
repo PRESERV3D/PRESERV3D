@@ -1,3 +1,4 @@
+<!--Artifact Page-->
 <template>
   <q-page class="q-pa-md">
     <div class="page-header">
