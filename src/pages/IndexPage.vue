@@ -123,7 +123,7 @@
                     <q-icon
                       :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                       class="action-icon bookmark-icon"
-                      :color="model.bookmarked ? 'red' : 'grey'"
+                      :class="{ bookmarked: model.bookmarked }"
                       size="18px"
                       @click.stop="openBookmarkDialog(model, 'artifact')"
                     />
@@ -131,9 +131,9 @@
                     <q-icon
                       :name="model.starred ? 'star' : 'star_border'"
                       class="action-icon star-icon"
-                      :color="model.starred ? 'yellow' : 'grey'"
+                      :class="{ starred: model.starred }"
                       size="18px"
-                      @click.stop="addToFavorites(model, 'artifact')"
+                      @click.stop="toggleFavorite(model, 'artifact')"
                     />
                     <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
                   </div>
@@ -881,8 +881,8 @@ const resetForm2 = () => {
   existingCollectionIds.value = []
 }
 
-// ADDED: Add to favorites
-const addToFavorites = async (model, itemType = 'artifact') => {
+// ADDED: Toggle favorites
+const toggleFavorite = async (model, itemType = 'artifact') => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
 
