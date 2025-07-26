@@ -20,79 +20,116 @@
     <!-- Upload Dialog -->
     <q-dialog v-model="showDialog" persistent>
       <q-card class="add-documentarti-card">
-        <q-card-section
-          class="box-upload-docuarti"
-          @dragover.prevent="onDragOver"
-          @dragleave.prevent="onDragLeave"
-          @drop.prevent="onFileDrop"
-          :class="{ 'drag-over': isDragging }"
-        >
-          <q-img
-            src="src/assets/img/drag-drop-icon.png"
-            alt="Upload-Document"
-            class="upload-icon-docu"
-          />
-          <div
-            v-if="!selectedFile"
-            class="sub-font-3 text-center"
-            style="font-size: 14px; font-weight: 200"
+        <div class="upload-sections-container">
+          <!-- Camera Section -->
+          <q-card-section
+            class="two-box-upload-docuarti camera-section"
+            @click="openCamera"
           >
-            <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
-              DRAG and DROP files
-            </div>
-            or <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a> on
-            your computer
-          </div>
-          <div v-else class="documentarti-preview text-center">
+            <q-img
+              src="src/assets/img/camera.png"
+              alt="Camera"
+              class="upload-icon-docu"
+            />
             <q-btn
-              dense
-              round
-              flat
-              icon="close"
-              class="thumbnail-delete"
-              @click="deleteSelectedFile"
+              outline
+              label="Use Camera"
+              class="camera-btn"
+              @click="openCamera"
+              no-caps
+              style="color: #560505; border-radius: 4px; padding: 4px 24px;"
             />
-            <q-img src="src/assets/img/document-icon.png" alt="Document" class="document-icon" />
-            <div class="selected-document-name q-mt-md">
-              {{ selectedFile.name }}
+          </q-card-section>
+
+          <!-- Upload Section -->
+          <q-card-section
+            class="two-box-upload-docuarti upload-section"
+            @dragover.prevent="onDragOver"
+            @dragleave.prevent="onDragLeave"
+            @drop.prevent="onFileDrop"
+            :class="{ 'drag-over': isDragging }"
+          >
+            <q-img
+              src="src/assets/img/drag-drop-icon.png"
+              alt="Upload-Document"
+              class="upload-icon-docu"
+            />
+            <div
+              v-if="!selectedFile"
+              class="sub-font-3 text-center"
+              style="font-size: 14px; font-weight: 200"
+            >
+              <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
+                DRAG and DROP files
+              </div>
+              or
+              <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a>
+              on your computer
             </div>
-            <!-- Upload progress bar -->
-            <q-linear-progress
-              v-if="uploading"
-              :value="uploadProgress / 100"
-              color="primary"
-              class="q-mt-md full-width"
+            <div v-else class="documentarti-preview text-center">
+              <q-btn
+                dense
+                round
+                flat
+                icon="close"
+                class="thumbnail-delete"
+                @click="deleteSelectedFile"
+              />
+              <q-img
+                src="src/assets/img/document-icon.png"
+                alt="Document"
+                class="document-icon"
+              />
+              <div class="selected-document-name q-mt-md">
+                {{ selectedFile.name }}
+              </div>
+              <!-- Upload progress bar -->
+              <q-linear-progress
+                v-if="uploading"
+                :value="uploadProgress / 100"
+                color="primary"
+                class="q-mt-md full-width"
+              />
+            </div>
+            <input
+              type="file"
+              ref="fileInput"
+              accept=".pdf"
+              style="display: none"
+              @change="handleFileChange"
             />
-          </div>
-          <input
-            type="file"
-            ref="fileInput"
-            accept=".pdf"
-            style="display: none"
-            @change="handleFileChange"
-          />
-        </q-card-section>
+          </q-card-section>
+        </div>
 
         <q-card-actions class="row q-ml-lg justify-between items-center">
           <div></div>
-          <q-btn
-            v-if="!uploading"
-            label="Upload"
-            :disabled="selectedFile === null"
-            class="q-ml-xl q-mt-sm btn-save"
-            @click="handleUpload"
-            no-caps
-          />
 
-          <q-btn
-            label="Scan"
-            v-if="!uploading"
-            class="q-ml-xl q-mt-sm btn-save"
-            @click="handleScan"
-            no-caps
-          />
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <q-btn
+              v-if="!uploading"
+              label="Upload"
+              :disabled="selectedFile === null"
+              class="q-ml-xl q-mt-sm btn-save"
+              @click="handleUpload"
+              no-caps
+            />
 
-          <q-spinner v-else color="primary" size="2em" class="q-ml-xl q-mt-sm" />
+            <q-btn
+              label="Scan"
+              v-if="!uploading"
+              class="q-ml-xl q-mt-sm btn-save"
+              @click="handleScan"
+              no-caps
+            />
+
+            <q-spinner
+              v-else
+              color="primary"
+              size="2em"
+              class="q-ml-xl q-mt-sm"
+            />
+          </div>
 
           <q-btn
             flat
@@ -109,7 +146,7 @@
     <!-- Document Highlights Section -->
     <div class="column q-py-md q-gutter-lg">
       <div class="box-highlights">
-        <p class="q-ml-lg admin-title-2" style="font-size: 16px">Document Highlights</p>
+        <p class="q-ml-lg title-font-2" style="font-size: 16px">Document Highlights</p>
         <div class="row docs-gap justify-start">
           <div v-for="(doc, index) in documentsStore.documents.slice(0, 3)" :key="index">
             <div class="row q-mb-lg">
@@ -125,6 +162,7 @@
                   />
                 </router-link>
                 <q-btn
+                  v-if="!isAdmin"
                   icon="bookmark_border"
                   dense
                   size="sm"
@@ -161,7 +199,7 @@
       <!-- Box Category -->
       <div class="box-category">
         <div class="q-pa-lg">
-          <p class="admin-title-2" style="font-size: 16px; margin-top: 0">Category</p>
+          <p class="title-font-2" style="font-size: 16px; margin-top: 0">Category</p>
           <div class="row q-col-gutter-md q-mb-md justify-between items-center">
             <!-- Category Section -->
             <div class="row q-gutter-sm col-auto">
@@ -177,71 +215,83 @@
             </div>
             <div class="row q-gutter-sm col-auto">
               <!-- Filter Section -->
-              <q-btn flat round icon="filter_list" class="filter-sort-btn">
-                <q-menu anchor="bottom right" self="top left" style="width: 15rem">
-                  <q-list>
-                    <q-item>
-                      <q-item-section>
-                        <q-select
-                          v-model="author"
-                          :options="authorOptions"
-                          outlined
-                          label="Select Author"
-                          dense
-                          clearable
-                          @update:model-value="applyFilters"
-                        />
-                      </q-item-section>
-                    </q-item>
-                    <q-item>
-                      <q-item-section>
-                        <q-select
-                          v-model="date"
-                          :options="dateOptions"
-                          outlined
-                          label="Select Year"
-                          dense
-                          clearable
-                          @update:model-value="applyFilters"
-                        />
-                      </q-item-section>
-                    </q-item>
-                    <q-separator />
-                    <q-item clickable v-close-popup @click="clearFilters">
-                      <q-item-section>
-                        <q-item-label>Clear All Filters</q-item-label>
-                      </q-item-section>
-                      <q-item-section side>
-                        <q-icon name="clear" />
-                      </q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-menu>
-              </q-btn>
+              <q-btn-dropdown
+                outline
+                color="black"
+                label="Filter"
+                icon="filter_list"
+                size="sm"
+                class="artifact-btn-style"
+              >
+                <q-list>
+                  <q-item>
+                    <q-item-section>
+                      <q-select
+                        v-model="author"
+                        :options="authorOptions"
+                        outlined
+                        label="Select Author"
+                        dense
+                        clearable
+                        @update:model-value="applyFilters"
+                      />
+                    </q-item-section>
+                  </q-item>
+                  <q-item>
+                    <q-item-section>
+                      <q-select
+                        v-model="date"
+                        :options="dateOptions"
+                        outlined
+                        label="Select Year"
+                        dense
+                        clearable
+                        @update:model-value="applyFilters"
+                      />
+                    </q-item-section>
+                  </q-item>
+                  <q-separator />
+                  <q-item clickable v-close-popup @click="clearFilters">
+                    <q-item-section>
+                      <q-item-label>Clear All Filters</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                      <q-icon name="clear" />
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-dropdown>
               <!-- Sort Section -->
-              <q-btn flat round icon="sort" class="filter-sort-btn">
-                <q-menu anchor="bottom right" self="top left" style="width: 10rem">
-                  <q-list>
-                    <q-item
-                      v-for="option in sortOptions"
-                      :key="option"
-                      clickable
-                      v-close-popup
-                      @click="((sortOption = option), onSort(option))"
-                    >
-                      <q-item-section>{{ option }}</q-item-section>
-                      <q-item-section side v-if="sortOption === option">
-                        <q-icon name="check" color="primary" />
-                      </q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-menu>
-              </q-btn>
+              <q-btn-dropdown
+                outline
+                color="black"
+                :label="`Sort by: ${sortOption}`"
+                icon="sort"
+                size="sm"
+                class="q-ml-md artifact-btn-style"
+                dense
+              >
+                <q-list>
+                  <q-item
+                    v-for="option in sortOptions"
+                    :key="option"
+                    clickable
+                    v-close-popup
+                    class="collection-sort-menu"
+                    @click="((sortOption = option), onSort(option))"
+                  >
+                    <q-item-section>{{ option }}</q-item-section>
+                    <q-item-section side v-if="sortOption === option">
+                      <q-icon name="check" color="primary" />
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-dropdown>
             </div>
           </div>
 
           <!-- Document in Categories -->
-          <div class="row q-gutter-md q-mt-md justify-around">
+          <div class="row q-gutter-md q-ma-md justify-between">
             <div
               v-for="(doc, i) in searchStore.query
                 ? searchStore.results
@@ -262,6 +312,7 @@
                   />
                 </router-link>
                 <q-btn
+                  v-if="!isAdmin"
                   icon="bookmark_border"
                   dense
                   size="sm"
@@ -773,6 +824,7 @@ async function handleCancelMetadata(cancelledData) {
 }
 
 async function saveMetadata(updatedMetadata) {
+  console.log('Saving metadata: ', updatedMetadata)
   try {
     const { error } = await supabase
       .from('documents_metadata')
@@ -1011,3 +1063,111 @@ function resetForm() {
   existingCollectionIds.value = []
 }
 </script>
+
+<style scoped>
+.box-highlights {
+  border-radius: 10px;
+  background-color: #ffffff;
+  width: auto;
+  height: auto;
+  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+}
+
+.box-category {
+  border-radius: 10px;
+  background-color: #ffffff;
+  width: auto;
+  height: auto;
+  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+}
+
+.bg-highlights-details {
+  background-color: #880000;
+  width: 13rem;
+  height: 12rem;
+  margin-top: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 5px 5px 3px #bab7b7;
+}
+
+.title-highlight {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  color: #ffffff;
+  padding: 1.5rem 1rem 0.2rem 1rem;
+}
+
+.sub-details {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 200;
+  font-size: 10px;
+  color: #ffffff;
+  line-height: 1rem;
+  padding: 0.5rem 1rem 1rem 1rem;
+  height: 5rem;
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  -webkit-mask-image: -webkit-linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+.now-read-btn {
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  font-weight: 200;
+  color: white;
+  background-color: transparent;
+  border: 1px solid white;
+  padding: 0.3rem 1rem;
+  width: 8rem;
+  text-transform: none;
+  transition: 0.3s ease;
+}
+
+.now-read-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: #ffffff;
+}
+
+.btn-bm {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  background-color: #880000;
+  border-radius: 50%;
+  color: white !important;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.docs-gap {
+  margin-left: 2.5rem;
+  margin-bottom: 0.5rem;
+  gap: 2rem;
+}
+/* pop-up */
+.upload-sections-container {
+  display: flex;
+  gap: 1rem;
+}
+
+.two-box-upload-docuarti {
+  width: 16rem;
+  height: 14.5rem;
+  background-color: transparent !important;
+  border: 2px dashed #afafaf !important;
+  border-radius: 15px !important;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+</style>

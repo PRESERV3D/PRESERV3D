@@ -472,3 +472,137 @@ onMounted(async () => {
 })
 </script>
 
+<style scoped>
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+// ADMIN VIEW PAGE ARTIFACT
+
+.title-section {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.title-input {
+  width: 100%;
+  max-width: 800px;
+  margin-left: 30rem;
+}
+
+.title-input :deep(.q-field__control) {
+  padding: 0 !important;
+  min-height: auto !important;
+  overflow: visible !important;
+}
+
+.title-input :deep(.q-field__native) {
+  font-family: 'Poppins', sans-serif !important;
+  font-weight: 500 !important;
+  font-size: clamp(32px, 6vw, 64px) !important;
+  color: #560505 !important;
+  padding: 16px 0 !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+  width: 100% !important;
+  margin: 0 !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.title-input .a-title {
+  margin-left: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Category management */
+.add-category-input {
+  max-width: 200px;
+}
+
+.add-category-btn {
+  margin-top: 4px;
+  color: #666;
+}
+
+.add-category-btn:hover {
+  color: #333;
+  background-color: #f5f5f5;
+}
+
+/* Save/Cancel actions */
+.save-cancel-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.cancel-btn {
+  color: #666;
+}
+
+.cancel-btn:hover {
+  color: #333;
+  background-color: #f5f5f5;
+}
+
+.save-btn {
+  margin-left: auto;
+}
+
+.text-button {
+  color: black !important;
+  text-decoration: none;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 4px 8px;
+}
+
+.text-button:hover {
+  background: none !important;
+  color: #333 !important;
+}
+
+/* Layout and spacing */
+.category-tag {
+  margin-right: 8px;
+  margin-bottom: 4px;
+}
+
+.categories-container {
+  flex: 1;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.detail-input {
+  margin-top: 8px;
+}
+
+.detail-input :deep(.q-field__native),
+.summary-input :deep(.q-field__native) {
+  font-family: 'Poppins', sans-serif !important;
+  font-weight: 400 !important;
+  font-size: 14px !important;
+  color: black !important;
+  line-height: 1.4 !important;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.summary-input {
+  width: 100%;
+}
+</style>
+
+

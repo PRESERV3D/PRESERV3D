@@ -100,6 +100,11 @@ const routes = [
   },
 
   {
+    path: '/LandingPage',
+    component: () => import('pages/LandingPage.vue'), // Landing Page
+  },
+
+  {
     path: '/admin',
     component: () => import('layouts/LogInSignUpLayout.vue'),
     children: [

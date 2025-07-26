@@ -4,10 +4,10 @@
     <div class="layout-container">
       <div class="box-1 row items-center">
         <div class="col-7 q-gutter-xs">
-          <p class="q-ml-xl admin-title">
+          <p class="q-ml-xl dash-title">
             <span v-if="userStore.profile">Welcome Back, {{ userStore.profile.first_name }}!</span>
           </p>
-          <p class="q-ml-xl admin-subtitle">
+          <p class="q-ml-xl dash-subtitle">
             <span v-if="userStore.profile?.role === 'admin'">(Admin Access) - </span>
             Explore University artifacts, historic documents, and <br />
             virtual museum exhibits.
@@ -28,7 +28,7 @@
 
       <!-- Recently Viewed Section -->
       <div class="box-2">
-        <p class="q-ml-lg admin-title-2">Recently Viewed</p>
+        <p class="q-ml-lg title-font-2">Recently Viewed</p>
         <div class="q-px-md q-pb-md">
           <div v-if="recentItems.length > 0" class="column q-gutter-xs">
             <div
@@ -83,7 +83,7 @@
     <div class="layout-container q-my-lg">
       <div class="box-3 q-px-lg">
         <div class="row item-center justify-between q-mb-sm">
-          <p class="q-ml-lg admin-title-2">New in the Archives</p>
+          <p class="q-ml-lg title-font-2">New in the Archives</p>
         </div>
 
         <!-- Loading Spinner for Featured Models -->
@@ -149,7 +149,7 @@
     <div class="layout-container q-my-lg">
       <div class="box-3 q-px-lg">
         <div class="row items-center justify-between q-mb-sm q-mt-sm">
-          <p class="q-ml-lg admin-title-2">Collections</p>
+          <p class="q-ml-lg title-font-2">Collections</p>
           <!-- Filter, Sort, and Add New button in the upper right -->
           <div class="row q-gutter-sm items-center q-pr-sm">
             <q-btn
@@ -279,8 +279,8 @@
         </div>
 
         <!-- See All Link -->
-        <div class="row justify-end q-pr-sm q-pb-sm">
-          <router-link to="/collections" class="see-all-link" style="margin-top: 0.5rem">
+        <div class="row justify-end q-pr-sm" style="margin-top: -1.25rem">
+          <router-link to="/collections" class="see-all-link">
             See All
             <q-icon name="arrow_forward" size="16px" class="q-ml-xs" />
           </router-link>
@@ -1091,3 +1091,124 @@ async function addCollection() {
   }
 }
 </script>
+
+<style scoped>
+
+.layout-container {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.layout-container.no-gap {
+  gap: 0;
+}
+
+.my-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.my-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.artifact-card-section {
+  flex-shrink: 0;
+}
+
+/* STYLING
+/* Recently Viewed Item Styles */
+.recently-viewed-item {
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.recently-viewed-item:hover {
+  background-color: rgba(136, 0, 0, 0.05);
+}
+
+.circular-holder {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: rgba(136, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.circle-icon-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 25px; /* Make it much bigger */
+  z-index: 10;
+}
+
+.circular-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.item-details {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.artifact-name {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #560505;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.view-info {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: #7c7c7c;
+  margin: 0;
+  margin-top: 2px;
+}
+
+
+.view-icon {
+  color: #7c7c7c;
+  font-size: 18px;
+}
+
+.view-icon:hover {
+  background-color: rgba(136, 0, 0, 0.1);
+}
+
+
+.artifact-title-link {
+  text-decoration: none;
+  flex: 1;
+}
+
+.artifact-title-link:hover {
+  color: #560505;
+}
+
+.collection-card {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+</style>

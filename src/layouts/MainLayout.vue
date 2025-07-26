@@ -313,3 +313,192 @@ onMounted(() => {
   }
 })
 </script>
+
+<style scoped>
+/* STYLE FOR SIDEBAR (NASA MAIN LAYOUT) */
+.sidebar-drawer.q-drawer {
+  overflow: hidden;
+}
+
+.text-hidden {
+  opacity: 0 !important;
+  transform: translateX(-10px) !important;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease !important;
+  overflow: hidden !important;
+}
+
+.nav-text,
+.logout-text {
+  opacity: 1;
+  transform: translateX(0) !important;
+  transition:
+    opacity 0.25s ease 0.1s,
+    transform 0.25s ease 0.1s !important;
+}
+
+/* styles for navigation and logout */
+.nav-item,
+.logout-item {
+  margin-bottom: 16px !important;
+  border-radius: 12px;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.nav-item:hover {
+  background-color: rgba(136, 0, 0, 0.08);
+}
+
+.logout-item:hover {
+  background-color: rgba(220, 53, 69, 0.08);
+}
+
+.icon-wrapper {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  flex-shrink: 0;
+}
+
+.nav-item .q-item__section--avatar,
+.logout-item .q-item__section--avatar {
+  min-width: 60px !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.text-center .nav-item {
+  justify-content: center !important;
+}
+
+.text-center .nav-item .q-item__section--avatar {
+  min-width: 60px !important;
+  justify-content: center !important;
+}
+
+.text-center .q-item__section--main {
+  display: none !important;
+}
+
+/* mini state */
+.nav-item.q-item--active .icon-wrapper {
+  background-color: #880000;
+  box-shadow: 0 4px 12px rgba(136, 0, 0, 0.3);
+  transform: scale(1.05);
+}
+
+.nav-item.q-item--active .nav-icon {
+  filter: brightness(0) invert(1);
+}
+
+.nav-item.q-item--active .nav-text {
+  color: #880000;
+  font-weight: 600;
+}
+
+/* Text styling */
+.nav-text,
+.logout-text {
+  font-weight: 500;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
+
+.nav-text {
+  color: #2c3e50;
+  text-transform: capitalize;
+}
+
+.logout-text,
+.logout-icon {
+  color: #7c7c7c;
+}
+
+.logout-item:hover .logout-text,
+.logout-item:hover .logout-icon {
+  color: #c82333;
+  font-weight: 600;
+}
+
+.logout-item:hover .logout-icon {
+  transform: scale(1.1);
+}
+
+.sidebar-drawer .q-separator {
+  background-color: rgba(0, 0, 0, 0.1);
+  height: 1px;
+}
+
+/* Search styling */
+.search-toolbar {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.search-input {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.search-input .q-field__control {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.search-input .q-field__native {
+  color: #333 !important;
+}
+
+.search-input .q-placeholder {
+  color: #666 !important;
+}
+
+/* Notification button styling */
+.notif-btn {
+  background-color: #f8f8ff !important;
+  width: 40px;
+  backdrop-filter: blur(10px);
+}
+
+.notif-btn:hover {
+  background-color: #e0e0e0 !important;
+}
+
+.notif-image {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.custom-badge {
+  font-size: 11px !important;
+  font-weight: bold !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* User profile button styling */
+.user-profile-btn {
+  background-color: #f8f9fa !important;
+  border-radius: 10px;
+  width: 282px;
+  padding: 4px 12px !important;
+}
+
+.user-profile-btn:hover {
+  background-color: #e9ecef !important;
+}
+</style>

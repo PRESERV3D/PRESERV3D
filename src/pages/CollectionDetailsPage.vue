@@ -1,3 +1,4 @@
+<!--Collection Details Page-->
 <template>
   <q-page class="q-pa-md">
     <div class="collection-container">
@@ -679,3 +680,392 @@ function goToAddArtifact() {
   router.push({ name: 'artifacts', query: { addToCollection: collectionId } })
 }
 </script>
+
+<style scoped>
+
+/* Left Side - Collection Details */
+.collection-details-section {
+  flex: 1;
+  max-width: 400px;
+  padding: 1.5rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.collection-title-section {
+  margin-top: 1rem;
+  margin-bottom: 3rem;
+}
+
+.collection-name {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  color: #000000;
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.collection-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  width: 100%;
+  margin-bottom: 2rem;
+}
+
+.collection-cover-container {
+  flex-shrink: 0;
+}
+
+.big-book-cover {
+  width: 270px;
+  height: 400px;
+  position: relative;
+  background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
+  border-radius: 0 15px 15px 0;
+  box-shadow:
+    0 8px 16px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px rgba(0, 0, 0, 0.1),
+    0 0 0 2px rgba(8, 3, 0, 0.3);
+  transform: rotateY(-5deg) rotateX(2deg);
+  transition: all 0.3s ease;
+}
+
+.big-book-spine {
+  position: absolute;
+  left: -6px;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  background: linear-gradient(to right, #523518 0%, #381c08 100%);
+  border-radius: 0 0 0 12px;
+  box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Collection Description */
+.collection-description {
+  font-family: 'Poppins', sans-serif;
+  color: #666;
+  line-height: 1.6;
+  font-size: 16px;
+  margin-bottom: 5rem;
+  margin-top: 2rem;
+  text-align: left;
+}
+
+.collection-description p {
+  margin: 0;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.right-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  font-size: 14px;
+  min-width: 70px;
+  border: 1px solid;
+  background: white;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-btn,
+.edit-btn,
+.delete-btn {
+  border: 1px solid #560505;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #560505;
+}
+
+.back-btn:hover,
+.edit-btn:hover,
+.delete-btn:hover {
+  background: #560505;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(86, 5, 5, 0.2);
+}
+
+.content-section {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.combined-content-section {
+  background: linear-gradient(10deg, #fbf4d0 0%, #fdf9e7 22%, #ffffff 65%);
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.artifacts-subsection {
+  margin-bottom: 2rem;
+}
+
+.documents-subsection {
+  flex: 1;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  color: #560505;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+/* Artifacts Grid */
+.two-artifacts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.artifact-preview-card {
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.artifact-preview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Documents Grid */
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.document-card-wrapper {
+  min-width: 0;
+}
+
+.document-preview-card {
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.document-preview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .collection-container {
+    flex-direction: column;
+  }
+
+  .collection-details-section {
+    max-width: none;
+  }
+
+  .documents-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .two-artifacts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .combined-content-section {
+    padding: 1rem;
+  }
+
+  .collection-details-section {
+    gap: 1rem;
+  }
+
+  .book-container {
+    height: 250px;
+  }
+
+  .big-book-cover {
+    width: 160px;
+    height: 220px;
+  }
+}
+/* Collection Image Styles - Seamless integration with book design */
+.book-content.has-image {
+  background: none !important; /* Remove the gradient when image is present */
+  padding: 0 !important;
+}
+
+.book-image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 0 20px 20px 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.book-image-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 20px; /* Width of the shadow effect */
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.2) 50%,
+    transparent 100%
+  );
+  z-index: 2;
+  border-top-left-radius: inherit;
+  border-bottom-left-radius: inherit;
+}
+
+.book-background-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+/* Ensure the book-content maintains its original styling when no image */
+.book-content:not(.has-image) {
+  /* Keep original gradient and styling */
+}
+
+.upload-box {
+  width: 11rem;
+  height: 14.5rem;
+  border-radius: 10px;
+  background-color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* BIG Book image styles */
+.book-content.has-image {
+  position: relative;
+  overflow: hidden;
+}
+
+.big-book-cover .book-background-image {
+  border-radius: 8px;
+}
+
+.big-book-cover {
+  position: relative;
+}
+
+.big-book-cover .book-content {
+  background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
+  border-radius: 0 20px 20px 0;
+}
+
+.big-book-cover .book-content.has-image {
+  background: none;
+  border-radius: 0 20px 20px 0;
+}
+
+
+
+
+
+
+
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .collection-container {
+    flex-direction: column;
+  }
+
+  .collection-details-section {
+    max-width: none;
+  }
+
+  .documents-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .two-artifacts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .combined-content-section {
+    padding: 1rem;
+  }
+
+  .collection-details-section {
+    gap: 1rem;
+  }
+
+  .book-container {
+    height: 250px;
+  }
+
+  .big-book-cover {
+    width: 160px;
+    height: 220px;
+  }
+}
+
+
+
+</style>
