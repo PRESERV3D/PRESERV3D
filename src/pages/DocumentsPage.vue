@@ -130,7 +130,7 @@
         <div class="row docs-gap justify-start">
           <div v-for="(doc, index) in documentsStore.documents.slice(0, 3)" :key="index">
             <div class="row q-mb-lg">
-              <q-card class="my-card documentCard" style="transform: rotate(-5deg)">
+              <q-card class="my-card docCard" style="transform: rotate(-5deg)">
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
@@ -141,15 +141,37 @@
                     class="document"
                   />
                 </router-link>
-                <q-btn
-                  v-if="!isAdmin"
-                  icon="bookmark_border"
-                  dense
-                  size="sm"
-                  class="btn-bm"
-                  @click="openBookmarkDialog(doc, 'document')"
-                  flat
-                />
+                <div class="q-py-xs doc-align-items">
+                  <!-- Visibility Icon (static) -->
+
+                  <q-icon
+                    v-if="!isAdmin"
+                    name="visibility"
+                    color="grey"
+                    size="xs"
+                    class="action-icon"
+                  />
+
+                  <!-- Star Icon -->
+                  <q-icon
+                    v-if="!isAdmin"
+                    :name="doc.favorited ? 'star' : 'star_border'"
+                    :color="doc.favorited ? 'yellow' : 'grey'"
+                    size="xs"
+                    class="cursor-pointer"
+                    @click="doc.favorited = !doc.favorited"
+                  />
+
+                  <!-- Bookmark Icon -->
+                  <q-icon
+                    v-if="!isAdmin"
+                    :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
+                    :color="doc.bookmarked ? 'yellow' : 'grey'"
+                    size="xs"
+                    class="cursor-pointer"
+                    @click="openBookmarkDialog(doc, 'document')"
+                  />
+                </div>
               </q-card>
 
               <div class="bg-highlights-details">
@@ -279,7 +301,7 @@
               :key="i"
               class="card-wrapper-2"
             >
-              <q-card class="my-card documentCard" rounded bordered>
+              <q-card class="docCard" rounded bordered>
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
@@ -291,15 +313,38 @@
                     class="document"
                   />
                 </router-link>
-                <q-btn
-                  v-if="!isAdmin"
-                  icon="bookmark_border"
-                  dense
-                  size="sm"
-                  class="btn-bm"
-                  @click="openBookmarkDialog(doc, 'document')"
-                  flat
-                />
+
+                <div class="q-py-xs doc-align-items">
+                  <!-- Visibility Icon (static) -->
+
+                  <q-icon
+                    v-if="!isAdmin"
+                    name="visibility"
+                    color="grey"
+                    size="xs"
+                    class="action-icon"
+                  />
+
+                  <!-- Star Icon -->
+                  <q-icon
+                    v-if="!isAdmin"
+                    :name="doc.favorited ? 'star' : 'star_border'"
+                    :color="doc.favorited ? 'yellow' : 'grey'"
+                    size="xs"
+                    class="cursor-pointer"
+                    @click="doc.favorited = !doc.favorited"
+                  />
+
+                  <!-- Bookmark Icon -->
+                  <q-icon
+                    v-if="!isAdmin"
+                    :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
+                    :color="doc.bookmarked ? 'yellow' : 'grey'"
+                    size="xs"
+                    class="cursor-pointer"
+                    @click="openBookmarkDialog(doc, 'document')"
+                  />
+                </div>
               </q-card>
 
               <div class="q-mt-md fade-title-container">
@@ -1148,5 +1193,37 @@ function resetForm() {
   justify-content: center;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.card-wrapper-2 {
+  perspective: 1000px;
+}
+
+.docCard {
+  width: 12rem;
+  height: 16rem;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
+  border-radius: 10px;
+  background-color: white;
+}
+
+.document {
+  height: 14rem;
+  border-bottom: 2px solid #880000;
+}
+
+.doc-align-items {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  margin-right: 1rem;
+}
+
+.btn-bm-2 {
+  bottom: 0.25rem;
+  right: 0.75rem;
 }
 </style>

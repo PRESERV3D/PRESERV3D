@@ -62,7 +62,7 @@
 
       <div class="preview-container">
         <div class="box-view">
-          <div class="row-1 justify-between items-center">
+          <div class="row-1 items-center justify-between">
             <q-btn :href="doc.file_url" target="_blank" class="start-reading-btn" no-caps>
               Start Reading
               <img
@@ -71,14 +71,24 @@
                 class="q-ml-sm btn-arrow-tilt"
               />
             </q-btn>
-            <q-icon
-              v-if="!isAdmin"
-              :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
-              class="bookmark-icon q-ml-md q-mr-md"
-              :class="{ bookmarked: doc.bookmarked }"
-              size="sm"
-              @click.stop="openBookmarkDialog(doc, 'document')"
-            />
+            <div class="row-1 items-center">
+              <q-icon
+                v-if="!isAdmin"
+                :name="doc.favorited ? 'star' : 'star_border'"
+                :color="doc.favorited ? 'yellow' : 'black'"
+                class="bookmark-icon cursor-pointer"
+                size="sm"
+                @click="doc.favorited = !doc.favorited"
+              />
+              <q-icon
+                v-if="!isAdmin"
+                :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
+                class="bookmark-icon q-ml-md q-mr-md"
+                :class="{ bookmarked: doc.bookmarked }"
+                size="sm"
+                @click.stop="openBookmarkDialog(doc, 'document')"
+              />
+            </div>
           </div>
           <div class="row">
             <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
@@ -519,6 +529,9 @@ onMounted(async () => {
 .row-1 {
   margin-left: 30.5rem;
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
 }
 
 .start-reading-btn {

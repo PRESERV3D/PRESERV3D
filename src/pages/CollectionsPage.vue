@@ -368,4 +368,17 @@ async function addCollection() {
   object-fit: cover;
   border-radius: 10px;
 }
+
+.book-cover-img {
+  width: 14rem;
+  height: 18rem;
+  margin-left: 3rem;
+  border: 3px solid #381c08;
+  border-left: 10px solid #381c08 !important;
+  border-radius: 0 15px 15px 0;
+  box-shadow:
+    0 8px 16px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(8, 3, 0, 0.3);
+}
 </style>

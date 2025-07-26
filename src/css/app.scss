@@ -86,10 +86,6 @@
   margin-left: 20px;
 }
 
-.card-wrapper-2 {
-  perspective: 1000px;
-}
-
 .card-wrapper:hover .my-card .artifacts {
   transform: scale(1.012);
 }
@@ -185,21 +181,6 @@ document-title-2 {
   background-color: #640c0c;
 }
 
-.document {
-  position: absolute;
-  top: 0;
-  max-width: 12rem;
-}
-
-.documentCard {
-  width: 12rem;
-  height: 15rem;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
-  border-radius: 10px;
-}
-
 .search {
   width: 60rem;
   font-family: 'Poppins', sans-serif;
@@ -224,7 +205,6 @@ document-title-2 {
   color: #616161;
   font-size: 16px;
   font-weight: 500;
-  // display: block;
 }
 
 .labelNames {
@@ -887,21 +867,6 @@ document-title-2 {
 
 //
 
-.book-cover-img {
-  width: 14rem;
-  height: 18rem;
-  margin-left: 3rem;
-  border: 3px solid #381c08;
-  border-left: 10px solid #381c08 !important;
-  border-radius: 0 15px 15px 0;
-  box-shadow:
-    0 8px 16px rgba(0, 0, 0, 0.3),
-    inset 0 0 20px rgba(0, 0, 0, 0.1),
-    0 0 0 1px rgba(8, 3, 0, 0.3);
-}
-
-//
-
 .add-new-btn {
   background: #560505;
   color: white;
@@ -1073,4 +1038,14 @@ document-title-2 {
   color: #666;
   margin: 0;
   margin-left: 20px;
+}
+
+//
+
+.back-button-top {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1000;
+  color: #880000;
 }
