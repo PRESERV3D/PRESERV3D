@@ -130,7 +130,7 @@
         <div class="row docs-gap justify-start">
           <div v-for="(doc, index) in documentsStore.documents.slice(0, 3)" :key="index">
             <div class="row q-mb-lg">
-              <q-card class="my-card documentCard" style="transform: rotate(-5deg)">
+              <q-card class="my-card docCard" style="transform: rotate(-5deg)">
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
@@ -141,15 +141,37 @@
                     class="document"
                   />
                 </router-link>
-                <q-btn
-                  v-if="!isAdmin"
-                  icon="bookmark_border"
-                  dense
-                  size="sm"
-                  class="btn-bm"
-                  @click="openBookmarkDialog(doc, 'document')"
-                  flat
-                />
+                <q-card-section class="doc-align-items">
+                  <!-- Visibility Icon (static) -->
+
+                  <q-icon
+                    v-if="!isAdmin"
+                    name="visibility"
+                    color="grey"
+                    size="xs"
+                    class="action-icon"
+                  />
+
+                  <!-- Star Icon -->
+                  <q-icon
+                    v-if="!isAdmin"
+                    :name="doc.favorited ? 'star' : 'star_border'"
+                    :color="doc.favorited ? 'yellow' : 'grey'"
+                    size="xs"
+                    class="cursor-pointer"
+                    @click="doc.favorited = !doc.favorited"
+                  />
+
+                  <!-- Bookmark Icon -->
+                  <q-icon
+                    v-if="!isAdmin"
+                    :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
+                    :color="doc.bookmarked ? 'yellow' : 'grey'"
+                    size="xs"
+                    class="cursor-pointer"
+                    @click="openBookmarkDialog(doc, 'document')"
+                  />
+                </q-card-section>
               </q-card>
 
               <div class="bg-highlights-details">
@@ -288,15 +310,17 @@
                   <q-img
                     :src="doc.preview_url + '?t=' + Date.now()"
                     alt="Document Preview"
-                    class="document2"
+                    class="document"
                   />
                 </router-link>
+
                 <q-card-section class="doc-align-items">
                   <!-- Visibility Icon (static) -->
+
                   <q-icon
                     v-if="!isAdmin"
                     name="visibility"
-                    color="white"
+                    color="grey"
                     size="xs"
                     class="action-icon"
                   />
@@ -305,7 +329,7 @@
                   <q-icon
                     v-if="!isAdmin"
                     :name="doc.favorited ? 'star' : 'star_border'"
-                    :color="doc.favorited ? 'yellow' : 'white'"
+                    :color="doc.favorited ? 'yellow' : 'grey'"
                     size="xs"
                     class="cursor-pointer"
                     @click="doc.favorited = !doc.favorited"
@@ -315,7 +339,7 @@
                   <q-icon
                     v-if="!isAdmin"
                     :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
-                    :color="doc.bookmarked ? 'yellow' : 'white'"
+                    :color="doc.bookmarked ? 'yellow' : 'grey'"
                     size="xs"
                     class="cursor-pointer"
                     @click="openBookmarkDialog(doc, 'document')"
@@ -1182,14 +1206,13 @@ function resetForm() {
   overflow-y: hidden;
   box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
   border-radius: 10px;
-  background-color: #880000;
+  background-color: white;
   /* border-bottom: 2rem solid #880000 !important; */
 }
 
-.document2 {
-  position: absolute;
-  top: 0;
+.document {
   height: 14rem;
+  border-bottom: 2px solid #880000;
 }
 
 .doc-align-items {

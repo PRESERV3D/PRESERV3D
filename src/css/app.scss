@@ -181,21 +181,6 @@ document-title-2 {
   background-color: #640c0c;
 }
 
-.document {
-  position: absolute;
-  top: 0;
-  max-width: 12rem;
-}
-
-.documentCard {
-  width: 12rem;
-  height: 15rem;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
-  border-radius: 10px;
-}
-
 .search {
   width: 60rem;
   font-family: 'Poppins', sans-serif;
