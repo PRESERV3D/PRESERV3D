@@ -141,7 +141,7 @@
                     class="document"
                   />
                 </router-link>
-                <q-card-section class="doc-align-items">
+                <div class="q-py-xs doc-align-items">
                   <!-- Visibility Icon (static) -->
 
                   <q-icon
@@ -171,7 +171,7 @@
                     class="cursor-pointer"
                     @click="openBookmarkDialog(doc, 'document')"
                   />
-                </q-card-section>
+                </div>
               </q-card>
 
               <div class="bg-highlights-details">
@@ -314,7 +314,7 @@
                   />
                 </router-link>
 
-                <q-card-section class="doc-align-items">
+                <div class="q-py-xs doc-align-items">
                   <!-- Visibility Icon (static) -->
 
                   <q-icon
@@ -344,7 +344,7 @@
                     class="cursor-pointer"
                     @click="openBookmarkDialog(doc, 'document')"
                   />
-                </q-card-section>
+                </div>
               </q-card>
 
               <div class="q-mt-md fade-title-container">
@@ -1207,7 +1207,6 @@ function resetForm() {
   box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
   border-radius: 10px;
   background-color: white;
-  /* border-bottom: 2rem solid #880000 !important; */
 }
 
 .document {
@@ -1216,11 +1215,11 @@ function resetForm() {
 }
 
 .doc-align-items {
-  margin-top: 13.35rem;
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 1rem;
+  margin-right: 1rem;
 }
 
 .btn-bm-2 {
