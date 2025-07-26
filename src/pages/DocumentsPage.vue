@@ -19,50 +19,78 @@
 
     <q-dialog v-model="showDialog" persistent>
       <q-card class="add-documentarti-card">
-        <q-card-section
-          class="box-upload-docuarti"
-          @dragover.prevent="onDragOver"
-          @dragleave.prevent="onDragLeave"
-          @drop.prevent="onFileDrop"
-          :class="{ 'drag-over': isDragging }"
-        >
-          <q-img
-            src="src/assets/img/drag-drop-icon.png"
-            alt="Upload-Document"
-            class="upload-icon-docu"
-          />
-          <div
-            v-if="!selectedFile"
-            class="sub-font-3 text-center"
-            style="font-size: 14px; font-weight: 200"
+        <div class="upload-sections-container">
+          <!-- Camera Section -->
+          <q-card-section
+            class="two-box-upload-docuarti camera-section"
+            @click="openCamera"
           >
-            <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
-              DRAG and DROP files
-            </div>
-            or <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a> on
-            your computer
-          </div>
-          <div v-else class="documentarti-preview text-center">
-            <q-img src="src/assets/img/document-icon.png" alt="Document" class="document-icon" />
-            <div class="selected-document-name q-mt-md">
-              {{ selectedFile.name }}
-            </div>
-            <!-- Upload progress bar -->
-            <q-linear-progress
-              v-if="uploading"
-              :value="uploadProgress / 100"
-              color="primary"
-              class="q-mt-md full-width"
+            <q-img
+              src="src/assets/img/camera.png"
+              alt="Camera"
+              class="upload-icon-docu"
             />
-          </div>
-          <input
-            type="file"
-            ref="fileInput"
-            accept=".pdf"
-            style="display: none"
-            @change="handleFileChange"
-          />
-        </q-card-section>
+            <q-btn
+              outline
+              label="Use Camera"
+              class="camera-btn"
+              @click="openCamera"
+              no-caps
+              style="color: #560505; border-radius: 4px; padding: 4px 24px;"
+            />
+          </q-card-section>
+
+          <!-- Upload Section -->
+          <q-card-section
+            class="two-box-upload-docuarti upload-section"
+            @dragover.prevent="onDragOver"
+            @dragleave.prevent="onDragLeave"
+            @drop.prevent="onFileDrop"
+            :class="{ 'drag-over': isDragging }"
+          >
+            <q-img
+              src="src/assets/img/drag-drop-icon.png"
+              alt="Upload-Document"
+              class="upload-icon-docu"
+            />
+            <div
+              v-if="!selectedFile"
+              class="sub-font-3 text-center"
+              style="font-size: 14px; font-weight: 200"
+            >
+              <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
+                DRAG and DROP files
+              </div>
+              or
+              <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a>
+              on your computer
+            </div>
+            <div v-else class="documentarti-preview text-center">
+              <q-img
+                src="src/assets/img/document-icon.png"
+                alt="Document"
+                class="document-icon"
+              />
+              <div class="selected-document-name q-mt-md">
+                {{ selectedFile.name }}
+              </div>
+              <!-- Upload progress bar -->
+              <q-linear-progress
+                v-if="uploading"
+                :value="uploadProgress / 100"
+                color="primary"
+                class="q-mt-md full-width"
+              />
+            </div>
+            <input
+              type="file"
+              ref="fileInput"
+              accept=".pdf"
+              style="display: none"
+              @change="handleFileChange"
+            />
+          </q-card-section>
+        </div>
 
         <q-card-actions class="row q-ml-lg justify-between items-center">
           <div></div>
@@ -73,9 +101,12 @@
             @click="handleUpload"
             no-caps
           />
-
-          <q-spinner v-else color="primary" size="2em" class="q-ml-xl q-mt-sm" />
-
+          <q-spinner
+            v-else
+            color="primary"
+            size="2em"
+            class="q-ml-xl q-mt-sm"
+          />
           <q-btn
             flat
             label="Cancel"
@@ -1071,4 +1102,25 @@ onUnmounted(() => {
   margin-bottom: 0.5rem;
   gap: 2rem;
 }
+/* pop-up */
+.upload-sections-container {
+  display: flex;
+  gap: 1rem;
+}
+
+.two-box-upload-docuarti {
+  width: 16rem;
+  height: 14.5rem;
+  background-color: transparent !important;
+  border: 2px dashed #afafaf !important;
+  border-radius: 15px !important;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
 </style>
