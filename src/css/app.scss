@@ -66,7 +66,6 @@
   transform: scale(1);
 }
 
-
 .card-wrapper:hover .my-card {
   transform: scale(1.012);
 }
@@ -220,9 +219,11 @@ document-title-2 {
   font-weight: 800;
 }
 
-.subtitle {
+.subtitle-logsign {
   font-family: 'Poppins', sans-serif;
   color: #616161;
+  font-size: 16px;
+  font-weight: 500;
   // display: block;
 }
 
@@ -523,6 +524,12 @@ document-title-2 {
   height: 100%;
   object-fit: cover;
   border-radius: 10px;
+}
+
+.upload-icon {
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 1rem;
 }
 
 .upload {
@@ -1012,7 +1019,6 @@ document-title-2 {
 
 //
 
-
 .collection-sort-menu {
   width: auto;
   height: auto;
@@ -1043,7 +1049,6 @@ document-title-2 {
   padding-left: 1.5rem;
 }
 
-
 .book-container {
   perspective: 1000px;
   height: 370px;
@@ -1069,4 +1074,3 @@ document-title-2 {
   margin: 0;
   margin-left: 20px;
 }
-
