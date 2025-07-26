@@ -62,7 +62,7 @@
                 <q-icon
                   :name="model.starred ? 'star' : 'star_border'"
                   class="star-icon"
-                  :class="{ 'starred': model.starred }"
+                  :class="{ starred: model.starred }"
                   size="sm"
                   @click.stop="toggleStar(model.id)"
                 />
@@ -254,7 +254,7 @@ const toggleStar = (modelId) => {
   model.value.starred = !model.value.starred
 
   // Update in store if model exists there
-  const storeModel = modelStore.models.find(m => m.id === modelId)
+  const storeModel = modelStore.models.find((m) => m.id === modelId)
   if (storeModel) {
     storeModel.starred = model.value.starred
   }
@@ -415,22 +415,12 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-
-.back-button-top {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  z-index: 1000;
-  color: #880000;
-}
-
 .loading-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 400px;
 }
-
 
 .artifact-detail-container {
   max-width: 1200px;
@@ -630,5 +620,4 @@ onMounted(async () => {
     margin-bottom: 1rem;
   }
 }
-
 </style>

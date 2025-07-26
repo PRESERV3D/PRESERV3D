@@ -279,7 +279,7 @@
               :key="i"
               class="card-wrapper-2"
             >
-              <q-card class="my-card documentCard" rounded bordered>
+              <q-card class="docCard" rounded bordered>
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
@@ -288,18 +288,39 @@
                   <q-img
                     :src="doc.preview_url + '?t=' + Date.now()"
                     alt="Document Preview"
-                    class="document"
+                    class="document2"
                   />
                 </router-link>
-                <q-btn
-                  v-if="!isAdmin"
-                  icon="bookmark_border"
-                  dense
-                  size="sm"
-                  class="btn-bm"
-                  @click="openBookmarkDialog(doc, 'document')"
-                  flat
-                />
+                <q-card-section class="doc-align-items">
+                  <!-- Visibility Icon (static) -->
+                  <q-icon
+                    v-if="!isAdmin"
+                    name="visibility"
+                    color="white"
+                    size="xs"
+                    class="action-icon"
+                  />
+
+                  <!-- Star Icon -->
+                  <q-icon
+                    v-if="!isAdmin"
+                    :name="doc.favorited ? 'star' : 'star_border'"
+                    :color="doc.favorited ? 'yellow' : 'white'"
+                    size="xs"
+                    class="cursor-pointer"
+                    @click="doc.favorited = !doc.favorited"
+                  />
+
+                  <!-- Bookmark Icon -->
+                  <q-icon
+                    v-if="!isAdmin"
+                    :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
+                    :color="doc.bookmarked ? 'yellow' : 'white'"
+                    size="xs"
+                    class="cursor-pointer"
+                    @click="openBookmarkDialog(doc, 'document')"
+                  />
+                </q-card-section>
               </q-card>
 
               <div class="q-mt-md fade-title-container">
@@ -1148,5 +1169,39 @@ function resetForm() {
   justify-content: center;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.card-wrapper-2 {
+  perspective: 1000px;
+}
+
+.docCard {
+  width: 12rem;
+  height: 16rem;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
+  border-radius: 10px;
+  background-color: #880000;
+  /* border-bottom: 2rem solid #880000 !important; */
+}
+
+.document2 {
+  position: absolute;
+  top: 0;
+  height: 14rem;
+}
+
+.doc-align-items {
+  margin-top: 13.35rem;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-bm-2 {
+  bottom: 0.25rem;
+  right: 0.75rem;
 }
 </style>
