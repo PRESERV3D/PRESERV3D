@@ -118,8 +118,27 @@
                       {{ model.metadata?.title || model.file_name }}
                     </div>
                   </router-link>
+                  <!-- FIXED: Action icons-->
                   <div class="action-icons">
-                    <!-- FIXED: Added 'artifact' parameter to bookmark toggle -->
+                    <!-- View Icon with Count -->
+                    <div class="icon-with-count">
+                      <q-icon name="visibility" class="action-icon view-icon" size="18px" />
+                      <span class="count-text">{{ modelStore.viewCounts[model.id] || 0 }}</span>
+                    </div>
+
+                    <!-- Star Icon with Count -->
+                    <div class="icon-with-count">
+                      <q-icon
+                        :name="model.starred ? 'star' : 'star_border'"
+                        class="action-icon star-icon"
+                        :class="{ starred: model.starred }"
+                        size="18px"
+                        @click.stop="toggleFavorite(model, 'artifact')"
+                      />
+                      <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
+                    </div>
+
+                    <!-- Bookmark Icon -->
                     <q-icon
                       :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                       class="action-icon bookmark-icon"
@@ -127,15 +146,6 @@
                       size="18px"
                       @click.stop="openBookmarkDialog(model, 'artifact')"
                     />
-                    <!-- FIXED: Added 'artifact' parameter to star toggle -->
-                    <q-icon
-                      :name="model.starred ? 'star' : 'star_border'"
-                      class="action-icon star-icon"
-                      :class="{ starred: model.starred }"
-                      size="18px"
-                      @click.stop="toggleFavorite(model, 'artifact')"
-                    />
-                    <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
                   </div>
                 </div>
               </q-card-section>
