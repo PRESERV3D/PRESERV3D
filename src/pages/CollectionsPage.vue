@@ -368,10 +368,4 @@ async function addCollection() {
   object-fit: cover;
   border-radius: 10px;
 }
-
-.upload-icon {
-  width: 4rem;
-  height: 4rem;
-  margin-bottom: 1rem;
-}
 </style>
