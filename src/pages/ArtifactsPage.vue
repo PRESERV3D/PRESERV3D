@@ -1,4 +1,3 @@
-<!--Artifact Page-->
 <template>
   <q-page class="q-pa-md">
     <div class="page-header">
@@ -266,17 +265,18 @@
                   <q-icon
                     :name="model.starred ? 'star' : 'star_border'"
                     class="action-icon star-icon"
-                    :class="{ 'starred': model.starred }"
+                    :color="model.starred ? 'yellow' : 'grey'"
                     size="18px"
-                    @click.stop="toggleStar(model.id)"
+                    @click.stop="addToFavorites(model, 'artifact')"
                   />
-                  <span class="count-text">{{ model.star_count || 0 }}</span>
+                  <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
                 </div>
 
                 <!-- Bookmark Icon -->
                 <q-icon
-                  name="bookmark_border"
+                  :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                   class="action-icon bookmark-icon"
+                  :color="model.bookmarked ? 'red' : 'grey'"
                   size="18px"
                   @click.stop="openBookmarkDialog(model, 'artifact')"
                 />
@@ -513,10 +513,109 @@ const clearFilters = () => {
   applyFilters()
 }
 
-const toggleStar = (modelId) => {
-  const model = modelStore.models.find(m => m.id === modelId)
-  if (model) {
-    model.starred = !model.starred
+// ADDED: Add to favorites
+const addToFavorites = async (model, itemType = 'artifact') => {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (authError || !userId) {
+    console.error('Auth error:', authError)
+    return
+  }
+
+  try {
+    // Find or create Favorites collection
+    let { data: favoritesCollection } = await supabase
+      .from('collections')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    if (!favoritesCollection) {
+      const { data: newCollection, error: insertError } = await supabase
+        .from('collections')
+        .insert([
+          {
+            collection_name: 'Favorites',
+            description: 'Items you marked as favorite will appear here.',
+            user_id: userId,
+            is_default: true,
+            is_locked: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+            cover_url:
+              'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers//favoritescover.png',
+          },
+        ])
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('Insert collection failed:', insertError)
+      } else {
+        favoritesCollection = newCollection
+      }
+    }
+
+    const collectionId = favoritesCollection.collection_id
+    const itemName = model.metadata?.title || model.file_name
+
+    // Check if item already exists
+    const { data: existing } = await supabase
+      .from('collection_items')
+      .select('*')
+      .eq('collection_id', collectionId)
+      .eq('item_id', model.id)
+      .eq('item_type', itemType)
+
+    if (existing.length > 0) {
+      // Remove from favorites
+      await supabase
+        .from('collection_items')
+        .delete()
+        .eq('collection_id', collectionId)
+        .eq('item_id', model.id)
+        .eq('item_type', itemType)
+
+      model.starred = false
+      showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
+    } else {
+      // Add to favorites
+      await supabase.from('collection_items').insert({
+        collection_id: collectionId,
+        item_id: model.id,
+        item_type: itemType,
+      })
+
+      model.starred = true
+      showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
+    }
+
+    // Get star count
+    const { data: metaCheck, error: metaError } = await supabase
+      .from('artifacts_metadata')
+      .select('id')
+      .eq('id', model.id)
+      .single()
+
+    if (!metaError && metaCheck) {
+      const { data: starData, error: starError } = await supabase
+        .from('artifacts_star_count')
+        .select('star_count')
+        .eq('item_id', model.id)
+        .single()
+
+      if (!starError && starData) {
+        modelStore.updateStarCount(model.id, starData.star_count)
+      } else {
+        console.error('Error fetching updated star count:', starError)
+      }
+    } else {
+      console.error('Model ID not found in artifacts_metadata:', metaError)
+    }
+  } catch (err) {
+    console.error('Error toggling favorite:', err)
   }
 }
 
@@ -528,7 +627,7 @@ const openBookmarkDialog = async (model, type = 'artifact') => {
 
   await loadUserCollections()
 
-  // Check existing collections for this item
+  // Check existing collections of an item
   const { data: existingItems, error } = await supabase
     .from('collection_items')
     .select('collection_id')
@@ -542,7 +641,11 @@ const openBookmarkDialog = async (model, type = 'artifact') => {
     return
   }
 
-  const existingIds = existingItems.map((item) => item.collection_id)
+  const existingIds = []
+  for (const item of existingItems) {
+    existingIds.push(item.collection_id)
+  }
+
   selectedCollections.value = [...existingIds]
   existingCollectionIds.value = [...existingIds]
 }
@@ -562,7 +665,8 @@ const loadUserCollections = async () => {
     .eq('user_id', userId)
 
   if (!error) {
-    userCollections.value = data
+    // ADDED: Exclude "Favorites" from the list
+    userCollections.value = data.filter((c) => c.collection_name !== 'Favorites')
   } else {
     console.error('Failed to load collections:', error)
   }
@@ -592,6 +696,9 @@ const saveToSelectedCollections = async () => {
         item_id: model.id,
         item_type: selectedItemType.value,
       })
+
+      // ADDED: Mark model as bookmarked if added to a collection
+      model.bookmarked = true
 
       if (insertError) {
         console.error('Insert failed:', insertError)
@@ -634,6 +741,21 @@ const saveToSelectedCollections = async () => {
 
     if (message) {
       showNotifyDialog('Notice', message.trim())
+    }
+
+    // ADDED: Recheck if model is in any non-Favorites collection
+    const { data: remainingItems, error: recheckError } = await supabase
+      .from('collection_items')
+      .select('collection_id, collections (collection_name)')
+      .eq('item_id', model.id)
+      .eq('item_type', selectedItemType.value)
+
+    if (!recheckError) {
+      model.bookmarked = remainingItems.some(
+        (item) => item.collections?.collection_name !== 'Favorites',
+      )
+    } else {
+      console.error('Error rechecking bookmark status:', recheckError)
     }
 
     dialogOpen.value = false
@@ -698,12 +820,39 @@ const fetchAllArtifacts = async () => {
       .order('uploaded_at', { ascending: false })
 
     if (!error) {
+      const { data: authData } = await supabase.auth.getUser()
+      const userId = authData?.user?.id
+
+      // Fetch Favorites collection items
+      const { data: favoritesCollection, error: favError } = await supabase
+        .from('collections')
+        .select('collection_id')
+        .eq('user_id', userId)
+        .eq('collection_name', 'Favorites')
+        .maybeSingle()
+
+      if (favError) {
+        console.error('Error fetching favorite items:', favError)
+      }
+
+      let favoriteIds = []
+      if (favoritesCollection) {
+        const { data: favItems, error: favItemsError } = await supabase
+          .from('collection_items')
+          .select('item_id')
+          .eq('collection_id', favoritesCollection.collection_id)
+          .eq('item_type', 'artifact')
+
+        if (!favItemsError) {
+          favoriteIds = favItems.map((i) => i.item_id)
+        }
+      }
+
       // Add some mock data for demonstration compatibility
       const enhancedModels = data.map((model) => ({
         ...model,
         bookmarked: false,
-        // starred: false,
-        // star_count: Math.floor(Math.random() * 100)
+        starred: favoriteIds.includes(model.id),
       }))
 
       modelStore.setModels(enhancedModels)
@@ -783,6 +932,7 @@ onMounted(async () => {
     }
 
     await modelStore.fetchViewCounts()
+    await modelStore.fetchStarCounts()
   } finally {
     loading.value = false
   }

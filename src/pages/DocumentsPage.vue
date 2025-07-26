@@ -17,6 +17,7 @@
       </div>
     </div>
 
+    <!-- Upload Dialog -->
     <q-dialog v-model="showDialog" persistent>
       <q-card class="add-documentarti-card">
         <div class="upload-sections-container">
@@ -66,6 +67,14 @@
               on your computer
             </div>
             <div v-else class="documentarti-preview text-center">
+              <q-btn
+                dense
+                round
+                flat
+                icon="close"
+                class="thumbnail-delete"
+                @click="deleteSelectedFile"
+              />
               <q-img
                 src="src/assets/img/document-icon.png"
                 alt="Document"
@@ -94,19 +103,34 @@
 
         <q-card-actions class="row q-ml-lg justify-between items-center">
           <div></div>
-          <q-btn
-            v-if="!uploading"
-            label="Upload"
-            class="q-ml-xl q-mt-sm btn-save"
-            @click="handleUpload"
-            no-caps
-          />
-          <q-spinner
-            v-else
-            color="primary"
-            size="2em"
-            class="q-ml-xl q-mt-sm"
-          />
+
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <q-btn
+              v-if="!uploading"
+              label="Upload"
+              :disabled="selectedFile === null"
+              class="q-ml-xl q-mt-sm btn-save"
+              @click="handleUpload"
+              no-caps
+            />
+
+            <q-btn
+              label="Scan"
+              v-if="!uploading"
+              class="q-ml-xl q-mt-sm btn-save"
+              @click="handleScan"
+              no-caps
+            />
+
+            <q-spinner
+              v-else
+              color="primary"
+              size="2em"
+              class="q-ml-xl q-mt-sm"
+            />
+          </div>
+
           <q-btn
             flat
             label="Cancel"
@@ -131,7 +155,11 @@
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
                 >
-                  <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
+                  <q-img
+                    :src="doc.preview_url + '?t=' + Date.now()"
+                    alt="Document Preview"
+                    class="document"
+                  />
                 </router-link>
                 <q-btn
                   v-if="!isAdmin"
@@ -159,7 +187,7 @@
                     :to="{ name: 'view-document', params: { id: doc.id } }"
                     @click="logClick(doc.id, 'document')"
                   >
-                    <q-btn label="Now Read" class="now-read-btn" unelevated no-caps />
+                    <q-btn label="Read Now" class="now-read-btn" unelevated no-caps />
                   </router-link>
                 </div>
               </div>
@@ -277,7 +305,11 @@
                   class="document-link"
                   @click="logClick(doc.id, 'document')"
                 >
-                  <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
+                  <q-img
+                    :src="doc.preview_url + '?t=' + Date.now()"
+                    alt="Document Preview"
+                    class="document"
+                  />
                 </router-link>
                 <q-btn
                   v-if="!isAdmin"
@@ -377,14 +409,13 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useDocumentsStore } from 'stores/documentsStore'
-import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
+import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import Tesseract from 'tesseract.js'
 import axios from 'axios'
-
-import { useSearchStore } from 'stores/searchStore'
 
 const searchStore = useSearchStore()
 const documentsStore = useDocumentsStore()
@@ -418,6 +449,24 @@ if (userStore.profile.role === undefined) {
 
 const userRole = userStore.profile.role
 const isAdmin = computed(() => userRole === 'admin')
+
+// Initial load
+onMounted(async () => {
+  if (!searchStore.query) {
+    await fetchAllDocuments()
+  }
+
+  const scannedFile = history.state?.scannedFile
+  if (scannedFile) {
+    selectedFile.value = scannedFile
+    history.replaceState({}, '', '/documents') // Clear the state after using it
+    showDialog.value = true
+  }
+})
+
+onUnmounted(() => {
+  searchStore.clear()
+})
 
 function showNotifyDialog(title, message) {
   notifyDialogTitle.value = title
@@ -598,6 +647,7 @@ const loading = ref(false)
 const uploading = ref(false)
 const uploadProgress = ref(0)
 const router = useRouter()
+const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 
 const metadata = ref({
   file_name: '',
@@ -609,19 +659,118 @@ const metadata = ref({
   keywords: [],
   categories: [],
 })
-let nlpMetadata = {}
+
+function sanitizeFileName(name) {
+  return name.replace(/[^\w.-]/g, '_')
+}
+
+async function fileExists(fileName) {
+  const { data, error } = await supabase
+    .from('documents_metadata')
+    .select('file_name')
+    .eq('file_name', fileName)
+
+  if (error) {
+    console.error('Error checking file existence:', error)
+    return false
+  }
+
+  return !!data?.length
+}
+
+async function uploadFileToSupabase(file, fileName) {
+  const { error } = await supabase.storage.from('documents').upload(fileName, file, {
+    cacheControl: '3600',
+    upsert: true,
+    contentType: 'application/pdf',
+  })
+  return error
+}
+
+async function generatePdfPreview(file) {
+  // Set the worker source
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${window.pdfjsLib.version}/pdf.worker.min.js`
+
+  const arrayBuffer = await file.arrayBuffer()
+  const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise
+
+  const page = await pdf.getPage(1)
+  const scale = 1.5
+  const viewport = page.getViewport({ scale })
+
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
+  canvas.width = viewport.width
+  canvas.height = viewport.height
+
+  await page.render({ canvasContext: context, viewport }).promise
+
+  // Return base64 string (data URL)
+  return canvas.toDataURL('image/png')
+}
+
+async function uploadPreviewImage(previewDataUrl, previewFileName) {
+  // Remove base64 prefix and convert to binary
+  const base64Data = previewDataUrl.replace(/^data:image\/png;base64,/, '')
+  const byteArray = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))
+  const blob = new Blob([byteArray], { type: 'image/png' })
+
+  // Upload using the correct filename
+  const { error } = await supabase.storage.from('pdf-previews').upload(previewFileName, blob, {
+    contentType: 'image/png',
+    upsert: true,
+  })
+
+  return error
+}
+
+async function processFileWithNLP(file, fileName) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('filename', fileName)
+  return await axios.post('http://localhost:8000/process-text', formData)
+}
+
+async function processImageWithOCR(base64Image, fileName) {
+  const result = await Tesseract.recognize(`data:image/png;base64,${base64Image}`, 'eng', {
+    tessedit_char_whitelist:
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,;:!?()[]{}-_"\'',
+  })
+
+  const text = result.data.text
+
+  if (!text || text.trim() === '') {
+    alert('OCR failed — no text detected. Please try again.')
+    return
+  }
+
+  const nlpForm = new FormData()
+  nlpForm.append('filename', fileName)
+  nlpForm.append('raw_text', text)
+
+  return await axios.post('http://localhost:8000/process-text', nlpForm)
+}
+
+async function saveMetadataToDB(fileName, fileUrl, previewUrl, metadata) {
+  return await supabase.from('documents_metadata').insert([
+    {
+      file_name: fileName,
+      file_url: fileUrl,
+      preview_url: previewUrl,
+      metadata,
+      uploaded_by: user,
+      uploaded_at: new Date(),
+      updated_at: new Date(),
+    },
+  ])
+}
 
 function triggerFileInput() {
   fileInput.value?.click()
 }
 
 function handleFileChange(event) {
-  const file = event.target.files[0]
-  if (file) {
-    selectedFile.value = file
-  } else {
-    selectedFile.value = null
-  }
+  selectedFile.value = event.target.files[0] || null
 }
 
 function onDragOver() {
@@ -634,189 +783,44 @@ function onDragLeave() {
 
 function onFileDrop(e) {
   isDragging.value = false
-  const files = e.dataTransfer.files
-  if (files.length > 0 && files[0].type === 'application/pdf') {
-    selectedFile.value = files[0]
+  const file = e.dataTransfer.files[0]
+  if (file?.type === 'application/pdf') {
+    selectedFile.value = file
   } else {
     alert('Only PDF files are allowed.')
+    uploading.value = false
   }
 }
 
-function sanitizeFileName(name) {
-  return name.replace(/[^\w.-]/g, '_') // Replace all non-alphanumeric/underscore/dot/dash characters with _
-}
-
-const handleUpload = async () => {
-  const file = selectedFile.value
-  const fileName = sanitizeFileName(file.name)
-  uploading.value = true
+function deleteSelectedFile() {
+  selectedFile.value = null
+  isDragging.value = false
+  uploading.value = false
   uploadProgress.value = 0
+}
 
-  if (!file || !fileName.endsWith('.pdf')) {
-    alert('Only .pdf files are allowed.')
-    return
-  }
+function handleCancel() {
+  selectedFile.value = null
+  showDialog.value = false
+  uploading.value = false
+  uploadProgress.value = 0
+}
 
-  loading.value = true
-  const bucket = 'documents'
+async function handleCancelMetadata(cancelledData) {
+  const fileName = cancelledData?.file_name
+  if (!fileName) return
 
   try {
-    const alreadyExists = await fileExists(fileName)
-
-    if (alreadyExists) {
-      alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
-      return
-    }
-
-    // Fake progress bar animation
-    const progressInterval = setInterval(() => {
-      if (uploadProgress.value < 90) {
-        uploadProgress.value += 1
-      }
-    }, 200)
-
-    // NLP processing for PDFs
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('filename', fileName)
-
-    const response = await axios.post('http://localhost:8000/process-text', formData)
-
-    if (response.data.status === 'ocr_required') {
-      console.log('Fallback to OCR...')
-      console.log(response.data)
-      const base64Image = response.data.image_base64
-      const previewImage = response.data.preview
-
-      // OCR the image
-      const result = await Tesseract.recognize(`data:image/png;base64,${base64Image}`, 'eng', {
-        tessedit_char_whitelist:
-          'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,;:!?()[]{}-_"\'',
-      })
-      const text = result.data.text
-
-      // Send extracted text to FastAPI for NLP
-      const nlpForm = new FormData()
-      nlpForm.append('filename', file.name)
-      nlpForm.append('raw_text', text)
-      nlpForm.append('preview', previewImage)
-
-      nlpMetadata = await axios.post('http://localhost:8000/process-text', nlpForm)
-    } else {
-      // Use the metadata returned from FastAPI
-      nlpMetadata = response
-    }
-    console.log('NLP Metadata:', nlpMetadata.data)
-
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage.from(bucket).upload(`${fileName}`, file, {
-      cacheControl: '3600',
-      upsert: true,
-      contentType: 'application/pdf',
-    })
-
-    const previewBlob = await (async () => {
-      const base64 = nlpMetadata.data.preview.replace(/^data:image\/png;base64,/, '')
-      const binary = atob(base64)
-      const byteArray = Uint8Array.from(binary, (c) => c.charCodeAt(0))
-      return new Blob([byteArray], { type: 'image/png' })
-    })()
-
-    const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
-
-    const { data, error } = await supabase.storage
-      .from('pdf-previews')
-      .upload(previewFileName, previewBlob, {
-        contentType: 'image/png',
-        upsert: true,
-      })
-
-    if (error) {
-      console.error('Upload error:', error)
-      alert('Failed to upload preview.')
-      return
-    }
-
-    console.log('Upload successful:', data)
-
-    clearInterval(progressInterval)
-    uploadProgress.value = 100
-
-    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(`${fileName}`)
-    const fileUrl = urlData.publicUrl
-
-    const { data: previewData } = supabase.storage
-      .from('pdf-previews')
-      .getPublicUrl(`${previewFileName}`)
-    const previewUrl = previewData.publicUrl
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-      alert('Upload failed.')
-      return
-    }
-
-    // Save metadata
-    const insertData = {
-      file_name: fileName,
-      file_url: fileUrl,
-      uploaded_at: new Date(),
-      updated_at: new Date(),
-      preview_url: previewUrl,
-      metadata: nlpMetadata.data,
-    }
-
-    const { error: dbError } = await supabase.from('documents_metadata').insert([insertData])
-    if (dbError) {
-      console.error('Supabase insert error:', dbError)
-      alert('Upload succeeded but metadata failed to save.')
-      return
-    }
-
-    console.log('Metadata', nlpMetadata.data)
-
-    setTimeout(() => {
-      uploading.value = false
-      uploadProgress.value = 0
-    }, 1000)
-
-    // Open metadata confirmation dialog
-    metadata.value = {
-      file_name: fileName,
-      file_url: fileUrl,
-      title: nlpMetadata.data.title || '',
-      author: nlpMetadata.data.author || '',
-      date: nlpMetadata.data.date || '',
-      summary: nlpMetadata.data.summary || '',
-      keywords: nlpMetadata.data.keywords || [],
-      categories: nlpMetadata.data.categories || [],
-    }
-
-    dialog.value = true
+    const { error } = await supabase.from('documents_metadata').delete().eq('file_name', fileName)
+    if (error) console.error('Error deleting cancelled metadata:', error)
+    else console.log('Cancelled metadata removed.')
   } catch (err) {
-    console.error('Upload failed:', err)
-    alert('Upload failed. See console for details.')
+    console.error('Failed to cancel and delete metadata:', err)
   } finally {
-    loading.value = false
+    dialog.value = false
     uploading.value = false
     uploadProgress.value = 0
   }
-}
-
-async function fileExists(fileName) {
-  const { data, error } = await supabase
-    .from('documents_metadata')
-    .select('file_name')
-    .eq('file_name', fileName)
-
-  if (!data || data.length === 0) return false
-
-  if (error) {
-    console.error('Error checking file existence:', error)
-    return false
-  }
-
-  return !!data
 }
 
 async function saveMetadata(updatedMetadata) {
@@ -851,33 +855,87 @@ async function saveMetadata(updatedMetadata) {
   }
 }
 
-async function handleCancelMetadata(cancelledData) {
-  try {
-    const fileName = cancelledData.file_name
-
-    if (!fileName) return
-
-    const { error } = await supabase.from('documents_metadata').delete().eq('file_name', fileName)
-
-    if (error) {
-      console.error('Error deleting cancelled metadata:', error)
-    } else {
-      console.log('Cancelled metadata removed successfully.')
-    }
-  } catch (err) {
-    console.error('Failed to cancel and delete metadata:', err)
-  } finally {
-    dialog.value = false
-    uploading.value = false
-    uploadProgress.value = 0
-  }
+const handleScan = () => {
+  router.push({ name: 'document-scanner' })
 }
 
-function handleCancel() {
-  selectedFile.value = null
-  showDialog.value = false
-  uploading.value = false
+const handleUpload = async () => {
+  const file = selectedFile.value
+  const fileName = sanitizeFileName(file?.name || '')
+
+  uploading.value = true
   uploadProgress.value = 0
+
+  if (!file || !file.name.endsWith('.pdf')) {
+    alert('Only .pdf files are allowed.')
+    return
+  }
+
+  loading.value = true
+
+  try {
+    const exists = await fileExists(fileName)
+    if (exists) {
+      alert(`A file named "${fileName}" already exists.`)
+      return
+    }
+
+    const progressInterval = setInterval(() => {
+      if (uploadProgress.value < 90) uploadProgress.value += 1
+    }, 200)
+
+    let response = await processFileWithNLP(file, fileName)
+
+    if (response.data.status === 'ocr_required') {
+      response = await processImageWithOCR(response.data.image_base64, fileName)
+    }
+    console.log('NLP Response:', response.data)
+    const nlpData = response.data
+
+    // Generate preview
+    const preview = await generatePdfPreview(file)
+    const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
+
+    const previewUploadError = await uploadPreviewImage(preview, previewFileName)
+    if (previewUploadError) throw previewUploadError
+
+    const uploadError = await uploadFileToSupabase(file, fileName)
+    if (uploadError) throw uploadError
+
+    clearInterval(progressInterval)
+    uploadProgress.value = 100
+
+    const fileUrl = supabase.storage.from('documents').getPublicUrl(fileName).data.publicUrl
+    const previewUrl = supabase.storage.from('pdf-previews').getPublicUrl(previewFileName)
+      .data.publicUrl
+
+    const { error: dbError } = await saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData)
+    if (dbError) {
+      console.error('DB error:', dbError)
+      alert('Upload succeeded but metadata failed to save.')
+      return
+    }
+
+    metadata.value = {
+      file_name: fileName,
+      file_url: fileUrl,
+      title: nlpData.title || '',
+      author: nlpData.author || '',
+      date: nlpData.date || '',
+      summary: nlpData.summary || '',
+      keywords: nlpData.keywords || [],
+      categories: nlpData.categories || [],
+    }
+
+    dialog.value = true
+  } catch (err) {
+    console.error('Upload failed:', err)
+    alert('Upload failed. See console for details.')
+  } finally {
+    uploading.value = false
+    loading.value = false
+    uploadProgress.value = 0
+  }
 }
 
 const openBookmarkDialog = async (doc, type = 'document') => {
@@ -1004,17 +1062,6 @@ function resetForm() {
   selectedCollections.value = []
   existingCollectionIds.value = []
 }
-
-// Initial load
-onMounted(async () => {
-  if (!searchStore.query) {
-    await fetchAllDocuments()
-  }
-})
-
-onUnmounted(() => {
-  searchStore.clear()
-})
 </script>
 
 <style scoped>

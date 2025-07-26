@@ -3,7 +3,7 @@ const routes = [
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      // { path: '', component: () => import('pages/IndexPage.vue'), meta: { requiresAuth: true } },
+      { path: '', component: () => import('pages/IndexPage.vue'), meta: { requiresAuth: true } },
       {
         path: 'home',
         name: 'dashboard',
@@ -77,6 +77,12 @@ const routes = [
         name: 'admin-view2-artifact',
         component: () => import('pages/AdminViewArtifacts(2).vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
+      },
+      {
+        path: 'document-scanner',
+        name: 'document-scanner',
+        component: () => import('pages/DocumentScannerPage.vue'),
+        // meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
     ],
   },
