@@ -19,7 +19,11 @@
                 <div class="book-content" :class="{ 'has-image': collection.cover_url }">
                   <!-- Show uploaded image as background if available -->
                   <div v-if="collection.cover_url" class="book-image-overlay">
-                    <img :src="collection.cover_url" :alt="collection.collection_name" class="book-background-image" />
+                    <img
+                      :src="collection.cover_url"
+                      :alt="collection.collection_name"
+                      class="book-background-image"
+                    />
                   </div>
                   <!-- Show default icon if no image -->
                   <div v-else class="book-title-section">
@@ -40,15 +44,10 @@
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-          <q-btn
-            @click="goBack"
-            label="Back"
-            class="action-btn back-btn"
-            no-caps
-            unelevated
-          />
+          <q-btn @click="goBack" label="Back" class="action-btn back-btn" no-caps unelevated />
           <div class="right-actions">
             <q-btn
+              v-if="collection.collection_name !== 'Favorites'"
               @click="openEditDialog"
               label="Edit"
               class="action-btn edit-btn"
@@ -56,6 +55,7 @@
               unelevated
             />
             <q-btn
+              v-if="collection.collection_name !== 'Favorites'"
               @click="confirmDelete"
               label="Delete"
               class="action-btn delete-btn"
@@ -85,7 +85,11 @@
             </div>
 
             <div class="two-artifacts-grid">
-              <div v-for="artifact in displayedArtifacts" :key="artifact.id" class="artifact-card-wrapper">
+              <div
+                v-for="artifact in displayedArtifacts"
+                :key="artifact.id"
+                class="artifact-card-wrapper"
+              >
                 <q-card class="my-card artifact-preview-card" rounded bordered>
                   <div class="card">
                     <model-viewer
@@ -107,13 +111,37 @@
                         class="artifact-title-link"
                         @click="logClick(artifact.id, 'artifact')"
                       >
-                        <div class="text-subtitle2 artifact-title">{{ artifact.metadata?.title || artifact.file_name }}</div>
+                        <div class="text-subtitle2 artifact-title">
+                          {{ artifact.metadata?.title || artifact.file_name }}
+                        </div>
                       </router-link>
+                      <!-- ADDED: Action Icons with Counts -->
                       <div class="action-icons">
+                        <!-- View Icon with Count -->
+                        <div class="icon-with-count">
+                          <q-icon name="visibility" class="action-icon view-icon" size="18px" />
+                          <span class="count-text">{{
+                            modelStore.viewCounts[artifact.id] || 0
+                          }}</span>
+                        </div>
+                        <!-- Star Icon with Count -->
+                        <div class="icon-with-count">
+                          <q-icon
+                            :name="artifact.starred ? 'star' : 'star_border'"
+                            class="action-icon star-icon"
+                            :class="{ starred: artifact.starred }"
+                            size="18px"
+                            @click.stop="toggleFavorite(artifact, 'artifact')"
+                          />
+                          <span class="count-text">{{
+                            modelStore.starCounts[artifact.id] || 0
+                          }}</span>
+                        </div>
                         <q-icon
+                          v-if="collection.collection_name !== 'Favorites'"
                           :name="artifact.bookmarked ? 'bookmark' : 'bookmark_border'"
                           class="action-icon bookmark-icon"
-                          :class="{ 'bookmarked': artifact.bookmarked }"
+                          :class="{ bookmarked: artifact.bookmarked }"
                           size="18px"
                           @click.stop="toggleBookmark(artifact.id, 'artifact')"
                         />
@@ -127,7 +155,7 @@
           </div>
 
           <!-- Documents Section with Previews -->
-          <div class="documents-subsection" style="margin-top: 2rem;">
+          <div class="documents-subsection" style="margin-top: 2rem">
             <div class="section-header">
               <h5 class="section-title">Documents</h5>
               <q-btn
@@ -141,7 +169,11 @@
             </div>
 
             <div class="documents-grid">
-              <div v-for="document in displayedDocuments" :key="document.id" class="document-card-wrapper">
+              <div
+                v-for="document in displayedDocuments"
+                :key="document.id"
+                class="document-card-wrapper"
+              >
                 <q-card class="my-card document-preview-card" rounded bordered>
                   <router-link
                     :to="{ name: 'view-document', params: { id: document.id } }"
@@ -173,20 +205,24 @@
                         @click="logClick(document.id, 'document')"
                       >
                         <div class="text-subtitle2 artifact-title q-mr-sm">
-                          {{ document.metadata?.title || document.file_name || 'Untitled Document' }}
+                          {{
+                            document.metadata?.title || document.file_name || 'Untitled Document'
+                          }}
                         </div>
                       </router-link>
                       <div class="action-icons">
                         <q-icon
                           :name="document.bookmarked ? 'bookmark' : 'bookmark_border'"
                           class="action-icon bookmark-icon"
-                          :class="{ 'bookmarked': document.bookmarked }"
+                          :class="{ bookmarked: document.bookmarked }"
                           size="18px"
                           @click.stop="toggleBookmark(document.id, 'document')"
                         />
                       </div>
                     </div>
-                    <p class="document-author" style="margin-left: 1.25rem">{{ document.metadata?.author || 'Unknown Author' }}</p>
+                    <p class="document-author" style="margin-left: 1.25rem">
+                      {{ document.metadata?.author || 'Unknown Author' }}
+                    </p>
                   </q-card-section>
                 </q-card>
               </div>
@@ -230,9 +266,7 @@
           </div>
 
           <div class="col-5 q-ml-lg">
-            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
-              COLLECTION NAME
-            </div>
+            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">COLLECTION NAME</div>
             <q-input
               v-model="editData.collection_name"
               class="field-collection q-mb-md"
@@ -291,11 +325,11 @@
     <q-dialog v-model="messageDialogOpen">
       <q-card class="delete-notice">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            messageDialogTitle
-          }}</q-card-section>
+          messageDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-            messageDialogContent
-          }}</q-card-section>
+          messageDialogContent
+        }}</q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Close" class="btn-save" @click="handleMessageDialogClose" />
         </q-card-actions>
@@ -322,11 +356,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -337,13 +371,17 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useModelStore } from 'stores/modelStore'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { uid } from 'quasar'
 import '@google/model-viewer'
 
+// const isFavorites = computed(() => collection.value.collection_name === 'Favorites')
+
 const route = useRoute()
 const router = useRouter()
+const modelStore = useModelStore()
 
 // Get collection ID from route params
 const collectionId = route.params.id
@@ -397,17 +435,19 @@ function showMessageDialog(title, content) {
   messageDialogOpen.value = true
 }
 
-// Helper function to show notify dialogs
-// function showNotifyDialog(title, message) {
-//   notifyDialogTitle.value = title
-//   notifyDialogMessage.value = message
-//   notifyDialogOpen.value = true
-// }
+// Helper function to show notification dialogs
+const showNotifyDialog = (title, message) => {
+  notifyDialogTitle.value = title
+  notifyDialogMessage.value = message
+  notifyDialogOpen.value = true
+}
 
 // Mount lifecycle - fetch data
 onMounted(async () => {
   await fetchCollectionInfo()
   await fetchCollectionItems()
+  await modelStore.fetchViewCounts()
+  await modelStore.fetchStarCounts()
 })
 
 // Fetch collection information
@@ -427,6 +467,27 @@ async function fetchCollectionInfo() {
 
 // Fetch collection items (documents and artifacts) - Updated to include preview_url
 async function fetchCollectionItems() {
+  const { data: authData } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  // Fetch Favorites collection
+  let favoriteIds = []
+  const { data: favoritesCollection } = await supabase
+    .from('collections')
+    .select('collection_id')
+    .eq('user_id', userId)
+    .eq('collection_name', 'Favorites')
+    .maybeSingle()
+
+  if (favoritesCollection) {
+    const { data: favItems } = await supabase
+      .from('collection_items')
+      .select('item_id, item_type')
+      .eq('collection_id', favoritesCollection.collection_id)
+
+    favoriteIds = favItems.map((i) => i.item_id)
+  }
+
   const { data: items, error } = await supabase
     .from('collection_items')
     .select('item_id, item_type')
@@ -446,7 +507,11 @@ async function fetchCollectionItems() {
       .select('id, file_name, file_url, preview_url, metadata')
       .in('id', docIds)
 
-    documents.value = (docs || []).map((doc) => ({ ...doc, bookmarked: true, starred: false }))
+    documents.value = (docs || []).map((doc) => ({
+      ...doc,
+      bookmarked: true,
+      starred: favoriteIds.includes(doc.id),
+    }))
   }
 
   if (artIds.length) {
@@ -455,7 +520,11 @@ async function fetchCollectionItems() {
       .select('id, file_name, file_url, metadata')
       .in('id', artIds)
 
-    artifacts.value = (arts || []).map((art) => ({ ...art, bookmarked: true, starred: false }))
+    artifacts.value = (arts || []).map((art) => ({
+      ...art,
+      bookmarked: true,
+      starred: favoriteIds.includes(art.id),
+    }))
   }
 }
 
@@ -655,7 +724,113 @@ async function removeItem() {
   )
 }
 
-// Navigation methods
+// ADDED: Toggle favorite
+const toggleFavorite = async (model, itemType = 'artifact') => {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (authError || !userId) {
+    console.error('Auth error:', authError)
+    return
+  }
+
+  try {
+    // Find or create Favorites collection
+    let { data: favoritesCollection } = await supabase
+      .from('collections')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    if (!favoritesCollection) {
+      const { data: newCollection, error: insertError } = await supabase
+        .from('collections')
+        .insert([
+          {
+            collection_name: 'Favorites',
+            description: 'Items you marked as favorite will appear here.',
+            user_id: userId,
+            is_default: true,
+            is_locked: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+            cover_url:
+              'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers//favoritescover.png',
+          },
+        ])
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('Insert collection failed:', insertError)
+      } else {
+        favoritesCollection = newCollection
+      }
+    }
+
+    const collectionId = favoritesCollection.collection_id
+    const itemName = model.metadata?.title || model.file_name
+
+    // Check if item already exists
+    const { data: existing } = await supabase
+      .from('collection_items')
+      .select('*')
+      .eq('collection_id', collectionId)
+      .eq('item_id', model.id)
+      .eq('item_type', itemType)
+
+    if (existing.length > 0) {
+      // Remove from favorites
+      await supabase
+        .from('collection_items')
+        .delete()
+        .eq('collection_id', collectionId)
+        .eq('item_id', model.id)
+        .eq('item_type', itemType)
+
+      model.starred = false
+      showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
+      await fetchCollectionItems()
+    } else {
+      // Add to favorites
+      await supabase.from('collection_items').insert({
+        collection_id: collectionId,
+        item_id: model.id,
+        item_type: itemType,
+      })
+
+      model.starred = true
+      showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
+    }
+
+    // Get star count
+    const { data: metaCheck, error: metaError } = await supabase
+      .from('artifacts_metadata')
+      .select('id')
+      .eq('id', model.id)
+      .single()
+
+    if (!metaError && metaCheck) {
+      const { data: starData, error: starError } = await supabase
+        .from('artifacts_star_count')
+        .select('star_count')
+        .eq('item_id', model.id)
+        .single()
+
+      if (!starError && starData) {
+        modelStore.updateStarCount(model.id, starData.star_count)
+      } else {
+        console.error('Error fetching updated star count:', starError)
+      }
+    } else {
+      console.error('Model ID not found in artifacts_metadata:', metaError)
+    }
+  } catch (err) {
+    console.error('Error toggling favorite:', err)
+  }
+}
+
 const goBack = () => {
   router.go(-1)
 }
