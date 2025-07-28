@@ -19,7 +19,6 @@ export const useModelStore = defineStore('modelStore', {
     updateStarCount(itemId, newCount) {
       this.starCounts[itemId] = newCount
     },
-
     async fetchViewCounts() {
       const { data, error } = await supabase
         .from('most_viewed_artifacts')

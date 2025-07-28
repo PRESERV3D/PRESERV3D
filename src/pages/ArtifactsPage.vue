@@ -599,17 +599,19 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
       .eq('id', model.id)
       .single()
 
+    // FIXED: Star count
     if (!metaError && metaCheck) {
-      const { data: starData, error: starError } = await supabase
+      const { data: starData } = await supabase
         .from('artifacts_star_count')
         .select('star_count')
         .eq('item_id', model.id)
-        .single()
+        .maybeSingle()
 
-      if (!starError && starData) {
+      if (starData && starData.star_count !== undefined) {
         modelStore.updateStarCount(model.id, starData.star_count)
       } else {
-        console.error('Error fetching updated star count:', starError)
+        // If no row exists, star count is 0
+        modelStore.updateStarCount(model.id, 0)
       }
     } else {
       console.error('Model ID not found in artifacts_metadata:', metaError)
@@ -1155,7 +1157,6 @@ function handleCancel() {
 </script>
 
 <style scoped>
-
 .view-icon {
   color: #7c7c7c;
   font-size: 18px;
@@ -1164,5 +1165,4 @@ function handleCancel() {
 .view-icon:hover {
   background-color: rgba(136, 0, 0, 0.1);
 }
-
 </style>

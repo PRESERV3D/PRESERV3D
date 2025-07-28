@@ -5,6 +5,8 @@ export const useDocumentsStore = defineStore('documentsStore', {
   state: () => ({
     documents: [],
     filteredDocuments: [],
+    viewCounts: {}, // { [item_id]: view_count }
+    starCounts: {}, // { [item_id]: star_count }
   }),
   actions: {
     setDocuments(docs) {
@@ -13,6 +15,41 @@ export const useDocumentsStore = defineStore('documentsStore', {
     },
     addDocument(doc) {
       this.documents.push(doc)
+    },
+    updateStarCount(itemId, newCount) {
+      this.starCounts[itemId] = newCount
+    },
+    async fetchViewCounts() {
+      const { data, error } = await supabase
+        .from('most_viewed_documents')
+        .select('item_id, view_count')
+
+      if (error) {
+        console.error('Error fetching view counts:', error)
+        return
+      }
+
+      // Build a lookup map: { id: count }
+      this.viewCounts = data.reduce((acc, row) => {
+        acc[row.item_id] = row.view_count
+        return acc
+      }, {})
+    },
+    async fetchStarCounts() {
+      // ADDED: Fetch star counts
+      const { data, error } = await supabase
+        .from('documents_star_count')
+        .select('item_id, star_count')
+
+      if (error) {
+        console.error('Error fetching star counts:', error)
+        return
+      }
+
+      this.starCounts = data.reduce((acc, row) => {
+        acc[row.item_id] = row.star_count
+        return acc
+      }, {})
     },
     sortBy(field, order) {
       this.filteredDocuments = [...this.documents]
