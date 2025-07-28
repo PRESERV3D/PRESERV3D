@@ -182,7 +182,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
@@ -300,18 +300,24 @@ watch(search, async (query) => {
   }
 })
 
-onMounted(() => {
-  // Extract the route path
-  const currentPath = route.path.substring(1)
+// Watch for route changes to update active item
+watch(
+  () => route.path,
+  (newPath) => {
+    const currentPath = newPath.substring(1)
 
-  if (route.path === '/') {
-    activeItem.value = 'home'
-  }
-  // Otherwise set active to the current path if it matches a sidebar item
-  else if (['artifacts', 'documents'].includes(currentPath)) {
-    activeItem.value = currentPath
-  }
-})
+    if (newPath === '/') {
+      activeItem.value = 'home'
+    } else if (['artifacts', 'documents'].includes(currentPath)) {
+      activeItem.value = currentPath
+    } else if (newPath.includes('home') || newPath.includes('admindash')) {
+      activeItem.value = 'home'
+    } else {
+      activeItem.value = ''
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped>
