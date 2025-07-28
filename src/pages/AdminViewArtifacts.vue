@@ -1,6 +1,5 @@
 <template>
   <q-page class="q-pa-md">
-
     <router-link to="/artifacts" class="back-button-top">
       <q-btn flat icon="arrow_back" label="Back to Artifacts" />
     </router-link>
@@ -10,7 +9,6 @@
     </div>
 
     <div v-else-if="model" class="artifact-detail-container">
-
       <!-- Editable Artifact Name/Title at the top -->
       <div class="title-section q-mb-lg">
         <q-input
@@ -22,7 +20,6 @@
       </div>
 
       <div class="main-content">
-
         <!-- Left Side: 3D Model Viewer Card -->
         <div class="artifact-card">
           <model-viewer
@@ -39,7 +36,6 @@
 
         <!-- Right Side: Information Panel -->
         <div class="info-section">
-
           <!-- Category Tag and Action Icons -->
           <div class="top-actions q-mb-lg">
             <div class="categories-container">
@@ -57,11 +53,7 @@
               </template>
               <template v-else>
                 <!-- Fallback placeholder category as there are no data yet -->
-                <q-chip
-                  class="q-mr-sm q-mt-xs category-tag"
-                >
-                  Uncategorized
-                </q-chip>
+                <q-chip class="q-mr-sm q-mt-xs category-tag"> Uncategorized </q-chip>
               </template>
 
               <!-- Add Category Input -->
@@ -139,16 +131,11 @@
                       fontSize: '16px',
                       fontWeight: '500',
                       color: 'black',
-                      fontFamily: 'Poppins, sans-serif'
+                      fontFamily: 'Poppins, sans-serif',
                     }"
                   />
                 </div>
-                <q-input
-                  v-model="editableData.author"
-                  outlined
-                  dense
-                  class="detail-input"
-                />
+                <q-input v-model="editableData.author" outlined dense class="detail-input" />
               </div>
               <div class="detail-value">
                 <div class="inline-edit-container">
@@ -161,7 +148,7 @@
                       fontSize: '16px',
                       fontWeight: '500',
                       color: 'black',
-                      fontFamily: 'Poppins, sans-serif'
+                      fontFamily: 'Poppins, sans-serif',
                     }"
                   />
                 </div>
@@ -204,12 +191,7 @@
                   <div class="a-info-title2">Donated/Loaned By:</div>
                 </div>
                 <div class="detail-value">
-                  <q-input
-                    v-model="editableData.donatedBy"
-                    outlined
-                    dense
-                    class="detail-input"
-                  />
+                  <q-input v-model="editableData.donatedBy" outlined dense class="detail-input" />
                 </div>
               </div>
 
@@ -231,14 +213,7 @@
 
             <!-- Save/Cancel Actions -->
             <div class="save-cancel-actions q-mt-lg">
-              <q-btn
-                flat
-                no-caps
-                dense
-                label="Cancel"
-                class="cancel-btn"
-                @click="cancelChanges"
-              />
+              <q-btn flat no-caps dense label="Cancel" class="cancel-btn" @click="cancelChanges" />
               <q-btn
                 flat
                 no-caps
@@ -300,11 +275,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -338,7 +313,7 @@ const editableLabels = ref({
   date: 'Date',
   dataSource: 'Data Source',
   donatedBy: 'Donated/Loaned By:',
-  dateReceived: 'Date Received:'
+  dateReceived: 'Date Received:',
 })
 
 // Reactive reference for all editable data
@@ -349,7 +324,7 @@ const editableData = ref({
   date: '',
   dataSource: '',
   donatedBy: '',
-  dateReceived: ''
+  dateReceived: '',
 })
 
 // Collection dialog state
@@ -380,38 +355,42 @@ function formatDateForInput(dateStr) {
 }
 
 // Initialize editable data when model changes
-watch(model, (newModel) => {
-  if (newModel) {
-    // Initialize categories
-    if (newModel.metadata?.categories) {
-      editableCategories.value = [...newModel.metadata.categories]
+watch(
+  model,
+  (newModel) => {
+    if (newModel) {
+      // Initialize categories
+      if (newModel.metadata?.categories) {
+        editableCategories.value = [...newModel.metadata.categories]
+      } else {
+        editableCategories.value = []
+      }
+
+      // Initialize all editable data
+      editableData.value = {
+        title: newModel.metadata?.title || 'Untitled Artifact',
+        summary: newModel.metadata?.summary || '',
+        author: newModel.metadata?.author || '[Author Name]',
+        date: newModel.metadata?.date || '',
+        dataSource: newModel.data_source || 'Artifacts Metadata',
+        donatedBy: newModel.donated_by || '[Donor/Lender Name]',
+        dateReceived: formatDateForInput(newModel.date_received || newModel.uploaded_at),
+      }
     } else {
       editableCategories.value = []
+      editableData.value = {
+        title: '',
+        summary: '',
+        author: '',
+        date: '',
+        dataSource: '',
+        donatedBy: '',
+        dateReceived: '',
+      }
     }
-
-    // Initialize all editable data
-    editableData.value = {
-      title: newModel.metadata?.title || 'Untitled Artifact',
-      summary: newModel.metadata?.summary || '',
-      author: newModel.metadata?.author || '[Author Name]',
-      date: newModel.metadata?.date || '',
-      dataSource: newModel.data_source || 'Artifacts Metadata',
-      donatedBy: newModel.donated_by || '[Donor/Lender Name]',
-      dateReceived: formatDateForInput(newModel.date_received || newModel.uploaded_at)
-    }
-  } else {
-    editableCategories.value = []
-    editableData.value = {
-      title: '',
-      summary: '',
-      author: '',
-      date: '',
-      dataSource: '',
-      donatedBy: '',
-      dateReceived: ''
-    }
-  }
-}, { immediate: true })
+  },
+  { immediate: true },
+)
 
 // Category management functions
 const toggleCategoryInput = () => {
@@ -448,12 +427,12 @@ const saveChanges = async () => {
             categories: [...editableCategories.value],
             summary: editableData.value.summary,
             author: editableData.value.author,
-            date: editableData.value.date
+            date: editableData.value.date,
           },
           data_source: editableData.value.dataSource,
           donated_by: editableData.value.donatedBy,
           date_received: editableData.value.dateReceived,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', model.value.id)
 
@@ -472,16 +451,16 @@ const saveChanges = async () => {
           categories: [...editableCategories.value],
           summary: editableData.value.summary,
           author: editableData.value.author,
-          date: editableData.value.date
+          date: editableData.value.date,
         },
         data_source: editableData.value.dataSource,
         donated_by: editableData.value.donatedBy,
         date_received: editableData.value.dateReceived,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }
 
       // Update in store if exists
-      const storeModel = modelStore.models.find(m => m.id === model.value.id)
+      const storeModel = modelStore.models.find((m) => m.id === model.value.id)
       if (storeModel) {
         Object.assign(storeModel, model.value)
       }
@@ -490,7 +469,6 @@ const saveChanges = async () => {
 
       // Redirect to admin-view2-artifact page
       router.push(`/admin/artifacts2/${model.value.id}`)
-
     } catch (err) {
       console.error('Unexpected error:', err)
       showNotifyDialog('Error', 'An unexpected error occurred.')
@@ -513,7 +491,7 @@ const cancelChanges = () => {
       date: model.value.metadata?.date || '',
       dataSource: model.value.data_source || 'Artifacts Metadata',
       donatedBy: model.value.donated_by || '[Donor/Lender Name]',
-      dateReceived: formatDateForInput(model.value.date_received || model.value.uploaded_at)
+      dateReceived: formatDateForInput(model.value.date_received || model.value.uploaded_at),
     }
   }
   newCategory.value = ''
@@ -694,8 +672,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-
-// ADMIN VIEW PAGE ARTIFACT
+/* ADMIN VIEW PAGE ARTIFACT */
 
 .title-section {
   width: 100%;
@@ -818,5 +795,4 @@ onMounted(async () => {
 .summary-input {
   width: 100%;
 }
-
 </style>
