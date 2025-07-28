@@ -1,6 +1,5 @@
 <template>
   <q-page class="q-pa-md">
-
     <router-link to="/artifacts" class="back-button-top">
       <q-btn flat icon="arrow_back" label="Back to Artifacts" />
     </router-link>
@@ -10,12 +9,10 @@
     </div>
 
     <div v-else-if="model" class="artifact-detail-container">
-
       <!-- Artifact Name/Title at the top -->
       <h2 class="a-title q-mb-lg">{{ model.metadata.title }}</h2>
 
       <div class="main-content">
-
         <!-- Left Side: 3D Model Viewer Card -->
         <div class="artifact-card">
           <model-viewer
@@ -32,7 +29,6 @@
 
         <!-- Right Side: Information Panel -->
         <div class="info-section">
-
           <!-- Category Tag and Action Icons -->
           <div class="top-actions q-mb-lg">
             <div class="categories-container">
@@ -49,11 +45,7 @@
                 </template>
                 <template v-else>
                   <!-- Fallback placeholder category as there are no data yet -->
-                  <q-chip
-                    class="q-mr-sm q-mt-xs category-tag"
-                  >
-                    Uncategorized
-                  </q-chip>
+                  <q-chip class="q-mr-sm q-mt-xs category-tag"> Uncategorized </q-chip>
                 </template>
               </div>
 
@@ -66,13 +58,7 @@
                   @click="editArtifact"
                   no-caps
                 />
-                <q-btn
-                  flat
-                  label="Delete"
-                  class="text-button"
-                  @click="deleteArtifact"
-                  no-caps
-                />
+                <q-btn flat label="Delete" class="text-button" @click="deleteArtifact" no-caps />
               </div>
             </div>
           </div>
@@ -129,7 +115,9 @@
                   <div class="a-info-title2">Date Received:</div>
                 </div>
                 <div class="detail-value">
-                  <div class="a-info-subtitle">{{ formatDate(model.date_received || model.uploaded_at) }}</div>
+                  <div class="a-info-subtitle">
+                    {{ formatDate(model.date_received || model.uploaded_at) }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -146,12 +134,11 @@
     <q-dialog v-model="deleteDialogOpen">
       <q-card class="add-to-collections">
         <q-card-section class="collection-header">
-          <div class="sub-font-3" style="font-size: 18px; font-weight: 800">
-            Confirm Delete
-          </div>
+          <div class="sub-font-3" style="font-size: 18px; font-weight: 800">Confirm Delete</div>
         </q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">
-          Are you sure you want to delete "{{ model?.metadata?.title }}"? This action cannot be undone.
+          Are you sure you want to delete "{{ model?.metadata?.title }}"? This action cannot be
+          undone.
         </q-card-section>
         <q-card-actions class="collection-footer" align="center">
           <q-btn label="Delete" color="negative" @click="confirmDelete" />
@@ -202,11 +189,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -266,10 +253,7 @@ const deleteArtifact = () => {
 
 const confirmDelete = async () => {
   try {
-    const { error } = await supabase
-      .from('artifacts_metadata')
-      .delete()
-      .eq('id', model.value.id)
+    const { error } = await supabase.from('artifacts_metadata').delete().eq('id', model.value.id)
 
     if (error) {
       console.error('Delete error:', error)
@@ -278,7 +262,7 @@ const confirmDelete = async () => {
     }
 
     // Remove from store if it exists there
-    const storeIndex = modelStore.models.findIndex(m => m.id === model.value.id)
+    const storeIndex = modelStore.models.findIndex((m) => m.id === model.value.id)
     if (storeIndex !== -1) {
       modelStore.models.splice(storeIndex, 1)
     }
@@ -350,16 +334,16 @@ const confirmDelete = async () => {
 //     return
 //   }
 
-  // const { data, error } = await supabase
-  //   .from('collections')
-  //   .select('collection_id, collection_name')
-  //   .eq('user_id', userId)
-  //
-  // if (!error) {
-  //   userCollections.value = data
-  // } else {
-  //   console.error('Failed to load collections:', error)
-  // }
+// const { data, error } = await supabase
+//   .from('collections')
+//   .select('collection_id, collection_name')
+//   .eq('user_id', userId)
+//
+// if (!error) {
+//   userCollections.value = data
+// } else {
+//   console.error('Failed to load collections:', error)
+// }
 
 const saveToSelectedCollections = async () => {
   const modelItem = selectedModel.value
@@ -480,7 +464,7 @@ onMounted(async () => {
   gap: 1rem;
 }
 
-// ADMIN VIEW PAGE ARTIFACT
+/* ADMIN VIEW PAGE ARTIFACT */
 
 .title-section {
   width: 100%;
@@ -604,5 +588,3 @@ onMounted(async () => {
   width: 100%;
 }
 </style>
-
-
