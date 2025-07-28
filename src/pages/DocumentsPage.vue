@@ -135,11 +135,7 @@
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
                 >
-                  <q-img
-                    :src="doc.preview_url + '?t=' + Date.now()"
-                    alt="Document Preview"
-                    class="document"
-                  />
+                  <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
                 </router-link>
                 <div class="q-py-xs doc-align-items">
                   <!-- Visibility Icon (static) -->
@@ -307,11 +303,7 @@
                   class="document-link"
                   @click="logClick(doc.id, 'document')"
                 >
-                  <q-img
-                    :src="doc.preview_url + '?t=' + Date.now()"
-                    alt="Document Preview"
-                    class="document"
-                  />
+                  <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
                 </router-link>
 
                 <div class="q-py-xs doc-align-items">

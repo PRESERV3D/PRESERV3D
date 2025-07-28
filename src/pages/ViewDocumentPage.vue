@@ -13,7 +13,7 @@
         </div>
         <div class="col-auto">
           <q-img
-            :src="doc.preview_url + '?t=' + Date.now()"
+            :src="doc.preview_url"
             class="document-img"
             style="margin-top: 1.5rem; z-index: 1"
           />
