@@ -199,6 +199,7 @@ const showDialog = ref(false)
 const dialog = ref(false)
 const metadata = ref(null)
 const userStore = useUserStore()
+const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 
 const userRole = userStore.profile.role
 const isAdmin = computed(() => userRole === 'admin')
@@ -266,25 +267,49 @@ async function saveMetadata(newMetadata) {
 
 async function handleDelete() {
   try {
-    console.log('Trying to delete ID:', route.params.id)
+    console.log('Trying to soft-delete ID:', route.params.id)
 
-    const { data, error } = await supabase
+    // Fetch the original record
+    const { data: originalData, error: fetchError } = await supabase
+      .from('documents_metadata')
+      .select('*')
+      .eq('id', route.params.id)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching original document:', fetchError)
+      alert('Failed to fetch the document.')
+      return
+    }
+
+    // Insert into deleted table
+    const { error: deleteError } = await supabase.from('deleted_documents').insert({
+      ...originalData,
+      deleted_at: new Date().toISOString(), // Add timestamp
+      deleted_by: user,
+    })
+
+    if (deleteError) {
+      console.error('Error deleting document:', deleteError)
+      alert('Failed to delete the document.')
+      return
+    }
+
+    // Delete the original record
+    const { error: delError } = await supabase
       .from('documents_metadata')
       .delete()
       .eq('id', route.params.id)
 
-    console.log(data)
-
-    if (error) {
-      console.error('Delete error:', error)
+    if (delError) {
+      console.error('Error deleting document:', delError)
       alert('Failed to delete the document.')
+      return
     } else {
-      alert('Document deleted successfully.')
-      showDialog.value = false
-      router.push({ name: 'documents' })
+      router.push('/documents')
     }
   } catch (err) {
-    console.error('Unexpected error during delete:', err)
+    console.error('Unexpected error during soft delete:', err)
     alert('An unexpected error occurred.')
   }
 }
