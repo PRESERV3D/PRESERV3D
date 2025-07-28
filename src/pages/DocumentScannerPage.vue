@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { jsPDF } from 'jspdf'
 import { useRouter } from 'vue-router'
 
@@ -126,6 +126,10 @@ onMounted(async () => {
   canvas.value?.addEventListener('mouseup', onMouseUp)
 })
 
+onUnmounted(() => {
+  stopCamera()
+})
+
 watch(scannedImages, () => {
   if (scannedImages.value.length) {
     estimatePdfSize().then((size) => {
@@ -147,6 +151,15 @@ function takePhoto() {
   canvas.value.style.display = 'block'
 
   detectEdges()
+}
+
+function stopCamera() {
+  if (video.value && video.value.srcObject) {
+    const stream = video.value.srcObject
+    const tracks = stream.getTracks()
+    tracks.forEach((track) => track.stop())
+    video.value.srcObject = null
+  }
 }
 
 async function detectEdges() {
@@ -514,7 +527,8 @@ async function confirmExport({ uploadPdf = false } = {}) {
   })
 
   if (uploadPdf) {
-    router.replace({ name: 'documents', state: { scannedFile: file } })
+    router.push({ name: 'documents', state: { scannedFile: file } })
+    stopCamera()
   } else {
     pdf.save(`${pdfFileName.value || 'scanned-document'}.pdf`)
   }

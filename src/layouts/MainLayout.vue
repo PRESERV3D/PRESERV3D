@@ -305,13 +305,17 @@ watch(search, async (query) => {
 watch(
   () => route.path,
   (newPath) => {
-    const currentPath = newPath.substring(1)
-
     if (newPath === '/') {
       activeItem.value = 'home'
-    } else if (['artifacts', 'documents'].includes(currentPath)) {
-      activeItem.value = currentPath
-    } else if (newPath.includes('home') || newPath.includes('admindash')) {
+    } else if (newPath.includes('artifacts')) {
+      activeItem.value = 'artifacts'
+    } else if (newPath.includes('documents') || newPath.includes('document-scanner')) {
+      activeItem.value = 'documents'
+    } else if (
+      newPath.includes('home') ||
+      newPath.includes('admindash') ||
+      newPath.includes('collection')
+    ) {
       activeItem.value = 'home'
     } else {
       activeItem.value = ''
