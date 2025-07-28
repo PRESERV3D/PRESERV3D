@@ -24,6 +24,7 @@
                 alt="Your Logo"
                 style="max-width: 200px; max-height: 80px; object-fit: contain"
                 class="q-mb-sm"
+                @click="setActiveItem('home')"
               />
             </div>
           </div>
