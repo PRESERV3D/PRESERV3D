@@ -4,10 +4,10 @@
     <div class="layout-container">
       <div class="box-1 row items-center">
         <div class="col-7 q-gutter-xs">
-          <p class="q-ml-xl admin-title">
+          <p class="q-ml-xl dash-title">
             <span v-if="userStore.profile">Welcome Back, {{ userStore.profile.first_name }}!</span>
           </p>
-          <p class="q-ml-xl admin-subtitle">
+          <p class="q-ml-xl dash-subtitle">
             <span v-if="userStore.profile?.role === 'admin'">(Admin Access) - </span>
             Explore University artifacts, historic documents, and <br />
             virtual museum exhibits.
@@ -28,7 +28,7 @@
 
       <!-- Recently Viewed Section -->
       <div class="box-2">
-        <p class="q-ml-lg admin-title-2">Recently Viewed</p>
+        <p class="q-ml-lg title-font-2">Recently Viewed</p>
         <div class="q-px-md q-pb-md">
           <div v-if="recentItems.length > 0" class="column q-gutter-xs">
             <div
@@ -64,13 +64,13 @@
                   "
                 />
                 <!-- FIXED: Added item_type parameter to star toggle -->
-                <!--           <q-btn
+                <q-btn
                   flat
                   round
                   :icon="item.starred ? 'star' : 'star_border'"
-                  class="star-icon"
-                  @click="toggleStar(item.id, item.item_type)"
-                /> -->
+                  class="action-icon star-icon"
+                  :color="item.starred ? 'yellow' : 'grey'"
+                />
               </div>
             </div>
           </div>
@@ -83,7 +83,7 @@
     <div class="layout-container q-my-lg">
       <div class="box-3 q-px-lg">
         <div class="row item-center justify-between q-mb-sm">
-          <p class="q-ml-lg admin-title-2">New in the Archives</p>
+          <p class="q-ml-lg title-font-2">New in the Archives</p>
         </div>
 
         <!-- Loading Spinner for Featured Models -->
@@ -118,23 +118,34 @@
                       {{ model.metadata?.title || model.file_name }}
                     </div>
                   </router-link>
+                  <!-- FIXED: Action icons-->
                   <div class="action-icons">
-                    <!-- FIXED: Added 'artifact' parameter to bookmark toggle
+                    <!-- View Icon with Count -->
+                    <div class="icon-with-count">
+                      <q-icon name="visibility" class="action-icon view-icon" size="18px" />
+                      <span class="count-text">{{ modelStore.viewCounts[model.id] || 0 }}</span>
+                    </div>
+
+                    <!-- Star Icon with Count -->
+                    <div class="icon-with-count">
+                      <q-icon
+                        :name="model.starred ? 'star' : 'star_border'"
+                        class="action-icon star-icon"
+                        :class="{ starred: model.starred }"
+                        size="18px"
+                        @click.stop="toggleFavorite(model, 'artifact')"
+                      />
+                      <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
+                    </div>
+
+                    <!-- Bookmark Icon -->
                     <q-icon
                       :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                       class="action-icon bookmark-icon"
                       :class="{ bookmarked: model.bookmarked }"
                       size="18px"
-                      @click.stop="toggleBookmark(model.id, 'artifact')"
-                    /> -->
-                    <!-- FIXED: Added 'artifact' parameter to star toggle -->
-                    <!-- <q-icon
-                      :name="model.starred ? 'star' : 'star_border'"
-                      class="action-icon star-icon"
-                      :class="{ starred: model.starred }"
-                      size="18px"
-                      @click.stop="toggleStar(model.id, 'artifact')"
-                    /> -->
+                      @click.stop="openBookmarkDialog(model, 'artifact')"
+                    />
                   </div>
                 </div>
               </q-card-section>
@@ -148,7 +159,7 @@
     <div class="layout-container q-my-lg">
       <div class="box-3 q-px-lg">
         <div class="row items-center justify-between q-mb-sm q-mt-sm">
-          <p class="q-ml-lg admin-title-2">Collections</p>
+          <p class="q-ml-lg title-font-2">Collections</p>
           <!-- Filter, Sort, and Add New button in the upper right -->
           <div class="row q-gutter-sm items-center q-pr-sm">
             <q-btn
@@ -250,8 +261,20 @@
                 <q-card-section class="q-pa-sm artifact-card-section">
                   <div class="title-row">
                     <div class="collection-title-link">
-                      <div class="text-subtitle2 artifact-title">
+                      <div
+                        class="text-subtitle2 artifact-title row items-center title-with-tooltip"
+                      >
                         {{ collection.collection_name }}
+
+                        <!-- ADDED: Pinned icon for Favorites -->
+                        <q-icon
+                          v-if="collection.collection_name === 'Favorites'"
+                          name="push_pin"
+                          class="q-ml-xs text-primary"
+                          size="18px"
+                        />
+
+                        <div class="tooltip-box">{{ collection.collection_name }}</div>
                       </div>
                     </div>
                   </div>
@@ -266,8 +289,8 @@
         </div>
 
         <!-- See All Link -->
-        <div class="row justify-end q-pr-sm q-pb-sm">
-          <router-link to="/collections" class="see-all-link" style="margin-top: 0.5rem">
+        <div class="row justify-end q-pr-sm" style="margin-top: -1.25rem">
+          <router-link to="/collections" class="see-all-link">
             See All
             <q-icon name="arrow_forward" size="16px" class="q-ml-xs" />
           </router-link>
@@ -341,6 +364,59 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- Message Dialog -->
+    <q-dialog v-model="notifyDialogOpen">
+      <q-card class="sucess-add-to-collection">
+        <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
+          notifyDialogTitle
+        }}</q-card-section>
+        <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
+          notifyDialogMessage
+        }}</q-card-section>
+        <q-card-actions>
+          <q-btn flat label="Close" class="btn-save" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Bookmark Dialog -->
+    <q-dialog v-model="dialogOpen">
+      <q-card class="add-to-collections">
+        <q-card-section class="collection-header">
+          <div class="sub-font-3" style="font-size: 18px; font-weight: 800">
+            Choose a Collection
+          </div>
+        </q-card-section>
+        <q-card-section class="collections-scroll-container">
+          <div v-if="userCollections.length > 0">
+            <div
+              v-for="collection in userCollections"
+              :key="collection.collection_id"
+              class="q-py-sm flex items-center justify-between"
+              style="font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 500"
+            >
+              <span>{{ collection.collection_name }}</span>
+              <q-checkbox
+                v-model="selectedCollections"
+                :val="collection.collection_id"
+                dense
+                color="primary"
+              />
+            </div>
+          </div>
+
+          <div v-else class="text-caption text-grey text-center">
+            You don't have any collections yet.
+          </div>
+        </q-card-section>
+
+        <q-card-actions class="collection-footer" align="center">
+          <q-btn label="Save" color="primary" @click="saveToSelectedCollections" />
+          <q-btn flat label="Cancel" v-close-popup @click="resetForm2" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -383,6 +459,19 @@ const featuredModels = computed(() => {
   return modelStore.models.slice(0, 3)
 })
 
+// Collection dialog state
+const dialogOpen = ref(false)
+const selectedModel = ref(null)
+const selectedItemType = ref('artifact')
+const userCollections = ref([])
+const selectedCollections = ref([])
+const existingCollectionIds = ref([])
+
+// Notification dialog state
+const notifyDialogOpen = ref(false)
+const notifyDialogTitle = ref('')
+const notifyDialogMessage = ref('')
+
 // Initialize page
 onMounted(async () => {
   try {
@@ -394,7 +483,7 @@ onMounted(async () => {
 
     if (authError || !authUser) {
       console.error('Auth error:', authError)
-      router.push('/user/login')
+      router.replace('/user/login')
       return
     }
 
@@ -403,17 +492,25 @@ onMounted(async () => {
 
     // Load all data
     await Promise.all([loadCollections(authUser.id), loadRecentViews(authUser.id), loadModels()])
+
+    await loadUserCollections()
   } catch (err) {
     // ADDED: Top-level error handling from INDEX page
     console.error('Error initializing page:', err)
   }
 })
 
-// Load collections from Supabase
+const showNotifyDialog = (title, message) => {
+  notifyDialogTitle.value = title
+  notifyDialogMessage.value = message
+  notifyDialogOpen.value = true
+}
+
+// FIXED: Load collections from Supabase
 async function loadCollections(userId) {
   isLoading.value = true
   try {
-    // ADDED: Try-catch wrapper for better error handling
+    // Try-catch wrapper for better error handling
     const { data, error } = await supabase
       .from('collections')
       .select('collection_name, cover_url, collection_id')
@@ -423,7 +520,12 @@ async function loadCollections(userId) {
     if (error) {
       console.error('Error loading collections:', error)
     } else {
-      collections.value = data
+      // Separate and pin the "Favorites" collection
+      const favorites = data.find((c) => c.collection_name === 'Favorites')
+      const others = data.filter((c) => c.collection_name !== 'Favorites')
+
+      // Combine and assign to collections
+      collections.value = favorites ? [favorites, ...others] : others
     }
   } catch (err) {
     console.error('Error loading collections:', err)
@@ -487,7 +589,7 @@ async function loadRecentViews(userId) {
 async function loadModels() {
   isLoadingModels.value = true
   try {
-    // FIXED: Added uploaded_at and updated_at fields like INDEX page
+    // Added uploaded_at and updated_at fields like INDEX page
     const { data, error } = await supabase
       .from('artifacts_metadata')
       .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
@@ -496,9 +598,46 @@ async function loadModels() {
 
     if (error) {
       console.error('Error loading models:', error)
-    } else {
-      modelStore.setModels(data)
+      return
     }
+
+    // Fetch user favorites and bookmarks
+    const { data: authData } = await supabase.auth.getUser()
+    const userId = authData?.user?.id
+
+    // Fetch Favorites collection items
+    const { data: favoritesCollection, error: favError } = await supabase
+      .from('collections')
+      .select('collection_id')
+      .eq('user_id', userId)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    if (favError) {
+      console.error('Error fetching favorite items:', favError)
+    }
+
+    let favoriteIds = []
+    if (favoritesCollection) {
+      const { data: favItems, error: favItemsError } = await supabase
+        .from('collection_items')
+        .select('item_id')
+        .eq('collection_id', favoritesCollection.collection_id)
+        .eq('item_type', 'artifact')
+
+      if (!favItemsError) {
+        favoriteIds = favItems.map((i) => i.item_id)
+      }
+    }
+
+    // Add some mock data for demonstration compatibility
+    const enhancedModels = data.map((model) => ({
+      ...model,
+      bookmarked: false,
+      starred: favoriteIds.includes(model.id),
+    }))
+
+    modelStore.setModels(enhancedModels)
   } catch (err) {
     console.error('Failed to load models:', err)
   }
@@ -602,52 +741,262 @@ async function viewItem(item) {
   }
 }
 
-// FIXED: Toggle star with proper parameter handling and database updates
-// const toggleStar = async (itemId, itemType = 'artifact') => {
-//   try {
-//     if (itemType === 'artifact') {
-//       const model = modelStore.models.find((m) => m.id === itemId)
-//       if (model) {
-//         model.starred = !model.starred
-//         // ADDED: Database update from INDEX page logic
-//         await supabase
-//           .from('artifacts_metadata')
-//           .update({ starred: model.starred })
-//           .eq('id', itemId)
-//       }
-//     } else {
-//       // ADDED: Handle recent items star toggle
-//       const item = recentItems.value.find((i) => i.id === itemId)
-//       if (item) {
-//         item.starred = !item.starred
-//         // Update in appropriate table
-//         const tableName = itemType === 'artifact' ? 'artifacts_metadata' : 'documents_metadata'
-//         await supabase.from(tableName).update({ starred: item.starred }).eq('id', itemId)
-//       }
-//     }
-//   } catch (err) {
-//     console.error('Error toggling star:', err)
-//   }
-// }
+// ADDED: Collection dialog methods
+const openBookmarkDialog = async (model, type = 'artifact') => {
+  selectedModel.value = model
+  selectedItemType.value = type
+  dialogOpen.value = true
 
-// FIXED: Toggle bookmark with proper parameter handling and database updates
-// const toggleBookmark = async (itemId, itemType = 'artifact') => {
-//   try {
-//     if (itemType === 'artifact') {
-//       const model = modelStore.models.find((m) => m.id === itemId)
-//       if (model) {
-//         model.bookmarked = !model.bookmarked
-//         // ADDED: Database update from INDEX page logic
-//         await supabase
-//           .from('artifacts_metadata')
-//           .update({ bookmarked: model.bookmarked })
-//           .eq('id', itemId)
-//       }
-//     }
-//   } catch (err) {
-//     console.error('Error toggling bookmark:', err)
-//   }
-// }
+  await loadUserCollections()
+
+  // Check existing collections of an item
+  const { data: existingItems, error } = await supabase
+    .from('collection_items')
+    .select('collection_id')
+    .eq('item_id', model.id)
+    .eq('item_type', type)
+
+  if (error) {
+    console.error('Error checking existing collections:', error)
+    selectedCollections.value = []
+    existingCollectionIds.value = []
+    return
+  }
+
+  const existingIds = []
+  for (const item of existingItems) {
+    existingIds.push(item.collection_id)
+  }
+
+  selectedCollections.value = [...existingIds]
+  existingCollectionIds.value = [...existingIds]
+}
+
+const loadUserCollections = async () => {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (authError || !userId) {
+    console.error('Auth error loading collections:', authError)
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('collections')
+    .select('collection_id, collection_name')
+    .eq('user_id', userId)
+
+  if (!error) {
+    // Exclude "Favorites" from the list
+    userCollections.value = data.filter((c) => c.collection_name !== 'Favorites')
+  } else {
+    console.error('Failed to load collections:', error)
+  }
+}
+
+const saveToSelectedCollections = async () => {
+  const model = selectedModel.value
+
+  if (!model) return
+
+  try {
+    const insertedCollections = []
+    const removedCollections = []
+
+    const toAdd = selectedCollections.value.filter(
+      (id) => !existingCollectionIds.value.includes(id),
+    )
+    const toRemove = existingCollectionIds.value.filter(
+      (id) => !selectedCollections.value.includes(id),
+    )
+
+    for (const collectionId of toAdd) {
+      const collection = userCollections.value.find((c) => c.collection_id === collectionId)
+
+      const { error: insertError } = await supabase.from('collection_items').insert({
+        collection_id: collectionId,
+        item_id: model.id,
+        item_type: selectedItemType.value,
+      })
+
+      // Mark model as bookmarked if added to a collection
+      model.bookmarked = true
+
+      if (insertError) {
+        console.error('Insert failed:', insertError)
+        showNotifyDialog('Error', 'Failed to save to collection(s).')
+        return
+      }
+
+      if (collection) insertedCollections.push(collection.collection_name)
+    }
+
+    for (const collectionId of toRemove) {
+      const collection = userCollections.value.find((c) => c.collection_id === collectionId)
+
+      const { error: deleteError } = await supabase
+        .from('collection_items')
+        .delete()
+        .eq('collection_id', collectionId)
+        .eq('item_id', model.id)
+        .eq('item_type', selectedItemType.value)
+
+      if (deleteError) {
+        console.error('Delete failed:', deleteError)
+        showNotifyDialog('Error', 'Failed to remove from collection(s).')
+        return
+      }
+
+      if (collection) removedCollections.push(collection.collection_name)
+    }
+
+    const itemName = model.metadata?.title || model.file_name
+    let message = ''
+
+    if (insertedCollections.length > 0) {
+      message += `"${itemName}" was added to: ${insertedCollections.join(', ')}.\n`
+    }
+
+    if (removedCollections.length > 0) {
+      message += `"${itemName}" was removed from: ${removedCollections.join(', ')}.`
+    }
+
+    if (message) {
+      showNotifyDialog('Notice', message.trim())
+    }
+
+    // Recheck if model is in any non-Favorites collection
+    const { data: remainingItems, error: recheckError } = await supabase
+      .from('collection_items')
+      .select('collection_id, collections (collection_name)')
+      .eq('item_id', model.id)
+      .eq('item_type', selectedItemType.value)
+
+    if (!recheckError) {
+      model.bookmarked = remainingItems.some(
+        (item) => item.collections?.collection_name !== 'Favorites',
+      )
+    } else {
+      console.error('Error rechecking bookmark status:', recheckError)
+    }
+
+    dialogOpen.value = false
+  } catch (err) {
+    console.error('Unexpected error:', err)
+    showNotifyDialog('Error', 'An unexpected error occurred.')
+  }
+}
+
+const resetForm2 = () => {
+  selectedCollections.value = []
+  existingCollectionIds.value = []
+}
+
+// ADDED: Toggle favorites
+const toggleFavorite = async (model, itemType = 'artifact') => {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (authError || !userId) {
+    console.error('Auth error:', authError)
+    return
+  }
+
+  try {
+    // Find or create Favorites collection
+    let { data: favoritesCollection } = await supabase
+      .from('collections')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    if (!favoritesCollection) {
+      const { data: newCollection, error: insertError } = await supabase
+        .from('collections')
+        .insert([
+          {
+            collection_name: 'Favorites',
+            description: 'Items you marked as favorite will appear here.',
+            user_id: userId,
+            is_default: true,
+            is_locked: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+            cover_url:
+              'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers//favoritescover.png',
+          },
+        ])
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('Insert collection failed:', insertError)
+      } else {
+        favoritesCollection = newCollection
+      }
+    }
+
+    const collectionId = favoritesCollection.collection_id
+    const itemName = model.metadata?.title || model.file_name
+
+    // Check if item already exists
+    const { data: existing } = await supabase
+      .from('collection_items')
+      .select('*')
+      .eq('collection_id', collectionId)
+      .eq('item_id', model.id)
+      .eq('item_type', itemType)
+
+    if (existing.length > 0) {
+      // Remove from favorites
+      await supabase
+        .from('collection_items')
+        .delete()
+        .eq('collection_id', collectionId)
+        .eq('item_id', model.id)
+        .eq('item_type', itemType)
+
+      model.starred = false
+      showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
+    } else {
+      // Add to favorites
+      await supabase.from('collection_items').insert({
+        collection_id: collectionId,
+        item_id: model.id,
+        item_type: itemType,
+      })
+
+      model.starred = true
+      showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
+    }
+
+    // Get star count
+    const { data: metaCheck, error: metaError } = await supabase
+      .from('artifacts_metadata')
+      .select('id')
+      .eq('id', model.id)
+      .single()
+
+    if (!metaError && metaCheck) {
+      const { data: starData, error: starError } = await supabase
+        .from('artifacts_star_count')
+        .select('star_count')
+        .eq('item_id', model.id)
+        .single()
+
+      if (!starError && starData) {
+        modelStore.updateStarCount(model.id, starData.star_count)
+      } else {
+        console.error('Error fetching updated star count:', starError)
+      }
+    } else {
+      console.error('Model ID not found in artifacts_metadata:', metaError)
+    }
+  } catch (err) {
+    console.error('Error toggling favorite:', err)
+  }
+}
 
 // FIXED: Added proper filter and sort handler functions
 // const selectFilter = (option) => {
@@ -752,3 +1101,120 @@ async function addCollection() {
   }
 }
 </script>
+
+<style scoped>
+.layout-container {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.layout-container.no-gap {
+  gap: 0;
+}
+
+.my-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.my-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.artifact-card-section {
+  flex-shrink: 0;
+}
+
+/* STYLING
+/* Recently Viewed Item Styles */
+.recently-viewed-item {
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.recently-viewed-item:hover {
+  background-color: rgba(136, 0, 0, 0.05);
+}
+
+.circular-holder {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: rgba(136, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.circle-icon-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 25px; /* Make it much bigger */
+  z-index: 10;
+}
+
+.circular-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.item-details {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.artifact-name {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #560505;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.view-info {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: #7c7c7c;
+  margin: 0;
+  margin-top: 2px;
+}
+
+.view-icon {
+  color: #7c7c7c;
+  font-size: 18px;
+}
+
+.view-icon:hover {
+  background-color: rgba(136, 0, 0, 0.1);
+}
+
+.artifact-title-link {
+  text-decoration: none;
+  flex: 1;
+}
+
+.artifact-title-link:hover {
+  color: #560505;
+}
+
+.collection-card {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+</style>

@@ -17,64 +17,99 @@
       </div>
     </div>
 
+    <!-- Upload Dialog -->
     <q-dialog v-model="showDialog" persistent>
       <q-card class="add-documentarti-card">
-        <q-card-section
-          class="box-upload-docuarti"
-          @dragover.prevent="onDragOver"
-          @dragleave.prevent="onDragLeave"
-          @drop.prevent="onFileDrop"
-          :class="{ 'drag-over': isDragging }"
-        >
-          <q-img
-            src="src/assets/img/drag-drop-icon.png"
-            alt="Upload-Document"
-            class="upload-icon-docu"
-          />
-          <div
+        <div class="upload-sections-container">
+          <!-- Camera Section -->
+          <q-card-section
+            class="two-box-upload-docuarti camera-section"
             v-if="!selectedFile"
-            class="sub-font-3 text-center"
-            style="font-size: 14px; font-weight: 200"
+            @click="handleScan"
           >
-            <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
-              DRAG and DROP files
-            </div>
-            or <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a> on
-            your computer
-          </div>
-          <div v-else class="documentarti-preview text-center">
-            <q-img src="src/assets/img/document-icon.png" alt="Document" class="document-icon" />
-            <div class="selected-document-name q-mt-md">
-              {{ selectedFile.name }}
-            </div>
-            <!-- Upload progress bar -->
-            <q-linear-progress
-              v-if="uploading"
-              :value="uploadProgress / 100"
-              color="primary"
-              class="q-mt-md full-width"
+            <q-img src="src/assets/img/camera.png" alt="Camera" class="upload-icon-docu" />
+            <q-btn
+              outline
+              label="Use Camera"
+              class="camera-btn"
+              @click="handleScan"
+              no-caps
+              style="color: #560505; border-radius: 4px; padding: 4px 24px"
             />
-          </div>
-          <input
-            type="file"
-            ref="fileInput"
-            accept=".pdf"
-            style="display: none"
-            @change="handleFileChange"
-          />
-        </q-card-section>
+          </q-card-section>
+
+          <!-- Upload Section -->
+          <q-card-section
+            class="two-box-upload-docuarti upload-section"
+            @dragover.prevent="onDragOver"
+            @dragleave.prevent="onDragLeave"
+            @drop.prevent="onFileDrop"
+            :class="{ 'drag-over': isDragging }"
+          >
+            <q-img
+              src="src/assets/img/drag-drop-icon.png"
+              alt="Upload-Document"
+              class="upload-icon-docu"
+            />
+            <div
+              v-if="!selectedFile"
+              class="sub-font-3 text-center"
+              style="font-size: 14px; font-weight: 200"
+            >
+              <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
+                DRAG and DROP files
+              </div>
+              or
+              <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a>
+              on your computer
+            </div>
+            <div v-else class="documentarti-preview text-center">
+              <q-btn
+                dense
+                round
+                flat
+                icon="close"
+                class="thumbnail-delete"
+                @click="deleteSelectedFile"
+              />
+              <q-img src="src/assets/img/document-icon.png" alt="Document" class="document-icon" />
+              <div class="selected-document-name q-mt-md">
+                {{ selectedFile.name }}
+              </div>
+              <!-- Upload progress bar -->
+              <q-linear-progress
+                v-if="uploading"
+                :value="uploadProgress / 100"
+                color="primary"
+                class="q-mt-md full-width"
+              />
+            </div>
+            <input
+              type="file"
+              ref="fileInput"
+              accept=".pdf"
+              style="display: none"
+              @change="handleFileChange"
+            />
+          </q-card-section>
+        </div>
 
         <q-card-actions class="row q-ml-lg justify-between items-center">
           <div></div>
-          <q-btn
-            v-if="!uploading"
-            label="Upload"
-            class="q-ml-xl q-mt-sm btn-save"
-            @click="handleUpload"
-            no-caps
-          />
 
-          <q-spinner v-else color="primary" size="2em" class="q-ml-xl q-mt-sm" />
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <q-btn
+              v-if="!uploading"
+              label="Upload"
+              :disabled="selectedFile === null"
+              class="q-ml-xl q-mt-sm btn-save"
+              @click="handleUpload"
+              no-caps
+            />
+
+            <q-spinner v-else color="primary" size="2em" class="q-ml-xl q-mt-sm" />
+          </div>
 
           <q-btn
             flat
@@ -91,25 +126,48 @@
     <!-- Document Highlights Section -->
     <div class="column q-py-md q-gutter-lg">
       <div class="box-highlights">
-        <p class="q-ml-lg admin-title-2" style="font-size: 16px">Document Highlights</p>
+        <p class="q-ml-lg title-font-2" style="font-size: 16px">Document Highlights</p>
         <div class="row docs-gap justify-start">
           <div v-for="(doc, index) in documentsStore.documents.slice(0, 3)" :key="index">
             <div class="row q-mb-lg">
-              <q-card class="my-card documentCard" style="transform: rotate(-5deg)">
+              <q-card class="my-card docCard" style="transform: rotate(-5deg)">
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
                 >
                   <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
                 </router-link>
-                <q-btn
-                  icon="bookmark_border"
-                  dense
-                  size="sm"
-                  class="btn-bm"
-                  @click="openBookmarkDialog(doc, 'document')"
-                  flat
-                />
+                <div class="q-py-xs doc-align-items">
+                  <!-- Visibility Icon (static) -->
+
+                  <q-icon
+                    v-if="!isAdmin"
+                    name="visibility"
+                    color="grey"
+                    size="xs"
+                    class="action-icon"
+                  />
+
+                  <!-- Star Icon -->
+                  <q-icon
+                    v-if="!isAdmin"
+                    :name="doc.favorited ? 'star' : 'star_border'"
+                    :color="doc.favorited ? 'yellow' : 'grey'"
+                    size="xs"
+                    class="cursor-pointer"
+                    @click="doc.favorited = !doc.favorited"
+                  />
+
+                  <!-- Bookmark Icon -->
+                  <q-icon
+                    v-if="!isAdmin"
+                    :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
+                    :color="doc.bookmarked ? 'yellow' : 'grey'"
+                    size="xs"
+                    class="cursor-pointer"
+                    @click="openBookmarkDialog(doc, 'document')"
+                  />
+                </div>
               </q-card>
 
               <div class="bg-highlights-details">
@@ -127,7 +185,7 @@
                     :to="{ name: 'view-document', params: { id: doc.id } }"
                     @click="logClick(doc.id, 'document')"
                   >
-                    <q-btn label="Now Read" class="now-read-btn" unelevated no-caps />
+                    <q-btn label="Read Now" class="now-read-btn" unelevated no-caps />
                   </router-link>
                 </div>
               </div>
@@ -139,7 +197,7 @@
       <!-- Box Category -->
       <div class="box-category">
         <div class="q-pa-lg">
-          <p class="admin-title-2" style="font-size: 16px; margin-top: 0">Category</p>
+          <p class="title-font-2" style="font-size: 16px; margin-top: 0">Category</p>
           <div class="row q-col-gutter-md q-mb-md justify-between items-center">
             <!-- Category Section -->
             <div class="row q-gutter-sm col-auto">
@@ -155,71 +213,83 @@
             </div>
             <div class="row q-gutter-sm col-auto">
               <!-- Filter Section -->
-              <q-btn flat round icon="filter_list" class="filter-sort-btn">
-                <q-menu anchor="bottom right" self="top left" style="width: 15rem">
-                  <q-list>
-                    <q-item>
-                      <q-item-section>
-                        <q-select
-                          v-model="author"
-                          :options="authorOptions"
-                          outlined
-                          label="Select Author"
-                          dense
-                          clearable
-                          @update:model-value="applyFilters"
-                        />
-                      </q-item-section>
-                    </q-item>
-                    <q-item>
-                      <q-item-section>
-                        <q-select
-                          v-model="date"
-                          :options="dateOptions"
-                          outlined
-                          label="Select Year"
-                          dense
-                          clearable
-                          @update:model-value="applyFilters"
-                        />
-                      </q-item-section>
-                    </q-item>
-                    <q-separator />
-                    <q-item clickable v-close-popup @click="clearFilters">
-                      <q-item-section>
-                        <q-item-label>Clear All Filters</q-item-label>
-                      </q-item-section>
-                      <q-item-section side>
-                        <q-icon name="clear" />
-                      </q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-menu>
-              </q-btn>
+              <q-btn-dropdown
+                outline
+                color="black"
+                label="Filter"
+                icon="filter_list"
+                size="sm"
+                class="artifact-btn-style"
+              >
+                <q-list>
+                  <q-item>
+                    <q-item-section>
+                      <q-select
+                        v-model="author"
+                        :options="authorOptions"
+                        outlined
+                        label="Select Author"
+                        dense
+                        clearable
+                        @update:model-value="applyFilters"
+                      />
+                    </q-item-section>
+                  </q-item>
+                  <q-item>
+                    <q-item-section>
+                      <q-select
+                        v-model="date"
+                        :options="dateOptions"
+                        outlined
+                        label="Select Year"
+                        dense
+                        clearable
+                        @update:model-value="applyFilters"
+                      />
+                    </q-item-section>
+                  </q-item>
+                  <q-separator />
+                  <q-item clickable v-close-popup @click="clearFilters">
+                    <q-item-section>
+                      <q-item-label>Clear All Filters</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                      <q-icon name="clear" />
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-dropdown>
               <!-- Sort Section -->
-              <q-btn flat round icon="sort" class="filter-sort-btn">
-                <q-menu anchor="bottom right" self="top left" style="width: 10rem">
-                  <q-list>
-                    <q-item
-                      v-for="option in sortOptions"
-                      :key="option"
-                      clickable
-                      v-close-popup
-                      @click="((sortOption = option), onSort(option))"
-                    >
-                      <q-item-section>{{ option }}</q-item-section>
-                      <q-item-section side v-if="sortOption === option">
-                        <q-icon name="check" color="primary" />
-                      </q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-menu>
-              </q-btn>
+              <q-btn-dropdown
+                outline
+                color="black"
+                :label="`Sort by: ${sortOption}`"
+                icon="sort"
+                size="sm"
+                class="q-ml-md artifact-btn-style"
+                dense
+              >
+                <q-list>
+                  <q-item
+                    v-for="option in sortOptions"
+                    :key="option"
+                    clickable
+                    v-close-popup
+                    class="collection-sort-menu"
+                    @click="((sortOption = option), onSort(option))"
+                  >
+                    <q-item-section>{{ option }}</q-item-section>
+                    <q-item-section side v-if="sortOption === option">
+                      <q-icon name="check" color="primary" />
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-dropdown>
             </div>
           </div>
 
           <!-- Document in Categories -->
-          <div class="row q-gutter-md q-mt-md justify-around">
+          <div class="row q-gutter-md q-ma-md justify-between">
             <div
               v-for="(doc, i) in searchStore.query
                 ? searchStore.results
@@ -227,7 +297,7 @@
               :key="i"
               class="card-wrapper-2"
             >
-              <q-card class="my-card documentCard" rounded bordered>
+              <q-card class="docCard" rounded bordered>
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
@@ -235,14 +305,38 @@
                 >
                   <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
                 </router-link>
-                <q-btn
-                  icon="bookmark_border"
-                  dense
-                  size="sm"
-                  class="btn-bm"
-                  @click="openBookmarkDialog(doc, 'document')"
-                  flat
-                />
+
+                <div class="q-py-xs doc-align-items">
+                  <!-- Visibility Icon (static) -->
+
+                  <q-icon
+                    v-if="!isAdmin"
+                    name="visibility"
+                    color="grey"
+                    size="xs"
+                    class="action-icon"
+                  />
+
+                  <!-- Star Icon -->
+                  <q-icon
+                    v-if="!isAdmin"
+                    :name="doc.favorited ? 'star' : 'star_border'"
+                    :color="doc.favorited ? 'yellow' : 'grey'"
+                    size="xs"
+                    class="cursor-pointer"
+                    @click="doc.favorited = !doc.favorited"
+                  />
+
+                  <!-- Bookmark Icon -->
+                  <q-icon
+                    v-if="!isAdmin"
+                    :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
+                    :color="doc.bookmarked ? 'yellow' : 'grey'"
+                    size="xs"
+                    class="cursor-pointer"
+                    @click="openBookmarkDialog(doc, 'document')"
+                  />
+                </div>
               </q-card>
 
               <div class="q-mt-md fade-title-container">
@@ -332,14 +426,13 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useDocumentsStore } from 'stores/documentsStore'
-import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
+import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import Tesseract from 'tesseract.js'
 import axios from 'axios'
-
-import { useSearchStore } from 'stores/searchStore'
 
 const searchStore = useSearchStore()
 const documentsStore = useDocumentsStore()
@@ -373,6 +466,24 @@ if (userStore.profile.role === undefined) {
 
 const userRole = userStore.profile.role
 const isAdmin = computed(() => userRole === 'admin')
+
+// Initial load
+onMounted(async () => {
+  if (!searchStore.query) {
+    await fetchAllDocuments()
+  }
+
+  const scannedFile = history.state?.scannedFile
+  if (scannedFile) {
+    selectedFile.value = scannedFile
+    history.replaceState({}, '', '/documents') // Clear the state after using it
+    showDialog.value = true
+  }
+})
+
+onUnmounted(() => {
+  searchStore.clear()
+})
 
 function showNotifyDialog(title, message) {
   notifyDialogTitle.value = title
@@ -553,6 +664,7 @@ const loading = ref(false)
 const uploading = ref(false)
 const uploadProgress = ref(0)
 const router = useRouter()
+const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 
 const metadata = ref({
   file_name: '',
@@ -564,19 +676,118 @@ const metadata = ref({
   keywords: [],
   categories: [],
 })
-let nlpMetadata = {}
+
+function sanitizeFileName(name) {
+  return name.replace(/[^\w.-]/g, '_')
+}
+
+async function fileExists(fileName) {
+  const { data, error } = await supabase
+    .from('documents_metadata')
+    .select('file_name')
+    .eq('file_name', fileName)
+
+  if (error) {
+    console.error('Error checking file existence:', error)
+    return false
+  }
+
+  return !!data?.length
+}
+
+async function uploadFileToSupabase(file, fileName) {
+  const { error } = await supabase.storage.from('documents').upload(fileName, file, {
+    cacheControl: '3600',
+    upsert: true,
+    contentType: 'application/pdf',
+  })
+  return error
+}
+
+async function generatePdfPreview(file) {
+  // Set the worker source
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${window.pdfjsLib.version}/pdf.worker.min.js`
+
+  const arrayBuffer = await file.arrayBuffer()
+  const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise
+
+  const page = await pdf.getPage(1)
+  const scale = 1.5
+  const viewport = page.getViewport({ scale })
+
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
+  canvas.width = viewport.width
+  canvas.height = viewport.height
+
+  await page.render({ canvasContext: context, viewport }).promise
+
+  // Return base64 string (data URL)
+  return canvas.toDataURL('image/png')
+}
+
+async function uploadPreviewImage(previewDataUrl, previewFileName) {
+  // Remove base64 prefix and convert to binary
+  const base64Data = previewDataUrl.replace(/^data:image\/png;base64,/, '')
+  const byteArray = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))
+  const blob = new Blob([byteArray], { type: 'image/png' })
+
+  // Upload using the correct filename
+  const { error } = await supabase.storage.from('pdf-previews').upload(previewFileName, blob, {
+    contentType: 'image/png',
+    upsert: true,
+  })
+
+  return error
+}
+
+async function processFileWithNLP(file, fileName) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('filename', fileName)
+  return await axios.post('http://localhost:8000/process-text', formData)
+}
+
+async function processImageWithOCR(base64Image, fileName) {
+  const result = await Tesseract.recognize(`data:image/png;base64,${base64Image}`, 'eng', {
+    tessedit_char_whitelist:
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,;:!?()[]{}-_"\'',
+  })
+
+  const text = result.data.text
+
+  if (!text || text.trim() === '') {
+    alert('OCR failed — no text detected. Please try again.')
+    return
+  }
+
+  const nlpForm = new FormData()
+  nlpForm.append('filename', fileName)
+  nlpForm.append('raw_text', text)
+
+  return await axios.post('http://localhost:8000/process-text', nlpForm)
+}
+
+async function saveMetadataToDB(fileName, fileUrl, previewUrl, metadata) {
+  return await supabase.from('documents_metadata').insert([
+    {
+      file_name: fileName,
+      file_url: fileUrl,
+      preview_url: previewUrl,
+      metadata,
+      uploaded_by: user,
+      uploaded_at: new Date(),
+      updated_at: new Date(),
+    },
+  ])
+}
 
 function triggerFileInput() {
   fileInput.value?.click()
 }
 
 function handleFileChange(event) {
-  const file = event.target.files[0]
-  if (file) {
-    selectedFile.value = file
-  } else {
-    selectedFile.value = null
-  }
+  selectedFile.value = event.target.files[0] || null
 }
 
 function onDragOver() {
@@ -589,203 +800,51 @@ function onDragLeave() {
 
 function onFileDrop(e) {
   isDragging.value = false
-  const files = e.dataTransfer.files
-  if (files.length > 0 && files[0].type === 'application/pdf') {
-    selectedFile.value = files[0]
+  const file = e.dataTransfer.files[0]
+  if (file?.type === 'application/pdf') {
+    selectedFile.value = file
   } else {
     alert('Only PDF files are allowed.')
+    uploading.value = false
   }
 }
 
-function sanitizeFileName(name) {
-  return name.replace(/[^\w.-]/g, '_') // Replace all non-alphanumeric/underscore/dot/dash characters with _
-}
-
-const handleUpload = async () => {
-  const file = selectedFile.value
-  const fileName = sanitizeFileName(file.name)
-  uploading.value = true
+function deleteSelectedFile() {
+  selectedFile.value = null
+  isDragging.value = false
+  uploading.value = false
   uploadProgress.value = 0
+}
 
-  if (!file || (!fileName.endsWith('.pdf') && !fileName.endsWith('.glb'))) {
-    alert('Only .pdf and .glb files are allowed.')
-    return
-  }
+function handleCancel() {
+  selectedFile.value = null
+  showDialog.value = false
+  uploading.value = false
+  uploadProgress.value = 0
+}
 
-  loading.value = true
-  const isPdf = fileName.endsWith('.pdf')
-  const folder = isPdf ? 'documents' : 'artifacts'
-  const bucket = folder
+async function handleCancelMetadata(cancelledData) {
+  const fileName = cancelledData?.file_name
+  if (!fileName) return
+
   try {
-    const alreadyExists = await fileExists(fileName)
-
-    if (alreadyExists) {
-      alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
-      return
-    }
-
-    // Fake progress bar animation
-    const progressInterval = setInterval(() => {
-      if (uploadProgress.value < 90) {
-        uploadProgress.value += 1
-      }
-    }, 200)
-
-    // NLP processing for PDFs
-    if (isPdf) {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('filename', fileName)
-
-      const response = await axios.post('http://localhost:8000/process-text', formData)
-
-      if (response.data.status === 'ocr_required') {
-        console.log('Fallback to OCR...')
-        const base64Image = response.data.image_base64
-
-        // OCR the image
-        const result = await Tesseract.recognize(`data:image/png;base64,${base64Image}`, 'eng', {
-          tessedit_char_whitelist:
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,;:!?()[]{}-_"\'',
-        })
-        const text = result.data.text
-
-        // Send extracted text to FastAPI for NLP
-        const nlpForm = new FormData()
-        nlpForm.append('filename', file.name)
-        nlpForm.append('raw_text', text)
-
-        nlpMetadata = await axios.post('http://localhost:8000/process-text', nlpForm)
-      } else {
-        // Use the metadata returned from FastAPI
-        nlpMetadata = response.data
-      }
-      console.log('NLP Metadata:', nlpMetadata)
-    }
-
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage.from(bucket).upload(`${fileName}`, file, {
-      cacheControl: '3600',
-      upsert: true,
-      contentType: isPdf ? 'application/pdf' : 'model/gltf-binary',
-    })
-
-    const previewBlob = await (async () => {
-      const base64 = nlpMetadata.preview
-      const byteCharacters = atob(base64)
-      const byteNumbers = Array.from(byteCharacters).map((char) => char.charCodeAt(0))
-      const byteArray = new Uint8Array(byteNumbers)
-      return new Blob([byteArray], { type: 'image/png' })
-    })()
-
-    const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
-
-    const { data, error } = await supabase.storage
-      .from('pdf-previews')
-      .upload(previewFileName, previewBlob, {
-        contentType: 'image/png',
-        upsert: true,
-      })
-
-    if (error) {
-      console.error('Upload error:', error)
-      alert('Failed to upload preview.')
-      return
-    }
-
-    console.log('Upload successful:', data)
-
-    clearInterval(progressInterval)
-    uploadProgress.value = 100
-
-    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(`${fileName}`)
-    const fileUrl = urlData.publicUrl
-
-    const { data: previewData } = supabase.storage
-      .from('pdf-previews')
-      .getPublicUrl(`${previewFileName}`)
-    const previewUrl = previewData.publicUrl
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-      alert('Upload failed.')
-      return
-    }
-
-    // Save metadata
-    const supabaseTable = isPdf ? 'documents_metadata' : 'artifacts_metadata'
-
-    const insertData = {
-      file_name: fileName,
-      file_url: fileUrl,
-      uploaded_at: new Date(),
-      updated_at: new Date(),
-      ...(isPdf && { preview_url: previewUrl, metadata: nlpMetadata }),
-    }
-
-    const { error: dbError } = await supabase.from(supabaseTable).insert([insertData])
-    if (dbError) {
-      console.error('Supabase insert error:', dbError)
-      alert('Upload succeeded but metadata failed to save.')
-      return
-    }
-
-    console.log('Metadata', nlpMetadata)
-
-    setTimeout(() => {
-      uploading.value = false
-      uploadProgress.value = 0
-    }, 1000)
-
-    // Open metadata confirmation dialog
-    metadata.value = {
-      file_name: fileName,
-      file_url: fileUrl,
-      title: nlpMetadata.title || '',
-      author: nlpMetadata.author || '',
-      date: nlpMetadata.date || '',
-      summary: nlpMetadata.summary || '',
-      keywords: nlpMetadata.keywords || [],
-      categories: nlpMetadata.categories || [],
-    }
-
-    dialog.value = true
+    const { error } = await supabase.from('documents_metadata').delete().eq('file_name', fileName)
+    if (error) console.error('Error deleting cancelled metadata:', error)
+    else console.log('Cancelled metadata removed.')
   } catch (err) {
-    console.error('Upload failed:', err)
-    alert('Upload failed. See console for details.')
+    console.error('Failed to cancel and delete metadata:', err)
   } finally {
-    loading.value = false
+    dialog.value = false
     uploading.value = false
     uploadProgress.value = 0
   }
 }
 
-async function fileExists(fileName) {
-  const isPDF = fileName.toLowerCase().endsWith('.pdf')
-  const isGLB = fileName.toLowerCase().endsWith('.glb')
-  const table = isPDF ? 'documents_metadata' : isGLB ? 'artifacts_metadata' : null
-
-  if (!table) return false
-
-  const { data, error } = await supabase.from(table).select('file_name').eq('file_name', fileName)
-
-  if (!data || data.length === 0) return false
-
-  if (error) {
-    console.error('Error checking file existence:', error)
-    return false
-  }
-
-  return !!data
-}
-
 async function saveMetadata(updatedMetadata) {
-  const isPdf = metadata.value.file_name.endsWith('.pdf')
-  const table = isPdf ? 'documents_metadata' : 'artifacts_metadata'
   console.log('Saving metadata: ', updatedMetadata)
   try {
     const { error } = await supabase
-      .from(table)
+      .from('documents_metadata')
       .update({
         metadata: {
           title: updatedMetadata.title,
@@ -813,35 +872,87 @@ async function saveMetadata(updatedMetadata) {
   }
 }
 
-async function handleCancelMetadata(cancelledData) {
-  try {
-    const fileName = cancelledData.file_name
-    const isPDF = fileName.toLowerCase().endsWith('.pdf')
-    const isGLB = fileName.toLowerCase().endsWith('.glb')
-
-    const table = isPDF ? 'documents_metadata' : isGLB ? 'artifacts_metadata' : null
-
-    if (!table || !fileName) return
-
-    const { error } = await supabase.from(table).delete().eq('file_name', fileName)
-
-    if (error) {
-      console.error('Error deleting cancelled metadata:', error)
-    } else {
-      console.log('Cancelled metadata removed successfully.')
-    }
-  } catch (err) {
-    console.error('Failed to cancel and delete metadata:', err)
-  } finally {
-    dialog.value = false
-    uploading.value = false
-    uploadProgress.value = 0
-  }
+const handleScan = () => {
+  router.push({ name: 'document-scanner' })
 }
 
-function handleCancel() {
-  selectedFile.value = null
-  showDialog.value = false
+const handleUpload = async () => {
+  const file = selectedFile.value
+  const fileName = sanitizeFileName(file?.name || '')
+
+  uploading.value = true
+  uploadProgress.value = 0
+
+  if (!file || !file.name.endsWith('.pdf')) {
+    alert('Only .pdf files are allowed.')
+    return
+  }
+
+  loading.value = true
+
+  try {
+    const exists = await fileExists(fileName)
+    if (exists) {
+      alert(`A file named "${fileName}" already exists.`)
+      return
+    }
+
+    const progressInterval = setInterval(() => {
+      if (uploadProgress.value < 90) uploadProgress.value += 1
+    }, 200)
+
+    let response = await processFileWithNLP(file, fileName)
+
+    if (response.data.status === 'ocr_required') {
+      response = await processImageWithOCR(response.data.image_base64, fileName)
+    }
+    console.log('NLP Response:', response.data)
+    const nlpData = response.data
+
+    // Generate preview
+    const preview = await generatePdfPreview(file)
+    const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
+
+    const previewUploadError = await uploadPreviewImage(preview, previewFileName)
+    if (previewUploadError) throw previewUploadError
+
+    const uploadError = await uploadFileToSupabase(file, fileName)
+    if (uploadError) throw uploadError
+
+    clearInterval(progressInterval)
+    uploadProgress.value = 100
+
+    const fileUrl = supabase.storage.from('documents').getPublicUrl(fileName).data.publicUrl
+    const previewUrl = supabase.storage.from('pdf-previews').getPublicUrl(previewFileName)
+      .data.publicUrl
+
+    const { error: dbError } = await saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData)
+    if (dbError) {
+      console.error('DB error:', dbError)
+      alert('Upload succeeded but metadata failed to save.')
+      return
+    }
+
+    metadata.value = {
+      file_name: fileName,
+      file_url: fileUrl,
+      title: nlpData.title || '',
+      author: nlpData.author || '',
+      date: nlpData.date || '',
+      summary: nlpData.summary || '',
+      keywords: nlpData.keywords || [],
+      categories: nlpData.categories || [],
+    }
+
+    dialog.value = true
+  } catch (err) {
+    console.error('Upload failed:', err)
+    alert('Upload failed. See console for details.')
+  } finally {
+    uploading.value = false
+    loading.value = false
+    uploadProgress.value = 0
+  }
 }
 
 const openBookmarkDialog = async (doc, type = 'document') => {
@@ -968,15 +1079,143 @@ function resetForm() {
   selectedCollections.value = []
   existingCollectionIds.value = []
 }
-
-// Initial load
-onMounted(async () => {
-  if (!searchStore.query) {
-    await fetchAllDocuments()
-  }
-})
-
-onUnmounted(() => {
-  searchStore.clear()
-})
 </script>
+
+<style scoped>
+.box-highlights {
+  border-radius: 10px;
+  background-color: #ffffff;
+  width: auto;
+  height: auto;
+  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+}
+
+.box-category {
+  border-radius: 10px;
+  background-color: #ffffff;
+  width: auto;
+  height: auto;
+  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+}
+
+.bg-highlights-details {
+  background-color: #880000;
+  width: 13rem;
+  height: 12rem;
+  margin-top: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 5px 5px 3px #bab7b7;
+}
+
+.title-highlight {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  color: #ffffff;
+  padding: 1.5rem 1rem 0.2rem 1rem;
+}
+
+.sub-details {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 200;
+  font-size: 10px;
+  color: #ffffff;
+  line-height: 1rem;
+  padding: 0.5rem 1rem 1rem 1rem;
+  height: 5rem;
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  -webkit-mask-image: -webkit-linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+.now-read-btn {
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  font-weight: 200;
+  color: white;
+  background-color: transparent;
+  border: 1px solid white;
+  padding: 0.3rem 1rem;
+  width: 8rem;
+  text-transform: none;
+  transition: 0.3s ease;
+}
+
+.now-read-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: #ffffff;
+}
+
+.btn-bm {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  background-color: #880000;
+  border-radius: 50%;
+  color: white !important;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.docs-gap {
+  margin-left: 2.5rem;
+  margin-bottom: 0.5rem;
+  gap: 2rem;
+}
+/* pop-up */
+.upload-sections-container {
+  display: flex;
+  gap: 1rem;
+}
+
+.two-box-upload-docuarti {
+  width: 16rem;
+  height: 14.5rem;
+  background-color: transparent !important;
+  border: 2px dashed #afafaf !important;
+  border-radius: 15px !important;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.card-wrapper-2 {
+  perspective: 1000px;
+}
+
+.docCard {
+  width: 12rem;
+  height: 16rem;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
+  border-radius: 10px;
+  background-color: white;
+}
+
+.document {
+  height: 14rem;
+  border-bottom: 2px solid #880000;
+}
+
+.doc-align-items {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  margin-right: 1rem;
+}
+
+.btn-bm-2 {
+  bottom: 0.25rem;
+  right: 0.75rem;
+}
+</style>

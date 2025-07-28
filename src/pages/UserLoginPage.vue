@@ -2,12 +2,12 @@
   <div class="q-pa-md form-container">
     <div class="column items-center q-mb-md">
       <label class="form-title">LOG IN</label>
-      <label class="subtitle">Access Your Account</label>
+      <label class="subtitle-logsign">Access Your Account</label>
     </div>
 
     <q-form @submit.prevent="loginUser">
       <div class="column q-gutter-sm">
-        <label class="names">Email</label>
+        <label class="labelNames">Email</label>
         <q-input
           filled
           v-model="form.email"
@@ -19,7 +19,7 @@
           ]"
           class="login-text-box"
         />
-        <label class="names">Password</label>
+        <label class="labelNames">Password</label>
         <q-input
           filled
           v-model="form.password"
@@ -46,10 +46,10 @@
         <q-btn label="Log In" type="submit" class="log-in" />
       </div>
 
-      <div class="column items-center q-mb-md">
+      <div class="column items-center q-mt-md">
         <label class="already">
           Don't have an account?
-          <router-link to="/user/register" name="user-register" class="signup-login-link">
+          <router-link to="/user/register-option" name="user-options" class="signup-login-link">
             Sign Up
           </router-link>
         </label>
@@ -121,6 +121,34 @@ async function loginUser() {
     } else {
       alert('Access denied. Unknown role.')
       await supabase.auth.signOut()
+    }
+
+    // ADDED: Ensure Favorites collection exists
+    const { data: favoritesCollection } = await supabase
+      .from('collections')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    if (!favoritesCollection) {
+      const { error: insertError } = await supabase.from('collections').insert([
+        {
+          collection_name: 'Favorites',
+          description: 'Items you marked as favorite will appear here.',
+          user_id: user.id,
+          is_default: true,
+          is_locked: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          cover_url:
+            'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers/favoritescover.png',
+        },
+      ])
+
+      if (insertError) {
+        console.error('Insert collection failed:', insertError)
+      }
     }
   } catch (err) {
     console.error('Login error:', err)

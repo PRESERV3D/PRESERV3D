@@ -62,7 +62,7 @@
 
       <div class="preview-container">
         <div class="box-view">
-          <div class="row-1 justify-between items-center">
+          <div class="row-1 items-center justify-between">
             <q-btn :href="doc.file_url" target="_blank" class="start-reading-btn" no-caps>
               Start Reading
               <img
@@ -71,13 +71,24 @@
                 class="q-ml-sm btn-arrow-tilt"
               />
             </q-btn>
-            <q-icon
-              :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
-              class="bookmark-icon q-ml-md q-mr-md"
-              :class="{ bookmarked: doc.bookmarked }"
-              size="sm"
-              @click.stop="openBookmarkDialog(doc, 'document')"
-            />
+            <div class="row-1 items-center">
+              <q-icon
+                v-if="!isAdmin"
+                :name="doc.favorited ? 'star' : 'star_border'"
+                :color="doc.favorited ? 'yellow' : 'black'"
+                class="bookmark-icon cursor-pointer"
+                size="sm"
+                @click="doc.favorited = !doc.favorited"
+              />
+              <q-icon
+                v-if="!isAdmin"
+                :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
+                class="bookmark-icon q-ml-md q-mr-md"
+                :class="{ bookmarked: doc.bookmarked }"
+                size="sm"
+                @click.stop="openBookmarkDialog(doc, 'document')"
+              />
+            </div>
           </div>
           <div class="row">
             <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
@@ -429,3 +440,131 @@ onMounted(async () => {
   loading.value = false
 })
 </script>
+
+<style scoped>
+.preview-container {
+  position: relative;
+  display: block;
+  flex-direction: column;
+}
+
+.box-view {
+  position: relative;
+  padding: 2rem;
+  border-radius: 10px;
+  background-color: #ffffff;
+  width: auto;
+  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+  z-index: 0;
+  margin-top: 0;
+}
+
+.tags {
+  margin-top: 10rem;
+  font-size: 12px;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tag-box {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  background-color: rgba(204, 172, 0, 0.7);
+  color: #560505;
+  padding: 0.3rem 1.5rem;
+  border-radius: 5px;
+  margin-left: 0.5rem;
+}
+
+.description-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.description-section {
+  flex: 0 0 60%;
+}
+
+.meta-section {
+  flex: 0 0 35%;
+}
+
+.font-label {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: #000000;
+  margin-top: 2rem;
+  margin-left: 1rem;
+}
+
+.document-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 36px;
+  line-height: 3rem;
+  color: #560505;
+}
+
+.document-img {
+  width: 300px;
+  margin-left: 10rem;
+  margin-right: 2rem;
+  z-index: 1;
+  position: relative;
+  margin-bottom: -10rem;
+  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+}
+
+.actions {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #880000;
+}
+
+.row-1 {
+  margin-left: 30.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.start-reading-btn {
+  background-color: #363636;
+  color: white;
+  border-radius: 20px;
+  font-weight: 400;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  height: 2rem;
+  width: 10rem;
+  place-content: center;
+  align-items: center;
+}
+
+.btn-arrow-tilt {
+  width: 0.6rem;
+  height: 0.6rem;
+  object-fit: contain;
+}
+
+.edit-delete-btns {
+  display: flex;
+  gap: 1rem;
+  margin-left: auto;
+  margin-right: 2rem;
+}
+
+.summary {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: #000000;
+  margin-top: 1rem;
+}
+</style>

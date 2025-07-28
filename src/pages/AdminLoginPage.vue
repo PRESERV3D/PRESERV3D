@@ -2,11 +2,11 @@
   <div class="q-pa-md form-container">
     <div class="column items-center q-mb-md">
       <label class="form-title">LOG IN</label>
-      <label class="subtitle">Access Your Account</label>
+      <label class="subtitle-logsign">Access Your Account</label>
     </div>
     <q-form @submit.prevent="loginAdmin">
       <div class="column q-gutter-sm">
-        <label class="names">Email</label>
+        <label class="labelNames">Email</label>
         <q-input
           filled
           v-model="form.email"
@@ -18,7 +18,7 @@
           ]"
           class="login-text-box"
         />
-        <label class="names">Password</label>
+        <label class="labelNames">Password</label>
         <q-input
           filled
           v-model="form.password"
@@ -43,7 +43,7 @@
       <div class="column items-center q-pt-md">
         <q-btn label="Log In" type="submit" class="log-in" />
       </div>
-      <div class="column items-center q-mb-md">
+      <div class="column items-center q-mt-md">
         <label class="already">
           Don't have an account?
           <router-link to="/admin/register" name="admin-register" class="signup-login-link"

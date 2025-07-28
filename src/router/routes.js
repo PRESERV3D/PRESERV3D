@@ -78,6 +78,12 @@ const routes = [
         component: () => import('pages/AdminViewArtifacts(2).vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
+      {
+        path: 'document-scanner',
+        name: 'document-scanner',
+        component: () => import('pages/DocumentScannerPage.vue'),
+        // meta: { requiresAuth: true, allowedRoles: ['admin'] },
+      },
     ],
   },
   {
@@ -86,11 +92,31 @@ const routes = [
     children: [
       { path: 'login', name: 'user-login', component: () => import('pages/UserLoginPage.vue') },
       {
+        path: 'register-option',
+        name: 'user-options',
+        component: () => import('pages/UserSignUpOptions.vue'),
+      },
+      {
         path: 'register',
         name: 'user-register',
         component: () => import('pages/UserRegisterPage.vue'),
       },
+      {
+        path: 'faculty',
+        name: 'faculty-register',
+        component: () => import('pages/UserFacultyPage.vue'),
+      },
+      {
+        path: 'visitor',
+        name: 'visitor-register',
+        component: () => import('pages/UserVisitorPage.vue'),
+      },
     ],
+  },
+
+  {
+    path: '/LandingPage',
+    component: () => import('pages/LandingPage.vue'), // Landing Page
   },
 
   {

@@ -2,31 +2,29 @@
   <div class="q-pa-md form-container">
     <div class="column items-center">
       <label class="form-title">SIGN UP</label>
-      <label class="subtitle">Let's Get You Set Up</label>
+      <label class="subtitle-logsign">Let's Get You Set Up</label>
     </div>
 
     <q-form @submit.prevent="registerUser">
       <div v-if="step === 1">
         <div class="column q-gutter-sm">
-          <label class="names">First Name</label>
+          <label class="labelNames">First Name</label>
           <q-input
-            filled
             dense
             v-model="form.first_name"
             lazy-rules
             :rules="[(val) => !!val || 'Please enter your first name.']"
             class="text-box"
           />
-          <label class="names">Last Name</label>
+          <label class="labelNames">Last Name</label>
           <q-input
-            filled
             dense
             v-model="form.last_name"
             lazy-rules
             :rules="[(val) => !!val || 'Please enter your last name.']"
             class="text-box"
           />
-          <label class="names">Email</label>
+          <label class="labelNames">Email</label>
           <q-input
             filled
             dense
@@ -40,9 +38,8 @@
             ]"
             class="text-box"
           />
-          <label class="names">Contact Number</label>
+          <label class="labelNames">Contact Number</label>
           <q-input
-            filled
             dense
             v-model="form.contact"
             lazy-rules
@@ -74,7 +71,7 @@
 
       <div v-if="step === 2">
         <div class="column q-gutter-sm">
-          <label class="names">College</label>
+          <label class="labelNames">College</label>
           <q-select
             dense
             v-model="form.college"
@@ -88,7 +85,7 @@
           <div class="row items-center">
             <div class="col-5">
               <div class="column q-gutter-sm">
-                <label class="names">Department</label>
+                <label class="labelNames">Department</label>
                 <q-select
                   dense
                   v-model="form.department"
@@ -102,7 +99,7 @@
 
             <div class="col-5">
               <div class="column q-gutter-sm">
-                <label class="names">Year & Section</label>
+                <label class="labelNames">Year & Section</label>
                 <q-input
                   dense
                   v-model="form.year_section"
@@ -118,7 +115,7 @@
             </div>
           </div>
 
-          <label class="names">Password</label>
+          <label class="labelNames">Password</label>
           <q-input
             dense
             v-model="form.password"
@@ -135,7 +132,7 @@
             ]"
             class="text-box"
           />
-          <label class="names">Confirm Password</label>
+          <label class="labelNames">Confirm Password</label>
           <q-input
             dense
             v-model="form.confirmPassword"
@@ -150,7 +147,7 @@
         </div>
 
         <div class="column items-center">
-          <a @click="step--" class="names cursor-pointer q-mb-sm">Back</a>
+          <a @click="step--" class="labelNames cursor-pointer q-mb-sm">Back</a>
           <q-btn
             class="sign-up"
             push
@@ -334,6 +331,26 @@ async function registerUser() {
       if (profileError) {
         console.error(profileError)
         alert('User created, but failed to save profile.')
+        return
+      }
+
+      const { error: favoritesCollectionError } = await supabase.from('collections').insert([
+        {
+          collection_name: 'Favorites',
+          description: 'Items you marked as favorite will appear here.',
+          user_id: data.user.id,
+          is_default: true,
+          is_locked: true,
+          created_at: new Date(),
+          updated_at: new Date(),
+          cover_url:
+            'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers//favoritescover.png',
+        },
+      ])
+
+      if (favoritesCollectionError) {
+        console.error(favoritesCollectionError)
+        alert('User created, but failed to create Favorites collection.')
         return
       }
 
