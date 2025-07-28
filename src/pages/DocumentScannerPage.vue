@@ -71,8 +71,9 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { jsPDF } from 'jspdf'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 
+const route = useRoute()
 const router = useRouter()
 const scannedImages = ref([])
 const transformedImage = ref(null)
@@ -129,6 +130,19 @@ onMounted(async () => {
 onUnmounted(() => {
   stopCamera()
 })
+
+onBeforeRouteLeave(() => {
+  stopCamera()
+})
+// watch route change as fallback
+watch(
+  () => route.path,
+  (path) => {
+    if (!path.includes('document-scanner')) {
+      stopCamera()
+    }
+  },
+)
 
 watch(scannedImages, () => {
   if (scannedImages.value.length) {
