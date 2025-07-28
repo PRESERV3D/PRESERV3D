@@ -503,7 +503,7 @@ async function confirmExport({ uploadPdf = false } = {}) {
     const ctx = canvas.getContext('2d')
     ctx.drawImage(image, 0, 0, imgWidth, imgHeight)
 
-    const dataUrl = canvas.toDataURL('image/jpeg', 1.0)
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
     pdf.addImage(dataUrl, 'JPEG', x, y, width, height)
   })
 

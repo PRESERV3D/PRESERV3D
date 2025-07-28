@@ -483,7 +483,7 @@ onMounted(async () => {
 
     if (authError || !authUser) {
       console.error('Auth error:', authError)
-      router.push('/user/login')
+      router.replace('/user/login')
       return
     }
 
@@ -1103,7 +1103,6 @@ async function addCollection() {
 </script>
 
 <style scoped>
-
 .layout-container {
   display: flex;
   gap: 1rem;
@@ -1195,7 +1194,6 @@ async function addCollection() {
   margin-top: 2px;
 }
 
-
 .view-icon {
   color: #7c7c7c;
   font-size: 18px;
@@ -1204,7 +1202,6 @@ async function addCollection() {
 .view-icon:hover {
   background-color: rgba(136, 0, 0, 0.1);
 }
-
 
 .artifact-title-link {
   text-decoration: none;
@@ -1220,5 +1217,4 @@ async function addCollection() {
   background: transparent;
   box-shadow: none;
 }
-
 </style>
