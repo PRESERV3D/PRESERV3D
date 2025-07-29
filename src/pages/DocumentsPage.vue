@@ -136,23 +136,16 @@
                 <div class="q-py-xs doc-align-items">
                   <!-- Visibility Icon (static) -->
 
-                  <q-icon
-                    v-if="!isAdmin"
-                    name="visibility"
-                    color="grey"
-                    size="xs"
-                    class="action-icon"
-                  />
+                  <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
                   <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
 
                   <!-- Star Icon -->
                   <q-icon
-                    v-if="!isAdmin"
                     :name="doc.starred ? 'star' : 'star_border'"
                     :class="{ starred: doc.starred }"
                     size="xs"
                     class="action-icon star-icon"
-                    @click.stop="toggleFavorite(doc, 'document')"
+                    @click.stop="isAdmin ? null : toggleFavorite(doc, 'document')"
                   />
                   <span class="count-text">{{ documentsStore.starCounts[doc.id] || 0 }}</span>
 
@@ -307,23 +300,16 @@
                 <div class="q-py-xs doc-align-items">
                   <!-- Visibility Icon (static) -->
 
-                  <q-icon
-                    v-if="!isAdmin"
-                    name="visibility"
-                    color="grey"
-                    size="xs"
-                    class="action-icon view-icon"
-                  />
+                  <q-icon name="visibility" color="grey" size="xs" class="action-icon view-icon" />
                   <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
 
                   <!-- Star Icon with Count -->
                   <q-icon
-                    v-if="!isAdmin"
                     :name="doc.starred ? 'star' : 'star_border'"
                     :class="{ starred: doc.starred }"
                     size="xs"
                     class="action-icon star-icon"
-                    @click.stop="toggleFavorite(doc, 'document')"
+                    @click.stop="isAdmin ? null : toggleFavorite(doc, 'document')"
                   />
                   <span class="count-text">{{ documentsStore.starCounts[doc.id] || 0 }}</span>
 

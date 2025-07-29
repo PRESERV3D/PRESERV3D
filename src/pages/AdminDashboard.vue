@@ -183,7 +183,7 @@
                   recentStore.recentItems.length
               "
             >
-              <img src="/icons/arrow_left.png" alt="back" class="btn-arrows" />
+              <q-img src="/icons/arrow_left.png" alt="back" class="btn-arrows" />
             </q-btn>
 
             <q-btn
@@ -192,7 +192,7 @@
               class="arrow-button"
               @click="currentIndex = (currentIndex + 1) % recentStore.recentItems.length"
             >
-              <img src="/icons/arrow_right.png" alt="next" class="btn-arrows" />
+              <q-img src="\icons\arrow_right.png" alt="next" class="btn-arrows" />
             </q-btn>
           </div>
         </div>
