@@ -115,7 +115,7 @@
 
             <!-- Notifications Button -->
             <q-btn flat round dense class="q-ml-md custom-spacing notif-btn">
-              <img src="/icon/notif-icon.png" alt="notifications" class="notif-image" />
+              <img src="/icons/notif-icon.png" alt="notifications" class="notif-image" />
               <q-badge
                 floating
                 rounded
