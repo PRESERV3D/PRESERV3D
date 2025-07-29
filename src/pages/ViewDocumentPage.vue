@@ -79,7 +79,7 @@
                 v-if="!isAdmin"
                 :name="doc.starred ? 'star' : 'star_border'"
                 :class="{ starred: doc.starred }"
-                class="bookmark-icon cursor-pointer"
+                class="action-icon star-icon"
                 size="sm"
                 @click.stop="isAdmin ? null : toggleFavorite(doc, 'document')"
               />
