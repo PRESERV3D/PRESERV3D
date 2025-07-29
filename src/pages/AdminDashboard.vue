@@ -14,11 +14,7 @@
           </div>
         </div>
         <div class="col-5">
-          <q-img
-            src="src/assets/img/trophy-document.png"
-            alt="Trophy and Document"
-            class="trophies"
-          />
+          <q-img src="/img/trophy-document.png" alt="Trophy and Document" class="trophies" />
         </div>
       </div>
 
@@ -60,9 +56,9 @@
       <div class="column box-3 q-px-lg">
         <div class="row item-center justify-between q-mb-sm">
           <p class="q-ml-md title-font-2">Reports</p>
-          <!-- <div class="q-mt-md">
-              <q-btn label="Generate Report" class="btn-report" no-caps />
-            </div> -->
+          <div class="q-mt-md">
+            <q-btn label="Generate Report" class="btn-report" no-caps />
+          </div>
         </div>
         <div class="row q-gutter-md q-px-sm">
           <div class="col box-report">
@@ -111,7 +107,13 @@
                   <div class="number">{{ index + 1 }}</div>
                   <div class="fade-title-container" style="max-width: 12rem">
                     <div class="sub-font-2 fade-title">
-                      {{ item.title }}
+                      <router-link
+                        :to="{ name: 'view-artifact', params: { id: item.item_id } }"
+                        class="sub-font-2"
+                        style="text-decoration: none"
+                      >
+                        {{ item.title }}
+                      </router-link>
                       <div class="tooltip-box">{{ item.title }}</div>
                     </div>
                   </div>
@@ -130,7 +132,13 @@
                   <div class="number">{{ index + 1 }}</div>
                   <div class="fade-title-container" style="max-width: 12rem">
                     <div class="sub-font-2 fade-title">
-                      {{ item.title }}
+                      <router-link
+                        :to="{ name: 'view-document', params: { id: item.item_id } }"
+                        class="sub-font-2"
+                        style="text-decoration: none"
+                      >
+                        {{ item.title }}
+                      </router-link>
                       <div class="tooltip-box">{{ item.title }}</div>
                     </div>
                   </div>
@@ -162,7 +170,17 @@
             <div class="q-mt-md self-start" style="margin-left: 1rem">
               <div class="fade-title-container" style="max-width: 10rem">
                 <div class="sub-font-4 fade-title">
-                  {{ recentStore.recentItems[currentIndex]?.metadata?.title || 'Untitled' }}
+                  <router-link
+                    v-if="currentItem"
+                    :to="{
+                      name: isGLB(currentItem.file_name) ? 'view-artifact' : 'view-document',
+                      params: { id: currentItem.id },
+                    }"
+                    class="sub-font-4"
+                    style="text-decoration: none"
+                  >
+                    {{ recentStore.recentItems[currentIndex]?.metadata?.title || 'Untitled' }}
+                  </router-link>
                   <div class="tooltip-box">
                     {{ recentStore.recentItems[currentIndex]?.metadata?.title || 'Untitled' }}
                   </div>
@@ -187,7 +205,7 @@
                   recentStore.recentItems.length
               "
             >
-              <img src="/icons/arrow_left.png" alt="back" class="btn-arrows" />
+              <q-img src="/icons/arrow_left.png" alt="back" class="btn-arrows" />
             </q-btn>
 
             <q-btn
@@ -196,7 +214,7 @@
               class="arrow-button"
               @click="currentIndex = (currentIndex + 1) % recentStore.recentItems.length"
             >
-              <img src="/icons/arrow_right.png" alt="next" class="btn-arrows" />
+              <q-img src="\icons\arrow_right.png" alt="next" class="btn-arrows" />
             </q-btn>
           </div>
         </div>
@@ -249,6 +267,7 @@ const topDocuments = ref([])
 const recentStore = useRecentStore()
 const currentIndex = ref(0)
 const currentItem = computed(() => recentStore.recentItems[currentIndex.value])
+console.log(currentItem.value)
 
 onMounted(async () => {
   const chartData = await prepareChartData()

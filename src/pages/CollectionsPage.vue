@@ -106,7 +106,7 @@
                 style="width: 100%; height: 14.5rem; object-fit: contain; border-radius: 10px"
               />
               <div v-else class="upload">
-                <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon" />
+                <q-img src="/img/write.png" alt="Upload" class="upload-icon" />
                 <div>Upload Photo</div>
               </div>
               <input

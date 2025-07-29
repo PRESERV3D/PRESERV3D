@@ -20,7 +20,7 @@
           <div class="q-pa-md q-mb-md" v-show="!miniState">
             <div class="text-center q-py-lg">
               <img
-                src="\src\assets\img\logo.png"
+                src="\img\logo.png"
                 alt="Your Logo"
                 style="max-width: 200px; max-height: 80px; object-fit: contain"
                 class="q-mb-sm"
@@ -32,7 +32,7 @@
           <!-- Mini State -->
           <div class="q-pa-lg q-mb-sm text-center" v-show="miniState">
             <img
-              src="\src\assets\img\logo.png"
+              src="\img\logo.png"
               alt="Logo"
               style="width: 60px; height: 60px; object-fit: contain"
             />
@@ -115,7 +115,7 @@
 
             <!-- Notifications Button -->
             <q-btn flat round dense class="q-ml-md custom-spacing notif-btn">
-              <img src="/src/assets/icon/notif-icon.png" alt="notifications" class="notif-image" />
+              <img src="/icons/notif-icon.png" alt="notifications" class="notif-image" />
               <q-badge
                 floating
                 rounded
@@ -148,7 +148,7 @@
             <!-- User Profile Button -->
             <q-btn flat round dense class="custom-spacing user-profile-btn">
               <q-avatar size="32px">
-                <img src="\src\assets\img\UserIcon.jpg" />
+                <img src="\img\UserIcon.jpg" />
               </q-avatar>
               <div class="q-ml-lg gt-sm">
                 <div class="username-bg">{{ userName }}</div>
@@ -206,9 +206,9 @@ const notifications = ref([
 
 const notificationCount = computed(() => notifications.value.length)
 const navItems = [
-  { name: 'home', label: 'Home', icon: '\\src\\assets\\icon\\home.png' },
-  { name: 'artifacts', label: 'Artifacts', icon: '\\src\\assets\\icon\\artifacts.png' },
-  { name: 'documents', label: 'Documents', icon: '\\src\\assets\\icon\\book.png' },
+  { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
+  { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
+  { name: 'documents', label: 'Documents', icon: '\\icons\\book.png' },
 ]
 
 // Get profile data from userStore

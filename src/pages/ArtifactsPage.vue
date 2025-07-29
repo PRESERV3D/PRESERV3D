@@ -155,7 +155,7 @@
                 :class="{ 'drag-over': isDragging }"
               >
                 <q-img
-                  src="src/assets/img/drag-drop-icon.png"
+                  src="/img/drag-drop-icon.png"
                   alt="Upload-Artifacts"
                   class="upload-icon-docu"
                 />
@@ -172,11 +172,7 @@
                   your computer
                 </div>
                 <div v-else class="documentarti-preview text-center">
-                  <q-img
-                    src="src/assets/img/document-icon.png"
-                    alt="Artifacts"
-                    class="document-icon"
-                  />
+                  <q-img src="/img/document-icon.png" alt="Artifacts" class="document-icon" />
                   <div class="selected-documentarti-name q-mt-md">
                     {{ selectedFile.name }}
                   </div>
@@ -267,13 +263,14 @@
                     class="action-icon star-icon"
                     :class="{ starred: model.starred }"
                     size="18px"
-                    @click.stop="toggleFavorite(model, 'artifact')"
+                    @click.stop="isAdmin ? null : toggleFavorite(model, 'artifact')"
                   />
                   <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
                 </div>
 
                 <!-- Bookmark Icon -->
                 <q-icon
+                  v-if="!isAdmin"
                   :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                   class="action-icon bookmark-icon"
                   :class="{ bookmarked: model.bookmarked }"

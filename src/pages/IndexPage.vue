@@ -18,11 +18,7 @@
           </div>
         </div>
         <div class="col-5 q-gutter-xs">
-          <q-img
-            src="src/assets/img/trophy-document.png"
-            alt="Trophy and Document"
-            class="trophies"
-          />
+          <q-img src="/img/trophy-document.png" alt="Trophy and Document" class="trophies" />
         </div>
       </div>
 
@@ -38,7 +34,7 @@
             >
               <div class="circular-holder">
                 <q-img
-                  :src="item.file_url || 'src/assets/img/artifact1.png'"
+                  :src="item.file_url || '/img/artifact1.png'"
                   :alt="item.metadata?.title || item.file_name"
                   class="circular-image"
                 />
@@ -312,7 +308,7 @@
             <div class="upload-box" @click="triggerFileInput">
               <img v-if="previewImage" :src="previewImage" alt="Preview" class="preview-image" />
               <div v-else class="upload">
-                <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon" />
+                <q-img src="/img/write.png" alt="Upload" class="upload-icon" />
                 <div>Upload Photo</div>
               </div>
               <input

@@ -270,7 +270,7 @@
                 class="preview-image"
               />
               <div v-else class="upload">
-                <q-img src="src/assets/img/write.png" alt="Upload" class="upload-icon" />
+                <q-img src="/img/write.png" alt="Upload" class="upload-icon" />
                 <div>Upload New Photo</div>
               </div>
               <input
@@ -327,7 +327,7 @@
     <q-dialog v-model="confirmDeleteOpen" persistent>
       <q-card class="confirmation-delete">
         <q-card-section class="column items-center">
-          <q-img src="src/assets/img/conf-delete.png" alt="question icon" class="question-icon" />
+          <q-img src="/img/conf-delete.png" alt="question icon" class="question-icon" />
           <div class="q-mt-md sub-font" style="color: #000000">
             Are you sure you want to delete the collection "{{ collection.collection_name }}"?
           </div>
@@ -358,7 +358,7 @@
     <q-dialog v-model="confirmRemoveOpen" persistent>
       <q-card class="confirmation-delete">
         <q-card-section class="column items-center">
-          <q-img src="src/assets/img/conf-delete.png" alt="question icon" class="question-icon" />
+          <q-img src="/img/conf-delete.png" alt="question icon" class="question-icon" />
           <div class="q-mt-md sub-font" style="color: #000000; text-align: center">
             Are you sure you want to remove "{{ itemToRemove.name }}" from the collection?
           </div>

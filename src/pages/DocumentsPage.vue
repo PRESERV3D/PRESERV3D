@@ -27,7 +27,7 @@
             v-if="!selectedFile"
             @click="handleScan"
           >
-            <q-img src="src/assets/img/camera.png" alt="Camera" class="upload-icon-docu" />
+            <q-img src="/img/camera.png" alt="Camera" class="upload-icon-docu" />
             <q-btn
               outline
               label="Use Camera"
@@ -46,11 +46,7 @@
             @drop.prevent="onFileDrop"
             :class="{ 'drag-over': isDragging }"
           >
-            <q-img
-              src="src/assets/img/drag-drop-icon.png"
-              alt="Upload-Document"
-              class="upload-icon-docu"
-            />
+            <q-img src="/img/drag-drop-icon.png" alt="Upload-Document" class="upload-icon-docu" />
             <div
               v-if="!selectedFile"
               class="sub-font-3 text-center"
@@ -72,7 +68,7 @@
                 class="thumbnail-delete"
                 @click="deleteSelectedFile"
               />
-              <q-img src="src/assets/img/document-icon.png" alt="Document" class="document-icon" />
+              <q-img src="/img/document-icon.png" alt="Document" class="document-icon" />
               <div class="selected-document-name q-mt-md">
                 {{ selectedFile.name }}
               </div>
@@ -151,12 +147,11 @@
 
                   <!-- Star Icon with Count -->
                   <q-icon
-                    v-if="!isAdmin"
                     :name="doc.starred ? 'star' : 'star_border'"
                     :class="{ starred: doc.starred }"
                     size="xs"
                     class="action-icon star-icon"
-                    @click.stop="toggleFavorite(doc, 'document')"
+                    @click.stop="isAdmin ? null : toggleFavorite(doc, 'document')"
                   />
                   <span class="count-text">{{ documentsStore.starCounts[doc.id] || 0 }}</span>
 
@@ -311,23 +306,16 @@
                 <div class="q-py-xs doc-align-items">
                   <!-- Visibility Icon (static) -->
 
-                  <q-icon
-                    v-if="!isAdmin"
-                    name="visibility"
-                    color="grey"
-                    size="xs"
-                    class="action-icon view-icon"
-                  />
+                  <q-icon name="visibility" color="grey" size="xs" class="action-icon view-icon" />
                   <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
 
                   <!-- Star Icon with Count -->
                   <q-icon
-                    v-if="!isAdmin"
                     :name="doc.starred ? 'star' : 'star_border'"
                     :class="{ starred: doc.starred }"
                     size="xs"
                     class="action-icon star-icon"
-                    @click.stop="toggleFavorite(doc, 'document')"
+                    @click.stop="isAdmin ? null : toggleFavorite(doc, 'document')"
                   />
                   <span class="count-text">{{ documentsStore.starCounts[doc.id] || 0 }}</span>
 

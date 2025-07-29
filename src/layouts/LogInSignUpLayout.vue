@@ -3,7 +3,7 @@
     <div class="page-background" style="background-color: #4d0000">
       <div class="row">
         <div class="col-6 flex">
-          <q-img src="src/assets/img/pup-glows.png" alt="PUP Glow" class="bg-glow" />
+          <q-img src="/img/pup-glows.png" alt="PUP Glow" class="bg-glow" />
         </div>
         <div class="col-6 q-py-xl login-card-style flex flex-center">
           <q-page-container>
@@ -21,7 +21,7 @@
 .page-background {
   background-image:
     linear-gradient(0deg, rgba(86, 5, 5, 0.7) 50.47%, rgba(0, 0, 0, 0.56) 95.19%),
-    url('src/assets/img/pup-bg.png');
+    url('/img/pup-bg.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

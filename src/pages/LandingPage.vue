@@ -6,7 +6,7 @@
 
         <div class="flex flex-center">
           <q-img
-            src="src/assets/img/logo.png"
+            src="/img/logo.png"
             alt="Logo"
             style="width: 70px; height: 70px; flex-shrink: 0; aspect-ratio: 1/1; left: 100%"
             class="q-px-auto q-mt-sm"
@@ -46,7 +46,7 @@
         </div>
         <!-- Images -->
         <q-img
-          src="src/assets/img/c-trophy.png"
+          src="/img/c-trophy.png"
           alt="C Trophy"
           style="
             width: 670px;
@@ -62,7 +62,7 @@
         />
 
         <q-img
-          src="src/assets/img/l-trophy.png"
+          src="/img/l-trophy.png"
           alt="L Trophy"
           style="
             width: 325px;
@@ -77,7 +77,7 @@
         />
 
         <q-img
-          src="src/assets/img/r-trophy.png"
+          src="/img/r-trophy.png"
           alt="R Trophy"
           style="
             width: 380px; /* Adjust width as needed */
@@ -112,8 +112,7 @@
 <style scoped>
 .page-background {
   background:
-    linear-gradient(0deg, rgba(63, 4, 4, 0.8) 70%, rgba(0, 0, 0, 0.9) 99%),
-    url('src/assets/img/bg-img.png');
+    linear-gradient(0deg, rgba(63, 4, 4, 0.8) 70%, rgba(0, 0, 0, 0.9) 99%), url('/img/bg-img.png');
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
