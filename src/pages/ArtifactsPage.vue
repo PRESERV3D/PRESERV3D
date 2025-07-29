@@ -270,6 +270,7 @@
 
                 <!-- Bookmark Icon -->
                 <q-icon
+                  v-if="!isAdmin"
                   :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                   class="action-icon bookmark-icon"
                   :class="{ bookmarked: model.bookmarked }"
