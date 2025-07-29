@@ -158,7 +158,16 @@
             <div class="q-mt-md self-start" style="margin-left: 1rem">
               <div class="fade-title-container" style="max-width: 10rem">
                 <div class="sub-font-4 fade-title">
-                  {{ recentStore.recentItems[currentIndex]?.metadata?.title || 'Untitled' }}
+                  <router-link
+                    :to="{
+                      name: isGLB(currentItem?.file_name) ? 'view-artifact' : 'view-document',
+                      params: { id: currentItem?.id },
+                    }"
+                    class="sub-font-4"
+                    style="text-decoration: none"
+                  >
+                    {{ recentStore.recentItems[currentIndex]?.metadata?.title || 'Untitled' }}
+                  </router-link>
                   <div class="tooltip-box">
                     {{ recentStore.recentItems[currentIndex]?.metadata?.title || 'Untitled' }}
                   </div>
@@ -245,6 +254,7 @@ const topDocuments = ref([])
 const recentStore = useRecentStore()
 const currentIndex = ref(0)
 const currentItem = computed(() => recentStore.recentItems[currentIndex.value])
+console.log(currentItem.value)
 
 onMounted(async () => {
   const chartData = await prepareChartData()

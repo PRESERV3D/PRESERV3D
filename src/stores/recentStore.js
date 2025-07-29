@@ -12,12 +12,12 @@ export const useRecentStore = defineStore('recent', {
         const [artifactsRes, documentsRes] = await Promise.all([
           supabase
             .from('artifacts_metadata')
-            .select('file_name, file_url, metadata, uploaded_at')
+            .select('id, file_name, file_url, metadata, uploaded_at')
             .order('uploaded_at', { ascending: false }),
 
           supabase
             .from('documents_metadata')
-            .select('file_name, file_url, preview_url, metadata, uploaded_at')
+            .select('id, file_name, file_url, preview_url, metadata, uploaded_at')
             .order('uploaded_at', { ascending: false }),
         ])
 
