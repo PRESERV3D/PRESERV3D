@@ -63,15 +63,28 @@
               Start Reading
               <img src="/img/arrow-tilt.png" alt="Start Reading" class="q-ml-sm btn-arrow-tilt" />
             </q-btn>
+            <!-- Action icons -->
+
             <div class="row-1 items-center">
               <q-icon
                 v-if="!isAdmin"
-                :name="doc.favorited ? 'star' : 'star_border'"
-                :color="doc.favorited ? 'yellow' : 'black'"
+                name="visibility"
+                color="grey"
+                size="xs"
+                class="action-icon"
+              />
+              <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
+
+              <q-icon
+                v-if="!isAdmin"
+                :name="doc.starred ? 'star' : 'star_border'"
+                :class="{ starred: doc.starred }"
                 class="bookmark-icon cursor-pointer"
                 size="sm"
-                @click="doc.favorited = !doc.favorited"
+                @click.stop="isAdmin ? null : toggleFavorite(doc, 'document')"
               />
+              <span class="count-text">{{ documentsStore.starCounts[doc.id] || 0 }}</span>
+
               <q-icon
                 v-if="!isAdmin"
                 :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
@@ -182,6 +195,9 @@ import { supabase } from 'boot/supabase'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import { useUserStore } from 'stores/user'
 import { useRouter } from 'vue-router'
+import { useDocumentsStore } from 'stores/documentsStore'
+
+const documentsStore = useDocumentsStore()
 
 const router = useRouter()
 const route = useRoute()
@@ -347,7 +363,8 @@ const loadUserCollections = async () => {
     .eq('user_id', userId)
 
   if (!error) {
-    userCollections.value = data
+    // ADDED: Exclude "Favorites" from the list
+    userCollections.value = data.filter((c) => c.collection_name !== 'Favorites')
   } else {
     console.error('Failed to load collections:', error)
   }
@@ -433,6 +450,116 @@ const showNotifyDialog = (title, message) => {
   notifyDialogOpen.value = true
 }
 
+// FIXED: Toggle favorite
+const toggleFavorite = async (doc, itemType = 'document') => {
+  if (!doc) return
+
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (authError || !userId) {
+    console.error('Auth error:', authError)
+    return
+  }
+
+  try {
+    // Find or create Favorites collection
+    let { data: favoritesCollection } = await supabase
+      .from('collections')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    if (!favoritesCollection) {
+      const { data: newCollection, error: insertError } = await supabase
+        .from('collections')
+        .insert([
+          {
+            collection_name: 'Favorites',
+            description: 'Items you marked as favorite will appear here.',
+            user_id: userId,
+            is_default: true,
+            is_locked: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+            cover_url:
+              'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers//favoritescover.png',
+          },
+        ])
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('Insert collection failed:', insertError)
+      } else {
+        favoritesCollection = newCollection
+      }
+    }
+
+    const collectionId = favoritesCollection.collection_id
+    const itemName = doc.metadata?.title || doc.file_name
+
+    // Check if item already exists
+    const { data: existing } = await supabase
+      .from('collection_items')
+      .select('*')
+      .eq('collection_id', collectionId)
+      .eq('item_id', doc.id)
+      .eq('item_type', itemType)
+
+    if (existing.length > 0) {
+      // Remove from favorites
+      await supabase
+        .from('collection_items')
+        .delete()
+        .eq('collection_id', collectionId)
+        .eq('item_id', doc.id)
+        .eq('item_type', itemType)
+
+      doc.starred = false
+      showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
+    } else {
+      // Add to favorites
+      await supabase.from('collection_items').insert({
+        collection_id: collectionId,
+        item_id: doc.id,
+        item_type: itemType,
+      })
+
+      doc.starred = true
+      showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
+    }
+
+    // Get star count
+    const { data: metaCheck, error: metaError } = await supabase
+      .from('documents_metadata')
+      .select('id')
+      .eq('id', doc.id)
+      .single()
+
+    // FIXED: Star count
+    if (!metaError && metaCheck) {
+      const { data: starData } = await supabase
+        .from('documents_star_count')
+        .select('star_count')
+        .eq('item_id', doc.id)
+        .maybeSingle()
+
+      if (starData && starData.star_count !== undefined) {
+        documentsStore.updateStarCount(doc.id, starData.star_count)
+      } else {
+        // If no row exists, star count is 0
+        documentsStore.updateStarCount(doc.id, 0)
+      }
+    } else {
+      console.error('Model ID not found in artifacts_metadata:', metaError)
+    }
+  } catch (err) {
+    console.error('Error toggling favorite:', err)
+  }
+}
+
 onMounted(async () => {
   const { data, error } = await supabase
     .from('documents_metadata')
@@ -444,7 +571,8 @@ onMounted(async () => {
     console.error('Document not found from Supabase:', error)
     // Optional: fallback to store if you have a docuStore like modelStore
     // const docuStore = useDocuStore()
-    // doc.value = docuStore.documents.find((d) => d.id == route.params.id) || null
+    doc.value = documentsStore.documents.find((d) => d.id == route.params.id) || null
+    console.log('Fallback Document from Store:', doc.value)
   } else {
     // Initialize with default bookmark/star states
     doc.value = {
@@ -455,6 +583,35 @@ onMounted(async () => {
   }
 
   loading.value = false
+
+  // ADDED: Check if the document is in user's Favorites collection
+  const { data: authData } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (userId) {
+    const { data: favoritesCollection } = await supabase
+      .from('collections')
+      .select('collection_id')
+      .eq('user_id', userId)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    if (favoritesCollection) {
+      const { data: favItems } = await supabase
+        .from('collection_items')
+        .select('item_id')
+        .eq('collection_id', favoritesCollection.collection_id)
+        .eq('item_type', 'document')
+        .eq('item_id', route.params.id)
+
+      if (favItems?.length > 0) {
+        doc.value.starred = true
+      }
+    }
+  }
+
+  await documentsStore.fetchStarCounts()
+  await documentsStore.fetchViewCounts()
 })
 </script>
 

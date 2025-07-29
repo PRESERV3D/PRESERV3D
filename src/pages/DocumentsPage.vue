@@ -134,7 +134,6 @@
                   <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
                 </router-link>
                 <div class="q-py-xs doc-align-items">
-                  <!-- FIXED: Action Icons -->
                   <!-- View Icon with Count -->
                   <q-icon
                     v-if="!isAdmin"

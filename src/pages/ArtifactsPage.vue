@@ -664,7 +664,6 @@ const loadUserCollections = async () => {
     .eq('user_id', userId)
 
   if (!error) {
-    // ADDED: Exclude "Favorites" from the list
     userCollections.value = data.filter((c) => c.collection_name !== 'Favorites')
   } else {
     console.error('Failed to load collections:', error)
