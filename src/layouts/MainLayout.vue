@@ -115,7 +115,7 @@
 
             <!-- Notifications Button -->
             <q-btn flat round dense class="q-ml-md custom-spacing notif-btn">
-              <img src="/src/assets/icon/notif-icon.png" alt="notifications" class="notif-image" />
+              <img src="/icon/notif-icon.png" alt="notifications" class="notif-image" />
               <q-badge
                 floating
                 rounded
@@ -206,9 +206,9 @@ const notifications = ref([
 
 const notificationCount = computed(() => notifications.value.length)
 const navItems = [
-  { name: 'home', label: 'Home', icon: '\\src\\assets\\icon\\home.png' },
-  { name: 'artifacts', label: 'Artifacts', icon: '\\src\\assets\\icon\\artifacts.png' },
-  { name: 'documents', label: 'Documents', icon: '\\src\\assets\\icon\\book.png' },
+  { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
+  { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
+  { name: 'documents', label: 'Documents', icon: '\\icons\\book.png' },
 ]
 
 // Get profile data from userStore
