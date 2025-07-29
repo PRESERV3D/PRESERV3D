@@ -47,7 +47,7 @@
           />
           <div class="column items-center q-mt-xs">
             <q-btn class="visitor-next-btn" push @click="validateStepOne">
-              <img src="icons/visitor-arrow-next.png" alt="next" class="btn-icon" />
+              <img src="/icons/visitor-arrow-next.png" alt="next" class="btn-icon" />
             </q-btn>
           </div>
 
@@ -95,7 +95,7 @@
                       :class="{ 'drag-over': isDragging }"
                     >
                       <q-img
-                        src="src/assets/img/drag-drop-icon.png"
+                        src="/img/drag-drop-icon.png"
                         alt="Upload-Document"
                         class="upload-icon-docu"
                       />
@@ -118,7 +118,7 @@
                       </div>
                       <div v-else class="documentarti-preview text-center">
                         <q-img
-                          src="src/assets/img/document-icon.png"
+                          src="/img/document-icon.png"
                           alt="Document"
                           class="document-icon"
                         />
@@ -219,12 +219,7 @@
       </div>
       <!-- STEP 3: Evaluating Profile Creation -->
       <div v-if="step === 3" class="column items-center q-my-md q-gutter-md">
-        <q-img
-          src="src/assets/img/hourglass.png"
-          alt="Pending"
-          class="trophies"
-          style="max-width: 150px"
-        />
+        <q-img src="/img/hourglass.png" alt="Pending" class="trophies" style="max-width: 150px" />
 
         <div class="q-my-md evaluating-title">EVALUATING PROFILE CREATION</div>
 

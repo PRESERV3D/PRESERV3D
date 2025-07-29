@@ -34,11 +34,7 @@
             <q-dialog v-model="showDialog" persistent>
               <q-card class="confirmation-delete">
                 <q-card-section class="column items-center">
-                  <q-img
-                    src="src/assets/img/conf-delete.png"
-                    alt="question icon"
-                    class="question-icon"
-                  />
+                  <q-img src="/img/conf-delete.png" alt="question icon" class="question-icon" />
                   <div class="q-mt-md sub-font" style="color: #000000">
                     Are you sure you want to delete this?
                   </div>
@@ -65,11 +61,7 @@
           <div class="row-1 items-center justify-between">
             <q-btn :href="doc.file_url" target="_blank" class="start-reading-btn" no-caps>
               Start Reading
-              <img
-                src="src/assets/img/arrow-tilt.png"
-                alt="Start Reading"
-                class="q-ml-sm btn-arrow-tilt"
-              />
+              <img src="/img/arrow-tilt.png" alt="Start Reading" class="q-ml-sm btn-arrow-tilt" />
             </q-btn>
             <div class="row-1 items-center">
               <q-icon

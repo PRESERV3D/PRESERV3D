@@ -27,7 +27,7 @@
             v-if="!selectedFile"
             @click="handleScan"
           >
-            <q-img src="src/assets/img/camera.png" alt="Camera" class="upload-icon-docu" />
+            <q-img src="/img/camera.png" alt="Camera" class="upload-icon-docu" />
             <q-btn
               outline
               label="Use Camera"
@@ -46,11 +46,7 @@
             @drop.prevent="onFileDrop"
             :class="{ 'drag-over': isDragging }"
           >
-            <q-img
-              src="src/assets/img/drag-drop-icon.png"
-              alt="Upload-Document"
-              class="upload-icon-docu"
-            />
+            <q-img src="/img/drag-drop-icon.png" alt="Upload-Document" class="upload-icon-docu" />
             <div
               v-if="!selectedFile"
               class="sub-font-3 text-center"
@@ -72,7 +68,7 @@
                 class="thumbnail-delete"
                 @click="deleteSelectedFile"
               />
-              <q-img src="src/assets/img/document-icon.png" alt="Document" class="document-icon" />
+              <q-img src="/img/document-icon.png" alt="Document" class="document-icon" />
               <div class="selected-document-name q-mt-md">
                 {{ selectedFile.name }}
               </div>

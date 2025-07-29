@@ -14,11 +14,7 @@
           </div>
         </div>
         <div class="col-5">
-          <q-img
-            src="src/assets/img/trophy-document.png"
-            alt="Trophy and Document"
-            class="trophies"
-          />
+          <q-img src="/img/trophy-document.png" alt="Trophy and Document" class="trophies" />
         </div>
       </div>
 
@@ -187,7 +183,7 @@
                   recentStore.recentItems.length
               "
             >
-              <img src="/icons/arrow_left.png" alt="back" class="btn-arrows" />
+              <img src="//icons/arrow_left.png" alt="back" class="btn-arrows" />
             </q-btn>
 
             <q-btn
@@ -196,7 +192,7 @@
               class="arrow-button"
               @click="currentIndex = (currentIndex + 1) % recentStore.recentItems.length"
             >
-              <img src="/icons/arrow_right.png" alt="next" class="btn-arrows" />
+              <img src="//icons/arrow_right.png" alt="next" class="btn-arrows" />
             </q-btn>
           </div>
         </div>

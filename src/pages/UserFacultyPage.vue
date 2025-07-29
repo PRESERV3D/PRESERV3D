@@ -53,7 +53,7 @@
               text-color="white"
               @click="validateStepOne"
             >
-              <img src="icons/arrow.png" alt="next" class="btn-icon" />
+              <img src="/icons/arrow.png" alt="next" class="btn-icon" />
             </q-btn>
           </div>
 

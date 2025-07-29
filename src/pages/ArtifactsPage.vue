@@ -155,7 +155,7 @@
                 :class="{ 'drag-over': isDragging }"
               >
                 <q-img
-                  src="src/assets/img/drag-drop-icon.png"
+                  src="/img/drag-drop-icon.png"
                   alt="Upload-Artifacts"
                   class="upload-icon-docu"
                 />
@@ -172,11 +172,7 @@
                   your computer
                 </div>
                 <div v-else class="documentarti-preview text-center">
-                  <q-img
-                    src="src/assets/img/document-icon.png"
-                    alt="Artifacts"
-                    class="document-icon"
-                  />
+                  <q-img src="/img/document-icon.png" alt="Artifacts" class="document-icon" />
                   <div class="selected-documentarti-name q-mt-md">
                     {{ selectedFile.name }}
                   </div>
