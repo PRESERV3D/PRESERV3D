@@ -494,6 +494,8 @@ onMounted(async () => {
     await Promise.all([loadCollections(authUser.id), loadRecentViews(authUser.id), loadModels()])
 
     await loadUserCollections()
+    await modelStore.fetchViewCounts()
+    await modelStore.fetchStarCounts()
   } catch (err) {
     // ADDED: Top-level error handling from INDEX page
     console.error('Error initializing page:', err)
@@ -971,7 +973,7 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
       showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
     }
 
-    // Get star count
+    // FIXED: Get star count
     const { data: metaCheck, error: metaError } = await supabase
       .from('artifacts_metadata')
       .select('id')
@@ -979,16 +981,17 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
       .single()
 
     if (!metaError && metaCheck) {
-      const { data: starData, error: starError } = await supabase
+      const { data: starData } = await supabase
         .from('artifacts_star_count')
         .select('star_count')
         .eq('item_id', model.id)
-        .single()
+        .maybeSingle()
 
-      if (!starError && starData) {
+      if (starData && starData.star_count !== undefined) {
         modelStore.updateStarCount(model.id, starData.star_count)
       } else {
-        console.error('Error fetching updated star count:', starError)
+        // If no row exists, star count is 0
+        modelStore.updateStarCount(model.id, 0)
       }
     } else {
       console.error('Model ID not found in artifacts_metadata:', metaError)

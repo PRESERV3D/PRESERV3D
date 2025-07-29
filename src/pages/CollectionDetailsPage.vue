@@ -131,7 +131,7 @@
                             class="action-icon star-icon"
                             :class="{ starred: artifact.starred }"
                             size="18px"
-                            @click.stop="toggleFavorite(artifact, 'artifact')"
+                            @click.stop="toggleFavorite(artifact.id, 'artifact')"
                           />
                           <span class="count-text">{{
                             modelStore.starCounts[artifact.id] || 0
@@ -211,7 +211,25 @@
                         </div>
                       </router-link>
                       <div class="action-icons">
+                        <!-- View Icon with Count -->
+                        <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
+                        <span class="count-text">{{
+                          documentsStore.viewCounts[document.id] || 0
+                        }}</span>
+
+                        <!-- Star Icon with Count -->
                         <q-icon
+                          :name="document.starred ? 'star' : 'star_border'"
+                          :class="{ starred: document.starred }"
+                          size="xs"
+                          class="action-icon star-icon"
+                          @click.stop="toggleFavorite(document.id, 'document')"
+                        />
+                        <span class="count-text">{{
+                          documentsStore.starCounts[document.id] || 0
+                        }}</span>
+                        <q-icon
+                          v-if="collection.collection_name !== 'Favorites'"
                           :name="document.bookmarked ? 'bookmark' : 'bookmark_border'"
                           class="action-icon bookmark-icon"
                           :class="{ bookmarked: document.bookmarked }"
@@ -372,6 +390,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useModelStore } from 'stores/modelStore'
+import { useDocumentsStore } from 'stores/documentsStore'
+
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { uid } from 'quasar'
@@ -382,6 +402,7 @@ import '@google/model-viewer'
 const route = useRoute()
 const router = useRouter()
 const modelStore = useModelStore()
+const documentsStore = useDocumentsStore()
 
 // Get collection ID from route params
 const collectionId = route.params.id
@@ -448,6 +469,8 @@ onMounted(async () => {
   await fetchCollectionItems()
   await modelStore.fetchViewCounts()
   await modelStore.fetchStarCounts()
+  await documentsStore.fetchViewCounts()
+  await documentsStore.fetchStarCounts()
 })
 
 // Fetch collection information
@@ -718,14 +741,21 @@ async function removeItem() {
   }
 
   confirmRemoveOpen.value = false
-  showMessageDialog(
-    'Removed',
-    `${type.charAt(0).toUpperCase() + type.slice(1)} "${itemToRemove.value.name}" removed from collection.`,
-  )
+  showNotifyDialog('Notice', `"${itemToRemove.value.name}" was removed from the collection.`)
+
+  await fetchCollectionItems()
 }
 
-// ADDED: Toggle favorite
-const toggleFavorite = async (model, itemType = 'artifact') => {
+// FIXED: Toggle favorite
+const toggleFavorite = async (itemId, itemType) => {
+  const model =
+    itemType === 'artifact'
+      ? artifacts.value.find((a) => a.id === itemId)
+      : documents.value.find((d) => d.id === itemId)
+  if (!itemType) {
+    throw new Error('itemType is required for toggleBookmark')
+  }
+
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
 
@@ -777,7 +807,7 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
       .from('collection_items')
       .select('*')
       .eq('collection_id', collectionId)
-      .eq('item_id', model.id)
+      .eq('item_id', itemId)
       .eq('item_type', itemType)
 
     if (existing.length > 0) {
@@ -786,17 +816,25 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
         .from('collection_items')
         .delete()
         .eq('collection_id', collectionId)
-        .eq('item_id', model.id)
+        .eq('item_id', itemId)
         .eq('item_type', itemType)
 
       model.starred = false
       showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
-      await fetchCollectionItems()
+
+      // FIXED: Remove from displayed list if unstarred
+      if (collection.value?.collection_name === 'Favorites') {
+        if (itemType === 'document') {
+          documents.value = documents.value.filter((doc) => doc.id !== itemId)
+        } else {
+          artifacts.value = artifacts.value.filter((art) => art.id !== itemId)
+        }
+      }
     } else {
       // Add to favorites
       await supabase.from('collection_items').insert({
         collection_id: collectionId,
-        item_id: model.id,
+        item_id: itemId,
         item_type: itemType,
       })
 
@@ -805,26 +843,48 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
     }
 
     // Get star count
-    const { data: metaCheck, error: metaError } = await supabase
-      .from('artifacts_metadata')
-      .select('id')
-      .eq('id', model.id)
-      .single()
-
-    if (!metaError && metaCheck) {
-      const { data: starData, error: starError } = await supabase
-        .from('artifacts_star_count')
-        .select('star_count')
-        .eq('item_id', model.id)
+    if (itemType === 'artifact') {
+      const { data: metaCheck, error: metaError } = await supabase
+        .from('artifacts_metadata')
+        .select('id')
+        .eq('id', model.id)
         .single()
 
-      if (!starError && starData) {
-        modelStore.updateStarCount(model.id, starData.star_count)
-      } else {
-        console.error('Error fetching updated star count:', starError)
+      if (!metaError && metaCheck) {
+        const { data: starData, error: starError } = await supabase
+          .from('artifacts_star_count')
+          .select('star_count')
+          .eq('item_id', model.id)
+          .single()
+
+        if (!starError && starData) {
+          modelStore.updateStarCount(model.id, starData.star_count)
+        } else {
+          console.error('Error fetching updated star count:', starError)
+        }
       }
-    } else {
-      console.error('Model ID not found in artifacts_metadata:', metaError)
+    } else if (itemType === 'document') {
+      const { data: metaCheck, error: metaError } = await supabase
+        .from('documents_metadata')
+        .select('id')
+        .eq('id', Document.id)
+        .single()
+
+      if (!metaError && metaCheck) {
+        const { data: starData, error: starError } = await supabase
+          .from('documents_star_count')
+          .select('star_count')
+          .eq('item_id', document.id)
+          .single()
+
+        if (!starError && starData) {
+          documentsStore.updateStarCount(document.id, starData.star_count)
+        } else {
+          console.error('Error fetching updated star count:', starError)
+        }
+      } else {
+        console.error('Item not found in the metadata database:', metaError)
+      }
     }
   } catch (err) {
     console.error('Error toggling favorite:', err)
@@ -857,7 +917,6 @@ function goToAddArtifact() {
 </script>
 
 <style scoped>
-
 /* Left Side - Collection Details */
 .collection-details-section {
   flex: 1;
@@ -1065,7 +1124,6 @@ function goToAddArtifact() {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
-
 /* Responsive Design */
 @media (max-width: 1200px) {
   .collection-container {
@@ -1192,13 +1250,6 @@ function goToAddArtifact() {
   border-radius: 0 20px 20px 0;
 }
 
-
-
-
-
-
-
-
 /* Responsive Design */
 @media (max-width: 1200px) {
   .collection-container {
@@ -1240,7 +1291,4 @@ function goToAddArtifact() {
     height: 220px;
   }
 }
-
-
-
 </style>

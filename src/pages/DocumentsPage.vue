@@ -138,8 +138,8 @@
                   <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
                 </router-link>
                 <div class="q-py-xs doc-align-items">
-                  <!-- Visibility Icon (static) -->
-
+                  <!-- FIXED: Action Icons -->
+                  <!-- View Icon with Count -->
                   <q-icon
                     v-if="!isAdmin"
                     name="visibility"
@@ -149,7 +149,7 @@
                   />
                   <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
 
-                  <!-- Star Icon -->
+                  <!-- Star Icon with Count -->
                   <q-icon
                     v-if="!isAdmin"
                     :name="doc.starred ? 'star' : 'star_border'"
