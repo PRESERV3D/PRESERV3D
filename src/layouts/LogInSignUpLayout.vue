@@ -18,7 +18,7 @@
 </template>
 
 <style scoped>
-.page-background {
+/* .page-background {
   background-image:
     linear-gradient(0deg, rgba(86, 5, 5, 0.7) 50.47%, rgba(0, 0, 0, 0.56) 95.19%),
     url('/img/pup-bg.png');
@@ -26,7 +26,7 @@
   background-position: center;
   background-repeat: no-repeat;
   min-height: 100vh;
-}
+} */
 
 .bg-glow {
   width: 70rem;
