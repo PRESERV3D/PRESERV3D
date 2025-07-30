@@ -4,12 +4,22 @@
       class="page-background"
       style="background-color: #4d0000; display: flex; justify-content: center; align-items: center"
     >
-      <div class="forgot-bigbox">
+      <div class="reset-bigbox">
         <div class="q-my-lg column">
           <label class="reset-title q-mb-md">Reset password</label>
-          <div class="row q-gutter-md items-center justify-center">
-            <label class="labelNames">Email: </label>
-            <q-input filled dense type="email" class="text-box-2" style="width: 30rem" />
+          <div class="q-ml-xl">
+            <div class="row q-gutter-md items-center">
+              <label class="labelNames">New Password: </label>
+              <q-input
+                filled
+                dense
+                type="password"
+                class="text-box-2"
+                style="width: 23rem; margin-left: 2.6rem"
+              />
+              <label class="labelNames">Confirm Password: </label>
+              <q-input filled dense type="password" class="text-box-2" style="width: 23rem" />
+            </div>
           </div>
           <div class="row justify-center q-mt-lg">
             <q-btn label="Submit" class="btn-submit" @click="resetSent = true" no-caps />
@@ -19,8 +29,7 @@
             <q-card class="reset-pass-sent">
               <q-card-section class="column items-center">
                 <div class="q-mt-md sub-font-2" style="color: #000000">
-                  A password reset email has been sent to your registered email address. Please
-                  check your inbox.
+                  Password has been reset.
                 </div>
               </q-card-section>
               <q-card-actions align="center">
@@ -41,9 +50,9 @@ const resetSent = ref(false)
 </script>
 
 <style scoped>
-.forgot-bigbox {
+.reset-bigbox {
   width: 38rem;
-  height: 13rem;
+  height: 16.5rem;
   border-radius: 10px;
   background: linear-gradient(
     334deg,
@@ -78,7 +87,7 @@ const resetSent = ref(false)
 .reset-pass-sent {
   border-radius: 10px !important;
   background-color: #fbf4d0;
-  width: 32rem;
+  width: 17rem;
   padding: 1rem;
   text-align: center;
 }
