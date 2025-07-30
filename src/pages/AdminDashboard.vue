@@ -133,7 +133,7 @@
                   <div class="fade-title-container" style="max-width: 12rem">
                     <div class="sub-font-2 fade-title">
                       <router-link
-                        :to="{ name: 'view-document', params: { id: item.item_id } }"
+                        :to="{ name: 'view-document', params: { id: item.id } }"
                         class="sub-font-2"
                         style="text-decoration: none"
                       >
