@@ -267,7 +267,6 @@ const topDocuments = ref([])
 const recentStore = useRecentStore()
 const currentIndex = ref(0)
 const currentItem = computed(() => recentStore.recentItems[currentIndex.value])
-console.log(currentItem.value)
 
 onMounted(async () => {
   const chartData = await prepareChartData()
