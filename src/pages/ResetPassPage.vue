@@ -9,32 +9,63 @@
           <label class="reset-title q-mb-md">Reset password</label>
           <div class="q-ml-xl">
             <div class="row q-gutter-md items-center">
+              <!-- New password input -->
               <label class="labelNames">New Password: </label>
               <q-input
+                v-model="newPassword"
                 filled
                 dense
-                type="password"
+                :type="showPassword ? 'text' : 'password'"
                 class="text-box-2"
                 style="width: 23rem; margin-left: 2.6rem"
-              />
+              >
+                <template v-slot:append>
+                  <q-icon
+                    :name="showPassword ? 'visibility' : 'visibility_off'"
+                    class="cursor-pointer"
+                    @click="showPassword = !showPassword"
+                  />
+                </template>
+              </q-input>
+
+              <!-- Confirm password input -->
               <label class="labelNames">Confirm Password: </label>
-              <q-input filled dense type="password" class="text-box-2" style="width: 23rem" />
+              <q-input
+                v-model="confirmPassword"
+                filled
+                dense
+                :type="showConfirmPassword ? 'text' : 'password'"
+                class="text-box-2"
+                style="width: 23rem"
+              >
+                <template v-slot:append>
+                  <q-icon
+                    :name="showConfirmPassword ? 'visibility' : 'visibility_off'"
+                    class="cursor-pointer"
+                    @click="showConfirmPassword = !showConfirmPassword"
+                  />
+                </template>
+              </q-input>
             </div>
           </div>
           <div class="row justify-center q-mt-lg">
-            <q-btn label="Submit" class="btn-submit" @click="resetSent = true" no-caps />
+            <q-btn
+              label="Submit"
+              class="btn-submit"
+              @click="((resetSent = true), resetPassword())"
+              no-caps
+            />
           </div>
 
           <q-dialog v-model="resetSent" persistent>
             <q-card class="reset-pass-sent">
               <q-card-section class="column items-center">
                 <div class="q-mt-md sub-font-2" style="color: #000000">
-                  Password has been reset.
+                  {{ message }}
                 </div>
               </q-card-section>
               <q-card-actions align="center">
-                <q-btn label="Back" class="btn-save" flat />
-                <!-- add logic that must go back to log in (respective log in page: admin/user)-->
+                <q-btn label="Confirm" class="btn-save" flat @click="handleDialogConfirm" />
               </q-card-actions>
             </q-card>
           </q-dialog>
@@ -45,8 +76,66 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { supabase } from 'boot/supabase'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
+const newPassword = ref('')
+const confirmPassword = ref('')
+const message = ref('')
 const resetSent = ref(false)
+const resetSuccess = ref(false)
+
+onMounted(() => {
+  const hash = window.location.hash
+  const params = new URLSearchParams(hash.replace('#', ''))
+
+  if (params.get('error_code') === 'otp_expired') {
+    message.value = 'Your password reset link has expired. Please request a new one.'
+    resetSuccess.value = true
+    resetSent.value = true
+  }
+})
+
+function checkPasswordMatch() {
+  if (newPassword.value !== confirmPassword.value) {
+    message.value = 'Passwords do not match.'
+    return false
+  }
+  return true
+}
+
+// Supabase will auto-login user if they came via reset email
+async function resetPassword() {
+  if (!checkPasswordMatch()) {
+    resetSent.value = true
+    return
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword.value,
+  })
+
+  if (error) {
+    message.value = error.message
+    resetSuccess.value = false
+  } else {
+    message.value = 'Password has been reset.'
+    resetSuccess.value = true
+  }
+
+  resetSent.value = true
+}
+
+function handleDialogConfirm() {
+  resetSent.value = false
+  if (resetSuccess.value) {
+    router.push('/user/login')
+  }
+}
 </script>
 
 <style scoped>

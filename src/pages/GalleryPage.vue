@@ -129,6 +129,9 @@ async function loadModelUrls() {
     .from('top_artifacts')
     .select('file_url')
     .order('views', { ascending: false })
+    .limit(3)
+
+  console.log('Supabase query result:', data)
 
   loading.value = false
 
