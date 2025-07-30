@@ -5,7 +5,7 @@ export const useModelStore = defineStore('modelStore', {
   state: () => ({
     models: [],
     filteredModels: [],
-    viewCounts: {}, // { [item_id]: view_count }
+    viewCounts: {}, // { [item_id]: views }
     starCounts: {}, // { [item_id]: star_count }
   }),
   actions: {
@@ -20,9 +20,7 @@ export const useModelStore = defineStore('modelStore', {
       this.starCounts[itemId] = newCount
     },
     async fetchViewCounts() {
-      const { data, error } = await supabase
-        .from('most_viewed_artifacts')
-        .select('item_id, view_count')
+      const { data, error } = await supabase.from('artifacts_view').select('item_id, views')
 
       if (error) {
         console.error('Error fetching view counts:', error)
@@ -31,7 +29,7 @@ export const useModelStore = defineStore('modelStore', {
 
       // Build a lookup map: { id: count }
       this.viewCounts = data.reduce((acc, row) => {
-        acc[row.item_id] = row.view_count
+        acc[row.item_id] = row.views
         return acc
       }, {})
     },
