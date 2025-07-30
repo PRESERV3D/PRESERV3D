@@ -136,6 +136,11 @@ const routes = [
   },
 
   {
+    path: '/resetpassword',
+    component: () => import('pages/ResetPassPage.vue'), // Reset Password Page
+  },
+
+  {
     path: '/admin',
     component: () => import('layouts/LogInSignUpLayout.vue'),
     children: [

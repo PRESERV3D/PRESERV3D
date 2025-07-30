@@ -297,15 +297,10 @@ document-title-2 {
   width: 15.6rem;
 }
 
-.forgot-textbox {
-  width: 30rem;
-}
-
 .text-box .q-field__control,
 .c-textbox .q-field__control,
 .text-box-2 .q-field__control,
-.login-text-box .q-field__control,
-.forgot-textbox .q-field__control {
+.login-text-box .q-field__control {
   border-radius: 10px;
   border: 1px solid #4d0000;
   box-shadow: 0 2px 6px rgba(86, 5, 5, 0.22);
