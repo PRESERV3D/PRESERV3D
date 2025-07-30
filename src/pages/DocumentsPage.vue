@@ -457,11 +457,12 @@ const isAdmin = computed(() => userRole === 'admin')
 onMounted(async () => {
   const { data: topDocus } = await supabase.from('top_documents').select('*')
 
-  // Get user's favorites for top documents too
+  // Get user's favorites and bookmarks for top documents
   const { data: authData } = await supabase.auth.getUser()
   const userId = authData?.user?.id
 
   if (userId) {
+    // Get user's Favorites collection
     const { data: favoritesCollection, error: favError } = await supabase
       .from('collections')
       .select('collection_id')
@@ -469,7 +470,16 @@ onMounted(async () => {
       .eq('collection_name', 'Favorites')
       .maybeSingle()
 
+    // Get ALL user collections (for bookmarked check)
+    const { data: allUserCollections, error: allCollError } = await supabase
+      .from('collections')
+      .select('collection_id, collection_name')
+      .eq('user_id', userId)
+
     let favoriteIds = []
+    let bookmarkedIds = []
+
+    // Get favorite document IDs
     if (favoritesCollection && !favError) {
       const { data: favItems, error: favItemsError } = await supabase
         .from('collection_items')
@@ -482,17 +492,38 @@ onMounted(async () => {
       }
     }
 
-    // Enhance topDocuments with starred property
+    // Get bookmarked document IDs (from non-Favorites collections)
+    if (allUserCollections && !allCollError) {
+      const nonFavoritesCollections = allUserCollections.filter(
+        (col) => col.collection_name !== 'Favorites',
+      )
+
+      if (nonFavoritesCollections.length > 0) {
+        const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
+
+        const { data: bookmarkedItems, error: bookmarkError } = await supabase
+          .from('collection_items')
+          .select('item_id')
+          .in('collection_id', collectionIds)
+          .eq('item_type', 'document')
+
+        if (!bookmarkError && bookmarkedItems) {
+          bookmarkedIds = [...new Set(bookmarkedItems.map((i) => i.item_id))]
+        }
+      }
+    }
+
+    // Enhance topDocuments with starred AND bookmarked properties
     const enhancedTopDocs =
       topDocus?.map((doc) => ({
         ...doc,
-        starred: favoriteIds.includes(doc.id), // Make sure to use the correct ID field
-        bookmarked: false, // Add this too for consistency
+        starred: favoriteIds.includes(doc.id), // Check if in Favorites
+        bookmarked: bookmarkedIds.includes(doc.id), // Check if in any non-Favorites collection
       })) || []
 
     topDocuments.value = enhancedTopDocs
   } else {
-    // If no user, just set without starred property
+    // If no user, just set both properties to false
     topDocuments.value =
       topDocus?.map((doc) => ({
         ...doc,
@@ -501,6 +532,7 @@ onMounted(async () => {
       })) || []
   }
 
+  // Keep all your existing onMounted logic below:
   if (!searchStore.query) {
     await fetchAllDocuments()
   }
@@ -508,7 +540,7 @@ onMounted(async () => {
   const scannedFile = history.state?.scannedFile
   if (scannedFile) {
     selectedFile.value = scannedFile
-    history.replaceState({}, '', '/documents') // Clear the state after using it
+    history.replaceState({}, '', '/documents')
     showDialog.value = true
   }
 
@@ -644,6 +676,8 @@ const fetchAllDocuments = async () => {
     }
 
     let favoriteIds = []
+    let bookmarkedIds = []
+
     if (favoritesCollection) {
       const { data: favItems, error: favItemsError } = await supabase
         .from('collection_items')
@@ -656,10 +690,37 @@ const fetchAllDocuments = async () => {
       }
     }
 
+    // Get ALL user collections (for bookmarked check)
+    const { data: allUserCollections, error: allCollError } = await supabase
+      .from('collections')
+      .select('collection_id, collection_name')
+      .eq('user_id', userId)
+
+    // Get bookmarked document IDs (from non-Favorites collections)
+    if (allUserCollections && !allCollError) {
+      const nonFavoritesCollections = allUserCollections.filter(
+        (col) => col.collection_name !== 'Favorites',
+      )
+
+      if (nonFavoritesCollections.length > 0) {
+        const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
+
+        const { data: bookmarkedItems, error: bookmarkError } = await supabase
+          .from('collection_items')
+          .select('item_id')
+          .in('collection_id', collectionIds)
+          .eq('item_type', 'document')
+
+        if (!bookmarkError && bookmarkedItems) {
+          bookmarkedIds = [...new Set(bookmarkedItems.map((i) => i.item_id))]
+        }
+      }
+    }
+
     // Add some mock data for demonstration compatibility
     const enhancedDocs = data.map((docs) => ({
       ...docs,
-      bookmarked: false,
+      bookmarked: bookmarkedIds.includes(docs.id),
       starred: favoriteIds.includes(docs.id),
     }))
 
@@ -1127,6 +1188,8 @@ async function saveToSelectedCollections() {
       }
 
       if (collection) removedCollections.push(collection.collection_name)
+
+      doc.bookmarked = false
     }
 
     const itemName = doc.metadata?.title || doc.file_name
