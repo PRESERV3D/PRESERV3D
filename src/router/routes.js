@@ -22,11 +22,12 @@ const routes = [
         component: () => import('src/pages/DocumentsPage.vue'),
         meta: { requiresAuth: true },
       },
-      // {
-      //   path: 'gallery',
-      //   component: () => import('pages/GalleryPage.vue'),
-      //   meta: { requiresAuth: true },
-      // },
+      {
+        path: 'gallery',
+        name: 'gallery',
+        component: () => import('pages/GalleryPage.vue'),
+        meta: { requiresAuth: true },
+      },
       {
         path: 'upload',
         component: () => import('pages/UploadPage.vue'),

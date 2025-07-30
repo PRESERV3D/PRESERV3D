@@ -209,6 +209,7 @@ const navItems = [
   { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
   { name: 'documents', label: 'Documents', icon: '\\icons\\book.png' },
+  { name: 'gallery', label: 'Gallery', icon: '\\icons\\gallery.png' },
 ]
 
 // Get profile data from userStore
@@ -307,16 +308,18 @@ watch(
   (newPath) => {
     if (newPath === '/') {
       activeItem.value = 'home'
-    } else if (newPath.includes('artifacts')) {
-      activeItem.value = 'artifacts'
-    } else if (newPath.includes('documents') || newPath.includes('document-scanner')) {
-      activeItem.value = 'documents'
     } else if (
       newPath.includes('home') ||
       newPath.includes('admindash') ||
       newPath.includes('collection')
     ) {
       activeItem.value = 'home'
+    } else if (newPath.includes('artifacts')) {
+      activeItem.value = 'artifacts'
+    } else if (newPath.includes('documents') || newPath.includes('document-scanner')) {
+      activeItem.value = 'documents'
+    } else if (newPath.includes('gallery')) {
+      activeItem.value = 'gallery'
     } else {
       activeItem.value = ''
     }
