@@ -724,6 +724,8 @@ const saveToSelectedCollections = async () => {
       }
 
       if (collection) removedCollections.push(collection.collection_name)
+
+      model.bookmarked = false
     }
 
     const itemName = model.metadata?.title || model.file_name
@@ -739,21 +741,6 @@ const saveToSelectedCollections = async () => {
 
     if (message) {
       showNotifyDialog('Notice', message.trim())
-    }
-
-    // ADDED: Recheck if model is in any non-Favorites collection
-    const { data: remainingItems, error: recheckError } = await supabase
-      .from('collection_items')
-      .select('collection_id, collections (collection_name)')
-      .eq('item_id', model.id)
-      .eq('item_type', selectedItemType.value)
-
-    if (!recheckError) {
-      model.bookmarked = remainingItems.some(
-        (item) => item.collections?.collection_name !== 'Favorites',
-      )
-    } else {
-      console.error('Error rechecking bookmark status:', recheckError)
     }
 
     dialogOpen.value = false
@@ -834,6 +821,8 @@ const fetchAllArtifacts = async () => {
       }
 
       let favoriteIds = []
+      let bookmarkedIds = []
+
       if (favoritesCollection) {
         const { data: favItems, error: favItemsError } = await supabase
           .from('collection_items')
@@ -846,10 +835,37 @@ const fetchAllArtifacts = async () => {
         }
       }
 
+      // Get ALL user collections (for bookmarked check)
+      const { data: allUserCollections, error: allCollError } = await supabase
+        .from('collections')
+        .select('collection_id, collection_name')
+        .eq('user_id', userId)
+
+      // Get bookmarked document IDs (from non-Favorites collections)
+      if (allUserCollections && !allCollError) {
+        const nonFavoritesCollections = allUserCollections.filter(
+          (col) => col.collection_name !== 'Favorites',
+        )
+
+        if (nonFavoritesCollections.length > 0) {
+          const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
+
+          const { data: bookmarkedItems, error: bookmarkError } = await supabase
+            .from('collection_items')
+            .select('item_id')
+            .in('collection_id', collectionIds)
+            .eq('item_type', 'artifact')
+
+          if (!bookmarkError && bookmarkedItems) {
+            bookmarkedIds = [...new Set(bookmarkedItems.map((i) => i.item_id))]
+          }
+        }
+      }
+
       // Add some mock data for demonstration compatibility
       const enhancedModels = data.map((model) => ({
         ...model,
-        bookmarked: false,
+        bookmarked: bookmarkedIds.includes(model.id),
         starred: favoriteIds.includes(model.id),
       }))
 
