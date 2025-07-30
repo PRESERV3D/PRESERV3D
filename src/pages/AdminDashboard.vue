@@ -271,7 +271,7 @@ const currentItem = computed(() => recentStore.recentItems[currentIndex.value])
 onMounted(async () => {
   const chartData = await prepareChartData()
   const usersData = await prepareUsersData()
-  const { data: topArts } = await supabase.from('top_artifacts').select('*')
+  const { data: topArts } = await supabase.from('top_artifacts').select('*').limit(3)
   const { data: topDocus } = await supabase.from('top_documents').select('*')
   await recentStore.fetchRecentUploads()
 
