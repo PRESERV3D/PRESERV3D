@@ -126,7 +126,7 @@ async function loadModelUrls() {
   loading.value = true
 
   const { data, error } = await supabase
-    .from('top_artifacts')
+    .from('artifacts_view')
     .select('file_url')
     .order('views', { ascending: false })
     .limit(3)

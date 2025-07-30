@@ -455,7 +455,7 @@ const isAdmin = computed(() => userRole === 'admin')
 
 // Initial load
 onMounted(async () => {
-  const { data: topDocus } = await supabase.from('top_documents').select('*')
+  const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
 
   // Get user's favorites and bookmarks for top documents
   const { data: authData } = await supabase.auth.getUser()

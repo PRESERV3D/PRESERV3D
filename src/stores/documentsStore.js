@@ -20,9 +20,8 @@ export const useDocumentsStore = defineStore('documentsStore', {
       this.starCounts[itemId] = newCount
     },
     async fetchViewCounts() {
-      const { data, error } = await supabase
-        .from('most_viewed_documents')
-        .select('item_id, view_count')
+      const { data, error } = await supabase.from('documents_view').select('id, views')
+      console.log('Fetched view counts:', data)
 
       if (error) {
         console.error('Error fetching view counts:', error)
@@ -31,7 +30,7 @@ export const useDocumentsStore = defineStore('documentsStore', {
 
       // Build a lookup map: { id: count }
       this.viewCounts = data.reduce((acc, row) => {
-        acc[row.item_id] = row.view_count
+        acc[row.id] = row.views
         return acc
       }, {})
     },
