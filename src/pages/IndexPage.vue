@@ -66,6 +66,7 @@
                   :icon="item.starred ? 'star' : 'star_border'"
                   class="action-icon star-icon"
                   :color="item.starred ? 'yellow' : 'grey'"
+                  @click.stop="toggleFavoriteRecents(item, item.item_type)"
                 />
               </div>
             </div>
@@ -422,11 +423,14 @@ import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
 import { useUserStore } from 'src/stores/user'
 import { useModelStore } from 'stores/modelStore'
+import { useDocumentsStore } from 'stores/documentsStore'
+
 import '@google/model-viewer'
 
 const router = useRouter()
 const userStore = useUserStore()
 const modelStore = useModelStore()
+const documentsStore = useDocumentsStore()
 
 // Reactive variables
 const collections = ref([])
@@ -539,7 +543,7 @@ async function loadRecentViews(userId) {
       .select('item_id, item_type, clicked_at')
       .eq('user_id', userId)
       .order('clicked_at', { ascending: false })
-      .limit(5)
+      .limit(3)
 
     if (error) {
       console.error('Failed to fetch recent views:', error)
@@ -549,34 +553,65 @@ async function loadRecentViews(userId) {
     const artifactIds = data.filter((d) => d.item_type === 'artifact').map((d) => d.item_id)
     const documentIds = data.filter((d) => d.item_type === 'document').map((d) => d.item_id)
 
-    // FIXED: Added uploaded_at and updated_at fields like INDEX page
-    const recentArtifactData = artifactIds.length
+    const { data: artifactData = [] } = artifactIds.length
       ? await supabase
           .from('artifacts_metadata')
           .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
           .in('id', artifactIds)
       : { data: [] }
 
-    const recentDocumentData = documentIds.length
+    const { data: documentData = [] } = documentIds.length
       ? await supabase
           .from('documents_metadata')
           .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
           .in('id', documentIds)
       : { data: [] }
 
+    // ADDED: Fetch user favorites and bookmarks
+    const { data: favoritesCollection, error: favError } = await supabase
+      .from('collections')
+      .select('collection_id')
+      .eq('user_id', userId)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    if (favError) {
+      console.error('Error fetching favorite items:', favError)
+    }
+
+    let favoriteKeySet = new Set()
+    if (favoritesCollection) {
+      const { data: favItems, error: favItemsError } = await supabase
+        .from('collection_items')
+        .select('item_id, item_type')
+        .eq('collection_id', favoritesCollection.collection_id)
+
+      if (!favItemsError && favItems) {
+        favoriteKeySet = new Set(favItems.map((i) => `${i.item_type}:${i.item_id}`))
+      }
+    }
+
     // Combine and sort by original order
     const idToItem = {}
-    for (const item of [...recentArtifactData.data, ...recentDocumentData.data]) {
+    for (const item of [...artifactData, ...documentData]) {
       idToItem[item.id] = item
     }
 
+    // Combine and check if item is in Favorites
     recentItems.value = data
-      .map((d) => ({
-        ...idToItem[d.item_id],
-        item_type: d.item_type,
-        clicked_at: d.clicked_at,
-      }))
-      .filter((item) => item?.file_url)
+      .map((d) => {
+        const item = idToItem[d.item_id]
+        if (!item?.file_url) return null
+
+        const key = `${d.item_type}:${d.item_id}`
+        return {
+          ...item,
+          item_type: d.item_type,
+          clicked_at: d.clicked_at,
+          starred: favoriteKeySet.has(key),
+        }
+      })
+      .filter(Boolean)
   } catch (err) {
     // ADDED: Better error handling
     console.error('Error loading recent views:', err)
@@ -671,10 +706,22 @@ function timeAgo(dateString) {
 async function logClick(itemId, itemType) {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
-  const model = await modelStore.getModelById(itemId)
 
   if (authError || !userId) {
     console.error('Auth error logging click:', authError)
+    return
+  }
+
+  // Get model or document based on itemType
+  let itemData
+  if (itemType === 'artifact') {
+    itemData = await modelStore.getModelById(itemId)
+  } else if (itemType === 'document') {
+    itemData = await documentsStore.getDocById(itemId)
+  }
+
+  if (!itemData) {
+    console.error(`Item with ID ${itemId} not found in ${itemType} store.`)
     return
   }
 
@@ -682,14 +729,10 @@ async function logClick(itemId, itemType) {
     const { error } = await supabase.from('user_activity_log').insert({
       user_id: userId,
       item_id: itemId,
-      title: model.title || 'Untitled',
+      title: itemData.title || itemData.metadata?.title || 'Untitled',
       item_type: itemType,
       clicked_at: new Date().toISOString(),
     })
-
-    if (error) {
-      throw error
-    }
 
     if (error) {
       console.error('Error logging click:', error)
@@ -890,7 +933,7 @@ const resetForm2 = () => {
   existingCollectionIds.value = []
 }
 
-// ADDED: Toggle favorites
+// Toggle favorites - new in the archives
 const toggleFavorite = async (model, itemType = 'artifact') => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
@@ -991,6 +1034,150 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
       }
     } else {
       console.error('Model ID not found in artifacts_metadata:', metaError)
+    }
+  } catch (err) {
+    console.error('Error toggling favorite:', err)
+  }
+}
+
+// ADDED: Toggle favorites - recently viewed items
+const toggleFavoriteRecents = async (item, itemType) => {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (authError || !userId) {
+    console.error('Auth error:', authError)
+    return
+  }
+
+  const itemName = item.metadata?.title || item.file_name
+
+  try {
+    // Find or create Favorites collection
+    let { data: favoritesCollection, error: favError } = await supabase
+      .from('collections')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    if (favError) {
+      console.error('Error fetching favorites collection:', favError)
+      return
+    }
+
+    if (!favoritesCollection) {
+      const { data: newCollection, error: createError } = await supabase
+        .from('collections')
+        .insert([
+          {
+            collection_name: 'Favorites',
+            description: 'Items you marked as favorite will appear here.',
+            user_id: userId,
+            is_default: true,
+            is_locked: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+            cover_url:
+              'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers//favoritescover.png',
+          },
+        ])
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('Error creating favorites collection:', createError)
+        return
+      }
+      favoritesCollection = newCollection
+    }
+
+    // Check if item already exists
+    const { data: existing, error: checkError } = await supabase
+      .from('collection_items')
+      .select('id')
+      .eq('collection_id', favoritesCollection.collection_id)
+      .eq('item_id', item.id)
+      .eq('item_type', itemType)
+      .maybeSingle()
+
+    if (checkError) {
+      console.error('Error checking favorite status:', checkError)
+      return
+    }
+
+    if (existing) {
+      // Remove from favorites
+      console.log('Removing favorite:', {
+        collection_id: favoritesCollection.collection_id,
+        item_id: item.id,
+        item_type: itemType,
+      })
+
+      await supabase
+        .from('collection_items')
+        .delete()
+        .eq('collection_id', favoritesCollection.collection_id)
+        .eq('item_id', item.id)
+        .eq('item_type', itemType)
+
+      item.starred = false
+      showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
+    } else {
+      console.log('Inserting favorite:', {
+        collection_id: favoritesCollection.collection_id,
+        item_id: item.id,
+        item_type: itemType,
+      })
+
+      // Add to favorites
+      await supabase.from('collection_items').insert({
+        collection_id: favoritesCollection.collection_id,
+        item_id: item.id,
+        item_type: itemType,
+      })
+
+      item.starred = true
+      showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
+    }
+
+    // Get star count
+
+    let metadataTable, starCountTable, store
+
+    if (itemType === 'artifact') {
+      metadataTable = 'artifacts_metadata'
+      starCountTable = 'artifacts_star_count'
+      store = modelStore
+    } else if (itemType === 'document') {
+      metadataTable = 'documents_metadata'
+      starCountTable = 'documents_star_count'
+      store = documentsStore
+    }
+
+    if (metadataTable && starCountTable) {
+      const { data: metaCheck, error: metaError } = await supabase
+        .from(metadataTable)
+        .select('id')
+        .eq('id', item.id)
+        .single()
+
+      if (!metaError && metaCheck) {
+        const { data: starData } = await supabase
+          .from(starCountTable)
+          .select('star_count')
+          .eq('item_id', item.id)
+          .maybeSingle()
+
+        if (starData && starData.star_count !== undefined) {
+          store.updateStarCount(item.id, starData.star_count)
+        } else {
+          // If no row exists, star count is 0
+          store.updateStarCount(item.id, 0)
+        }
+      } else {
+        console.error('Item ID not found in metadata database:', metaError)
+      }
     }
   } catch (err) {
     console.error('Error toggling favorite:', err)
