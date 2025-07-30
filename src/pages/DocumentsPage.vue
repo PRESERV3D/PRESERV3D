@@ -124,7 +124,7 @@
       <div class="box-highlights">
         <p class="q-ml-lg title-font-2" style="font-size: 16px">Document Highlights</p>
         <div class="row docs-gap justify-start">
-          <div v-for="(doc, index) in documentsStore.documents.slice(0, 3)" :key="index">
+          <div v-for="(doc, index) in topDocuments" :key="index">
             <div class="row q-mb-lg">
               <q-card class="my-card docCard" style="transform: rotate(-5deg)">
                 <router-link
@@ -135,13 +135,7 @@
                 </router-link>
                 <div class="q-py-xs doc-align-items">
                   <!-- View Icon with Count -->
-                  <q-icon
-                    v-if="!isAdmin"
-                    name="visibility"
-                    color="grey"
-                    size="xs"
-                    class="action-icon"
-                  />
+                  <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
                   <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
 
                   <!-- Star Icon with Count -->
@@ -169,8 +163,8 @@
               <div class="bg-highlights-details">
                 <div class="fade-title-container">
                   <div class="title-highlight fade-title">
-                    {{ doc.metadata.title }}
-                    <div class="tooltip-box">{{ doc.metadata.title }}</div>
+                    {{ doc.title }}
+                    <div class="tooltip-box">{{ doc.title }}</div>
                   </div>
                 </div>
                 <div class="sub-details">
@@ -430,6 +424,7 @@ const documentsStore = useDocumentsStore()
 const userStore = useUserStore()
 
 // const category = ref('')
+const topDocuments = ref([])
 const author = ref('')
 const date = ref('')
 const sortOption = ref('Newest')
@@ -460,6 +455,52 @@ const isAdmin = computed(() => userRole === 'admin')
 
 // Initial load
 onMounted(async () => {
+  const { data: topDocus } = await supabase.from('top_documents').select('*')
+
+  // Get user's favorites for top documents too
+  const { data: authData } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (userId) {
+    const { data: favoritesCollection, error: favError } = await supabase
+      .from('collections')
+      .select('collection_id')
+      .eq('user_id', userId)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    let favoriteIds = []
+    if (favoritesCollection && !favError) {
+      const { data: favItems, error: favItemsError } = await supabase
+        .from('collection_items')
+        .select('item_id')
+        .eq('collection_id', favoritesCollection.collection_id)
+        .eq('item_type', 'document')
+
+      if (!favItemsError && favItems) {
+        favoriteIds = favItems.map((i) => i.item_id)
+      }
+    }
+
+    // Enhance topDocuments with starred property
+    const enhancedTopDocs =
+      topDocus?.map((doc) => ({
+        ...doc,
+        starred: favoriteIds.includes(doc.id), // Make sure to use the correct ID field
+        bookmarked: false, // Add this too for consistency
+      })) || []
+
+    topDocuments.value = enhancedTopDocs
+  } else {
+    // If no user, just set without starred property
+    topDocuments.value =
+      topDocus?.map((doc) => ({
+        ...doc,
+        starred: false,
+        bookmarked: false,
+      })) || []
+  }
+
   if (!searchStore.query) {
     await fetchAllDocuments()
   }
