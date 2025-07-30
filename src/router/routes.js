@@ -22,11 +22,12 @@ const routes = [
         component: () => import('src/pages/DocumentsPage.vue'),
         meta: { requiresAuth: true },
       },
-      // {
-      //   path: 'gallery',
-      //   component: () => import('pages/GalleryPage.vue'),
-      //   meta: { requiresAuth: true },
-      // },
+      {
+        path: 'gallery',
+        name: 'gallery',
+        component: () => import('pages/GalleryPage.vue'),
+        meta: { requiresAuth: true },
+      },
       {
         path: 'upload',
         component: () => import('pages/UploadPage.vue'),
@@ -127,6 +128,16 @@ const routes = [
   {
     path: '/LandingPage',
     component: () => import('pages/LandingPage.vue'), // Landing Page
+  },
+
+  {
+    path: '/forgotpassword',
+    component: () => import('pages/ForgotPage.vue'), // Forgot Password Page
+  },
+
+  {
+    path: '/resetpassword',
+    component: () => import('pages/ResetPassPage.vue'), // Reset Password Page
   },
 
   {
