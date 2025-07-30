@@ -142,23 +142,9 @@
           pendingModelUrls = event.data.urls
           console.log('Stored model URLs for Godot:', pendingModelUrls)
 
+          // If Godot is already loaded, send the URLs immediately
           if (godotInstance) {
             sendUrlsToGodot()
-          }
-        } else if (event.data.type === 'load_model_data' && event.data.models) {
-          // New data-based method (for cached models)
-          console.log('Received model data from parent:', event.data.models)
-
-          // Store the model data globally for Godot to access
-          window.godotModelData = event.data.models
-
-          if (godotInstance) {
-            // Call a new Godot function to handle raw data
-            try {
-              godotInstance.rpc('set_model_data', event.data.models)
-            } catch (error) {
-              console.error('Failed to send model data to Godot:', error)
-            }
           }
         }
       })
