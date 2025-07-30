@@ -39,9 +39,7 @@
       </div>
 
       <div class="text-right full-width no-gutter-top">
-        <router-link to="/user/forgot-password" class="forgot-password-link"
-          >Forgot Password</router-link
-        >
+        <router-link to="/forgotpassword" class="forgot-password-link">Forgot Password</router-link>
       </div>
 
       <div class="column items-center q-pt-md">
