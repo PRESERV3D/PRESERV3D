@@ -64,7 +64,7 @@
                   class="action-icon star-icon"
                   :class="{ starred: model.starred }"
                   size="sm"
-                  @click.stop="toggleFavorite(model, 'artifact')"
+                  @click.stop="isAdmin ? null : toggleFavorite(model, 'artifact')"
                 />
                 <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
 
