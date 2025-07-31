@@ -65,7 +65,8 @@
                   round
                   :icon="item.starred ? 'star' : 'star_border'"
                   class="action-icon star-icon"
-                  :color="item.starred ? 'yellow' : 'grey'"
+                  :style="item.starred ? 'color: #efaf00' : ''"
+                  :color="!item.starred ? 'grey' : undefined"
                   @click.stop="toggleFavoriteRecents(item, item.item_type)"
                 />
               </div>
