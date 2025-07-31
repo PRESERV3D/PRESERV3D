@@ -155,8 +155,8 @@
               </div>
             </div>
 
-            <!-- Admin Back Button -->
-            <div v-if="isAdmin" class="func-button">
+            <!-- Back Button -->
+            <div class="func-button">
               <router-link to="/artifacts">
                 <q-btn flat label="Back" class="func-btn" no-caps />
               </router-link>
