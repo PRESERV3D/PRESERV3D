@@ -18,15 +18,11 @@
           <q-dialog v-model="resetSent" persistent>
             <q-card class="reset-pass-sent">
               <q-card-section class="column items-center">
-                <div class="q-mt-md sub-font-2" style="color: #000000">
+                <div class="sub-font-2" style="color: #000000">
                   A password reset email has been sent to your registered email address. Please
                   check your inbox.
                 </div>
               </q-card-section>
-              <q-card-actions align="center">
-                <q-btn label="Back" class="btn-save" flat />
-                <!-- add logic that must go back to log in (respective log in page: admin/user)-->
-              </q-card-actions>
             </q-card>
           </q-dialog>
         </div>
