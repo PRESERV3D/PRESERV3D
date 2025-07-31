@@ -103,16 +103,6 @@ const routes = [
         name: 'visitor-register',
         component: () => import('pages/UserVisitorPage.vue'),
       },
-      {
-        path: 'forgot-password',
-        name: 'forgot-password',
-        component: () => import('src/pages/ForgotPassword.vue'),
-      },
-      {
-        path: 'reset-password',
-        name: 'reset-password',
-        component: () => import('src/pages/ResetPassword.vue'),
-      },
     ],
   },
 
