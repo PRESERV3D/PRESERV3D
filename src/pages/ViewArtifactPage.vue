@@ -34,24 +34,37 @@
           <div class="top-actions q-mb-lg">
             <div class="categories-container">
               <!-- Show categories if they exist, otherwise show fallback -->
-              <template v-if="model.metadata.categories && model.metadata.categories.length > 0">
-                <q-chip
-                  v-for="(category, i) in model.metadata.categories"
-                  :key="i"
-                  class="category-tag"
-                >
-                  {{ category }}
-                </q-chip>
-              </template>
-              <template v-else>
-                <!-- Fallback placeholder category as there are no data yet -->
-                <q-chip class="q-mr-sm q-mt-xs category-tag"> Uncategorized </q-chip>
-              </template>
+              <div class="categories-section">
+                <template v-if="model.metadata.categories && model.metadata.categories.length > 0">
+                  <q-chip
+                    v-for="(category, i) in model.metadata.categories"
+                    :key="i"
+                    class="category-tag"
+                  >
+                    {{ category }}
+                  </q-chip>
+                </template>
+                <template v-else>
+                  <!-- Fallback placeholder category as there are no data yet -->
+                  <q-chip class="q-mr-sm q-mt-xs category-tag"> Uncategorized </q-chip>
+                </template>
+              </div>
 
-              <!-- Action icons -->
-              <div class="action-icons">
+              <!-- Admin Action buttons OR User Action icons -->
+              <div v-if="isAdmin" class="action-buttons">
+                <q-btn
+                  flat
+                  label="Edit"
+                  class="text-button q-mr-sm"
+                  @click="editArtifact"
+                  no-caps
+                />
+                <q-btn flat label="Delete" class="text-button" @click="showDialog = true" no-caps />
+              </div>
+
+              <!-- User Action icons (non-admin) -->
+              <div v-else class="action-icons">
                 <q-icon
-                  v-if="!isAdmin"
                   :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
                   class="bookmark-icon q-mr-md"
                   :class="{ bookmarked: model.bookmarked }"
@@ -64,7 +77,7 @@
                   class="action-icon star-icon"
                   :class="{ starred: model.starred }"
                   size="sm"
-                  @click.stop="isAdmin ? null : toggleFavorite(model, 'artifact')"
+                  @click.stop="toggleFavorite(model, 'artifact')"
                 />
                 <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
 
@@ -134,6 +147,13 @@
                 </div>
               </div>
             </div>
+
+            <!-- Admin Back Button -->
+            <div v-if="isAdmin" class="func-button">
+              <router-link to="/artifacts">
+                <q-btn flat label="Back" class="func-btn" no-caps />
+              </router-link>
+            </div>
           </div>
         </div>
       </div>
@@ -142,6 +162,22 @@
     <div v-else class="error-container">
       <q-banner type="negative">Artifact not found.</q-banner>
     </div>
+
+    <!-- Confirmation Dialog      -->
+    <q-dialog v-model="showDialog" persistent>
+      <q-card class="confirmation-delete">
+        <q-card-section class="column items-center">
+          <q-img src="/img/conf-delete.png" alt="question icon" class="question-icon" />
+          <div class="q-mt-md sub-font" style="color: #000000">
+            Are you sure you want to delete this?
+          </div>
+        </q-card-section>
+        <q-card-actions align="center">
+          <q-btn label="Yes" class="btn-save" flat @click="handleDelete" />
+          <q-btn flat label="No" class="sub-font-2" style="color: #000000" v-close-popup no-caps />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- Collection Dialog -->
     <q-dialog v-model="dialogOpen">
@@ -200,13 +236,14 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useModelStore } from 'stores/modelStore'
 import { useUserStore } from 'stores/user'
 import '@google/model-viewer'
 
 const route = useRoute()
+const router = useRouter()
 const modelStore = useModelStore()
 const userStore = useUserStore()
 
@@ -226,6 +263,7 @@ const existingCollectionIds = ref([])
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
+const showDialog = ref(false)
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)
@@ -233,6 +271,11 @@ function formatDate(dateStr) {
     hour: '2-digit',
     minute: '2-digit',
   })}`
+}
+
+// Action button methods
+const editArtifact = () => {
+  router.push(`/edit/artifacts/${model.value.id}`)
 }
 
 const toggleBookmark = async (modelId) => {
@@ -548,6 +591,15 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.action-buttons {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  color: #880000;
+  font-family: 'Poppins', sans-serif !important;
+  font-size: 16px !important;
+}
+
 .loading-container {
   display: flex;
   justify-content: center;
@@ -666,6 +718,7 @@ onMounted(async () => {
   gap: 0.5rem;
   flex-wrap: wrap;
   flex: 1;
+  margin-left: -4px;
 }
 
 .categories-section {
@@ -709,6 +762,41 @@ onMounted(async () => {
   text-align: left;
 }
 
+.func-button {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  margin-top: 2rem !important;
+  padding-top: 1rem !important;
+  border-top: 1px solid #eee !important;
+  width: 100% !important;
+  clear: both !important;
+}
+
+.func-button .func-btn {
+  color: #fbf4d0 !important;
+  background: #880000 !important;
+  border-radius: 5px !important;
+  transition: all 0.3s ease !important;
+  font-family: 'Poppins', sans-serif !important;
+  font-weight: 600 !important;
+  width: 100px !important;
+  min-height: auto !important;
+  padding: 8px 16px !important;
+  margin-left: auto !important;
+}
+
+.func-button .func-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Ensure the router-link doesn't interfere */
+.func-button a {
+  text-decoration: none !important;
+  display: inline-block !important;
+}
+
 @media (max-width: 768px) {
   .main-content {
     flex-direction: column;
@@ -741,9 +829,21 @@ onMounted(async () => {
     width: 100%;
     justify-content: flex-end;
   }
+
+  /* Admin back button mobile positioning */
+  .func-button {
+    justify-content: center !important;
+    margin-top: 1rem !important;
+  }
+
+  .a-title {
+    font-size: 32px !important;
+    margin-left: 0 !important;
+    text-align: center !important;
+  }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 480px) {
   .title-input :deep(.q-field__native) {
     font-size: 32px !important;
     padding: 12px 0 !important;
@@ -751,6 +851,11 @@ onMounted(async () => {
 
   .title-section {
     margin-bottom: 1rem;
+  }
+
+  .func-button {
+    padding: 0.5rem !important;
+    margin-top: 1rem !important;
   }
 }
 </style>
