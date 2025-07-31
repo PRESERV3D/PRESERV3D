@@ -925,7 +925,7 @@ onMounted(async () => {
 
 .action-icons-top,
 .action-icons-top .star-icon.starred {
-  color: #ccac00;
+  color: #efaf00;
 }
 
 .action-icons-top  {
