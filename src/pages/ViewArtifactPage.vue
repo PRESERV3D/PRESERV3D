@@ -29,7 +29,7 @@
 
           <!-- Control Buttons -->
           <div class="control-buttons">
-            <button class="control-btn" title="Help">
+            <button class="control-btn" title="Help" @click="toggleHelp">
               <img src="../../public/icons/help.png" alt="Help" class="control-icon" style="width: 19.5px; height: 19.5px;" />
             </button>
             <button class="control-btn" title="Reset View">
@@ -39,6 +39,95 @@
               <img src="../../public/icons/zoom-in.png" alt="Zoom" class="control-icon" style="width: 16px; height: 16px;"/>
             </button>
           </div>
+
+          <!-- Help Overlay - positioned over the artifact card -->
+          <div v-if="showHelpOverlay" class="help-overlay">
+            <div class="help-content">
+              <!-- Close button -->
+              <button class="help-close-btn" @click="closeHelp">
+                <q-icon name="close" size="20px" />
+              </button>
+
+              <!-- Help Title -->
+              <div class="help-title">Navigation Controls</div>
+
+              <!-- Navigation Instructions -->
+              <div class="help-sections">
+                <!-- Orbit Section -->
+                <div class="help-section">
+                  <div class="help-section-title">
+                    <q-icon name="3d_rotation" class="help-icon" />
+                    <span>Orbit</span>
+                  </div>
+                  <div class="help-methods">
+                    <div class="help-method">
+                      <q-icon name="mouse" class="method-icon" />
+                      <span>Left-click and drag</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="touch_app" class="method-icon" />
+                      <span>One-finger drag</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="keyboard" class="method-icon" />
+                      <span>Arrow keys</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pan Section -->
+                <div class="help-section">
+                  <div class="help-section-title">
+                    <q-icon name="pan_tool" class="help-icon" />
+                    <span>Pan</span>
+                  </div>
+                  <div class="help-methods">
+                    <div class="help-method">
+                      <q-icon name="mouse" class="method-icon" />
+                      <span>Right-click and drag</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="touch_app" class="method-icon" />
+                      <span>Two-finger drag</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="keyboard" class="method-icon" />
+                      <span>Shift + Arrow keys</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Zoom Section -->
+                <div class="help-section">
+                  <div class="help-section-title">
+                    <q-icon name="zoom_in" class="help-icon" />
+                    <span>Zoom</span>
+                  </div>
+                  <div class="help-methods">
+                    <div class="help-method">
+                      <q-icon name="mouse" class="method-icon" />
+                      <span>Mouse wheel</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="touch_app" class="method-icon" />
+                      <span>Two-finger pinch</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="keyboard" class="method-icon" />
+                      <span>Ctrl + Arrow keys</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- Right Side: Information Panel -->
@@ -285,6 +374,8 @@ const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 const showDialog = ref(false)
 
+const showHelpOverlay = ref(false)
+
 function formatDate(dateStr) {
   const date = new Date(dateStr)
   return `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA', {
@@ -292,6 +383,17 @@ function formatDate(dateStr) {
     minute: '2-digit',
   })}`
 }
+
+// Help button click
+const toggleHelp = () => {
+  showHelpOverlay.value = !showHelpOverlay.value
+}
+
+// Close help overlay
+const closeHelp = () => {
+  showHelpOverlay.value = false
+}
+
 
 // Action button methods
 const editArtifact = () => {
@@ -917,6 +1019,207 @@ onMounted(async () => {
 .func-button a {
   text-decoration: none !important;
   display: inline-block !important;
+}
+
+.help-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.help-content {
+  background: rgba(20, 20, 20, 0.8);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 85%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.help-close-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #f5f5f5;
+}
+
+.help-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.help-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: whitesmoke;
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-right: 2rem;
+}
+
+.help-sections {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.help-section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.help-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #f5f5f5;
+  margin-bottom: 1rem;
+}
+
+.help-icon {
+  color: #e8e8e8;
+  font-size: 20px;
+}
+
+.help-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.help-method {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  color: #e0e0e0;
+  padding: 0.4rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.method-icon {
+  color: #e8e8e8;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.help-divider {
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  color: #b0b0b0;
+  font-style: italic;
+  margin: 0.15rem 0;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .help-content {
+    padding: 1.5rem;
+    margin: 1rem;
+    max-height: 85%;
+  }
+
+  .help-title {
+    font-size: 20px;
+    margin-bottom: 1.5rem;
+    padding-right: 2rem;
+  }
+
+  .help-sections {
+    gap: 1rem;
+  }
+
+  .help-section {
+    padding: 1rem;
+  }
+
+  .help-section-title {
+    font-size: 16px;
+    margin-bottom: 0.75rem;
+  }
+
+  .help-method {
+    font-size: 13px;
+    padding: 0.4rem;
+  }
+
+  .method-icon {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .help-content {
+    padding: 0.75rem;
+    margin: 0.5rem;
+  }
+
+  .help-title {
+    font-size: 16px;
+    margin-bottom: 0.75rem;
+  }
+
+  .help-section-title {
+    font-size: 14px;
+    gap: 0.4rem;
+  }
+
+  .help-icon {
+    font-size: 16px;
+  }
+
+  .help-method {
+    font-size: 10px;
+    gap: 0.4rem;
+  }
+
+  .method-icon {
+    font-size: 11px;
+  }
 }
 
 @media (max-width: 768px) {
