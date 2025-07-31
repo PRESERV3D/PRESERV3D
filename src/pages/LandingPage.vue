@@ -1,3 +1,4 @@
+<!--USER LANDING PAGE-->
 <template>
   <div class="page-background">
     <div class="page-header q-pa-md">
@@ -19,14 +20,14 @@
           label="Sign Up"
           style="color: #fbf4d0"
           class="btn"
-          @click="$router.push('/signup')"
+          @click="$router.push('/user/register')"
         />
         <q-btn
           flat
           label="Log In"
           style="color: #fbf4d0"
           class="btn"
-          @click="$router.push('/login')"
+          @click="$router.push('/user/login')"
         />
       </q-toolbar>
       <!-- Text -->
@@ -46,7 +47,7 @@
         </div>
         <!-- Images -->
         <q-img
-          src="/img/c-trophy.png"
+          src="public/img/C-trophy.png"
           alt="C Trophy"
           style="
             width: 670px;
@@ -62,7 +63,7 @@
         />
 
         <q-img
-          src="/img/l-trophy.png"
+          src="public/img/L-trophy.png"
           alt="L Trophy"
           style="
             width: 325px;
@@ -77,7 +78,7 @@
         />
 
         <q-img
-          src="/img/r-trophy.png"
+          src="public/img/R-trophy.png"
           alt="R Trophy"
           style="
             width: 380px; /* Adjust width as needed */
