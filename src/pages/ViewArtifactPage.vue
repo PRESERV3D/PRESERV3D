@@ -26,6 +26,19 @@
             shadow-intensity="1"
             class="large-artifacts"
           />
+
+          <!-- Control Buttons -->
+          <div class="control-buttons">
+            <button class="control-btn" title="Help">
+              <img src="../../public/icons/help.png" alt="Help" class="control-icon" style="width: 19.5px; height: 19.5px;" />
+            </button>
+            <button class="control-btn" title="Reset View">
+              <img src="../../public/icons/reset.png" alt="Reset View" class="control-icon" style="width: 20px; height: 20px;"/>
+            </button>
+            <button class="control-btn" title="Zoom">
+              <img src="../../public/icons/zoom-in.png" alt="Zoom" class="control-icon" style="width: 16px; height: 16px;"/>
+            </button>
+          </div>
         </div>
 
         <!-- Right Side: Information Panel -->
@@ -72,13 +85,13 @@
 
                 <!-- Bookmark Icon -->
                 <div class="icon-with-count">
-                <q-icon
-                  :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
-                  class="action-icon bookmark-icon"
-                  :class="{ bookmarked: model.bookmarked }"
-                  size="24px"
-                  @click.stop="toggleBookmark(model, 'artifact')"
-                />
+                  <q-icon
+                    :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
+                    class="action-icon bookmark-icon"
+                    :class="{ bookmarked: model.bookmarked }"
+                    size="24px"
+                    @click.stop="toggleBookmark(model, 'artifact')"
+                  />
                 </div>
               </div>
 
@@ -650,12 +663,111 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  position: relative;
 }
 
 .large-artifacts {
-  width: 600px !important;
+  width: 680px !important;
   height: 600px !important;
   border-radius: 8px;
+}
+
+/* Control Buttons Styles */
+.control-buttons {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.control-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background-color: #757575;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.25));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.control-btn:hover {
+  background-color: #616161;
+  transform: translateY(-1px);
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.3));
+}
+
+.control-btn:active {
+  transform: translateY(0);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+}
+
+.control-icon {
+  color: #d7d7d7 !important;
+  font-size: 16px !important;
+  object-fit: contain;
+  }
+
+/* Help Dialog Styles */
+.help-dialog {
+  min-width: 350px;
+}
+
+.help-header {
+  background: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.help-content {
+  padding: 1rem;
+}
+
+.help-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+}
+
+.help-icon {
+  color: #757575;
+  font-size: 20px;
+}
+
+/* Help Dialog Styles */
+.help-dialog {
+  min-width: 350px;
+}
+
+.help-header {
+  background: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.help-content {
+  padding: 1rem;
+}
+
+.help-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+}
+
+.help-icon {
+  color: #757575;
+  font-size: 20px;
 }
 
 .info-section {
@@ -880,6 +992,21 @@ onMounted(async () => {
     height: 300px !important;
   }
 
+  .control-buttons {
+    bottom: 15px;
+    right: 15px;
+    gap: 6px;
+  }
+
+  .control-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .control-icon {
+    font-size: 14px !important;
+  }
+
   .back-button-top {
     top: 0.5rem;
     left: 0.5rem;
@@ -937,5 +1064,21 @@ onMounted(async () => {
   .action-icons-top .count-text {
     font-size: 11px;
   }
+
+  .control-buttons {
+    bottom: 10px;
+    right: 10px;
+    gap: 4px;
+  }
+
+  .control-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .control-icon {
+    font-size: 12px !important;
+  }
 }
+
 </style>
