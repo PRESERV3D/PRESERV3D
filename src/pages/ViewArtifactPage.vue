@@ -714,62 +714,6 @@ onMounted(async () => {
   object-fit: contain;
   }
 
-/* Help Dialog Styles */
-.help-dialog {
-  min-width: 350px;
-}
-
-.help-header {
-  background: #f5f5f5;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.help-content {
-  padding: 1rem;
-}
-
-.help-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-}
-
-.help-icon {
-  color: #757575;
-  font-size: 20px;
-}
-
-/* Help Dialog Styles */
-.help-dialog {
-  min-width: 350px;
-}
-
-.help-header {
-  background: #f5f5f5;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.help-content {
-  padding: 1rem;
-}
-
-.help-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-}
-
-.help-icon {
-  color: #757575;
-  font-size: 20px;
-}
-
 .info-section {
   flex: 1;
   max-width: 500px;
