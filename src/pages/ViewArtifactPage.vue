@@ -50,7 +50,39 @@
                 </template>
               </div>
 
-              <!-- Admin Action buttons OR User Action icons -->
+              <!-- User Action icons (non-admin)-->
+              <div v-if="!isAdmin" class="action-icons-top">
+                <!-- View Icon with Count -->
+                <div class="icon-with-count">
+                  <q-icon name="visibility" class="action-icon view-icon" size="26px" />
+                  <span class="count-text">{{ modelStore.viewCounts[model.id] || 0 }}</span>
+                </div>
+
+                <!-- Star Icon with Count -->
+                <div class="icon-with-count">
+                  <q-icon
+                    :name="model.starred ? 'star' : 'star_border'"
+                    class="action-icon star-icon"
+                    :class="{ starred: model.starred }"
+                    size="26px"
+                    @click.stop="toggleFavorite(model, 'artifact')"
+                  />
+                  <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
+                </div>
+
+                <!-- Bookmark Icon -->
+                <div class="icon-with-count">
+                <q-icon
+                  :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
+                  class="action-icon bookmark-icon"
+                  :class="{ bookmarked: model.bookmarked }"
+                  size="24px"
+                  @click.stop="toggleBookmark(model, 'artifact')"
+                />
+                </div>
+              </div>
+
+              <!-- Admin Action buttons -->
               <div v-if="isAdmin" class="action-buttons">
                 <q-btn
                   flat
@@ -60,31 +92,6 @@
                   no-caps
                 />
                 <q-btn flat label="Delete" class="text-button" @click="showDialog = true" no-caps />
-              </div>
-
-              <!-- User Action icons (non-admin) -->
-              <div v-else class="action-icons">
-                <q-icon
-                  :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
-                  class="bookmark-icon q-mr-md"
-                  :class="{ bookmarked: model.bookmarked }"
-                  size="sm"
-                  @click.stop="toggleBookmark(model, 'artifact')"
-                />
-
-                <q-icon
-                  :name="model.starred ? 'star' : 'star_border'"
-                  class="action-icon star-icon"
-                  :class="{ starred: model.starred }"
-                  size="sm"
-                  @click.stop="toggleFavorite(model, 'artifact')"
-                />
-                <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
-
-                <div class="icon-with-count">
-                  <q-icon name="visibility" class="action-icon view-icon" size="18px" />
-                  <span class="count-text">{{ modelStore.viewCounts[model.id] || 0 }}</span>
-                </div>
               </div>
             </div>
           </div>
@@ -221,11 +228,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          notifyDialogTitle
-        }}</q-card-section>
+            notifyDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-          notifyDialogMessage
-        }}</q-card-section>
+            notifyDialogMessage
+          }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -715,9 +722,10 @@ onMounted(async () => {
 .categories-container {
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
+  justify-content: space-between;
+  width: 100%;
   flex-wrap: wrap;
-  flex: 1;
+  gap: 0.5rem;
   margin-left: -4px;
 }
 
@@ -725,6 +733,64 @@ onMounted(async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  flex: 1;
+}
+
+/* New styles for repositioned action icons */
+.action-icons-top {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  margin-left: auto;
+  padding-left: 1rem;
+}
+
+.action-icons-top .action-icon {
+  cursor: pointer;
+  transition: color 0.3s ease;
+  color: #7c7c7c;
+}
+
+.action-icons-top .bookmark-icon {
+  cursor: pointer;
+  transition: color 0.3s ease;
+  color: #7c7c7c;
+}
+
+.action-icons-top .bookmark-icon:hover,
+.action-icons-top .action-icon:hover {
+  background-color: rgba(136, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.action-icons-top,
+.action-icons-top .star-icon.starred {
+  color: #ccac00;
+}
+
+.action-icons-top  {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+
+.icon-with-count {
+  display: flex;
+  align-items: center;
+  gap: 0.21rem;
+  font-family: 'Poppins', sans-serif;
+
+}
+
+.action-icons-top .count-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  min-width: 20px;
+  text-align: left;
 }
 
 .detail-row {
@@ -824,10 +890,16 @@ onMounted(async () => {
     align-items: flex-start;
   }
 
-  .action-icons {
+  .categories-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .action-icons-top {
     margin-top: 1rem;
-    width: 100%;
-    justify-content: flex-end;
+    margin-left: 0;
+    padding-left: 0;
+    justify-content: flex-start;
   }
 
   /* Admin back button mobile positioning */
@@ -856,6 +928,14 @@ onMounted(async () => {
   .func-button {
     padding: 0.5rem !important;
     margin-top: 1rem !important;
+  }
+
+  .action-icons-top {
+    gap: 0.75rem;
+  }
+
+  .action-icons-top .count-text {
+    font-size: 11px;
   }
 }
 </style>
