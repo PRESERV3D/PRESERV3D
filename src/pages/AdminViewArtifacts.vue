@@ -214,15 +214,25 @@
             <!-- Save/Cancel Actions -->
             <div class="save-cancel-actions q-mt-lg">
               <q-btn flat no-caps dense label="Cancel" class="cancel-btn" @click="cancelChanges" />
-              <q-btn
-                flat
-                no-caps
-                dense
-                label="Save"
-                class="save-btn q-ml-auto"
-                color="primary"
-                @click="saveChanges"
-              />
+              <div class="button-group">
+                <q-btn
+                  flat
+                  no-caps
+                  dense
+                  label="Find More Info"
+                  class="find-more-info-btn"
+                  @click="findMoreInfo"
+                />
+                <q-btn
+                  flat
+                  no-caps
+                  dense
+                  label="Save"
+                  class="func-btn q-ml-auto"
+                  color="primary"
+                  @click="saveChanges"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -306,6 +316,11 @@ const loading = ref(true)
 const newCategory = ref('')
 const editableCategories = ref([])
 const showCategoryInput = ref(false)
+
+const findMoreInfo = () => {
+  // Add your find more info logic here
+  console.log('Find More Info clicked')
+}
 
 // Reactive reference for editable labels
 const editableLabels = ref({
@@ -476,6 +491,7 @@ const saveChanges = async () => {
   }
 }
 
+// Update your existing cancelChanges function in the script setup
 const cancelChanges = () => {
   if (model.value) {
     if (model.value.metadata?.categories) {
@@ -497,6 +513,9 @@ const cancelChanges = () => {
   newCategory.value = ''
   showCategoryInput.value = false
   console.log('Changes cancelled')
+
+  // Route to view-artifact page
+  router.push(`/artifacts/${route.params.id}`)
 }
 
 // Commented out bookmark functionality for now
@@ -717,7 +736,8 @@ onMounted(async () => {
 }
 
 .add-category-btn {
-  margin-top: 4px;
+  margin-left: 8px;
+  margin-top: 0;
   color: #666;
 }
 
@@ -737,6 +757,8 @@ onMounted(async () => {
 
 .cancel-btn {
   color: #666;
+  font-weight: 600 !important;
+  font-family: 'Poppins', sans-serif !important;
 }
 
 .cancel-btn:hover {
@@ -769,10 +791,12 @@ onMounted(async () => {
 }
 
 .categories-container {
-  flex: 1;
-  justify-content: space-between;
+  display: flex;
   align-items: center;
-  width: 100%;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+  margin-left: -4px;
 }
 
 .detail-input {
@@ -794,5 +818,261 @@ onMounted(async () => {
 
 .summary-input {
   width: 100%;
+}
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.artifact-detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.a-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 64px;
+  color: #560505;
+  margin-top: 1rem;
+  margin-left: 30rem;
+}
+
+.main-content {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.artifact-card {
+  border-radius: 20px;
+  background: radial-gradient(
+    110.32% 94.3% at 50% 57.87%,
+    #b69f9f 0%,
+    #640c0c 51.92%,
+    #121212 95.67%
+  );
+  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+  width: 706px;
+  height: 630px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.large-artifacts {
+  width: 600px !important;
+  height: 600px !important;
+  border-radius: 8px;
+}
+
+.info-section {
+  flex: 1;
+  max-width: 500px;
+}
+
+.top-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.a-info-title,
+.a-info-title2 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  color: black;
+  margin-bottom: 0.5rem;
+}
+
+.a-info-title {
+  font-size: 18px;
+}
+
+.a-info-title2 {
+  font-size: 16px;
+}
+
+.a-info-subtitle,
+.a-info-text {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: black;
+  line-height: 1.4;
+}
+
+.two-column-details,
+.side-by-side-details {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
+}
+
+.side-by-side-details .detail-row {
+  align-items: flex-start;
+}
+
+.side-by-side-details .detail-input {
+  margin-top: 0 !important;
+}
+
+.detail-item {
+  margin-bottom: 1.5rem;
+}
+
+.category-tag {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(204, 172, 0, 0.8), rgba(204, 172, 0, 0.6));
+  color: #560505;
+  font-weight: 600;
+  border-radius: 5px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 8px rgba(204, 172, 0, 0.3);
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.categories-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.categories-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.25rem 0;
+}
+
+.detail-label {
+  flex: 0 0 auto;
+  min-width: 150px;
+  text-align: left;
+}
+
+.detail-value {
+  flex: 1;
+  text-align: right;
+}
+
+/* Two-column details specific styles */
+.two-column-details .detail-row {
+  gap: 4rem;
+  align-items: flex-start;
+}
+
+.two-column-details .detail-label,
+.two-column-details .detail-value {
+  flex: 1;
+}
+
+.two-column-details .detail-value .a-info-title2,
+.two-column-details .detail-value .a-info-subtitle {
+  text-align: left;
+}
+
+.func-btn {
+  color: #fbf4d0 !important;
+  background: #880000 !important;
+  border-radius: 5px !important;
+  transition: all 0.3s ease !important;
+  font-family: 'Poppins', sans-serif !important;
+  font-weight: 600 !important;
+  width: 100px !important;
+  min-height: auto !important;
+  padding: 8px 16px !important;
+  margin-left: auto !important;
+}
+
+.func-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.button-group {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* Find More Info button styles */
+.find-more-info-btn {
+  color: black !important;
+  background: #ccac00b2 !important;
+  border-radius: 5px !important;
+  transition: all 0.3s ease !important;
+  font-family: 'Poppins', sans-serif !important;
+  font-weight: 600 !important;
+  width: 140px !important;
+  min-height: auto !important;
+  padding: 8px 16px !important;
+  margin-right: 12px !important;
+}
+
+.find-more-info-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .artifact-card {
+    width: 100%;
+    max-width: 400px;
+    height: 400px;
+  }
+
+  .large-artifacts {
+    width: 300px !important;
+    height: 300px !important;
+  }
+
+  .back-button-top {
+    top: 0.5rem;
+    left: 0.5rem;
+  }
+
+  .top-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .action-icons {
+    margin-top: 1rem;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .title-input :deep(.q-field__native) {
+    font-size: 32px !important;
+    padding: 12px 0 !important;
+  }
+
+  .title-section {
+    margin-bottom: 1rem;
+  }
 }
 </style>
