@@ -43,7 +43,7 @@
             :class="[
               selectedFile ? 'box-upload-docuarti' : 'two-box-upload-docuarti',
               'upload-section',
-              { 'drag-over': isDragging }
+              { 'drag-over': isDragging },
             ]"
             @dragover.prevent="onDragOver"
             @dragleave.prevent="onDragLeave"
@@ -139,13 +139,7 @@
                 </router-link>
                 <div class="q-py-xs doc-align-items">
                   <!-- View Icon with Count -->
-                  <q-icon
-                    v-if="!isAdmin"
-                    name="visibility"
-                    color="grey"
-                    size="xs"
-                    class="action-icon"
-                  />
+                  <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
                   <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
 
                   <!-- Star Icon with Count -->
@@ -393,11 +387,11 @@
               <q-dialog v-model="notifyDialogOpen">
                 <q-card class="sucess-add-to-collection">
                   <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-                      notifyDialogTitle
-                    }}</q-card-section>
+                    notifyDialogTitle
+                  }}</q-card-section>
                   <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-                      notifyDialogMessage
-                    }}</q-card-section>
+                    notifyDialogMessage
+                  }}</q-card-section>
                   <q-card-actions>
                     <q-btn flat label="Close" class="btn-save" v-close-popup />
                   </q-card-actions>
@@ -606,7 +600,15 @@ const fetchAllDocuments = async () => {
       console.error('Error fetching favorite items:', favError)
     }
 
+    // Get ALL user collections (for bookmarked check)
+    const { data: allUserCollections, error: allCollError } = await supabase
+      .from('collections')
+      .select('collection_id, collection_name')
+      .eq('user_id', userId)
+
     let favoriteIds = []
+    let bookmarkedIds = []
+
     if (favoritesCollection) {
       const { data: favItems, error: favItemsError } = await supabase
         .from('collection_items')
@@ -619,10 +621,31 @@ const fetchAllDocuments = async () => {
       }
     }
 
+    // Get bookmarked document IDs (from non-Favorites collections)
+    if (allUserCollections && !allCollError) {
+      const nonFavoritesCollections = allUserCollections.filter(
+        (col) => col.collection_name !== 'Favorites',
+      )
+
+      if (nonFavoritesCollections.length > 0) {
+        const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
+
+        const { data: bookmarkedItems, error: bookmarkError } = await supabase
+          .from('collection_items')
+          .select('item_id')
+          .in('collection_id', collectionIds)
+          .eq('item_type', 'document')
+
+        if (!bookmarkError && bookmarkedItems) {
+          bookmarkedIds = [...new Set(bookmarkedItems.map((i) => i.item_id))]
+        }
+      }
+    }
+
     // Add some mock data for demonstration compatibility
     const enhancedDocs = data.map((docs) => ({
       ...docs,
-      bookmarked: false,
+      bookmarked: bookmarkedIds.includes(docs.id),
       starred: favoriteIds.includes(docs.id),
     }))
 
@@ -1107,20 +1130,20 @@ async function saveToSelectedCollections() {
       showNotifyDialog('Notice', message.trim())
     }
 
-    // ADDED: Recheck if document is in any non-Favorites collection
-    const { data: remainingItems, error: recheckError } = await supabase
-      .from('collection_items')
-      .select('collection_id, collections (collection_name)')
-      .eq('item_id', doc.id)
-      .eq('item_type', selectedItemType.value)
+    // // ADDED: Recheck if document is in any non-Favorites collection
+    // const { data: remainingItems, error: recheckError } = await supabase
+    //   .from('collection_items')
+    //   .select('collection_id, collections (collection_name)')
+    //   .eq('item_id', doc.id)
+    //   .eq('item_type', selectedItemType.value)
 
-    if (!recheckError) {
-      doc.bookmarked = remainingItems.some(
-        (item) => item.collections?.collection_name !== 'Favorites',
-      )
-    } else {
-      console.error('Error rechecking bookmark status:', recheckError)
-    }
+    // if (!recheckError) {
+    //   doc.bookmarked = remainingItems.some(
+    //     (item) => item.collections?.collection_name !== 'Favorites',
+    //   )
+    // } else {
+    //   console.error('Error rechecking bookmark status:', recheckError)
+    // }
 
     dialogOpen.value = false
   } catch (err) {
