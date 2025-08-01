@@ -371,6 +371,7 @@ const modelStore = useModelStore()
 const userStore = useUserStore()
 
 const userRole = userStore.profile.role
+const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 const isAdmin = computed(() => userRole === 'admin')
 
 const model = ref(null)
@@ -770,6 +771,56 @@ onMounted(async () => {
   await modelStore.fetchStarCounts()
   await modelStore.fetchViewCounts()
 })
+
+async function handleDelete() {
+  try {
+    console.log('Trying to soft-delete ID:', route.params.id)
+
+    // Fetch the original record
+    const { data: originalData, error: fetchError } = await supabase
+      .from('artifacts_metadata')
+      .select('*')
+      .eq('id', route.params.id)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching original artifact:', fetchError)
+      alert('Failed to fetch the artifact.')
+      return
+    }
+
+    // Insert into deleted table
+    const { error: deleteError } = await supabase.from('deleted_artifacts').insert({
+      ...originalData,
+      deleted_at: new Date().toISOString(), // Add timestamp
+      deleted_by: user,
+    })
+
+    if (deleteError) {
+      console.error('Error deleting artifact:', deleteError)
+      alert('Failed to delete the artifact.')
+      return
+    }
+
+    // Delete the original record
+    const { error: delError } = await supabase
+      .from('artifacts_metadata')
+      .delete()
+      .eq('id', route.params.id)
+
+    if (delError) {
+      console.error('Error deleting artifact:', delError)
+      alert('Failed to delete the artifact.')
+      return
+    } else {
+      console.log('Artifact soft-deleted successfully:', route.params.id)
+      router.push('/artifacts')
+    }
+  } catch (err) {
+    console.error('Unexpected error during soft delete:', err)
+    alert('An unexpected error occurred.')
+  }
+}
 </script>
 
 <style scoped>
