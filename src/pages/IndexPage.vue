@@ -651,7 +651,15 @@ async function loadModels() {
       console.error('Error fetching favorite items:', favError)
     }
 
+    // Get ALL user collections (for bookmarked check)
+    const { data: allUserCollections, error: allCollError } = await supabase
+      .from('collections')
+      .select('collection_id, collection_name')
+      .eq('user_id', userId)
+
     let favoriteIds = []
+    let bookmarkedIds = []
+
     if (favoritesCollection) {
       const { data: favItems, error: favItemsError } = await supabase
         .from('collection_items')
@@ -664,10 +672,31 @@ async function loadModels() {
       }
     }
 
+    // Get bookmarked artifact IDs (from non-Favorites collections)
+    if (allUserCollections && !allCollError) {
+      const nonFavoritesCollections = allUserCollections.filter(
+        (col) => col.collection_name !== 'Favorites',
+      )
+
+      if (nonFavoritesCollections.length > 0) {
+        const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
+
+        const { data: bookmarkedItems, error: bookmarkError } = await supabase
+          .from('collection_items')
+          .select('item_id')
+          .in('collection_id', collectionIds)
+          .eq('item_type', 'artifact')
+
+        if (!bookmarkError && bookmarkedItems) {
+          bookmarkedIds = [...new Set(bookmarkedItems.map((i) => i.item_id))]
+        }
+      }
+    }
+
     // Add some mock data for demonstration compatibility
     const enhancedModels = data.map((model) => ({
       ...model,
-      bookmarked: false,
+      bookmarked: bookmarkedIds.includes(model.id),
       starred: favoriteIds.includes(model.id),
     }))
 

@@ -30,13 +30,28 @@
           <!-- Control Buttons -->
           <div class="control-buttons">
             <button class="control-btn" title="Help" @click="toggleHelp">
-              <img src="../../public/icons/help.png" alt="Help" class="control-icon" style="width: 19.5px; height: 19.5px;" />
+              <img
+                src="/icons/help.png"
+                alt="Help"
+                class="control-icon"
+                style="width: 19.5px; height: 19.5px"
+              />
             </button>
             <button class="control-btn" title="Reset View">
-              <img src="../../public/icons/reset.png" alt="Reset View" class="control-icon" style="width: 20px; height: 20px;"/>
+              <img
+                src="/icons/reset.png"
+                alt="Reset View"
+                class="control-icon"
+                style="width: 20px; height: 20px"
+              />
             </button>
             <button class="control-btn" title="Zoom">
-              <img src="../../public/icons/zoom-in.png" alt="Zoom" class="control-icon" style="width: 16px; height: 16px;"/>
+              <img
+                src="/icons/zoom-in.png"
+                alt="Zoom"
+                class="control-icon"
+                style="width: 16px; height: 16px"
+              />
             </button>
           </div>
 
@@ -127,7 +142,6 @@
               </div>
             </div>
           </div>
-
         </div>
 
         <!-- Right Side: Information Panel -->
@@ -330,11 +344,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -357,6 +371,7 @@ const modelStore = useModelStore()
 const userStore = useUserStore()
 
 const userRole = userStore.profile.role
+const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 const isAdmin = computed(() => userRole === 'admin')
 
 const model = ref(null)
@@ -394,7 +409,6 @@ const closeHelp = () => {
   showHelpOverlay.value = false
 }
 
-
 // Action button methods
 const editArtifact = () => {
   router.push(`/edit/artifacts/${model.value.id}`)
@@ -403,8 +417,34 @@ const editArtifact = () => {
 const toggleBookmark = async (modelId) => {
   if (!model.value) return
 
-  // Toggle bookmark state
-  model.value.bookmarked = !model.value.bookmarked
+  const { data: authData } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  const { data: userCollections } = await supabase
+    .from('collections')
+    .select('collection_id')
+    .neq('collection_name', 'Favorites') // Exclude Favorites
+    .eq('user_id', userId)
+
+  if (userCollections) {
+    const { data: collItems } = await supabase
+      .from('collection_items')
+      .select('item_id')
+      .in(
+        'collection_id',
+        userCollections.map((c) => c.collection_id),
+      )
+      .eq('item_type', 'artifact')
+      .eq('item_id', route.params.id)
+
+    console.log('Collection Items:', collItems)
+
+    if (collItems?.length > 0) {
+      model.value.bookmarked = true
+    } else {
+      model.value.bookmarked = false
+    }
+  }
 
   // Update in store if model exists there
   const storeModel = modelStore.models.find((m) => m.id === modelId)
@@ -412,10 +452,7 @@ const toggleBookmark = async (modelId) => {
     storeModel.bookmarked = model.value.bookmarked
   }
 
-  // If bookmarked, open collection dialog
-  if (model.value.bookmarked) {
-    openBookmarkDialog(model.value, 'artifact')
-  }
+  openBookmarkDialog(model.value, 'artifact')
 }
 
 // FIXED: Toggle favorite
@@ -609,6 +646,7 @@ const saveToSelectedCollections = async () => {
       }
 
       if (collection) insertedCollections.push(collection.collection_name)
+      model.value.bookmarked = true
     }
 
     for (const collectionId of toRemove) {
@@ -628,6 +666,7 @@ const saveToSelectedCollections = async () => {
       }
 
       if (collection) removedCollections.push(collection.collection_name)
+      model.value.bookmarked = false
     }
 
     const itemName = modelItem.metadata?.title || modelItem.file_name
@@ -705,11 +744,83 @@ onMounted(async () => {
         model.value.starred = true
       }
     }
+
+    const { data: userCollections } = await supabase
+      .from('collections')
+      .select('collection_id')
+      .neq('collection_name', 'Favorites') // Exclude Favorites
+      .eq('user_id', userId)
+
+    if (userCollections) {
+      const { data: collItems } = await supabase
+        .from('collection_items')
+        .select('item_id')
+        .in(
+          'collection_id',
+          userCollections.map((c) => c.collection_id),
+        )
+        .eq('item_type', 'artifact')
+        .eq('item_id', route.params.id)
+
+      if (collItems?.length > 0) {
+        model.value.bookmarked = true
+      }
+    }
   }
 
   await modelStore.fetchStarCounts()
   await modelStore.fetchViewCounts()
 })
+
+async function handleDelete() {
+  try {
+    console.log('Trying to soft-delete ID:', route.params.id)
+
+    // Fetch the original record
+    const { data: originalData, error: fetchError } = await supabase
+      .from('artifacts_metadata')
+      .select('*')
+      .eq('id', route.params.id)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching original artifact:', fetchError)
+      alert('Failed to fetch the artifact.')
+      return
+    }
+
+    // Insert into deleted table
+    const { error: deleteError } = await supabase.from('deleted_artifacts').insert({
+      ...originalData,
+      deleted_at: new Date().toISOString(), // Add timestamp
+      deleted_by: user,
+    })
+
+    if (deleteError) {
+      console.error('Error deleting artifact:', deleteError)
+      alert('Failed to delete the artifact.')
+      return
+    }
+
+    // Delete the original record
+    const { error: delError } = await supabase
+      .from('artifacts_metadata')
+      .delete()
+      .eq('id', route.params.id)
+
+    if (delError) {
+      console.error('Error deleting artifact:', delError)
+      alert('Failed to delete the artifact.')
+      return
+    } else {
+      console.log('Artifact soft-deleted successfully:', route.params.id)
+      router.push('/artifacts')
+    }
+  } catch (err) {
+    console.error('Unexpected error during soft delete:', err)
+    alert('An unexpected error occurred.')
+  }
+}
 </script>
 
 <style scoped>
@@ -814,7 +925,7 @@ onMounted(async () => {
   color: #d7d7d7 !important;
   font-size: 16px !important;
   object-fit: contain;
-  }
+}
 
 .info-section {
   flex: 1;
@@ -928,19 +1039,17 @@ onMounted(async () => {
   color: #efaf00;
 }
 
-.action-icons-top  {
+.action-icons-top {
   display: flex;
   align-items: center;
   gap: 0.25rem;
 }
-
 
 .icon-with-count {
   display: flex;
   align-items: center;
   gap: 0.21rem;
   font-family: 'Poppins', sans-serif;
-
 }
 
 .action-icons-top .count-text {
@@ -1327,5 +1436,4 @@ onMounted(async () => {
     font-size: 12px !important;
   }
 }
-
 </style>
