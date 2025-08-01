@@ -135,13 +135,7 @@
                 </router-link>
                 <div class="q-py-xs doc-align-items">
                   <!-- View Icon with Count -->
-                  <q-icon
-                    v-if="!isAdmin"
-                    name="visibility"
-                    color="grey"
-                    size="xs"
-                    class="action-icon"
-                  />
+                  <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
                   <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
 
                   <!-- Star Icon with Count -->
@@ -906,21 +900,27 @@ const handleScan = () => {
   router.push({ name: 'document-scanner' })
 }
 
+// Upload handler
 const handleUpload = async () => {
-  const file = selectedFile.value
-  const fileName = sanitizeFileName(file?.name || '')
-
-  uploading.value = true
-  uploadProgress.value = 0
-
-  if (!file || !file.name.endsWith('.pdf')) {
-    alert('Only .pdf files are allowed.')
-    return
-  }
-
-  loading.value = true
-
   try {
+    if (!selectedFile.value || !selectedFile.value.name.endsWith('.pdf')) {
+      alert('Only .pdf files are allowed.')
+      return
+    }
+
+    // Compress file
+    const compressedFile = await compressPdf(selectedFile.value)
+    if (!compressedFile) {
+      alert('Compression failed. Please try again.')
+      return
+    }
+
+    const fileName = sanitizeFileName(compressedFile.name)
+    uploading.value = true
+    uploadProgress.value = 0
+    loading.value = true
+
+    // Check for existing filename
     const exists = await fileExists(fileName)
     if (exists) {
       alert(`A file named "${fileName}" already exists.`)
@@ -931,31 +931,44 @@ const handleUpload = async () => {
       if (uploadProgress.value < 90) uploadProgress.value += 1
     }, 200)
 
-    let response = await processFileWithNLP(file, fileName)
+    // NLP processing
+    let response = await processFileWithNLP(compressedFile, fileName)
 
     if (response.data.status === 'ocr_required') {
+      console.log('OCR required, processing...')
       response = await processImageWithOCR(response.data.image_base64, fileName)
     }
-    console.log('NLP Response:', response.data)
-    const nlpData = response.data
 
-    // Generate preview
-    const preview = await generatePdfPreview(file)
+    const nlpData = response.data
+    console.log('NLP Response:', nlpData)
+
+    // Preview image
+    const preview = await generatePdfPreview(compressedFile)
     const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
 
     const previewUploadError = await uploadPreviewImage(preview, previewFileName)
     if (previewUploadError) throw previewUploadError
 
-    const uploadError = await uploadFileToSupabase(file, fileName)
-    if (uploadError) throw uploadError
+    // Upload file
+    try {
+      const uploadError = await uploadFileToSupabase(compressedFile, fileName)
+      if (uploadError) {
+        console.error('Supabase Upload Error:', uploadError)
+        throw uploadError
+      }
+    } catch (err) {
+      console.error('Upload failed (caught):', err.message, err)
+    }
 
     clearInterval(progressInterval)
     uploadProgress.value = 100
 
+    // Get public URLs
     const fileUrl = supabase.storage.from('documents').getPublicUrl(fileName).data.publicUrl
     const previewUrl = supabase.storage.from('pdf-previews').getPublicUrl(previewFileName)
       .data.publicUrl
 
+    // Save metadata
     const { error: dbError } = await saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData)
     if (dbError) {
       console.error('DB error:', dbError)
@@ -963,6 +976,7 @@ const handleUpload = async () => {
       return
     }
 
+    // Success result
     metadata.value = {
       file_name: fileName,
       file_url: fileUrl,
@@ -983,6 +997,43 @@ const handleUpload = async () => {
     loading.value = false
     uploadProgress.value = 0
   }
+}
+
+// ADDED: Compress pdf on upload
+import { PDFDocument } from 'pdf-lib'
+
+async function compressPdf(file) {
+  console.log(`Starting PDF compression for: ${file.name}`)
+  const originalSize = file.size
+
+  const arrayBuffer = await file.arrayBuffer()
+  const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true })
+
+  // Remove optional metadata
+  pdfDoc.setTitle('')
+  pdfDoc.setAuthor('')
+  pdfDoc.setSubject('')
+  pdfDoc.setKeywords([])
+  pdfDoc.setProducer('')
+  pdfDoc.setCreator('')
+
+  const compressedBytes = await pdfDoc.save()
+  const compressedFile = new File([compressedBytes], file.name, { type: 'application/pdf' })
+
+  const originalKB = originalSize / 1024
+  const compressedKB = compressedFile.size / 1024
+  const savedKB = originalKB - compressedKB
+
+  console.log(`PDF Compression success: ${file.name}`)
+  console.log(`Original size: ${originalKB.toFixed(2)} KB`)
+  console.log(`Compressed size: ${compressedKB.toFixed(2)} KB`)
+  console.log(
+    `PDF Compression Saved: ${
+      savedKB > 0 ? savedKB.toFixed(2) + ' KB' : 'no space (already optimized)'
+    }`,
+  )
+
+  return compressedFile
 }
 
 const openBookmarkDialog = async (doc, type = 'document') => {
