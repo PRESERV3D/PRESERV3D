@@ -45,36 +45,41 @@ export const useUserStore = defineStore('user', {
     // Fetch user or admin profile
     async fetchProfile(userId) {
       // First, check if user is in registered_users
-      let { data: userData, error: userError } = await supabase
-        .from('registered_users')
-        .select('*')
-        .eq('id', userId)
-        .single()
-
-      if (userData) {
-        this.profile = { ...userData, role: 'user' }
-        return
-      }
-
-      if (!userData) {
-        // Next, check if user is in registered_admins
-        const { data: adminData, error: adminError } = await supabase
-          .from('registered_admins')
+      if (userId) {
+        let { data: userData, error: userError } = await supabase
+          .from('registered_users')
           .select('*')
           .eq('id', userId)
-          .single()
 
-        if (adminData) {
-          this.profile = { ...adminData, role: 'admin' }
+        if (userData.length > 0) {
+          this.profile = { ...userData[0], role: 'user' }
           return
+        } else if (userError) {
+          console.error('Error fetching user profile:', userError)
         }
 
-        if (adminError) {
-          console.error('Error fetching admin profile:', adminError)
+        if (!userData || userData.length === 0) {
+          // Next, check if user is in registered_admins
+          const { data: adminData, error: adminError } = await supabase
+            .from('registered_admins')
+            .select('*')
+            .eq('id', userId)
+
+          if (adminData && adminData.length > 0) {
+            this.profile = { ...adminData[0], role: 'admin' }
+            return
+          }
+
+          if (adminError) {
+            console.error('Error fetching admin profile:', adminError)
+          }
+
+          if (userError && adminError) {
+            // If both queries failed, log the errors
+            console.error('Failed to fetch profile from both tables:', userError, adminError)
+          }
         }
       }
-
-      console.error('Failed to fetch profile from both tables:', userError)
     },
 
     // Manually fetch session + profile (e.g., on page reload)

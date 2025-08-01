@@ -99,7 +99,7 @@ async function loginUser() {
       return
     }
 
-    const { data: profile, error: profileError } = await supabase
+    const { error: profileError } = await supabase
       .from('registered_users')
       .select('*')
       .eq('id', user.id)
@@ -107,8 +107,6 @@ async function loginUser() {
 
     if (profileError) {
       console.warn('Could not load user profile:', profileError.message)
-    } else {
-      console.log('User profile:', profile)
     }
 
     // Redirect based on role
