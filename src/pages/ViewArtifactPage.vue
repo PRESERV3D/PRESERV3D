@@ -30,13 +30,28 @@
           <!-- Control Buttons -->
           <div class="control-buttons">
             <button class="control-btn" title="Help" @click="toggleHelp">
-              <img src="../../public/icons/help.png" alt="Help" class="control-icon" style="width: 19.5px; height: 19.5px;" />
+              <img
+                src="/icons/help.png"
+                alt="Help"
+                class="control-icon"
+                style="width: 19.5px; height: 19.5px"
+              />
             </button>
             <button class="control-btn" title="Reset View">
-              <img src="../../public/icons/reset.png" alt="Reset View" class="control-icon" style="width: 20px; height: 20px;"/>
+              <img
+                src="/icons/reset.png"
+                alt="Reset View"
+                class="control-icon"
+                style="width: 20px; height: 20px"
+              />
             </button>
             <button class="control-btn" title="Zoom">
-              <img src="../../public/icons/zoom-in.png" alt="Zoom" class="control-icon" style="width: 16px; height: 16px;"/>
+              <img
+                src="/icons/zoom-in.png"
+                alt="Zoom"
+                class="control-icon"
+                style="width: 16px; height: 16px"
+              />
             </button>
           </div>
 
@@ -127,7 +142,6 @@
               </div>
             </div>
           </div>
-
         </div>
 
         <!-- Right Side: Information Panel -->
@@ -330,11 +344,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -394,7 +408,6 @@ const closeHelp = () => {
   showHelpOverlay.value = false
 }
 
-
 // Action button methods
 const editArtifact = () => {
   router.push(`/edit/artifacts/${model.value.id}`)
@@ -403,8 +416,34 @@ const editArtifact = () => {
 const toggleBookmark = async (modelId) => {
   if (!model.value) return
 
-  // Toggle bookmark state
-  model.value.bookmarked = !model.value.bookmarked
+  const { data: authData } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  const { data: userCollections } = await supabase
+    .from('collections')
+    .select('collection_id')
+    .neq('collection_name', 'Favorites') // Exclude Favorites
+    .eq('user_id', userId)
+
+  if (userCollections) {
+    const { data: collItems } = await supabase
+      .from('collection_items')
+      .select('item_id')
+      .in(
+        'collection_id',
+        userCollections.map((c) => c.collection_id),
+      )
+      .eq('item_type', 'artifact')
+      .eq('item_id', route.params.id)
+
+    console.log('Collection Items:', collItems)
+
+    if (collItems?.length > 0) {
+      model.value.bookmarked = true
+    } else {
+      model.value.bookmarked = false
+    }
+  }
 
   // Update in store if model exists there
   const storeModel = modelStore.models.find((m) => m.id === modelId)
@@ -412,10 +451,7 @@ const toggleBookmark = async (modelId) => {
     storeModel.bookmarked = model.value.bookmarked
   }
 
-  // If bookmarked, open collection dialog
-  if (model.value.bookmarked) {
-    openBookmarkDialog(model.value, 'artifact')
-  }
+  openBookmarkDialog(model.value, 'artifact')
 }
 
 // FIXED: Toggle favorite
@@ -609,6 +645,7 @@ const saveToSelectedCollections = async () => {
       }
 
       if (collection) insertedCollections.push(collection.collection_name)
+      model.value.bookmarked = true
     }
 
     for (const collectionId of toRemove) {
@@ -628,6 +665,7 @@ const saveToSelectedCollections = async () => {
       }
 
       if (collection) removedCollections.push(collection.collection_name)
+      model.value.bookmarked = false
     }
 
     const itemName = modelItem.metadata?.title || modelItem.file_name
@@ -703,6 +741,28 @@ onMounted(async () => {
 
       if (favItems?.length > 0) {
         model.value.starred = true
+      }
+    }
+
+    const { data: userCollections } = await supabase
+      .from('collections')
+      .select('collection_id')
+      .neq('collection_name', 'Favorites') // Exclude Favorites
+      .eq('user_id', userId)
+
+    if (userCollections) {
+      const { data: collItems } = await supabase
+        .from('collection_items')
+        .select('item_id')
+        .in(
+          'collection_id',
+          userCollections.map((c) => c.collection_id),
+        )
+        .eq('item_type', 'artifact')
+        .eq('item_id', route.params.id)
+
+      if (collItems?.length > 0) {
+        model.value.bookmarked = true
       }
     }
   }
@@ -814,7 +874,7 @@ onMounted(async () => {
   color: #d7d7d7 !important;
   font-size: 16px !important;
   object-fit: contain;
-  }
+}
 
 .info-section {
   flex: 1;
@@ -928,19 +988,17 @@ onMounted(async () => {
   color: #efaf00;
 }
 
-.action-icons-top  {
+.action-icons-top {
   display: flex;
   align-items: center;
   gap: 0.25rem;
 }
-
 
 .icon-with-count {
   display: flex;
   align-items: center;
   gap: 0.21rem;
   font-family: 'Poppins', sans-serif;
-
 }
 
 .action-icons-top .count-text {
@@ -1327,5 +1385,4 @@ onMounted(async () => {
     font-size: 12px !important;
   }
 }
-
 </style>
