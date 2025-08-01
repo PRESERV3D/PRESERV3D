@@ -26,6 +26,122 @@
             shadow-intensity="1"
             class="large-artifacts"
           />
+
+          <!-- Control Buttons -->
+          <div class="control-buttons">
+            <button class="control-btn" title="Help" @click="toggleHelp">
+              <img
+                src="/icons/help.png"
+                alt="Help"
+                class="control-icon"
+                style="width: 19.5px; height: 19.5px"
+              />
+            </button>
+            <button class="control-btn" title="Reset View">
+              <img
+                src="/icons/reset.png"
+                alt="Reset View"
+                class="control-icon"
+                style="width: 20px; height: 20px"
+              />
+            </button>
+            <button class="control-btn" title="Zoom">
+              <img
+                src="/icons/zoom-in.png"
+                alt="Zoom"
+                class="control-icon"
+                style="width: 16px; height: 16px"
+              />
+            </button>
+          </div>
+
+          <!-- Help Overlay - positioned over the artifact card -->
+          <div v-if="showHelpOverlay" class="help-overlay">
+            <div class="help-content">
+              <!-- Close button -->
+              <button class="help-close-btn" @click="closeHelp">
+                <q-icon name="close" size="20px" />
+              </button>
+
+              <!-- Help Title -->
+              <div class="help-title">Navigation Controls</div>
+
+              <!-- Navigation Instructions -->
+              <div class="help-sections">
+                <!-- Orbit Section -->
+                <div class="help-section">
+                  <div class="help-section-title">
+                    <q-icon name="3d_rotation" class="help-icon" />
+                    <span>Orbit</span>
+                  </div>
+                  <div class="help-methods">
+                    <div class="help-method">
+                      <q-icon name="mouse" class="method-icon" />
+                      <span>Left-click and drag</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="touch_app" class="method-icon" />
+                      <span>One-finger drag</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="keyboard" class="method-icon" />
+                      <span>Arrow keys</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pan Section -->
+                <div class="help-section">
+                  <div class="help-section-title">
+                    <q-icon name="pan_tool" class="help-icon" />
+                    <span>Pan</span>
+                  </div>
+                  <div class="help-methods">
+                    <div class="help-method">
+                      <q-icon name="mouse" class="method-icon" />
+                      <span>Right-click and drag</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="touch_app" class="method-icon" />
+                      <span>Two-finger drag</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="keyboard" class="method-icon" />
+                      <span>Shift + Arrow keys</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Zoom Section -->
+                <div class="help-section">
+                  <div class="help-section-title">
+                    <q-icon name="zoom_in" class="help-icon" />
+                    <span>Zoom</span>
+                  </div>
+                  <div class="help-methods">
+                    <div class="help-method">
+                      <q-icon name="mouse" class="method-icon" />
+                      <span>Mouse wheel</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="touch_app" class="method-icon" />
+                      <span>Two-finger pinch</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="keyboard" class="method-icon" />
+                      <span>Ctrl + Arrow keys</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Right Side: Information Panel -->
@@ -34,44 +150,64 @@
           <div class="top-actions q-mb-lg">
             <div class="categories-container">
               <!-- Show categories if they exist, otherwise show fallback -->
-              <template v-if="model.metadata.categories && model.metadata.categories.length > 0">
-                <q-chip
-                  v-for="(category, i) in model.metadata.categories"
-                  :key="i"
-                  class="category-tag"
-                >
-                  {{ category }}
-                </q-chip>
-              </template>
-              <template v-else>
-                <!-- Fallback placeholder category as there are no data yet -->
-                <q-chip class="q-mr-sm q-mt-xs category-tag"> Uncategorized </q-chip>
-              </template>
+              <div class="categories-section">
+                <template v-if="model.metadata.categories && model.metadata.categories.length > 0">
+                  <q-chip
+                    v-for="(category, i) in model.metadata.categories"
+                    :key="i"
+                    class="category-tag"
+                  >
+                    {{ category }}
+                  </q-chip>
+                </template>
+                <template v-else>
+                  <!-- Fallback placeholder category as there are no data yet -->
+                  <q-chip class="q-mr-sm q-mt-xs category-tag"> Uncategorized </q-chip>
+                </template>
+              </div>
 
-              <!-- Action icons -->
-              <div class="action-icons">
-                <q-icon
-                  v-if="!isAdmin"
-                  :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
-                  class="bookmark-icon q-mr-md"
-                  :class="{ bookmarked: model.bookmarked }"
-                  size="sm"
-                  @click.stop="toggleBookmark(model, 'artifact')"
-                />
-
-                <q-icon
-                  :name="model.starred ? 'star' : 'star_border'"
-                  class="action-icon star-icon"
-                  :class="{ starred: model.starred }"
-                  size="sm"
-                  @click.stop="isAdmin ? null : toggleFavorite(model, 'artifact')"
-                />
-                <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
-
+              <!-- User Action icons (non-admin)-->
+              <div v-if="!isAdmin" class="action-icons-top">
+                <!-- View Icon with Count -->
                 <div class="icon-with-count">
-                  <q-icon name="visibility" class="action-icon view-icon" size="18px" />
+                  <q-icon name="visibility" class="action-icon view-icon" size="26px" />
                   <span class="count-text">{{ modelStore.viewCounts[model.id] || 0 }}</span>
                 </div>
+
+                <!-- Star Icon with Count -->
+                <div class="icon-with-count">
+                  <q-icon
+                    :name="model.starred ? 'star' : 'star_border'"
+                    class="action-icon star-icon"
+                    :class="{ starred: model.starred }"
+                    size="26px"
+                    @click.stop="toggleFavorite(model, 'artifact')"
+                  />
+                  <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
+                </div>
+
+                <!-- Bookmark Icon -->
+                <div class="icon-with-count">
+                  <q-icon
+                    :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
+                    class="action-icon bookmark-icon"
+                    :class="{ bookmarked: model.bookmarked }"
+                    size="24px"
+                    @click.stop="toggleBookmark(model, 'artifact')"
+                  />
+                </div>
+              </div>
+
+              <!-- Admin Action buttons -->
+              <div v-if="isAdmin" class="action-buttons">
+                <q-btn
+                  flat
+                  label="Edit"
+                  class="text-button q-mr-sm"
+                  @click="editArtifact"
+                  no-caps
+                />
+                <q-btn flat label="Delete" class="text-button" @click="showDialog = true" no-caps />
               </div>
             </div>
           </div>
@@ -134,6 +270,13 @@
                 </div>
               </div>
             </div>
+
+            <!-- Back Button -->
+            <div class="func-button">
+              <router-link to="/artifacts">
+                <q-btn flat label="Back" class="func-btn" no-caps />
+              </router-link>
+            </div>
           </div>
         </div>
       </div>
@@ -142,6 +285,22 @@
     <div v-else class="error-container">
       <q-banner type="negative">Artifact not found.</q-banner>
     </div>
+
+    <!-- Confirmation Dialog      -->
+    <q-dialog v-model="showDialog" persistent>
+      <q-card class="confirmation-delete">
+        <q-card-section class="column items-center">
+          <q-img src="/img/conf-delete.png" alt="question icon" class="question-icon" />
+          <div class="q-mt-md sub-font" style="color: #000000">
+            Are you sure you want to delete this?
+          </div>
+        </q-card-section>
+        <q-card-actions align="center">
+          <q-btn label="Yes" class="btn-save" flat @click="handleDelete" />
+          <q-btn flat label="No" class="sub-font-2" style="color: #000000" v-close-popup no-caps />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- Collection Dialog -->
     <q-dialog v-model="dialogOpen">
@@ -200,17 +359,19 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useModelStore } from 'stores/modelStore'
 import { useUserStore } from 'stores/user'
 import '@google/model-viewer'
 
 const route = useRoute()
+const router = useRouter()
 const modelStore = useModelStore()
 const userStore = useUserStore()
 
 const userRole = userStore.profile.role
+const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 const isAdmin = computed(() => userRole === 'admin')
 
 const model = ref(null)
@@ -226,6 +387,9 @@ const existingCollectionIds = ref([])
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
+const showDialog = ref(false)
+
+const showHelpOverlay = ref(false)
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)
@@ -235,11 +399,52 @@ function formatDate(dateStr) {
   })}`
 }
 
+// Help button click
+const toggleHelp = () => {
+  showHelpOverlay.value = !showHelpOverlay.value
+}
+
+// Close help overlay
+const closeHelp = () => {
+  showHelpOverlay.value = false
+}
+
+// Action button methods
+const editArtifact = () => {
+  router.push(`/edit/artifacts/${model.value.id}`)
+}
+
 const toggleBookmark = async (modelId) => {
   if (!model.value) return
 
-  // Toggle bookmark state
-  model.value.bookmarked = !model.value.bookmarked
+  const { data: authData } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  const { data: userCollections } = await supabase
+    .from('collections')
+    .select('collection_id')
+    .neq('collection_name', 'Favorites') // Exclude Favorites
+    .eq('user_id', userId)
+
+  if (userCollections) {
+    const { data: collItems } = await supabase
+      .from('collection_items')
+      .select('item_id')
+      .in(
+        'collection_id',
+        userCollections.map((c) => c.collection_id),
+      )
+      .eq('item_type', 'artifact')
+      .eq('item_id', route.params.id)
+
+    console.log('Collection Items:', collItems)
+
+    if (collItems?.length > 0) {
+      model.value.bookmarked = true
+    } else {
+      model.value.bookmarked = false
+    }
+  }
 
   // Update in store if model exists there
   const storeModel = modelStore.models.find((m) => m.id === modelId)
@@ -247,10 +452,7 @@ const toggleBookmark = async (modelId) => {
     storeModel.bookmarked = model.value.bookmarked
   }
 
-  // If bookmarked, open collection dialog
-  if (model.value.bookmarked) {
-    openBookmarkDialog(model.value, 'artifact')
-  }
+  openBookmarkDialog(model.value, 'artifact')
 }
 
 // FIXED: Toggle favorite
@@ -444,6 +646,7 @@ const saveToSelectedCollections = async () => {
       }
 
       if (collection) insertedCollections.push(collection.collection_name)
+      model.value.bookmarked = true
     }
 
     for (const collectionId of toRemove) {
@@ -463,6 +666,7 @@ const saveToSelectedCollections = async () => {
       }
 
       if (collection) removedCollections.push(collection.collection_name)
+      model.value.bookmarked = false
     }
 
     const itemName = modelItem.metadata?.title || modelItem.file_name
@@ -540,14 +744,95 @@ onMounted(async () => {
         model.value.starred = true
       }
     }
+
+    const { data: userCollections } = await supabase
+      .from('collections')
+      .select('collection_id')
+      .neq('collection_name', 'Favorites') // Exclude Favorites
+      .eq('user_id', userId)
+
+    if (userCollections) {
+      const { data: collItems } = await supabase
+        .from('collection_items')
+        .select('item_id')
+        .in(
+          'collection_id',
+          userCollections.map((c) => c.collection_id),
+        )
+        .eq('item_type', 'artifact')
+        .eq('item_id', route.params.id)
+
+      if (collItems?.length > 0) {
+        model.value.bookmarked = true
+      }
+    }
   }
 
   await modelStore.fetchStarCounts()
   await modelStore.fetchViewCounts()
 })
+
+async function handleDelete() {
+  try {
+    console.log('Trying to soft-delete ID:', route.params.id)
+
+    // Fetch the original record
+    const { data: originalData, error: fetchError } = await supabase
+      .from('artifacts_metadata')
+      .select('*')
+      .eq('id', route.params.id)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching original artifact:', fetchError)
+      alert('Failed to fetch the artifact.')
+      return
+    }
+
+    // Insert into deleted table
+    const { error: deleteError } = await supabase.from('deleted_artifacts').insert({
+      ...originalData,
+      deleted_at: new Date().toISOString(), // Add timestamp
+      deleted_by: user,
+    })
+
+    if (deleteError) {
+      console.error('Error deleting artifact:', deleteError)
+      alert('Failed to delete the artifact.')
+      return
+    }
+
+    // Delete the original record
+    const { error: delError } = await supabase
+      .from('artifacts_metadata')
+      .delete()
+      .eq('id', route.params.id)
+
+    if (delError) {
+      console.error('Error deleting artifact:', delError)
+      alert('Failed to delete the artifact.')
+      return
+    } else {
+      console.log('Artifact soft-deleted successfully:', route.params.id)
+      router.push('/artifacts')
+    }
+  } catch (err) {
+    console.error('Unexpected error during soft delete:', err)
+    alert('An unexpected error occurred.')
+  }
+}
 </script>
 
 <style scoped>
+.action-buttons {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  color: #880000;
+  font-family: 'Poppins', sans-serif !important;
+  font-size: 16px !important;
+}
+
 .loading-container {
   display: flex;
   justify-content: center;
@@ -591,12 +876,55 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  position: relative;
 }
 
 .large-artifacts {
-  width: 600px !important;
+  width: 680px !important;
   height: 600px !important;
   border-radius: 8px;
+}
+
+/* Control Buttons Styles */
+.control-buttons {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.control-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background-color: #757575;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.25));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.control-btn:hover {
+  background-color: #616161;
+  transform: translateY(-1px);
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.3));
+}
+
+.control-btn:active {
+  transform: translateY(0);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+}
+
+.control-icon {
+  color: #d7d7d7 !important;
+  font-size: 16px !important;
+  object-fit: contain;
 }
 
 .info-section {
@@ -663,15 +991,73 @@ onMounted(async () => {
 .categories-container {
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
+  justify-content: space-between;
+  width: 100%;
   flex-wrap: wrap;
-  flex: 1;
+  gap: 0.5rem;
+  margin-left: -4px;
 }
 
 .categories-section {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  flex: 1;
+}
+
+/* New styles for repositioned action icons */
+.action-icons-top {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  margin-left: auto;
+  padding-left: 1rem;
+}
+
+.action-icons-top .action-icon {
+  cursor: pointer;
+  transition: color 0.3s ease;
+  color: #7c7c7c;
+}
+
+.action-icons-top .bookmark-icon {
+  cursor: pointer;
+  transition: color 0.3s ease;
+  color: #7c7c7c;
+}
+
+.action-icons-top .bookmark-icon:hover,
+.action-icons-top .action-icon:hover {
+  background-color: rgba(136, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.action-icons-top,
+.action-icons-top .star-icon.starred {
+  color: #efaf00;
+}
+
+.action-icons-top {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.icon-with-count {
+  display: flex;
+  align-items: center;
+  gap: 0.21rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.action-icons-top .count-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  min-width: 20px;
+  text-align: left;
 }
 
 .detail-row {
@@ -709,6 +1095,242 @@ onMounted(async () => {
   text-align: left;
 }
 
+.func-button {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  margin-top: 2rem !important;
+  padding-top: 1rem !important;
+  border-top: 1px solid #eee !important;
+  width: 100% !important;
+  clear: both !important;
+}
+
+.func-button .func-btn {
+  color: #fbf4d0 !important;
+  background: #880000 !important;
+  border-radius: 5px !important;
+  transition: all 0.3s ease !important;
+  font-family: 'Poppins', sans-serif !important;
+  font-weight: 600 !important;
+  width: 100px !important;
+  min-height: auto !important;
+  padding: 8px 16px !important;
+  margin-left: auto !important;
+}
+
+.func-button .func-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Ensure the router-link doesn't interfere */
+.func-button a {
+  text-decoration: none !important;
+  display: inline-block !important;
+}
+
+.help-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.help-content {
+  background: rgba(20, 20, 20, 0.8);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 85%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.help-close-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #f5f5f5;
+}
+
+.help-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.help-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: whitesmoke;
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-right: 2rem;
+}
+
+.help-sections {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.help-section {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.help-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #f5f5f5;
+  margin-bottom: 1rem;
+}
+
+.help-icon {
+  color: #e8e8e8;
+  font-size: 20px;
+}
+
+.help-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.help-method {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  color: #e0e0e0;
+  padding: 0.4rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.method-icon {
+  color: #e8e8e8;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.help-divider {
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  color: #b0b0b0;
+  font-style: italic;
+  margin: 0.15rem 0;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .help-content {
+    padding: 1.5rem;
+    margin: 1rem;
+    max-height: 85%;
+  }
+
+  .help-title {
+    font-size: 20px;
+    margin-bottom: 1.5rem;
+    padding-right: 2rem;
+  }
+
+  .help-sections {
+    gap: 1rem;
+  }
+
+  .help-section {
+    padding: 1rem;
+  }
+
+  .help-section-title {
+    font-size: 16px;
+    margin-bottom: 0.75rem;
+  }
+
+  .help-method {
+    font-size: 13px;
+    padding: 0.4rem;
+  }
+
+  .method-icon {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .help-content {
+    padding: 0.75rem;
+    margin: 0.5rem;
+  }
+
+  .help-title {
+    font-size: 16px;
+    margin-bottom: 0.75rem;
+  }
+
+  .help-section-title {
+    font-size: 14px;
+    gap: 0.4rem;
+  }
+
+  .help-icon {
+    font-size: 16px;
+  }
+
+  .help-method {
+    font-size: 10px;
+    gap: 0.4rem;
+  }
+
+  .method-icon {
+    font-size: 11px;
+  }
+}
+
 @media (max-width: 768px) {
   .main-content {
     flex-direction: column;
@@ -726,6 +1348,21 @@ onMounted(async () => {
     height: 300px !important;
   }
 
+  .control-buttons {
+    bottom: 15px;
+    right: 15px;
+    gap: 6px;
+  }
+
+  .control-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .control-icon {
+    font-size: 14px !important;
+  }
+
   .back-button-top {
     top: 0.5rem;
     left: 0.5rem;
@@ -736,14 +1373,32 @@ onMounted(async () => {
     align-items: flex-start;
   }
 
-  .action-icons {
+  .categories-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .action-icons-top {
     margin-top: 1rem;
-    width: 100%;
-    justify-content: flex-end;
+    margin-left: 0;
+    padding-left: 0;
+    justify-content: flex-start;
+  }
+
+  /* Admin back button mobile positioning */
+  .func-button {
+    justify-content: center !important;
+    margin-top: 1rem !important;
+  }
+
+  .a-title {
+    font-size: 32px !important;
+    margin-left: 0 !important;
+    text-align: center !important;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 480px) {
   .title-input :deep(.q-field__native) {
     font-size: 32px !important;
     padding: 12px 0 !important;
@@ -751,6 +1406,34 @@ onMounted(async () => {
 
   .title-section {
     margin-bottom: 1rem;
+  }
+
+  .func-button {
+    padding: 0.5rem !important;
+    margin-top: 1rem !important;
+  }
+
+  .action-icons-top {
+    gap: 0.75rem;
+  }
+
+  .action-icons-top .count-text {
+    font-size: 11px;
+  }
+
+  .control-buttons {
+    bottom: 10px;
+    right: 10px;
+    gap: 4px;
+  }
+
+  .control-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .control-icon {
+    font-size: 12px !important;
   }
 }
 </style>

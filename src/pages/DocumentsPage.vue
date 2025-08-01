@@ -40,11 +40,14 @@
 
           <!-- Upload Section -->
           <q-card-section
-            class="two-box-upload-docuarti upload-section"
+            :class="[
+              selectedFile ? 'box-upload-docuarti' : 'two-box-upload-docuarti',
+              'upload-section',
+              { 'drag-over': isDragging },
+            ]"
             @dragover.prevent="onDragOver"
             @dragleave.prevent="onDragLeave"
             @drop.prevent="onFileDrop"
-            :class="{ 'drag-over': isDragging }"
           >
             <q-img src="/img/drag-drop-icon.png" alt="Upload-Document" class="upload-icon-docu" />
             <div
@@ -65,6 +68,7 @@
                 round
                 flat
                 icon="close"
+                v-close-popup
                 class="thumbnail-delete"
                 @click="deleteSelectedFile"
               />
@@ -163,8 +167,8 @@
               <div class="bg-highlights-details">
                 <div class="fade-title-container">
                   <div class="title-highlight fade-title">
-                    {{ doc.title }}
-                    <div class="tooltip-box">{{ doc.title }}</div>
+                    {{ doc.metadata.title }}
+                    <div class="tooltip-box">{{ doc.metadata.title }}</div>
                   </div>
                 </div>
                 <div class="sub-details">
@@ -457,12 +461,11 @@ const isAdmin = computed(() => userRole === 'admin')
 onMounted(async () => {
   const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
 
-  // Get user's favorites and bookmarks for top documents
+  // Get user's favorites for top documents too
   const { data: authData } = await supabase.auth.getUser()
   const userId = authData?.user?.id
 
   if (userId) {
-    // Get user's Favorites collection
     const { data: favoritesCollection, error: favError } = await supabase
       .from('collections')
       .select('collection_id')
@@ -470,16 +473,7 @@ onMounted(async () => {
       .eq('collection_name', 'Favorites')
       .maybeSingle()
 
-    // Get ALL user collections (for bookmarked check)
-    const { data: allUserCollections, error: allCollError } = await supabase
-      .from('collections')
-      .select('collection_id, collection_name')
-      .eq('user_id', userId)
-
     let favoriteIds = []
-    let bookmarkedIds = []
-
-    // Get favorite document IDs
     if (favoritesCollection && !favError) {
       const { data: favItems, error: favItemsError } = await supabase
         .from('collection_items')
@@ -492,38 +486,17 @@ onMounted(async () => {
       }
     }
 
-    // Get bookmarked document IDs (from non-Favorites collections)
-    if (allUserCollections && !allCollError) {
-      const nonFavoritesCollections = allUserCollections.filter(
-        (col) => col.collection_name !== 'Favorites',
-      )
-
-      if (nonFavoritesCollections.length > 0) {
-        const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
-
-        const { data: bookmarkedItems, error: bookmarkError } = await supabase
-          .from('collection_items')
-          .select('item_id')
-          .in('collection_id', collectionIds)
-          .eq('item_type', 'document')
-
-        if (!bookmarkError && bookmarkedItems) {
-          bookmarkedIds = [...new Set(bookmarkedItems.map((i) => i.item_id))]
-        }
-      }
-    }
-
-    // Enhance topDocuments with starred AND bookmarked properties
+    // Enhance topDocuments with starred property
     const enhancedTopDocs =
       topDocus?.map((doc) => ({
         ...doc,
-        starred: favoriteIds.includes(doc.id), // Check if in Favorites
-        bookmarked: bookmarkedIds.includes(doc.id), // Check if in any non-Favorites collection
+        starred: favoriteIds.includes(doc.id), // Make sure to use the correct ID field
+        bookmarked: false, // Add this too for consistency
       })) || []
 
     topDocuments.value = enhancedTopDocs
   } else {
-    // If no user, just set both properties to false
+    // If no user, just set without starred property
     topDocuments.value =
       topDocus?.map((doc) => ({
         ...doc,
@@ -532,7 +505,6 @@ onMounted(async () => {
       })) || []
   }
 
-  // Keep all your existing onMounted logic below:
   if (!searchStore.query) {
     await fetchAllDocuments()
   }
@@ -540,7 +512,7 @@ onMounted(async () => {
   const scannedFile = history.state?.scannedFile
   if (scannedFile) {
     selectedFile.value = scannedFile
-    history.replaceState({}, '', '/documents')
+    history.replaceState({}, '', '/documents') // Clear the state after using it
     showDialog.value = true
   }
 
@@ -675,6 +647,12 @@ const fetchAllDocuments = async () => {
       console.error('Error fetching favorite items:', favError)
     }
 
+    // Get ALL user collections (for bookmarked check)
+    const { data: allUserCollections, error: allCollError } = await supabase
+      .from('collections')
+      .select('collection_id, collection_name')
+      .eq('user_id', userId)
+
     let favoriteIds = []
     let bookmarkedIds = []
 
@@ -689,12 +667,6 @@ const fetchAllDocuments = async () => {
         favoriteIds = favItems.map((i) => i.item_id)
       }
     }
-
-    // Get ALL user collections (for bookmarked check)
-    const { data: allUserCollections, error: allCollError } = await supabase
-      .from('collections')
-      .select('collection_id, collection_name')
-      .eq('user_id', userId)
 
     // Get bookmarked document IDs (from non-Favorites collections)
     if (allUserCollections && !allCollError) {
@@ -1188,8 +1160,6 @@ async function saveToSelectedCollections() {
       }
 
       if (collection) removedCollections.push(collection.collection_name)
-
-      doc.bookmarked = false
     }
 
     const itemName = doc.metadata?.title || doc.file_name
@@ -1207,20 +1177,20 @@ async function saveToSelectedCollections() {
       showNotifyDialog('Notice', message.trim())
     }
 
-    // ADDED: Recheck if document is in any non-Favorites collection
-    const { data: remainingItems, error: recheckError } = await supabase
-      .from('collection_items')
-      .select('collection_id, collections (collection_name)')
-      .eq('item_id', doc.id)
-      .eq('item_type', selectedItemType.value)
+    // // ADDED: Recheck if document is in any non-Favorites collection
+    // const { data: remainingItems, error: recheckError } = await supabase
+    //   .from('collection_items')
+    //   .select('collection_id, collections (collection_name)')
+    //   .eq('item_id', doc.id)
+    //   .eq('item_type', selectedItemType.value)
 
-    if (!recheckError) {
-      doc.bookmarked = remainingItems.some(
-        (item) => item.collections?.collection_name !== 'Favorites',
-      )
-    } else {
-      console.error('Error rechecking bookmark status:', recheckError)
-    }
+    // if (!recheckError) {
+    //   doc.bookmarked = remainingItems.some(
+    //     (item) => item.collections?.collection_name !== 'Favorites',
+    //   )
+    // } else {
+    //   console.error('Error rechecking bookmark status:', recheckError)
+    // }
 
     dialogOpen.value = false
   } catch (err) {
@@ -1431,6 +1401,8 @@ const toggleFavorite = async (doc, itemType = 'document') => {
 .upload-sections-container {
   display: flex;
   gap: 1rem;
+  width: 100%;
+  justify-content: center;
 }
 
 .two-box-upload-docuarti {
@@ -1478,5 +1450,22 @@ const toggleFavorite = async (doc, itemType = 'document') => {
 .btn-bm-2 {
   bottom: 0.25rem;
   right: 0.75rem;
+}
+
+.thumbnail-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #666666 !important;
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.2s ease !important;
+}
+
+.thumbnail-delete:hover {
+  color: #ff4444 !important;
+  background-color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  transform: translateY(-1px) !important;
 }
 </style>
