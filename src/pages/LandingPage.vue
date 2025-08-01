@@ -47,7 +47,7 @@
         </div>
         <!-- Images -->
         <q-img
-          src="public/img/C-trophy.png"
+          src="/img/C-trophy.png"
           alt="C Trophy"
           style="
             width: 670px;
@@ -63,7 +63,7 @@
         />
 
         <q-img
-          src="public/img/L-trophy.png"
+          src="/img/L-trophy.png"
           alt="L Trophy"
           style="
             width: 325px;
@@ -78,7 +78,7 @@
         />
 
         <q-img
-          src="public/img/R-trophy.png"
+          src="/img/R-trophy.png"
           alt="R Trophy"
           style="
             width: 380px; /* Adjust width as needed */
