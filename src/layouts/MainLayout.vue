@@ -1,90 +1,137 @@
 <template>
   <div class="q-pa-md main-page-bg">
     <q-layout view="lHh Lpr lFf">
+      <!-- Mobile Menu Button -->
+      <q-header elevated class="mobile-header" v-if="$q.screen.lt.md">
+        <q-toolbar>
+          <q-btn
+            flat
+            dense
+            round
+            icon="menu"
+            aria-label="Menu"
+            @click="drawer = !drawer"
+          />
+          <q-toolbar-title class="mobile-logo">
+            <img
+              src="\img\logo.png"
+              alt="Logo"
+              class="mobile-logo-img"
+            />
+          </q-toolbar-title>
+          <!-- Mobile notifications -->
+          <q-btn flat round dense class="mobile-notif-btn">
+            <img src="/icons/notif-icon.png" alt="notifications" class="notif-image" />
+            <q-badge
+              floating
+              rounded
+              class="custom-badge"
+              style="background-color: #ff5722; color: white"
+              v-if="notificationCount > 0"
+            >
+              {{ notificationCount }}
+            </q-badge>
+          </q-btn>
+        </q-toolbar>
+      </q-header>
+
       <q-drawer
         v-model="drawer"
-        show-if-above
-        :mini="miniState"
-        mini-to-overlay
+        :show-if-above="$q.screen.gt.sm"
+        :mini="miniState && $q.screen.gt.sm"
+        :mini-to-overlay="$q.screen.gt.sm"
         :mini-width="120"
         @mouseenter="onDrawerMouseEnter"
         @mouseleave="onDrawerMouseLeave"
-        :width="280"
-        :breakpoint="500"
+        :width="$q.screen.lt.md ? '100%' : 280"
+        :breakpoint="0"
+        :overlay="$q.screen.lt.md"
         bordered
         :class="'sidebar-drawer'"
         content-class="drawer-content"
       >
-        <div class="absolute-full flex column">
-          <!-- Expanded State -->
-          <div class="q-pa-md q-mb-md" v-show="!miniState">
-            <div class="text-center q-py-lg">
+        <div class="sidebar-container">
+          <!-- Close button for mobile -->
+          <div class="mobile-close-btn" v-if="$q.screen.lt.md">
+            <q-btn
+              flat
+              round
+              dense
+              icon="close"
+              @click="drawer = false"
+              class="absolute-top-right q-ma-md"
+            />
+          </div>
+
+          <!-- Logo Section -->
+          <div class="logo-section">
+            <!-- Expanded State -->
+            <div class="q-pa-md q-mb-md" v-show="!miniState || $q.screen.lt.md">
+              <div class="text-center q-py-lg">
+                <img
+                  src="\img\logo.png"
+                  alt="Your Logo"
+                  class="logo-img q-mb-sm"
+                  @click="setActiveItem('home')"
+                />
+              </div>
+            </div>
+
+            <!-- Mini State (desktop only) -->
+            <div class="q-pa-lg q-mb-sm text-center" v-show="miniState && $q.screen.gt.sm">
               <img
                 src="\img\logo.png"
-                alt="Your Logo"
-                style="max-width: 200px; max-height: 80px; object-fit: contain"
-                class="q-mb-sm"
-                @click="setActiveItem('home')"
+                alt="Logo"
+                style="width: 60px; height: 60px; object-fit: contain"
               />
             </div>
           </div>
 
-          <!-- Mini State -->
-          <div class="q-pa-lg q-mb-sm text-center" v-show="miniState">
-            <img
-              src="\img\logo.png"
-              alt="Logo"
-              style="width: 60px; height: 60px; object-fit: contain"
-            />
+          <!-- Navigation Section -->
+          <div class="navigation-section">
+            <q-list padding :class="{ 'text-center': miniState && $q.screen.gt.sm }">
+              <q-item
+                v-for="item in navItems"
+                :key="item.name"
+                clickable
+                v-ripple
+                :active="activeItem === item.name"
+                @click="setActiveItem(item.name)"
+                class="nav-item"
+              >
+                <q-item-section avatar>
+                  <div class="icon-wrapper">
+                    <img
+                      :src="item.icon"
+                      :alt="item.label"
+                      style="width: 24px; height: 24px; object-fit: contain"
+                      class="nav-icon"
+                    />
+                  </div>
+                </q-item-section>
+                <q-item-section>
+                  <span :class="{ 'text-hidden': miniState && $q.screen.gt.sm }" class="nav-text">{{ item.label }}</span>
+                </q-item-section>
+              </q-item>
+            </q-list>
           </div>
 
-          <div class="col" />
-
-          <!-- Navigation -->
-          <q-list padding :class="{ 'text-center': miniState }">
-            <q-item
-              v-for="item in navItems"
-              :key="item.name"
-              clickable
-              v-ripple
-              :active="activeItem === item.name"
-              @click="setActiveItem(item.name)"
-              class="nav-item"
-            >
-              <q-item-section avatar>
-                <div class="icon-wrapper">
-                  <img
-                    :src="item.icon"
-                    :alt="item.label"
-                    style="width: 30px; height: 30px; object-fit: contain"
-                    class="nav-icon"
-                  />
-                </div>
-              </q-item-section>
-              <q-item-section>
-                <span :class="{ 'text-hidden': miniState }" class="nav-text">{{ item.label }}</span>
-              </q-item-section>
-            </q-item>
-          </q-list>
-
-          <div class="col" />
-
-          <!-- Logout -->
-          <div class="q-pa-md">
-            <q-separator class="q-mb-md" v-show="!miniState" />
+          <!-- Logout Section - Fixed at bottom -->
+          <div class="logout-section">
+            <q-separator class="q-mb-md" v-show="(!miniState && $q.screen.gt.sm) || $q.screen.lt.md" />
             <q-item
               clickable
               v-ripple
               @click="handleLogout"
               class="logout-item"
-              :class="{ 'text-center': miniState }"
+              :class="{ 'text-center': miniState && $q.screen.gt.sm }"
             >
               <q-item-section avatar>
                 <div class="icon-wrapper">
-                  <q-icon name="logout" size="24px" class="logout-icon" />
+                  <q-icon name="logout" size="20px" class="logout-icon" />
                 </div>
               </q-item-section>
-              <q-item-section v-show="!miniState">
+              <q-item-section v-show="(!miniState && $q.screen.gt.sm) || $q.screen.lt.md">
                 <span class="logout-text">Logout</span>
               </q-item-section>
             </q-item>
@@ -94,85 +141,71 @@
 
       <q-page-container>
         <div class="search-toolbar q-py-md q-px-md">
-          <q-toolbar class="bg-transparent">
-            <!-- Search Bar -->
-            <q-input
-              dense
-              outlined
-              v-model="search"
-              placeholder="Search name, work, year, etc."
-              class="q-mr-md search-input"
-              input-class="text-left"
-              clearable
-              clear-icon="close"
-              @keyup.enter="performSearch"
-              style="width: 100%; max-width: 830px"
-            >
-              <template v-slot:prepend>
-                <q-icon name="search" @click="performSearch" class="cursor-pointer" />
-              </template>
-            </q-input>
-
-            <!-- Notifications Button -->
-            <q-btn flat round dense class="q-ml-md custom-spacing notif-btn">
-              <img src="/icons/notif-icon.png" alt="notifications" class="notif-image" />
-              <q-badge
-                floating
-                rounded
-                class="custom-badge"
-                style="background-color: #ff5722; color: white"
-                v-if="notificationCount > 0"
+          <q-toolbar class="bg-transparent responsive-toolbar">
+            <!-- Search Bar Container -->
+            <div class="search-container">
+              <q-input
+                dense
+                outlined
+                v-model="search"
+                placeholder="Search name, work, year, etc."
+                class="search-input"
+                input-class="text-left"
+                clearable
+                clear-icon="close"
+                @keyup.enter="performSearch"
               >
-                {{ notificationCount }}
-              </q-badge>
-              <q-menu>
-                <q-list style="min-width: 150px">
-                  <q-item-label header>Notifications</q-item-label>
-                  <q-item v-if="notifications.length === 0">
-                    <q-item-section>No new notifications</q-item-section>
-                  </q-item>
-                  <q-item v-for="notif in notifications" :key="notif.id" clickable v-ripple>
-                    <q-item-section>{{ notif.message }}</q-item-section>
-                    <q-item-section side>{{ notif.time }}</q-item-section>
-                  </q-item>
-                  <q-separator />
-                  <q-item clickable class="text-center text-primary">
-                    <q-item-section>View All</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-menu>
-            </q-btn>
+                <template v-slot:prepend>
+                  <q-icon name="search" @click="performSearch" class="cursor-pointer" />
+                </template>
+              </q-input>
+            </div>
 
-            <q-space />
+            <!-- Desktop notifications and user profile -->
+            <div class="desktop-actions" v-if="$q.screen.gt.sm">
+              <!-- Notifications Button -->
+              <q-btn flat round dense class="notif-btn">
+                <img src="/icons/notif-icon.png" alt="notifications" class="notif-image" />
+                <q-badge
+                  floating
+                  rounded
+                  class="custom-badge"
+                  style="background-color: #ff5722; color: white"
+                  v-if="notificationCount > 0"
+                >
+                  {{ notificationCount }}
+                </q-badge>
+                <q-menu>
+                  <q-list style="min-width: 150px">
+                    <q-item-label header>Notifications</q-item-label>
+                    <q-item v-if="notifications.length === 0">
+                      <q-item-section>No new notifications</q-item-section>
+                    </q-item>
+                    <q-item v-for="notif in notifications" :key="notif.id" clickable v-ripple>
+                      <q-item-section>{{ notif.message }}</q-item-section>
+                      <q-item-section side>{{ notif.time }}</q-item-section>
+                    </q-item>
+                    <q-separator />
+                    <q-item clickable class="text-center text-primary">
+                      <q-item-section>View All</q-item-section>
+                    </q-item>
+                  </q-list>
+                </q-menu>
+              </q-btn>
 
-            <!-- User Profile Button -->
-            <q-btn flat round dense class="custom-spacing user-profile-btn">
-              <q-avatar size="32px">
-                <img src="\img\UserIcon.jpg" />
-              </q-avatar>
-              <div class="q-ml-lg gt-sm">
-                <div class="username-bg">{{ userName }}</div>
-                <div class="text-subtitle2 text-grey">{{ userRole }}</div>
-              </div>
-              <!-- <q-menu>
-                <q-list style="min-width: 150px">
-                  <q-item-label header>{{ userName }}</q-item-label>
-                  <q-item clickable v-ripple @click="goToProfile">
-                    <q-item-section avatar><q-icon name="person" /></q-item-section>
-                    <q-item-section>Profile</q-item-section>
-                  </q-item>
-                  <q-item clickable v-ripple @click="goToSettings">
-                    <q-item-section avatar><q-icon name="settings" /></q-item-section>
-                    <q-item-section>Settings</q-item-section>
-                  </q-item>
-                  <q-separator />
-                  <q-item clickable v-ripple @click="handleLogout">
-                    <q-item-section avatar><q-icon name="logout" /></q-item-section>
-                    <q-item-section>Logout</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-menu> -->
-            </q-btn>
+              <q-space/>
+
+              <!-- User Profile Button -->
+              <q-btn flat dense class="user-profile-btn">
+                <q-avatar size="32px">
+                  <img src="\img\UserIcon.jpg" />
+                </q-avatar>
+                <div class="q-ml-sm user-info" v-if="$q.screen.gt.md">
+                  <div class="username-bg">{{ userName }}</div>
+                  <div class="text-subtitle2 text-grey user-role">{{ userRole }}</div>
+                </div>
+              </q-btn>
+            </div>
           </q-toolbar>
         </div>
 
@@ -185,9 +218,11 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
 
+const $q = useQuasar()
 const userStore = useUserStore()
 const searchStore = useSearchStore()
 const router = useRouter()
@@ -207,8 +242,10 @@ const notifications = ref([
 const notificationCount = computed(() => notifications.value.length)
 const navItems = [
   { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
+  { name: 'appointment', label: 'Appointment', icon: '\\icons\\appointment.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
   { name: 'documents', label: 'Documents', icon: '\\icons\\book.png' },
+  { name: 'collections', label: 'Collections', icon: '\\icons\\collections.png' },
   { name: 'gallery', label: 'Gallery', icon: '\\icons\\gallery.png' },
 ]
 
@@ -221,13 +258,14 @@ const userRole = computed(() => userProfile.value.role || 'Unknown')
 let hoverTimeout = null
 
 const onDrawerMouseEnter = () => {
+  if ($q.screen.lt.md) return // Don't change mini state on mobile
   if (hoverTimeout) clearTimeout(hoverTimeout)
   miniState.value = false
 }
 
 const onDrawerMouseLeave = () => {
+  if ($q.screen.lt.md) return // Don't change mini state on mobile
   if (hoverTimeout) clearTimeout(hoverTimeout)
-  // Immediate collapse without animation delay
   miniState.value = true
 }
 
@@ -235,6 +273,11 @@ const activeItem = ref('home')
 
 const setActiveItem = (itemName) => {
   activeItem.value = itemName
+
+  // Close mobile drawer when navigating
+  if ($q.screen.lt.md) {
+    drawer.value = false
+  }
 
   if (itemName === 'home') {
     const role = session.user.user_metadata?.role
@@ -272,17 +315,6 @@ const performSearch = async () => {
   }
 }
 
-// Profile and user actions
-// const goToProfile = () => {
-//   console.log('Going to profile...')
-//   router.push('/profile')
-// }
-
-// const goToSettings = () => {
-//   console.log('Going to settings...')
-//   router.push('/settings')
-// }
-
 const handleLogout = async () => {
   try {
     if (confirm('Are you sure you want to logout?')) {
@@ -314,10 +346,14 @@ watch(
       newPath.includes('collection')
     ) {
       activeItem.value = 'home'
+    } else if (newPath.includes('appointment')) {
+      activeItem.value = 'appointment'
     } else if (newPath.includes('artifacts')) {
       activeItem.value = 'artifacts'
     } else if (newPath.includes('documents') || newPath.includes('document-scanner')) {
       activeItem.value = 'documents'
+    } else if (newPath.includes('collections')) {
+      activeItem.value = 'collections'
     } else if (newPath.includes('gallery')) {
       activeItem.value = 'gallery'
     } else {
@@ -326,10 +362,89 @@ watch(
   },
   { immediate: true },
 )
+
+
+
 </script>
 
 <style scoped>
-/* STYLE FOR SIDEBAR (NASA MAIN LAYOUT) */
+/* Mobile Header */
+.mobile-header {
+  background: linear-gradient(135deg, #880000 0%, #660000 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mobile-logo-img {
+  max-height: 40px;
+  max-width: 120px;
+  object-fit: contain;
+}
+
+.mobile-notif-btn {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 50%;
+}
+
+.mobile-close-btn {
+  position: relative;
+  height: 60px;
+}
+
+/* Logo responsive sizing */
+.logo-img {
+  max-width: 200px;
+  max-height: 80px;
+  object-fit: contain;
+  cursor: pointer;
+}
+
+@media (max-width: 599px) {
+  .logo-img {
+    max-width: 150px;
+    max-height: 60px;
+  }
+}
+
+/* SIDEBAR LAYOUT FIX */
+.sidebar-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.logo-section {
+  flex-shrink: 0;
+}
+
+.navigation-section {
+  flex: 1;
+  min-height: 0;
+  padding: 0 8px;
+  /* Only enable scrolling when in mini state or on mobile */
+  overflow-y: visible;
+}
+
+/* Enable scrolling only in mini state on desktop */
+.q-drawer--mini .navigation-section {
+  overflow-y: auto;
+}
+
+/* Enable scrolling on mobile */
+@media (max-width: 1023px) {
+  .navigation-section {
+    overflow-y: auto;
+  }
+}
+
+.logout-section {
+  flex-shrink: 0;
+  padding: 10px;
+  margin-top: auto;
+  background: inherit;
+}
+
+/* SIDEBAR STYLES */
 .sidebar-drawer.q-drawer {
   overflow: hidden;
 }
@@ -352,8 +467,15 @@ watch(
     transform 0.25s ease 0.1s !important;
 }
 
-/* styles for navigation and logout */
-.nav-item,
+/* Navigation and logout items */
+.nav-item {
+  border-radius: 12px;
+  border-radius: 12px;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
 .logout-item {
   margin-bottom: 16px !important;
   border-radius: 12px;
@@ -371,8 +493,8 @@ watch(
 }
 
 .icon-wrapper {
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -390,20 +512,26 @@ watch(
   align-items: center !important;
 }
 
-.text-center .nav-item {
+/* Mini state specific styles */
+.text-center .nav-item,
+.text-center .logout-item {
   justify-content: center !important;
+  padding: 8px !important; /* Reduced padding for mini state */
+  margin-bottom: 16px !important; /* Consistent margin for mini state */
 }
 
-.text-center .nav-item .q-item__section--avatar {
+.text-center .nav-item .q-item__section--avatar,
+.text-center .logout-item .q-item__section--avatar {
   min-width: 60px !important;
   justify-content: center !important;
+  padding-right: 0 !important;
 }
 
 .text-center .q-item__section--main {
   display: none !important;
 }
 
-/* mini state */
+/* Active states */
 .nav-item.q-item--active .icon-wrapper {
   background-color: #880000;
   box-shadow: 0 4px 12px rgba(136, 0, 0, 0.3);
@@ -453,20 +581,36 @@ watch(
   height: 1px;
 }
 
-/* Search styling */
+/* Search toolbar completely responsive */
 .search-toolbar {
   background: transparent !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 8px 16px !important;
+}
+
+.responsive-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 56px;
+}
+
+.search-container {
+  flex: 1;
+  min-width: 200px;
+  max-width: 830px;
 }
 
 .search-input {
-  background: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
   border-radius: 8px;
   backdrop-filter: blur(10px);
+  width: 100%;
 }
 
 .search-input .q-field__control {
-  background: rgba(255, 255, 255, 0.9) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
   border-radius: 8px;
   backdrop-filter: blur(10px);
 }
@@ -479,11 +623,20 @@ watch(
   color: #666 !important;
 }
 
+.desktop-actions {
+  display: flex;
+  align-items: center;
+  gap: 65px;
+  flex-shrink: 0;
+}
+
 /* Notification button styling */
 .notif-btn {
   background-color: #f8f8ff !important;
   width: 40px;
+  height: 40px;
   backdrop-filter: blur(10px);
+  flex-shrink: 0;
 }
 
 .notif-btn:hover {
@@ -504,15 +657,120 @@ watch(
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* User profile button styling */
+/* User profile button responsive */
 .user-profile-btn {
   background-color: #f8f9fa !important;
   border-radius: 10px;
+
+  min-height: 44px;
   width: 282px;
-  padding: 4px 12px !important;
+  display: flex;
+
+  align-items: center;
+
 }
 
 .user-profile-btn:hover {
   background-color: #e9ecef !important;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.username-bg {
+  font-weight: 500;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.user-role {
+  font-size: 12px !important;
+  line-height: 1 !important;
+  margin-top: 2px;
+}
+
+/* Mobile-specific responsive styles */
+@media (max-width: 1439px) {
+  .search-container {
+    max-width: 400px;
+  }
+
+  .username-bg {
+    max-width: 100px;
+  }
+}
+
+@media (max-width: 1199px) {
+  .search-container {
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .search-toolbar {
+    padding: 12px 16px !important;
+  }
+
+  .responsive-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    min-height: auto;
+  }
+
+  .search-container {
+    max-width: none;
+    width: 100%;
+  }
+
+  .desktop-actions {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .user-profile-btn {
+    justify-content: center;
+    min-width: 140px;
+  }
+}
+
+@media (max-width: 599px) {
+  .search-toolbar {
+    padding: 8px 12px !important;
+  }
+
+  .responsive-toolbar {
+    gap: 8px;
+  }
+
+  .user-profile-btn {
+    min-width: 120px;
+    padding: 6px 8px !important;
+  }
+
+  .username-bg {
+    font-size: 13px;
+    max-width: 80px;
+  }
+
+  .user-role {
+    font-size: 11px !important;
+  }
+}
+
+/* Ensure drawer content is scrollable on mobile */
+@media (max-width: 1023px) {
+  .drawer-content {
+    height: 100vh;
+    overflow-y: auto;
+  }
 }
 </style>
