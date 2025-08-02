@@ -62,23 +62,14 @@ const routes = [
         component: () => import('pages/CollectionDetailsPage.vue'),
         meta: { requiresAuth: true, allowedRoles: ['user'] },
       },
+
       {
-        path: 'admin/artifacts',
-        component: () => import('pages/AdminArtifacts.vue'),
-        meta: { requiresAuth: true, allowedRoles: ['admin'] },
-      },
-      {
-        path: 'admin/artifacts/:id',
+        path: 'edit/artifacts/:id',
         name: 'admin-view-artifact',
-        component: () => import('pages/AdminViewArtifacts.vue'),
+        component: () => import('pages/EditViewArtifacts.vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
-      {
-        path: 'admin/artifacts2/:id',
-        name: 'admin-view2-artifact',
-        component: () => import('pages/AdminViewArtifacts(2).vue'),
-        meta: { requiresAuth: true, allowedRoles: ['admin'] },
-      },
+
       {
         path: 'document-scanner',
         name: 'document-scanner',
@@ -112,16 +103,6 @@ const routes = [
         name: 'visitor-register',
         component: () => import('pages/UserVisitorPage.vue'),
       },
-      {
-        path: 'forgot-password',
-        name: 'forgot-password',
-        component: () => import('src/pages/ForgotPassword.vue'),
-      },
-      {
-        path: 'reset-password',
-        name: 'reset-password',
-        component: () => import('src/pages/ResetPassword.vue'),
-      },
     ],
   },
 
@@ -131,14 +112,10 @@ const routes = [
   },
 
   {
-    path: '/forgotpassword',
-    component: () => import('pages/ForgotPage.vue'), // Forgot Password Page
+    path: '/AdminLandingPage',
+    component: () => import('pages/AdminLandingPage.vue'), // Landing Page
   },
 
-  {
-    path: '/resetpassword',
-    component: () => import('pages/ResetPassPage.vue'), // Reset Password Page
-  },
 
   {
     path: '/admin',

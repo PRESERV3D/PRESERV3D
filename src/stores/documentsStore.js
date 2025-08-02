@@ -5,8 +5,8 @@ export const useDocumentsStore = defineStore('documentsStore', {
   state: () => ({
     documents: [],
     filteredDocuments: [],
-    viewCounts: {}, // { [item_id]: view_count }
-    starCounts: {}, // { [item_id]: star_count }
+    viewCounts: {}, // { [id]: views }
+    starCounts: {}, // { [id]: star_count }
   }),
   actions: {
     setDocuments(docs) {

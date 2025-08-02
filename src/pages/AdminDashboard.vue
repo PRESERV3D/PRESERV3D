@@ -133,7 +133,7 @@
                   <div class="fade-title-container" style="max-width: 12rem">
                     <div class="sub-font-2 fade-title">
                       <router-link
-                        :to="{ name: 'view-document', params: { id: item.item_id } }"
+                        :to="{ name: 'view-document', params: { id: item.id } }"
                         class="sub-font-2"
                         style="text-decoration: none"
                       >
@@ -271,8 +271,8 @@ const currentItem = computed(() => recentStore.recentItems[currentIndex.value])
 onMounted(async () => {
   const chartData = await prepareChartData()
   const usersData = await prepareUsersData()
-  const { data: topArts } = await supabase.from('top_artifacts').select('*')
-  const { data: topDocus } = await supabase.from('top_documents').select('*')
+  const { data: topArts } = await supabase.from('artifacts_view').select('*').limit(3)
+  const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
   await recentStore.fetchRecentUploads()
 
   topArtifacts.value = topArts

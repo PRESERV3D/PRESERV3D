@@ -5,7 +5,7 @@ export const useModelStore = defineStore('modelStore', {
   state: () => ({
     models: [],
     filteredModels: [],
-    viewCounts: {}, // { [item_id]: view_count }
+    viewCounts: {}, // { [item_id]: views }
     starCounts: {}, // { [item_id]: star_count }
   }),
   actions: {
