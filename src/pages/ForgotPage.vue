@@ -9,22 +9,29 @@
           <label class="reset-title q-mb-md">Forgot password</label>
           <div class="row q-gutter-md items-center justify-center">
             <label class="labelNames">Email: </label>
-            <q-input filled dense type="email" class="text-box-2" style="width: 30rem" />
+            <q-input
+              filled
+              v-model="email"
+              placeholder="isko@iskolarngbayan.pup.edu.ph"
+              type="email"
+              dense
+              class="text-box-2"
+              style="width: 30rem"
+            />
           </div>
           <div class="row justify-center q-mt-lg">
-            <q-btn label="Submit" class="btn-submit" @click="resetSent = true" no-caps />
+            <q-btn label="Submit" class="btn-submit" @click="sendResetEmail()" no-caps />
           </div>
 
-          <q-dialog v-model="resetSent" persistent>
+          <q-dialog v-model="showDialog" persistent>
             <q-card class="reset-pass-sent">
               <q-card-section class="column items-center">
                 <div class="q-mt-md sub-font-2" style="color: #000000">
-                  A password reset email has been sent to your registered email address. Please
-                  check your inbox.
+                  {{ message }}
                 </div>
               </q-card-section>
               <q-card-actions align="center">
-                <q-btn label="Back" class="btn-save" flat />
+                <q-btn label="Confirm" class="btn-save" flat @click="handleDialogConfirm" />
                 <!-- add logic that must go back to log in (respective log in page: admin/user)-->
               </q-card-actions>
             </q-card>
@@ -37,7 +44,60 @@
 
 <script setup>
 import { ref } from 'vue'
-const resetSent = ref(false)
+import { supabase } from 'boot/supabase'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const email = ref('')
+const message = ref('')
+const showDialog = ref(false)
+const emailSent = ref(false)
+
+// Check if email exists
+async function checkEmail() {
+  const { data, error } = await supabase
+    .from('registered_users')
+    .select('email')
+    .eq('email', email.value)
+    .single()
+
+  if (error) {
+    console.error('Error checking email:', error.message)
+    return false
+  }
+  return data ? true : false
+}
+
+async function sendResetEmail() {
+  const emailExists = await checkEmail()
+  if (!emailExists) {
+    message.value = 'Email not found.'
+    showDialog.value = true
+    return
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email.value, {
+    redirectTo: 'http://localhost:9000/resetpassword',
+  })
+
+  if (error) {
+    message.value = error.message
+    emailSent.value = false
+  } else {
+    message.value =
+      'A password reset email has been sent to your registered email address. Please check your inbox.'
+    emailSent.value = true
+  }
+
+  showDialog.value = true
+}
+
+function handleDialogConfirm() {
+  showDialog.value = false
+  if (emailSent.value) {
+    router.push('/user/login')
+  }
+}
 </script>
 
 <style scoped>

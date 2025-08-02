@@ -39,9 +39,7 @@
       </div>
 
       <div class="text-right full-width no-gutter-top">
-        <router-link to="/user/forgot-password" class="forgot-password-link"
-          >Forgot Password</router-link
-        >
+        <router-link to="/forgotpassword" class="forgot-password-link">Forgot Password</router-link>
       </div>
 
       <div class="column items-center q-pt-md">
@@ -101,7 +99,7 @@ async function loginUser() {
       return
     }
 
-    const { data: profile, error: profileError } = await supabase
+    const { error: profileError } = await supabase
       .from('registered_users')
       .select('*')
       .eq('id', user.id)
@@ -109,8 +107,6 @@ async function loginUser() {
 
     if (profileError) {
       console.warn('Could not load user profile:', profileError.message)
-    } else {
-      console.log('User profile:', profile)
     }
 
     // Redirect based on role
