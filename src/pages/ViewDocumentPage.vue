@@ -727,13 +727,6 @@ onMounted(async () => {
   object-fit: contain;
 }
 
-.edit-delete-btns {
-  display: flex;
-  gap: 1rem;
-  margin-left: auto;
-  margin-right: 2rem;
-}
-
 .summary {
   font-family: 'Poppins', sans-serif;
   font-weight: 400;
