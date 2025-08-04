@@ -85,6 +85,13 @@ const routes = [
       },
 
       {
+        path: 'edit/documents/:id',
+        name: 'admin-view-artifact',
+        component: () => import('pages/EditViewDocument.vue'),
+        meta: { requiresAuth: true, allowedRoles: ['admin'] },
+      },
+
+      {
         path: 'document-scanner',
         name: 'document-scanner',
         component: () => import('pages/DocumentScannerPage.vue'),
@@ -129,7 +136,6 @@ const routes = [
     path: '/AdminLandingPage',
     component: () => import('pages/AdminLandingPage.vue'), // Landing Page
   },
-
 
   {
     path: '/admin',
