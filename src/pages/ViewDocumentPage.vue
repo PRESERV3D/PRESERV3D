@@ -119,7 +119,7 @@
                 <q-card class="related-box">
                   <q-card-section
                     class="column sub-font-3 items-start"
-                    style="font-size: 16px; font-weight: 500"
+                    style="font-size: 16px; font-weight: 700"
                   >
                     Related Links
                   </q-card-section>
@@ -167,7 +167,7 @@
     <q-dialog v-model="dialogOpen">
       <q-card class="add-to-collections">
         <q-card-section class="collection-header">
-          <div class="sub-font-3" style="font-size: 18px; font-weight: 800">
+          <div class="sub-font-3" style="font-size: 18px; font-weight: 700">
             Choose a Collection
           </div>
         </q-card-section>
