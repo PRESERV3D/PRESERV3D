@@ -112,6 +112,34 @@
               <div class="q-ml-md summary">
                 {{ doc.metadata.summary }}
               </div>
+              <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
+              <!-- q-dialog for related links -->
+              <!-- to be edited -->
+              <q-dialog v-model="showRelatedDialog" persistent>
+                <q-card class="related-box">
+                  <q-card-section
+                    class="column sub-font-3 items-start"
+                    style="font-size: 16px; font-weight: 500"
+                  >
+                    Related Links
+                  </q-card-section>
+                  <q-separator />
+                  <q-card-section class="column items-start">
+                    <!-- here are the links -->
+                  </q-card-section>
+                  <q-card-actions align="right">
+                    <q-btn
+                      flat
+                      label="Cancel"
+                      class="sub-font-2"
+                      style="color: #000000"
+                      v-close-popup
+                      no-caps
+                    />
+                    <q-btn label="Save" class="btn-save" flat @click="handleDelete" />
+                  </q-card-actions>
+                </q-card>
+              </q-dialog>
             </div>
             <div class="meta-section">
               <div class="font-label">
@@ -222,6 +250,9 @@ const existingCollectionIds = ref([])
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
+
+//added for related links
+const showRelatedDialog = ref(false)
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)
@@ -725,13 +756,6 @@ onMounted(async () => {
   width: 0.6rem;
   height: 0.6rem;
   object-fit: contain;
-}
-
-.edit-delete-btns {
-  display: flex;
-  gap: 1rem;
-  margin-left: auto;
-  margin-right: 2rem;
 }
 
 .summary {
