@@ -482,8 +482,8 @@ const saveChanges = async () => {
 
       console.log('Changes saved:', model.value)
 
-      // Redirect to admin-view2-artifact page
-      router.push(`/admin/artifacts2/${model.value.id}`)
+      // Redirect to artifacts page
+      router.push(`/artifacts/${model.value.id}`)
     } catch (err) {
       console.error('Unexpected error:', err)
       showNotifyDialog('Error', 'An unexpected error occurred.')

@@ -43,7 +43,7 @@
             :class="[
               selectedFile ? 'box-upload-docuarti' : 'two-box-upload-docuarti',
               'upload-section',
-              { 'drag-over': isDragging }
+              { 'drag-over': isDragging },
             ]"
             @dragover.prevent="onDragOver"
             @dragleave.prevent="onDragLeave"
@@ -128,7 +128,7 @@
       <div class="box-highlights">
         <p class="q-ml-lg title-font-2" style="font-size: 16px">Document Highlights</p>
         <div class="row docs-gap justify-start">
-          <div v-for="(doc, index) in documentsStore.documents.slice(0, 3)" :key="index">
+          <div v-for="(doc, index) in topDocuments" :key="index">
             <div class="row q-mb-lg">
               <q-card class="my-card docCard" style="transform: rotate(-5deg)">
                 <router-link
@@ -139,13 +139,7 @@
                 </router-link>
                 <div class="q-py-xs doc-align-items">
                   <!-- View Icon with Count -->
-                  <q-icon
-                    v-if="!isAdmin"
-                    name="visibility"
-                    color="grey"
-                    size="xs"
-                    class="action-icon"
-                  />
+                  <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
                   <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
 
                   <!-- Star Icon with Count -->
@@ -393,11 +387,11 @@
               <q-dialog v-model="notifyDialogOpen">
                 <q-card class="sucess-add-to-collection">
                   <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-                      notifyDialogTitle
-                    }}</q-card-section>
+                    notifyDialogTitle
+                  }}</q-card-section>
                   <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-                      notifyDialogMessage
-                    }}</q-card-section>
+                    notifyDialogMessage
+                  }}</q-card-section>
                   <q-card-actions>
                     <q-btn flat label="Close" class="btn-save" v-close-popup />
                   </q-card-actions>
@@ -434,6 +428,7 @@ const documentsStore = useDocumentsStore()
 const userStore = useUserStore()
 
 // const category = ref('')
+const topDocuments = ref([])
 const author = ref('')
 const date = ref('')
 const sortOption = ref('Newest')
@@ -464,6 +459,52 @@ const isAdmin = computed(() => userRole === 'admin')
 
 // Initial load
 onMounted(async () => {
+  const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
+
+  // Get user's favorites for top documents too
+  const { data: authData } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (userId) {
+    const { data: favoritesCollection, error: favError } = await supabase
+      .from('collections')
+      .select('collection_id')
+      .eq('user_id', userId)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    let favoriteIds = []
+    if (favoritesCollection && !favError) {
+      const { data: favItems, error: favItemsError } = await supabase
+        .from('collection_items')
+        .select('item_id')
+        .eq('collection_id', favoritesCollection.collection_id)
+        .eq('item_type', 'document')
+
+      if (!favItemsError && favItems) {
+        favoriteIds = favItems.map((i) => i.item_id)
+      }
+    }
+
+    // Enhance topDocuments with starred property
+    const enhancedTopDocs =
+      topDocus?.map((doc) => ({
+        ...doc,
+        starred: favoriteIds.includes(doc.id), // Make sure to use the correct ID field
+        bookmarked: false, // Add this too for consistency
+      })) || []
+
+    topDocuments.value = enhancedTopDocs
+  } else {
+    // If no user, just set without starred property
+    topDocuments.value =
+      topDocus?.map((doc) => ({
+        ...doc,
+        starred: false,
+        bookmarked: false,
+      })) || []
+  }
+
   if (!searchStore.query) {
     await fetchAllDocuments()
   }
@@ -606,7 +647,15 @@ const fetchAllDocuments = async () => {
       console.error('Error fetching favorite items:', favError)
     }
 
+    // Get ALL user collections (for bookmarked check)
+    const { data: allUserCollections, error: allCollError } = await supabase
+      .from('collections')
+      .select('collection_id, collection_name')
+      .eq('user_id', userId)
+
     let favoriteIds = []
+    let bookmarkedIds = []
+
     if (favoritesCollection) {
       const { data: favItems, error: favItemsError } = await supabase
         .from('collection_items')
@@ -619,10 +668,31 @@ const fetchAllDocuments = async () => {
       }
     }
 
+    // Get bookmarked document IDs (from non-Favorites collections)
+    if (allUserCollections && !allCollError) {
+      const nonFavoritesCollections = allUserCollections.filter(
+        (col) => col.collection_name !== 'Favorites',
+      )
+
+      if (nonFavoritesCollections.length > 0) {
+        const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
+
+        const { data: bookmarkedItems, error: bookmarkError } = await supabase
+          .from('collection_items')
+          .select('item_id')
+          .in('collection_id', collectionIds)
+          .eq('item_type', 'document')
+
+        if (!bookmarkError && bookmarkedItems) {
+          bookmarkedIds = [...new Set(bookmarkedItems.map((i) => i.item_id))]
+        }
+      }
+    }
+
     // Add some mock data for demonstration compatibility
     const enhancedDocs = data.map((docs) => ({
       ...docs,
-      bookmarked: false,
+      bookmarked: bookmarkedIds.includes(docs.id),
       starred: favoriteIds.includes(docs.id),
     }))
 
@@ -910,21 +980,27 @@ const handleScan = () => {
   router.push({ name: 'document-scanner' })
 }
 
+// Upload handler
 const handleUpload = async () => {
-  const file = selectedFile.value
-  const fileName = sanitizeFileName(file?.name || '')
-
-  uploading.value = true
-  uploadProgress.value = 0
-
-  if (!file || !file.name.endsWith('.pdf')) {
-    alert('Only .pdf files are allowed.')
-    return
-  }
-
-  loading.value = true
-
   try {
+    if (!selectedFile.value || !selectedFile.value.name.endsWith('.pdf')) {
+      alert('Only .pdf files are allowed.')
+      return
+    }
+
+    // Compress file
+    const compressedFile = await compressPdf(selectedFile.value)
+    if (!compressedFile) {
+      alert('Compression failed. Please try again.')
+      return
+    }
+
+    const fileName = sanitizeFileName(compressedFile.name)
+    uploading.value = true
+    uploadProgress.value = 0
+    loading.value = true
+
+    // Check for existing filename
     const exists = await fileExists(fileName)
     if (exists) {
       alert(`A file named "${fileName}" already exists.`)
@@ -935,31 +1011,44 @@ const handleUpload = async () => {
       if (uploadProgress.value < 90) uploadProgress.value += 1
     }, 200)
 
-    let response = await processFileWithNLP(file, fileName)
+    // NLP processing
+    let response = await processFileWithNLP(compressedFile, fileName)
 
     if (response.data.status === 'ocr_required') {
+      console.log('OCR required, processing...')
       response = await processImageWithOCR(response.data.image_base64, fileName)
     }
-    console.log('NLP Response:', response.data)
-    const nlpData = response.data
 
-    // Generate preview
-    const preview = await generatePdfPreview(file)
+    const nlpData = response.data
+    console.log('NLP Response:', nlpData)
+
+    // Preview image
+    const preview = await generatePdfPreview(compressedFile)
     const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
 
     const previewUploadError = await uploadPreviewImage(preview, previewFileName)
     if (previewUploadError) throw previewUploadError
 
-    const uploadError = await uploadFileToSupabase(file, fileName)
-    if (uploadError) throw uploadError
+    // Upload file
+    try {
+      const uploadError = await uploadFileToSupabase(compressedFile, fileName)
+      if (uploadError) {
+        console.error('Supabase Upload Error:', uploadError)
+        throw uploadError
+      }
+    } catch (err) {
+      console.error('Upload failed (caught):', err.message, err)
+    }
 
     clearInterval(progressInterval)
     uploadProgress.value = 100
 
+    // Get public URLs
     const fileUrl = supabase.storage.from('documents').getPublicUrl(fileName).data.publicUrl
     const previewUrl = supabase.storage.from('pdf-previews').getPublicUrl(previewFileName)
       .data.publicUrl
 
+    // Save metadata
     const { error: dbError } = await saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData)
     if (dbError) {
       console.error('DB error:', dbError)
@@ -967,6 +1056,7 @@ const handleUpload = async () => {
       return
     }
 
+    // Success result
     metadata.value = {
       file_name: fileName,
       file_url: fileUrl,
@@ -987,6 +1077,43 @@ const handleUpload = async () => {
     loading.value = false
     uploadProgress.value = 0
   }
+}
+
+// ADDED: Compress pdf on upload
+import { PDFDocument } from 'pdf-lib'
+
+async function compressPdf(file) {
+  console.log(`Starting PDF compression for: ${file.name}`)
+  const originalSize = file.size
+
+  const arrayBuffer = await file.arrayBuffer()
+  const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true })
+
+  // Remove optional metadata
+  pdfDoc.setTitle('')
+  pdfDoc.setAuthor('')
+  pdfDoc.setSubject('')
+  pdfDoc.setKeywords([])
+  pdfDoc.setProducer('')
+  pdfDoc.setCreator('')
+
+  const compressedBytes = await pdfDoc.save()
+  const compressedFile = new File([compressedBytes], file.name, { type: 'application/pdf' })
+
+  const originalKB = originalSize / 1024
+  const compressedKB = compressedFile.size / 1024
+  const savedKB = originalKB - compressedKB
+
+  console.log(`PDF Compression success: ${file.name}`)
+  console.log(`Original size: ${originalKB.toFixed(2)} KB`)
+  console.log(`Compressed size: ${compressedKB.toFixed(2)} KB`)
+  console.log(
+    `PDF Compression Saved: ${
+      savedKB > 0 ? savedKB.toFixed(2) + ' KB' : 'no space (already optimized)'
+    }`,
+  )
+
+  return compressedFile
 }
 
 const openBookmarkDialog = async (doc, type = 'document') => {
@@ -1107,20 +1234,20 @@ async function saveToSelectedCollections() {
       showNotifyDialog('Notice', message.trim())
     }
 
-    // ADDED: Recheck if document is in any non-Favorites collection
-    const { data: remainingItems, error: recheckError } = await supabase
-      .from('collection_items')
-      .select('collection_id, collections (collection_name)')
-      .eq('item_id', doc.id)
-      .eq('item_type', selectedItemType.value)
+    // // ADDED: Recheck if document is in any non-Favorites collection
+    // const { data: remainingItems, error: recheckError } = await supabase
+    //   .from('collection_items')
+    //   .select('collection_id, collections (collection_name)')
+    //   .eq('item_id', doc.id)
+    //   .eq('item_type', selectedItemType.value)
 
-    if (!recheckError) {
-      doc.bookmarked = remainingItems.some(
-        (item) => item.collections?.collection_name !== 'Favorites',
-      )
-    } else {
-      console.error('Error rechecking bookmark status:', recheckError)
-    }
+    // if (!recheckError) {
+    //   doc.bookmarked = remainingItems.some(
+    //     (item) => item.collections?.collection_name !== 'Favorites',
+    //   )
+    // } else {
+    //   console.error('Error rechecking bookmark status:', recheckError)
+    // }
 
     dialogOpen.value = false
   } catch (err) {

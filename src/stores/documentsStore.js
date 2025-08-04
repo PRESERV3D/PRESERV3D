@@ -5,8 +5,8 @@ export const useDocumentsStore = defineStore('documentsStore', {
   state: () => ({
     documents: [],
     filteredDocuments: [],
-    viewCounts: {}, // { [item_id]: view_count }
-    starCounts: {}, // { [item_id]: star_count }
+    viewCounts: {}, // { [id]: views }
+    starCounts: {}, // { [id]: star_count }
   }),
   actions: {
     setDocuments(docs) {
@@ -21,7 +21,6 @@ export const useDocumentsStore = defineStore('documentsStore', {
     },
     async fetchViewCounts() {
       const { data, error } = await supabase.from('documents_view').select('id, views')
-      console.log('Fetched view counts:', data)
 
       if (error) {
         console.error('Error fetching view counts:', error)
