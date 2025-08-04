@@ -126,6 +126,12 @@ const routes = [
   },
 
   {
+    path: '/AdminLandingPage',
+    component: () => import('pages/AdminLandingPage.vue'), // Landing Page
+  },
+
+
+  {
     path: '/admin',
     component: () => import('layouts/LogInSignUpLayout.vue'),
     children: [
