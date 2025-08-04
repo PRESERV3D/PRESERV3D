@@ -1111,3 +1111,25 @@ document-title-2 {
   transform: translateY(-2px) !important;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
 }
+
+//related links
+
+.link {
+  margin-top: 2rem;
+  font-family: 'Poppins', sans-serif;
+  color: #560505;
+  font-weight: 500;
+  font-size: 16px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.related-box {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  margin-top: 1rem;
+  border-radius: 10px !important;
+  background-color: #fbf4d0;
+  padding: 1rem;
+  text-align: center;
+}
