@@ -13,13 +13,7 @@
       >
         <template v-slot:body-cell-actions>
           <q-td align="center">
-            <router-link
-              to="/appointmentdetails"
-              class="text-primary"
-              style="text-decoration: underline; cursor: pointer"
-            >
-              View More Details
-            </router-link>
+            <router-link to="/appointmentdetails" class="view-more-link"> View More </router-link>
           </q-td>
         </template>
       </q-table>
@@ -220,5 +214,10 @@ const rows = [
 ::v-deep(.my-sticky-header-table .q-table__bottom .q-select__dropdown-icon),
 ::v-deep(.my-sticky-header-table .q-table__bottom .q-field__native) {
   color: white !important;
+}
+
+.view-more-link {
+  color: #880000;
+  text-decoration: underline;
 }
 </style>
