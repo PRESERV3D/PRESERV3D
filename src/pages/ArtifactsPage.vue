@@ -1004,14 +1004,77 @@ function sanitizeFileName(name) {
   return name.replace(/[^\w.-]/g, '_') // Replace all non-alphanumeric/underscore/dot/dash characters with _
 }
 
+// ADDED: Compress GLB
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+
+const loader = new GLTFLoader()
+
+// Setup DRACO loader
+const dracoLoader = new DRACOLoader()
+dracoLoader.setDecoderPath('/draco/') // Ensure you serve decoder files from this path
+loader.setDRACOLoader(dracoLoader)
+
+async function compressGLB(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      const arrayBuffer = e.target.result
+
+      const loader = new GLTFLoader()
+
+      // DRACO decoding setup
+      const dracoLoader = new DRACOLoader()
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/') // CDN
+      loader.setDRACOLoader(dracoLoader)
+
+      loader.parse(
+        arrayBuffer,
+        '',
+        (gltf) => {
+          const exporter = new GLTFExporter()
+
+          exporter.parse(
+            gltf.scene,
+            (result) => {
+              const blob = new Blob([result], { type: 'model/gltf-binary' })
+              resolve(blob)
+            },
+            {
+              binary: true,
+              embedImages: true,
+              animations: gltf.animations,
+              truncateDrawRange: true,
+              includeCustomExtensions: true,
+              dracoOptions: {
+                compressionLevel: 10,
+              },
+            },
+          )
+        },
+        (error) => {
+          reject(error)
+        },
+      )
+    }
+
+    reader.onerror = reject
+    reader.readAsArrayBuffer(file)
+  })
+}
+
 const handleUpload = async () => {
-  const file = selectedFile.value
-  const fileName = sanitizeFileName(file.name)
+  const originalFile = selectedFile.value
+  if (!originalFile) return
+
+  const fileName = sanitizeFileName(originalFile.name)
   uploading.value = true
   uploadProgress.value = 0
 
-  if (!file || !fileName.endsWith('.glb')) {
+  if (!fileName.endsWith('.glb')) {
     alert('Only .glb files are allowed.')
+    uploading.value = false
     return
   }
 
@@ -1019,23 +1082,34 @@ const handleUpload = async () => {
 
   try {
     const alreadyExists = await fileExists(fileName)
-
     if (alreadyExists) {
       alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
+      uploading.value = false
+      loading.value = false
       return
     }
 
-    // Fake progress bar animation
+    console.log(`Starting GLB compression for: ${fileName}`)
+    console.log(`GLB Original size: ${(originalFile.size / 1024).toFixed(2)} KB`)
+
+    const compressedFile = await compressGLB(originalFile)
+
+    console.log(`GLB Compression complete: ${fileName}`)
+    console.log(`GLB Compressed size: ${(compressedFile.size / 1024).toFixed(2)} KB`)
+
+    const saved = (originalFile.size - compressedFile.size) / 1024
+    console.log(`GLB compression saved: ${saved.toFixed(2)} KB`)
+
+    // Progress bar simulation
     const progressInterval = setInterval(() => {
       if (uploadProgress.value < 90) {
         uploadProgress.value += 1
       }
     }, 200)
 
-    // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('artifacts')
-      .upload(`${fileName}`, file, {
+      .upload(fileName, compressedFile, {
         cacheControl: '3600',
         upsert: true,
         contentType: 'model/gltf-binary',
@@ -1044,16 +1118,17 @@ const handleUpload = async () => {
     clearInterval(progressInterval)
     uploadProgress.value = 100
 
-    const { data: urlData } = supabase.storage.from('artifacts').getPublicUrl(`${fileName}`)
-    const fileUrl = urlData.publicUrl
-
     if (uploadError) {
       console.error('Upload error:', uploadError)
       alert('Upload failed.')
+      uploading.value = false
+      loading.value = false
       return
     }
 
-    // Save metadata
+    const { data: urlData } = supabase.storage.from('artifacts').getPublicUrl(fileName)
+    const fileUrl = urlData.publicUrl
+
     const insertData = {
       file_name: fileName,
       file_url: fileUrl,
@@ -1065,7 +1140,6 @@ const handleUpload = async () => {
     if (dbError) {
       console.error('Supabase insert error:', dbError)
       alert('Upload succeeded but metadata failed to save.')
-      return
     } else {
       console.log('Upload Success')
     }
@@ -1075,7 +1149,6 @@ const handleUpload = async () => {
       uploadProgress.value = 0
     }, 1000)
 
-    // Open metadata confirmation dialog
     metadata.value = {
       file_name: fileName,
       file_url: fileUrl,
