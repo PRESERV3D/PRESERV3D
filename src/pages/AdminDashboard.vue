@@ -156,16 +156,18 @@
         <div class="column q-mt-lg items-center">
           <div class="recent-box q-pa-xs column items-center">
             <div class="recent-card">
-              <component
-                :is="isGLB(currentItem?.file_name) ? 'model-viewer' : 'img'"
-                v-bind="
-                  isGLB(currentItem?.file_name)
-                    ? modelViewerProps(currentItem.file_url)
-                    : imgProps(currentItem)
-                "
-                class="q-mx-auto"
-                style="max-width: 200px; max-height: 250px"
-              />
+              <div class="flex flex-center">
+                <component
+                  :is="isGLB(currentItem?.file_name) ? 'model-viewer' : 'img'"
+                  v-bind="
+                    isGLB(currentItem?.file_name)
+                      ? modelViewerProps(currentItem.file_url)
+                      : imgProps(currentItem)
+                  "
+                  class="q-mx-auto"
+                  style="max-width: 200px; max-height: 240px"
+                />
+              </div>
             </div>
             <div class="q-mt-md self-start" style="margin-left: 1rem">
               <div class="fade-title-container" style="max-width: 10rem">
