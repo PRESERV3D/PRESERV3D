@@ -145,7 +145,21 @@
             unelevated
           />
 
-          <q-dialog v-model="showDialog" persistent>
+          <!-- Upload Dialog -->
+          <UploadDialog
+            v-model="showDialog"
+            upload-type="artifacts"
+            accept=".glb"
+            :show-camera="false"
+            :uploading="uploading"
+            :upload-progress="uploadProgress"
+            @file-selected="onFileSelected"
+            @file-dropped="onFileDropped"
+            @upload-click="handleUpload"
+            @cancel-click="handleCancel"
+          />
+
+          <!-- <q-dialog v-model="showDialog" persistent>
             <q-card class="add-documentarti-card">
               <q-card-section
                 class="box-upload-docuarti"
@@ -176,7 +190,7 @@
                   <div class="selected-documentarti-name q-mt-md">
                     {{ selectedFile.name }}
                   </div>
-                  <!-- Upload progress bar -->
+                  // Upload progress bar
                   <q-linear-progress
                     v-if="uploading"
                     :value="uploadProgress / 100"
@@ -216,7 +230,7 @@
                 />
               </q-card-actions>
             </q-card>
-          </q-dialog>
+          </q-dialog> -->
         </div>
       </div>
     </div>
@@ -371,6 +385,7 @@ import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+import UploadDialog from 'src/components/UploadDialog.vue'
 import '@google/model-viewer'
 
 const router = useRouter()
@@ -395,8 +410,8 @@ const dateOptions = ref([])
 // Dialog for upload pop up
 const showDialog = ref(false)
 const selectedFile = ref(null)
-const fileInput = ref(null)
-const isDragging = ref(false)
+// const fileInput = ref(null)
+// const isDragging = ref(false)
 const dialog = ref(false)
 const loading = ref(false)
 const uploading = ref(false)
@@ -968,35 +983,49 @@ const metadata = ref({
   categories: [],
 })
 
-function triggerFileInput() {
-  fileInput.value?.click()
+// function triggerFileInput() {
+//   fileInput.value?.click()
+// }
+
+// function handleFileChange(event) {
+//   const file = event.target.files[0]
+//   if (file) {
+//     selectedFile.value = file
+//   } else {
+//     selectedFile.value = null
+//   }
+// }
+
+// function onDragOver() {
+//   isDragging.value = true
+// }
+
+// function onDragLeave() {
+//   isDragging.value = false
+// }
+
+// function onFileDrop(e) {
+//   isDragging.value = false
+//   const files = e.dataTransfer.files
+//   console.log(files)
+//   if (files.length > 0 && files[0].name.endsWith('.glb')) {
+//     selectedFile.value = files[0]
+//   } else {
+//     alert('Only GLB files are allowed.')
+//   }
+// }
+
+// File selection handlers
+function onFileSelected(file) {
+  selectedFile.value = file
 }
 
-function handleFileChange(event) {
-  const file = event.target.files[0]
-  if (file) {
+function onFileDropped(file) {
+  if (file && file.name.endsWith('.glb')) {
     selectedFile.value = file
   } else {
-    selectedFile.value = null
-  }
-}
-
-function onDragOver() {
-  isDragging.value = true
-}
-
-function onDragLeave() {
-  isDragging.value = false
-}
-
-function onFileDrop(e) {
-  isDragging.value = false
-  const files = e.dataTransfer.files
-  console.log(files)
-  if (files.length > 0 && files[0].name.endsWith('.glb')) {
-    selectedFile.value = files[0]
-  } else {
     alert('Only GLB files are allowed.')
+    selectedFile.value = null
   }
 }
 
