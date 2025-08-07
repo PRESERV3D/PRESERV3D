@@ -34,10 +34,20 @@ export const useSearchStore = defineStore('search', {
         this.results = data
       }
 
+      // Call fetch favorites function to get favorite item IDs
+      const favoriteIds = await this.fetchFavorites(type)
+
+      this.results = data.map((item) => ({
+        ...item,
+        starred: favoriteIds.includes(item.id),
+      }))
+    },
+    async fetchFavorites(type) {
       const { data: authData } = await supabase.auth.getUser()
       const userId = authData?.user?.id
+      if (!userId) return []
 
-      // Fetch Favorites collection items
+      // Fetch favorites collection
       const { data: favoritesCollection, error: favError } = await supabase
         .from('collections')
         .select('collection_id')
@@ -45,28 +55,24 @@ export const useSearchStore = defineStore('search', {
         .eq('collection_name', 'Favorites')
         .maybeSingle()
 
-      if (favError) {
-        console.error('Error fetching favorite items:', favError)
+      if (favError || !favoritesCollection) {
+        console.error('Error fetching favorites collection:', favError)
+        return []
       }
 
-      let favoriteIds = []
+      // Get favorite item IDs
+      const { data: favItems, error: favItemsError } = await supabase
+        .from('collection_items')
+        .select('item_id')
+        .eq('collection_id', favoritesCollection.collection_id)
+        .eq('item_type', type === 'documents' ? 'document' : 'artifact')
 
-      if (favoritesCollection) {
-        const { data: favItems, error: favItemsError } = await supabase
-          .from('collection_items')
-          .select('item_id')
-          .eq('collection_id', favoritesCollection.collection_id)
-          .eq('item_type', this.type === 'documents' ? 'document' : 'artifact')
-
-        if (!favItemsError) {
-          favoriteIds = favItems.map((i) => i.item_id)
-        }
+      if (!favItemsError) {
+        return favItems.map((item) => item.item_id)
+      } else {
+        console.error('Error fetching favorite items:', favItemsError)
+        return []
       }
-
-      this.results = data.map((item) => ({
-        ...item,
-        starred: favoriteIds.includes(item.id),
-      }))
     },
 
     clear() {
