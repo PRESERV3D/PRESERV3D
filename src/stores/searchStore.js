@@ -35,21 +35,20 @@ export const useSearchStore = defineStore('search', {
         this.results = data
       }
 
-      await this.fetchFavorites(type)
+      // Call fetch favorites function to get favorite item IDs
+      const favoriteIds = await this.fetchFavorites(type)
 
       this.results = data.map((item) => ({
         ...item,
-        starred: this.favoriteIds.includes(item.id),
+        starred: favoriteIds.includes(item.id),
       }))
     },
-
     async fetchFavorites(type) {
       const { data: authData } = await supabase.auth.getUser()
       const userId = authData?.user?.id
-
       if (!userId) return []
 
-      // Fetch Favorites collection items
+      // Fetch favorites collection
       const { data: favoritesCollection, error: favError } = await supabase
         .from('collections')
         .select('collection_id')
@@ -58,9 +57,11 @@ export const useSearchStore = defineStore('search', {
         .maybeSingle()
 
       if (favError || !favoritesCollection) {
-        console.error('Error fetching favorite items:', favError)
+        console.error('Error fetching favorites collection:', favError)
+        return []
       }
 
+      // Get favorite item IDs
       const { data: favItems, error: favItemsError } = await supabase
         .from('collection_items')
         .select('item_id')
@@ -68,7 +69,10 @@ export const useSearchStore = defineStore('search', {
         .eq('item_type', type === 'documents' ? 'document' : 'artifact')
 
       if (!favItemsError) {
-        this.favoriteIds = favItems.map((i) => i.item_id)
+        return favItems.map((item) => item.item_id)
+      } else {
+        console.error('Error fetching favorite items:', favItemsError)
+        return []
       }
     },
 
