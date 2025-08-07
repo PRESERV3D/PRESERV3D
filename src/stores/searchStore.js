@@ -6,6 +6,7 @@ export const useSearchStore = defineStore('search', {
     query: '',
     type: '',
     results: [],
+    favoriteIds: [],
   }),
   actions: {
     async search(query, type) {
@@ -34,8 +35,19 @@ export const useSearchStore = defineStore('search', {
         this.results = data
       }
 
+      await this.fetchFavorites(type)
+
+      this.results = data.map((item) => ({
+        ...item,
+        starred: this.favoriteIds.includes(item.id),
+      }))
+    },
+
+    async fetchFavorites(type) {
       const { data: authData } = await supabase.auth.getUser()
       const userId = authData?.user?.id
+
+      if (!userId) return []
 
       // Fetch Favorites collection items
       const { data: favoritesCollection, error: favError } = await supabase
@@ -45,33 +57,26 @@ export const useSearchStore = defineStore('search', {
         .eq('collection_name', 'Favorites')
         .maybeSingle()
 
-      if (favError) {
+      if (favError || !favoritesCollection) {
         console.error('Error fetching favorite items:', favError)
       }
 
-      let favoriteIds = []
+      const { data: favItems, error: favItemsError } = await supabase
+        .from('collection_items')
+        .select('item_id')
+        .eq('collection_id', favoritesCollection.collection_id)
+        .eq('item_type', type === 'documents' ? 'document' : 'artifact')
 
-      if (favoritesCollection) {
-        const { data: favItems, error: favItemsError } = await supabase
-          .from('collection_items')
-          .select('item_id')
-          .eq('collection_id', favoritesCollection.collection_id)
-          .eq('item_type', this.type === 'documents' ? 'document' : 'artifact')
-
-        if (!favItemsError) {
-          favoriteIds = favItems.map((i) => i.item_id)
-        }
+      if (!favItemsError) {
+        this.favoriteIds = favItems.map((i) => i.item_id)
       }
-
-      this.results = data.map((item) => ({
-        ...item,
-        starred: favoriteIds.includes(item.id),
-      }))
     },
 
-    clear() {
+    async clear() {
       this.query = ''
       this.results = []
+
+      await this.fetchFavorites(this.type)
     },
   },
 })
