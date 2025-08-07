@@ -223,7 +223,11 @@
 
     <!-- Three Artifacts per Row Grid -->
     <div class="artifacts-grid">
-      <div v-for="(model, i) in displayedModels" :key="i" class="artifact-card-wrapper">
+      <div
+        v-for="(model, i) in searchStore.query ? searchStore.results : modelStore.models"
+        :key="i"
+        class="artifact-card-wrapper"
+      >
         <q-card class="my-card" rounded bordered>
           <div class="card">
             <model-viewer
