@@ -15,24 +15,17 @@ export const useSearchStore = defineStore('search', {
       const table = this.type === 'documents' ? 'documents_metadata' : 'artifacts_metadata'
 
       let data, error
-      if (this.type === 'documents') {
-        const response = await supabase
-          .from(table)
-          .select('id, file_name, file_url, preview_url, metadata, uploaded_at, updated_at')
-          .ilike('search_text', `%${query}%`)
-        data = response.data
-        error = response.error
-      } else if (this.type === 'artifacts') {
-        const response = await supabase
-          .from(table)
-          .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
-          .ilike('search_text', `%${query}%`)
-        data = response.data
-        error = response.error
-      } else {
-        console.error('Unsupported search type:', this.type)
-        return
-      }
+      const response = await supabase
+        .from(table)
+        .select(
+          type === 'documents'
+            ? 'id, file_name, file_url, preview_url, metadata, uploaded_at, updated_at'
+            : 'id, file_name, file_url, metadata, uploaded_at, updated_at',
+        )
+        .ilike('search_text', `%${query}%`)
+
+      data = response.data
+      error = response.error
 
       if (error) {
         console.error(`Search error in ${this.type}:`, error)
