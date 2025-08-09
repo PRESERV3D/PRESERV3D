@@ -96,16 +96,16 @@
         <div class="search-toolbar q-py-md q-px-md">
           <q-toolbar class="bg-transparent">
             <!-- Search Bar -->
-             <q-select
-  dense
-  outlined
-  v-model="searchType"
-  :options="searchOptions"
-  emit-value
-  map-options
-  style="width: 150px"
-  class="q-mr-md"
-/>
+            <q-select
+              dense
+              outlined
+              v-model="searchType"
+              :options="searchOptions"
+              emit-value
+              map-options
+              style="width: 150px"
+              class="q-mr-md"
+            />
             <q-input
               dense
               outlined
@@ -193,7 +193,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
@@ -285,7 +285,7 @@ const setActiveItem = (itemName) => {
 const searchType = ref('artifacts') // default selection
 const searchOptions = [
   { label: 'Artifacts', value: 'artifacts' },
-  { label: 'Documents', value: 'documents' }
+  { label: 'Documents', value: 'documents' },
 ]
 
 const performSearch = async () => {
@@ -329,7 +329,15 @@ const handleLogout = async () => {
   }
 }
 
-
+onMounted(() => {
+  if (searchType.value) {
+    if (route.name === 'documents') {
+      searchType.value = 'documents'
+    } else if (route.name === 'artifacts') {
+      searchType.value = 'artifacts'
+    }
+  }
+})
 
 // Watch search bar input and run query
 watch(search, async (query) => {
@@ -353,8 +361,10 @@ watch(
       activeItem.value = 'home'
     } else if (newPath.includes('artifacts')) {
       activeItem.value = 'artifacts'
+      searchType.value = 'artifacts'
     } else if (newPath.includes('documents') || newPath.includes('document-scanner')) {
       activeItem.value = 'documents'
+      searchType.value = 'documents'
     } else if (newPath.includes('gallery')) {
       activeItem.value = 'gallery'
     } else {
