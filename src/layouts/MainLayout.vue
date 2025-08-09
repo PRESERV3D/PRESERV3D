@@ -103,7 +103,7 @@
               :options="searchOptions"
               emit-value
               map-options
-              style="width: 150px"
+              style="width: 9.375rem"
               class="q-mr-md"
             />
             <q-input
@@ -116,7 +116,7 @@
               clearable
               clear-icon="close"
               @keyup.enter="performSearch"
-              style="width: 100%; max-width: 830px"
+              style="width: 100%; max-width: 43rem"
             >
               <template v-slot:prepend>
                 <q-icon name="search" @click="performSearch" class="cursor-pointer" />
