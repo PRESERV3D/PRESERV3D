@@ -521,6 +521,17 @@ document-title-2 {
   border-radius: 10px;
 }
 
+.upload-box {
+  width: 11rem;
+  height: 14.5rem;
+  border-radius: 10px;
+  background-color: #ffffff;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
 .upload-icon {
   width: 4rem;
   height: 4rem;
