@@ -295,16 +295,16 @@ const performSearch = async () => {
     return
   }
 
-  // Set store search type
-  await searchStore.search(query, searchType.value)
-  console.log('Search performed:', query, searchType.value)
-
   // Redirect based on selection
   if (searchType.value === 'artifacts') {
     router.push('/artifacts')
   } else if (searchType.value === 'documents') {
     router.push('/documents')
   }
+
+  // Set store search type
+  await searchStore.search(query, searchType.value)
+  console.log('Search performed:', query, searchType.value)
 }
 
 // Profile and user actions

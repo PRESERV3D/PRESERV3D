@@ -22,7 +22,7 @@ export const useSearchStore = defineStore('search', {
             : 'id, file_name, file_url, metadata, uploaded_at, updated_at',
         )
 
-      // exact phrase search (wrapped in "") - working
+      // exact phrase search on all text (wrapped in "") - working
       const exactMatch = query.match(/"(.*?)"/)
       if (exactMatch) {
         supabaseQuery = supabaseQuery.ilike('search_text', `%${exactMatch[1]}%`)
@@ -43,8 +43,10 @@ export const useSearchStore = defineStore('search', {
       //     supabaseQuery = supabaseQuery.ilike('metadata->>title', `%${titleTerm}%`)
       //   }
       // }
+
+      // intitle: keyword (matches exact word on metadata.title) - working
       else if (query.includes('intitle:')) {
-        const titleTerm = query.match(/intitle:([^\s]+)/)?.[1]
+        const titleTerm = query.match(/intitle:([^\n\r]+)/)?.[1]?.trim()
         if (titleTerm) {
           supabaseQuery = supabaseQuery.or(
             `metadata->>title.eq.${titleTerm},` + // exact match
@@ -55,21 +57,13 @@ export const useSearchStore = defineStore('search', {
         }
       }
 
-      // author: keyword (matches metadata.author) - working
+      // author: keyword (matches any author with the keyword on metadata.author) - working
       else if (query.includes('author:')) {
-        const authorTerm = query.match(/author:([^\s]+)/)?.[1]
+        const authorTerm = query.match(/author:([^\n\r]+)/)?.[1]?.trim()
         if (authorTerm) {
           supabaseQuery = supabaseQuery.ilike('metadata->>author', `%${authorTerm}%`)
         }
       }
-
-      // filetype:pdf or *.pdf
-      // else if (query.includes('filetype:') || query.includes('*.')) {
-      //   const fileExt = query.match(/filetype:(\w+)/)?.[1] || query.match(/\*\.(\w+)/)?.[1]
-      //   if (fileExt) {
-      //     supabaseQuery = supabaseQuery.ilike('file_name', `%.${fileExt}`)
-      //   }
-      // }
 
       // date search range (e.g. 2020...2023 / YYYY-MM-DD...YYYY-MM-DD) on metadata.date - working
       else if (query.match(/\d{4}(-\d{2}-\d{2})?\.\.\.\d{4}(-\d{2}-\d{2})?/)) {
