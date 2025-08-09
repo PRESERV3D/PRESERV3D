@@ -37,10 +37,21 @@ export const useSearchStore = defineStore('search', {
       }
 
       // intitle: keyword (matches metadata.title) - working
+      // else if (query.includes('intitle:')) {
+      //   const titleTerm = query.match(/intitle:([^\s]+)/)?.[1]
+      //   if (titleTerm) {
+      //     supabaseQuery = supabaseQuery.ilike('metadata->>title', `%${titleTerm}%`)
+      //   }
+      // }
       else if (query.includes('intitle:')) {
         const titleTerm = query.match(/intitle:([^\s]+)/)?.[1]
         if (titleTerm) {
-          supabaseQuery = supabaseQuery.ilike('metadata->>title', `%${titleTerm}%`)
+          supabaseQuery = supabaseQuery.or(
+            `metadata->>title.eq.${titleTerm},` + // exact match
+              `metadata->>title.ilike.${titleTerm} %,` + // starts with
+              `metadata->>title.ilike.% ${titleTerm},` + // ends with
+              `metadata->>title.ilike.% ${titleTerm} %`, // middle
+          )
         }
       }
 
