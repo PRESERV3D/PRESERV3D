@@ -130,59 +130,63 @@
       const GODOT_THREADS_ENABLED = false
       const engine = new Engine(GODOT_CONFIG)
 
-      // Global variables - declared at top level to avoid scoping issues
-      let pendingModelUrls = null
+      // Global variables
+      let pendingModelMetadata = null
       let godotInstance = null
 
       // Listen for messages from parent window (Vue component)
       window.addEventListener('message', function (event) {
         console.log('Received message from parent:', event.data)
 
-        if (event.data.type === 'load_models' && event.data.urls) {
-          pendingModelUrls = event.data.urls
-          console.log('Stored model URLs for Godot:', pendingModelUrls)
+        // Expect full model metadata (URLs, titles, descriptions, etc.)
+        if (event.data.type === 'load_models' && event.data.models) {
+          pendingModelMetadata = event.data.models
+          console.log('Stored model metadata for Godot:', pendingModelMetadata)
 
-          // If Godot is already loaded, send the URLs immediately
           if (godotInstance) {
-            sendUrlsToGodot()
+            sendMetadataToGodot()
           }
         }
       })
 
-      function sendUrlsToGodot() {
-        if (pendingModelUrls && godotInstance) {
-          console.log('Sending URLs to Godot via RPC:', pendingModelUrls)
+      // Send model metadata to Godot once it's ready
+      function sendMetadataToGodot() {
+        if (!pendingModelMetadata || !godotInstance) return
+
+        console.log('Sending metadata to Godot via RPC:', pendingModelMetadata)
+
+        try {
+          // Store metadata globally
+          window.latestModelData = pendingModelMetadata
+          window.latestModelDataJson = JSON.stringify(pendingModelMetadata)
+
           try {
-            // Store URLs in multiple places for Godot to access
-            window.godotModelUrls = pendingModelUrls
-
-            // Also store as a JSON string that might be easier for Godot to parse
-            window.godotModelUrlsJson = JSON.stringify(pendingModelUrls)
-
-            // Store in localStorage as another backup method
-            try {
-              localStorage.setItem('godotModelUrls', JSON.stringify(pendingModelUrls))
-            } catch (e) {
-              console.log('localStorage not available')
-            }
-
-            console.log('Model URLs stored in multiple locations for Godot to access')
-            console.log('window.godotModelUrls:', window.godotModelUrls)
-            console.log('window.godotModelUrlsJson:', window.godotModelUrlsJson)
-
-            // Try to trigger a custom event that Godot might be able to detect
-            window.dispatchEvent(
-              new CustomEvent('godotModelUrlsReady', {
-                detail: { urls: pendingModelUrls },
-              }),
-            )
-          } catch (error) {
-            console.error('Failed to send URLs to Godot:', error)
+            localStorage.setItem('latestModelData', window.latestModelDataJson)
+          } catch (e) {
+            console.warn('localStorage unavailable:', e)
           }
+
+          window.dispatchEvent(
+            new CustomEvent('godotModelMetadataReady', {
+              detail: { models: pendingModelMetadata },
+            }),
+          )
+        } catch (error) {
+          console.error('Failed to send model metadata to Godot:', error)
         }
       }
 
-      // Parse URL parameters as fallback
+      // When Godot finishes loading, call this:
+      function onGodotLoaded(instance) {
+        godotInstance = instance
+        console.log('Godot instance is ready.')
+
+        if (pendingModelMetadata) {
+          sendMetadataToGodot()
+        }
+      }
+
+      // Optional fallback: Parse ?models=... param from URL
       function getModelUrlsFromParams() {
         const urlParams = new URLSearchParams(window.location.search)
         const modelsParam = urlParams.get('models')
@@ -192,7 +196,6 @@
             return JSON.parse(decodeURIComponent(modelsParam))
           } catch (error) {
             console.error('Failed to parse models parameter:', error)
-            return []
           }
         }
         return []
@@ -313,17 +316,17 @@
               console.log('Godot engine loaded successfully')
 
               // If we have pending URLs from postMessage, send them now
-              if (pendingModelUrls) {
-                console.log('Found pending URLs, sending to Godot:', pendingModelUrls)
-                sendUrlsToGodot()
+              if (pendingModelMetadata) {
+                console.log('Found pending URLs, sending to Godot:', pendingModelMetadata)
+                sendMetadataToGodot()
               } else {
                 // Fallback: try to get URLs from URL parameters
                 console.log('No pending URLs, checking URL parameters...')
                 const urlModelUrls = getModelUrlsFromParams()
                 if (urlModelUrls.length > 0) {
                   console.log('Found URLs in parameters:', urlModelUrls)
-                  pendingModelUrls = urlModelUrls
-                  sendUrlsToGodot()
+                  pendingModelMetadata = urlModelUrls
+                  sendMetadataToGodot()
                 } else {
                   console.log('No URLs found in parameters either')
                 }
