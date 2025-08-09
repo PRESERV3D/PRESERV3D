@@ -95,7 +95,7 @@ const routes = [
         path: 'document-scanner',
         name: 'document-scanner',
         component: () => import('pages/DocumentScannerPage.vue'),
-        // meta: { requiresAuth: true, allowedRoles: ['admin'] },
+        meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
     ],
   },
@@ -135,6 +135,18 @@ const routes = [
   {
     path: '/AdminLandingPage',
     component: () => import('pages/AdminLandingPage.vue'), // Landing Page
+  },
+
+  {
+    path: '/forgotpassword',
+    name: 'forgotpassword',
+    component: () => import('pages/ForgotPage.vue'),
+  },
+
+  {
+    path: '/resetpassword',
+    name: 'resetpassword',
+    component: () => import('pages/ResetPassPage.vue'),
   },
 
   {

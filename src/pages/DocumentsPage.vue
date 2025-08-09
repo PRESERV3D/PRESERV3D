@@ -18,10 +18,25 @@
     </div>
 
     <!-- Upload Dialog -->
-    <q-dialog v-model="showDialog" persistent>
+    <UploadDialog
+      v-model="showDialog"
+      upload-type="documents"
+      accept=".pdf"
+      :show-camera="true"
+      :uploading="uploading"
+      :upload-progress="uploadProgress"
+      :pre-selected-file="selectedFile"
+      @file-selected="onFileSelected"
+      @file-dropped="onFileDropped"
+      @upload-click="handleUpload"
+      @cancel-click="handleCancel"
+      @camera-click="handleScan"
+    />
+
+    <!-- <q-dialog v-model="showDialog" persistent>
       <q-card class="add-documentarti-card">
         <div class="upload-sections-container">
-          <!-- Camera Section -->
+          // Camera Section
           <q-card-section
             class="two-box-upload-docuarti camera-section"
             v-if="!selectedFile"
@@ -38,7 +53,7 @@
             />
           </q-card-section>
 
-          <!-- Upload Section -->
+          // Upload Section
           <q-card-section
             :class="[
               selectedFile ? 'box-upload-docuarti' : 'two-box-upload-docuarti',
@@ -76,7 +91,7 @@
               <div class="selected-document-name q-mt-md">
                 {{ selectedFile.name }}
               </div>
-              <!-- Upload progress bar -->
+              // Upload progress bar
               <q-linear-progress
                 v-if="uploading"
                 :value="uploadProgress / 100"
@@ -97,7 +112,7 @@
         <q-card-actions class="row q-ml-lg justify-between items-center">
           <div></div>
 
-          <!-- Action Buttons -->
+          // Action Buttons
           <div class="action-buttons">
             <q-btn
               v-if="!uploading"
@@ -122,7 +137,8 @@
           />
         </q-card-actions>
       </q-card>
-    </q-dialog>
+    </q-dialog> -->
+
     <!-- Document Highlights Section -->
     <div class="column q-py-md q-gutter-lg">
       <div class="box-highlights">
@@ -420,6 +436,7 @@ import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+import UploadDialog from 'src/components/UploadDialog.vue'
 import Tesseract from 'tesseract.js'
 import axios from 'axios'
 
@@ -428,6 +445,7 @@ const documentsStore = useDocumentsStore()
 const userStore = useUserStore()
 
 // const category = ref('')
+const scannedFile = ref(null)
 const topDocuments = ref([])
 const author = ref('')
 const date = ref('')
@@ -509,11 +527,18 @@ onMounted(async () => {
     await fetchAllDocuments()
   }
 
-  const scannedFile = history.state?.scannedFile
-  if (scannedFile) {
-    selectedFile.value = scannedFile
-    history.replaceState({}, '', '/documents') // Clear the state after using it
+  // Handle scanned file from DocumentScannerPage
+  const routeState = history.state
+  console.log('Route state:', routeState)
+
+  if (routeState?.scannedFile) {
+    console.log('Found scanned file in route state:', routeState.scannedFile)
+    scannedFile.value = routeState.scannedFile
+    selectedFile.value = routeState.scannedFile
     showDialog.value = true
+
+    // Clear the state after using it
+    history.replaceState({}, '', window.location.pathname)
   }
 
   await documentsStore.fetchViewCounts()
@@ -761,8 +786,8 @@ watch(
 )
 
 const selectedFile = ref(null)
-const fileInput = ref(null)
-const isDragging = ref(false)
+// const fileInput = ref(null)
+// const isDragging = ref(false)
 const dialog = ref(false)
 const loading = ref(false)
 const uploading = ref(false)
@@ -886,42 +911,58 @@ async function saveMetadataToDB(fileName, fileUrl, previewUrl, metadata) {
   ])
 }
 
-function triggerFileInput() {
-  fileInput.value?.click()
+// function triggerFileInput() {
+//   fileInput.value?.click()
+// }
+
+// function handleFileChange(event) {
+//   selectedFile.value = event.target.files[0] || null
+// }
+
+// function onDragOver() {
+//   isDragging.value = true
+// }
+
+// function onDragLeave() {
+//   isDragging.value = false
+// }
+
+// function onFileDrop(e) {
+//   isDragging.value = false
+//   const file = e.dataTransfer.files[0]
+//   if (file?.type === 'application/pdf') {
+//     selectedFile.value = file
+//   } else {
+//     alert('Only PDF files are allowed.')
+//     uploading.value = false
+//   }
+// }
+
+// function deleteSelectedFile() {
+//   selectedFile.value = null
+//   isDragging.value = false
+//   uploading.value = false
+//   uploadProgress.value = 0
+// }
+
+// File selection handlers
+function onFileSelected(file) {
+  selectedFile.value = file
 }
 
-function handleFileChange(event) {
-  selectedFile.value = event.target.files[0] || null
-}
-
-function onDragOver() {
-  isDragging.value = true
-}
-
-function onDragLeave() {
-  isDragging.value = false
-}
-
-function onFileDrop(e) {
-  isDragging.value = false
-  const file = e.dataTransfer.files[0]
+function onFileDropped(file) {
+  console.log('File dropped:', file)
   if (file?.type === 'application/pdf') {
-    selectedFile.value = file
+    onFileSelected(file)
   } else {
     alert('Only PDF files are allowed.')
-    uploading.value = false
+    selectedFile.value = null
   }
-}
-
-function deleteSelectedFile() {
-  selectedFile.value = null
-  isDragging.value = false
-  uploading.value = false
-  uploadProgress.value = 0
 }
 
 function handleCancel() {
   selectedFile.value = null
+  scannedFile.value = null // Also clear scanned file
   showDialog.value = false
   uploading.value = false
   uploadProgress.value = 0
@@ -1453,28 +1494,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
   margin-left: 2.5rem;
   margin-bottom: 0.5rem;
   gap: 2rem;
-}
-/* pop-up */
-.upload-sections-container {
-  display: flex;
-  gap: 1rem;
-  width: 100%;
-  justify-content: center;
-}
-
-.two-box-upload-docuarti {
-  width: 16rem;
-  height: 14.5rem;
-  background-color: transparent !important;
-  border: 2px dashed #afafaf !important;
-  border-radius: 15px !important;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  box-sizing: border-box;
 }
 
 .card-wrapper-2 {
