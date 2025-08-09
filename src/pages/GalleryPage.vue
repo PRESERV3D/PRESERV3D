@@ -85,7 +85,7 @@ function startGallery() {
         loading.value = false
         // Add a small delay to ensure Godot is fully initialized
         setTimeout(() => {
-          sendUrlsToGodot()
+          sendURLsToGodot()
         }, 1000)
       })
     }
@@ -97,7 +97,7 @@ function closeGallery() {
   godotIframeSrc.value = ''
 }
 
-function sendUrlsToGodot() {
+function sendURLsToGodot() {
   const iframe = godotIframe.value?.contentWindow
   if (!iframe) {
     console.error('Could not access iframe contentWindow')
@@ -109,12 +109,15 @@ function sendUrlsToGodot() {
     return
   }
 
-  console.log('Sending model URLs to Godot:', modelUrls.value)
+  // Deep clone to remove Proxy wrappers
+  const cleanModelUrls = JSON.parse(JSON.stringify(modelUrls.value))
+
+  console.log('Sending model URLs to Godot:', cleanModelUrls)
 
   iframe.postMessage(
     {
       type: 'load_models',
-      urls: modelUrls.value.map(String), // plain array of strings
+      models: cleanModelUrls,
     },
     '*',
   )
@@ -122,16 +125,13 @@ function sendUrlsToGodot() {
 
 // Load file URLs from Supabase
 async function loadModelUrls() {
-  console.log('Loading model URLs from Supabase...')
   loading.value = true
 
   const { data, error } = await supabase
     .from('artifacts_view')
-    .select('file_url')
+    .select('file_url, title, metadata')
     .order('views', { ascending: false })
-    .limit(3)
-
-  console.log('Supabase query result:', data)
+    .limit(12)
 
   loading.value = false
 
@@ -145,7 +145,14 @@ async function loadModelUrls() {
     return
   }
 
-  modelUrls.value = data.map((item) => item.file_url)
+  modelUrls.value = data.map((item) => ({
+    url: item.file_url,
+    title: item.title ?? 'Untitled',
+    author: item.metadata?.author ?? 'Unknown',
+    summary: item.metadata?.summary ?? 'No summary available',
+    date: item.metadata?.date ?? 'Unknown date',
+  }))
+  console.log('Loaded model URLs:', modelUrls.value.length)
   console.log('Loaded model URLs:', modelUrls.value)
 }
 </script>

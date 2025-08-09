@@ -21,7 +21,6 @@ export const useDocumentsStore = defineStore('documentsStore', {
     },
     async fetchViewCounts() {
       const { data, error } = await supabase.from('documents_view').select('id, views')
-      console.log('Fetched view counts:', data)
 
       if (error) {
         console.error('Error fetching view counts:', error)
