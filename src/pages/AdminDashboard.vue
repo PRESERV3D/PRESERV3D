@@ -222,6 +222,27 @@
         </div>
       </div>
     </div>
+    <!-- <div class="referral-box"></div> -->
+    <div class="q-mt-md">
+      <q-table
+        class="my-sticky-header-table"
+        flat
+        bordered
+        :rows="rows"
+        :columns="columns"
+        row-key="name"
+        :pagination="pagination"
+      >
+        <!-- Custom cell for Document column -->
+        <template v-slot:body-cell-document="props">
+          <q-td :props="props" align="center">
+            <router-link :to="`/documents/${props.row.document}`" class="view-more-link">
+              Downloadable Letter
+            </router-link>
+          </q-td>
+        </template>
+      </q-table>
+    </div>
   </q-page>
 </template>
 
@@ -450,6 +471,65 @@ function imgProps(item) {
     alt,
   }
 }
+
+// sample referral letter data
+
+const pagination = {
+  page: 1,
+  rowsPerPage: 8,
+}
+const columns = [
+  {
+    name: 'name',
+    required: true,
+    label: 'Name',
+    align: 'center',
+    field: (row) => row.name,
+    format: (val) => `${val}`,
+  },
+  {
+    name: 'affiliation',
+    label: 'Affiliation',
+    align: 'center',
+    field: (row) => row.affiliation,
+  },
+  {
+    name: 'document',
+    label: 'Document',
+    align: 'center',
+    field: (row) => row.document,
+  },
+  {
+    name: 'date',
+    label: 'Date Filed',
+    align: 'center',
+    field: (row) => row.date,
+  },
+  {
+    name: 'status',
+    label: 'Status',
+    align: 'center',
+    field: (row) => row.status || 'Pending',
+  },
+]
+
+//FOR EXAMPLE ONLY
+const rows = [
+  {
+    name: 'Juan Dela Cruz',
+    affiliation: 'PUP Manila',
+    document: 'letter_juan.pdf',
+    date: '2025-08-01',
+    status: 'Pending',
+  },
+  {
+    name: 'Maria Clara',
+    affiliation: 'UP Diliman',
+    document: 'letter_maria.pdf',
+    date: '2025-08-02',
+    status: 'Approved',
+  },
+]
 </script>
 
 <style scoped>
@@ -574,5 +654,59 @@ function imgProps(item) {
   height: 24px;
   object-fit: contain;
   pointer-events: none;
+}
+
+/* .referral-box {
+  border-radius: 15px;
+  background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
+  height: 35rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+} */
+
+/*css referral letter*/
+
+.my-sticky-header-table {
+  border-radius: 10px !important;
+  font-family: 'Poppins', sans-serif;
+  height: auto; /* Ensure scrollable height */
+}
+
+/* Color bottom toolbars inside table */
+::v-deep(.my-sticky-header-table .q-table__bottom) {
+  font-size: 14px;
+  background-color: #560505 !important;
+  color: white;
+}
+
+/* Sticky header cells */
+::v-deep(.my-sticky-header-table thead tr th) {
+  padding: 1rem;
+  font-size: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #560505 !important;
+  color: white;
+}
+
+/* When loading (adjust top offset for loading animation if needed) */
+::v-deep(.my-sticky-header-table.q-table--loading thead tr:last-child th) {
+  top: 48px;
+}
+
+/* Prevent content hiding under sticky header on scroll/focus */
+::v-deep(.my-sticky-header-table tbody) {
+  scroll-margin-top: 48px;
+}
+
+::v-deep(.my-sticky-header-table .q-table__bottom .q-btn__content),
+::v-deep(.my-sticky-header-table .q-table__bottom .q-select__dropdown-icon),
+::v-deep(.my-sticky-header-table .q-table__bottom .q-field__native) {
+  color: white !important;
+}
+
+.view-more-link {
+  color: #880000;
+  text-decoration: underline;
 }
 </style>
