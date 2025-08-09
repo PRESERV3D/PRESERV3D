@@ -988,47 +988,10 @@ onMounted(async () => {
   text-align: left;
 }
 
-.func-btn {
-  color: #fbf4d0 !important;
-  background: #880000 !important;
-  border-radius: 5px !important;
-  transition: all 0.3s ease !important;
-  font-family: 'Poppins', sans-serif !important;
-  font-weight: 600 !important;
-  width: 100px !important;
-  min-height: auto !important;
-  padding: 8px 16px !important;
-  margin-left: auto !important;
-}
-
-.func-btn:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
-}
-
 .button-group {
   display: flex;
   align-items: center;
   margin-left: auto;
-}
-
-/* Find More Info button styles */
-.find-more-info-btn {
-  color: black !important;
-  background: #ccac00b2 !important;
-  border-radius: 5px !important;
-  transition: all 0.3s ease !important;
-  font-family: 'Poppins', sans-serif !important;
-  font-weight: 600 !important;
-  width: 140px !important;
-  min-height: auto !important;
-  padding: 8px 16px !important;
-  margin-right: 12px !important;
-}
-
-.find-more-info-btn:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
 @media (max-width: 768px) {
