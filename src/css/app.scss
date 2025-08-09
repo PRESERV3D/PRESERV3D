@@ -435,7 +435,7 @@ document-title-2 {
 .add-documentarti-card {
   width: 100%;
   height: 20rem;
-  border-radius: 15px !important;
+  border-radius: 10px !important;
   background-color: #fbf4d0;
   padding: 1rem;
 }
@@ -509,7 +509,7 @@ document-title-2 {
 .add-collection-card {
   width: 32rem;
   height: 25.5rem;
-  border-radius: 15px !important;
+  border-radius: 10px !important;
   background-color: #fbf4d0;
   padding: 1rem;
 }
@@ -519,6 +519,17 @@ document-title-2 {
   height: 100%;
   object-fit: cover;
   border-radius: 10px;
+}
+
+.upload-box {
+  width: 11rem;
+  height: 14.5rem;
+  border-radius: 10px;
+  background-color: #ffffff;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .upload-icon {
@@ -602,7 +613,7 @@ document-title-2 {
 }
 
 .bookmark-icon.bookmarked {
-  color: #2196F3 !important;
+  color: #2196f3 !important;
 }
 
 // COLLECTION DETAILS PAGE
@@ -1067,4 +1078,69 @@ document-title-2 {
   left: 1rem;
   z-index: 1000;
   color: #880000;
+}
+
+// edit view docs and artifacts
+
+.edit-delete-btns {
+  display: flex;
+  margin-left: auto;
+}
+
+.find-more-info-btn {
+  color: black !important;
+  background: #ccac00b2 !important;
+  border-radius: 5px !important;
+  transition: all 0.3s ease !important;
+  font-family: 'Poppins', sans-serif !important;
+  font-weight: 600 !important;
+  width: 140px !important;
+  min-height: auto !important;
+  padding: 8px 16px !important;
+  margin-right: 12px !important;
+}
+
+.find-more-info-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.func-btn {
+  color: #fbf4d0 !important;
+  background: #880000 !important;
+  border-radius: 5px !important;
+  transition: all 0.3s ease !important;
+  font-family: 'Poppins', sans-serif !important;
+  font-weight: 600 !important;
+  width: 100px !important;
+  min-height: auto !important;
+  padding: 8px 16px !important;
+  margin-left: auto !important;
+}
+
+.func-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+//related links
+
+.link {
+  margin-top: 2rem;
+  font-family: 'Poppins', sans-serif;
+  color: #560505;
+  font-weight: 500;
+  font-size: 16px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.related-box {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  margin-top: 1rem;
+  border-radius: 10px !important;
+  background-color: #fbf4d0;
+  padding: 1rem;
+  text-align: center;
 }
