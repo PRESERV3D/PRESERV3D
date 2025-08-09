@@ -225,20 +225,63 @@
     <!-- <div class="referral-box"></div> -->
     <div class="q-mt-md">
       <q-table
-        class="my-sticky-header-table"
+        class="referral-box"
         flat
         bordered
+        title="Referral Letters"
         :rows="rows"
         :columns="columns"
         row-key="name"
         :pagination="pagination"
       >
-        <!-- Custom cell for Document column -->
+        <!-- Document column -->
         <template v-slot:body-cell-document="props">
           <q-td :props="props" align="center">
             <router-link :to="`/documents/${props.row.document}`" class="view-more-link">
               Downloadable Letter
             </router-link>
+          </q-td>
+        </template>
+
+        <!-- Status column -->
+        <template v-slot:body-cell-status="props">
+          <q-td :props="props" align="center">
+            <div class="status-icons">
+              <!-- If no decision yet, show icons -->
+              <template v-if="!props.row.status">
+                <q-btn
+                  flat
+                  dense
+                  round
+                  class="status-btn"
+                  @click="setStatus(props.row, 'Approved')"
+                >
+                  <q-icon name="check" color="green" size="18px" />
+                </q-btn>
+                <q-btn
+                  flat
+                  dense
+                  round
+                  class="status-btn"
+                  @click="setStatus(props.row, 'Rejected')"
+                >
+                  <q-icon name="close" color="red" size="18px" />
+                </q-btn>
+              </template>
+
+              <!-- If decided, show text -->
+              <template v-else>
+                <span
+                  class="status-text"
+                  :class="{
+                    'text-green': props.row.status === 'Approved',
+                    'text-red': props.row.status === 'Rejected',
+                  }"
+                >
+                  {{ props.row.status === 'Approved' ? 'Accepted' : 'Rejected' }}
+                </span>
+              </template>
+            </div>
           </q-td>
         </template>
       </q-table>
@@ -478,58 +521,45 @@ const pagination = {
   page: 1,
   rowsPerPage: 8,
 }
+
 const columns = [
-  {
-    name: 'name',
-    required: true,
-    label: 'Name',
-    align: 'center',
-    field: (row) => row.name,
-    format: (val) => `${val}`,
-  },
-  {
-    name: 'affiliation',
-    label: 'Affiliation',
-    align: 'center',
-    field: (row) => row.affiliation,
-  },
-  {
-    name: 'document',
-    label: 'Document',
-    align: 'center',
-    field: (row) => row.document,
-  },
-  {
-    name: 'date',
-    label: 'Date Filed',
-    align: 'center',
-    field: (row) => row.date,
-  },
-  {
-    name: 'status',
-    label: 'Status',
-    align: 'center',
-    field: (row) => row.status || 'Pending',
-  },
+  { name: 'name', required: true, label: 'Name', align: 'center', field: (r) => r.name },
+  { name: 'affiliation', label: 'Affiliation', align: 'center', field: (r) => r.affiliation },
+  { name: 'document', label: 'Document', align: 'center', field: (r) => r.document },
+  { name: 'date', label: 'Date Filed', align: 'center', field: (r) => r.date },
+  { name: 'status', label: 'Status', align: 'center', field: (r) => r.status },
 ]
 
-//FOR EXAMPLE ONLY
-const rows = [
+// sample data: note showLabel starts false (no label visible until click)
+const rows = ref([
   {
     name: 'Juan Dela Cruz',
     affiliation: 'PUP Manila',
     document: 'letter_juan.pdf',
     date: '2025-08-01',
-    status: 'Pending',
+    status: null, // null -> no selected icon color
+    showLabel: false, // label hidden until click
   },
   {
     name: 'Maria Clara',
     affiliation: 'UP Diliman',
     document: 'letter_maria.pdf',
     date: '2025-08-02',
-    status: 'Approved',
+    status: 'Approved', // icon will appear colored, but label still hidden
+    showLabel: false,
   },
-]
+])
+
+/**
+ * Set status for a row and show the label.
+ * If you want to POST this change to your backend, do it here (axios/fetch).
+ */
+function setStatus(row, status) {
+  row.status = status
+  row.showLabel = true
+  // Example: send to backend:
+  // axios.post('/api/referral/status', { id: row.id, status }).then(...)
+}
 </script>
 
 <style scoped>
@@ -665,44 +695,34 @@ const rows = [
 
 /*css referral letter*/
 
-.my-sticky-header-table {
+.referral-box {
   border-radius: 10px !important;
   font-family: 'Poppins', sans-serif;
-  height: auto; /* Ensure scrollable height */
+  height: auto;
+  background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
 }
 
-/* Color bottom toolbars inside table */
-::v-deep(.my-sticky-header-table .q-table__bottom) {
+::v-deep(.referral-box .q-table__title) {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  color: #560505;
+  margin-top: 1rem;
+  margin-left: 1.5rem;
+}
+
+::v-deep(.referral-box .q-table__bottom) {
   font-size: 14px;
-  background-color: #560505 !important;
-  color: white;
+  color: black;
 }
 
-/* Sticky header cells */
-::v-deep(.my-sticky-header-table thead tr th) {
+::v-deep(.referral-box thead tr th) {
   padding: 1rem;
   font-size: 14px;
   position: sticky;
   top: 0;
   z-index: 1;
-  background-color: #560505 !important;
-  color: white;
-}
-
-/* When loading (adjust top offset for loading animation if needed) */
-::v-deep(.my-sticky-header-table.q-table--loading thead tr:last-child th) {
-  top: 48px;
-}
-
-/* Prevent content hiding under sticky header on scroll/focus */
-::v-deep(.my-sticky-header-table tbody) {
-  scroll-margin-top: 48px;
-}
-
-::v-deep(.my-sticky-header-table .q-table__bottom .q-btn__content),
-::v-deep(.my-sticky-header-table .q-table__bottom .q-select__dropdown-icon),
-::v-deep(.my-sticky-header-table .q-table__bottom .q-field__native) {
-  color: white !important;
 }
 
 .view-more-link {
