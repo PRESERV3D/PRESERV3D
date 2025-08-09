@@ -96,6 +96,16 @@
         <div class="search-toolbar q-py-md q-px-md">
           <q-toolbar class="bg-transparent">
             <!-- Search Bar -->
+             <q-select
+  dense
+  outlined
+  v-model="searchType"
+  :options="searchOptions"
+  emit-value
+  map-options
+  style="width: 150px"
+  class="q-mr-md"
+/>
             <q-input
               dense
               outlined
@@ -257,18 +267,43 @@ const setActiveItem = (itemName) => {
 }
 
 // Search functionality
+// const performSearch = async () => {
+//   const query = search.value
+//   const currentPath = route.path
+//   const isDocumentsPage = currentPath.includes('/documents')
+
+//   const type = isDocumentsPage ? 'documents' : 'artifacts'
+
+//   if (!query.trim()) {
+//     searchStore.clear()
+//   } else {
+//     await searchStore.search(query, type)
+//     console.log('Search performed:', search.value, type)
+//   }
+// }
+
+const searchType = ref('artifacts') // default selection
+const searchOptions = [
+  { label: 'Artifacts', value: 'artifacts' },
+  { label: 'Documents', value: 'documents' }
+]
+
 const performSearch = async () => {
   const query = search.value
-  const currentPath = route.path
-  const isDocumentsPage = currentPath.includes('/documents')
-
-  const type = isDocumentsPage ? 'documents' : 'artifacts'
-
   if (!query.trim()) {
     searchStore.clear()
-  } else {
-    await searchStore.search(query, type)
-    console.log('Search performed:', search.value, type)
+    return
+  }
+
+  // Set store search type
+  await searchStore.search(query, searchType.value)
+  console.log('Search performed:', query, searchType.value)
+
+  // Redirect based on selection
+  if (searchType.value === 'artifacts') {
+    router.push('/artifacts')
+  } else if (searchType.value === 'documents') {
+    router.push('/documents')
   }
 }
 
@@ -293,6 +328,8 @@ const handleLogout = async () => {
     console.error('Error signing out:', error)
   }
 }
+
+
 
 // Watch search bar input and run query
 watch(search, async (query) => {
