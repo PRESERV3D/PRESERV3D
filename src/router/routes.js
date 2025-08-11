@@ -128,12 +128,12 @@ const routes = [
   },
 
   {
-    path: '/LandingPage',
+    path: '/landing',
     component: () => import('pages/LandingPage.vue'), // Landing Page
   },
 
   {
-    path: '/AdminLandingPage',
+    path: '/admin/landing',
     component: () => import('pages/AdminLandingPage.vue'), // Landing Page
   },
 
