@@ -130,6 +130,34 @@
                   :input-style="{ minHeight: '60px' }"
                 />
               </div>
+              <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
+              <!-- q-dialog for related links -->
+              <!-- to be edited -->
+              <q-dialog v-model="showRelatedDialog" persistent>
+                <q-card class="related-box">
+                  <q-card-section
+                    class="column sub-font-3 items-start"
+                    style="font-size: 16px; font-weight: 700"
+                  >
+                    Related Links
+                  </q-card-section>
+                  <q-separator />
+                  <q-card-section class="column items-start">
+                    <!-- here are the links -->
+                  </q-card-section>
+                  <q-card-actions align="right">
+                    <q-btn
+                      flat
+                      label="Cancel"
+                      class="sub-font-2"
+                      style="color: #000000"
+                      v-close-popup
+                      no-caps
+                    />
+                    <q-btn label="Save" class="btn-save" flat @click="handleDelete" />
+                  </q-card-actions>
+                </q-card>
+              </q-dialog>
             </div>
             <div class="meta-section">
               <div class="font-label">
@@ -220,6 +248,9 @@ import { supabase } from 'boot/supabase'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import { useUserStore } from 'stores/user'
 import { useDocumentsStore } from 'stores/documentsStore'
+
+//
+const showRelatedDialog = ref(false)
 
 const documentsStore = useDocumentsStore()
 
@@ -334,6 +365,8 @@ onMounted(async () => {
   await documentsStore.fetchStarCounts()
   await documentsStore.fetchViewCounts()
 })
+
+//
 </script>
 
 <style scoped>
