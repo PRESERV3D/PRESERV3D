@@ -18,7 +18,7 @@
             style="margin-top: 1.5rem; z-index: 1"
           />
         </div>
-        <div class="col">
+        <div class="q-mt-xl col">
           <q-input
             v-model="doc.metadata.title"
             class="document-title"
@@ -135,7 +135,14 @@
               <div class="font-label">
                 <p><strong>Uploaded At:</strong> {{ formatDate(doc.uploaded_at) }}</p>
                 <p><strong>Updated At:</strong> {{ formatDate(doc.updated_at) }}</p>
-                <p><strong>Date:</strong> {{ doc.metadata.date }}</p>
+                <p>
+                  <strong>Date:</strong>
+                  <q-btn outline dense :label="doc.metadata.date || 'Select Date'" class="q-ml-sm">
+                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                      <q-date v-model="doc.metadata.date" mask="YYYY-MM-DD" />
+                    </q-popup-proxy>
+                  </q-btn>
+                </p>
               </div>
             </div>
           </div>
