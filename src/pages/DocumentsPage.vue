@@ -824,7 +824,7 @@ async function fileExists(fileName) {
   return !!data?.length
 }
 
-async function uploadFileToSupabase(file, fileName) {
+async function uploadFileToStorage(file, fileName) {
   const { error } = await uploadFileToR2(file, 'documents', fileName)
   return error
 }
@@ -870,25 +870,146 @@ async function processFileWithNLP(file, fileName) {
   return await axios.post('http://localhost:8000/process-text', formData)
 }
 
-async function processImageWithOCR(base64Image, fileName) {
-  const result = await Tesseract.recognize(`data:image/png;base64,${base64Image}`, 'eng', {
-    tessedit_char_whitelist:
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,;:!?()[]{}-_"\'',
-  })
+async function processImageWithOCR(base64Image, fileName, options = {}) {
+  try {
+    // Validate inputs
+    if (!base64Image || !fileName) {
+      throw new Error('Base64 image and filename are required')
+    }
 
-  const text = result.data.text
-  console.log('OCR Result:', text)
+    const defaultOptions = {
+      language: 'eng',
+      tessedit_pageseg_mode: 6,
+      tessedit_char_whitelist:
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789' +
+        '.,;:!?()[]{}-_"\'@#$%^&*+=<>/\\|`~°€£¥§',
+      tessedit_ocr_engine_mode: 2,
+      preserve_interword_spaces: 1,
+      tessedit_do_invert: 0,
+      user_defined_dpi: 300,
+    }
 
-  if (!text || text.trim() === '') {
-    alert('OCR failed — no text detected. Please try again.')
-    return
+    const ocrOptions = { ...defaultOptions, ...options }
+    console.log(`Starting OCR processing for: ${fileName}`)
+
+    const imageDataUrl = `data:image/png;base64,${base64Image}`
+
+    // Process with Tesseract
+    let result = await Tesseract.recognize(imageDataUrl, ocrOptions.language, {
+      ...ocrOptions,
+    })
+
+    let extractedText = result.data.text
+
+    // Retry if no text
+    if (!extractedText || extractedText.trim() === '') {
+      console.warn('OCR Result: No text detected — retrying with alternative settings...')
+      result = await Tesseract.recognize(imageDataUrl, ocrOptions.language, {
+        ...ocrOptions,
+        tessedit_pageseg_mode: 3,
+        tessedit_ocr_engine_mode: 1,
+      })
+      extractedText = result.data.text
+    }
+
+    const cleanedText = postProcessText(extractedText)
+
+    console.log('OCR Result:', cleanedText)
+    console.log('Confidence:', result.data.confidence)
+
+    // Skip if no text or confidence < 60
+    if (!cleanedText || cleanedText.trim() === '') {
+      console.warn(`Skipping OCR for ${fileName} — no text detected.`)
+      return null
+    }
+    if (result.data.confidence < 60) {
+      console.warn(`Skipping OCR for ${fileName} — confidence too low (${result.data.confidence}).`)
+      return null
+    }
+
+    logOCRMetrics(result.data)
+
+    const nlpForm = new FormData()
+    nlpForm.append('filename', fileName)
+    nlpForm.append('raw_text', cleanedText)
+    nlpForm.append('ocr_confidence', result.data.confidence.toString())
+    nlpForm.append(
+      'processing_metadata',
+      JSON.stringify({
+        ocrEngine: 'Tesseract',
+        confidence: result.data.confidence,
+        language: ocrOptions.language,
+        timestamp: new Date().toISOString(),
+      }),
+    )
+
+    return await sendToNLPService(nlpForm)
+  } catch (error) {
+    console.error('OCR Processing Error:', error)
+
+    if (error.message.includes('network') || error.code === 'NETWORK_ERROR') {
+      throw new Error('Network error: Unable to connect to processing service')
+    } else if (error.message.includes('timeout')) {
+      throw new Error('Processing timeout: Image too complex or service unavailable')
+    } else {
+      throw new Error(`OCR processing failed: ${error.message}`)
+    }
   }
+}
 
-  const nlpForm = new FormData()
-  nlpForm.append('filename', fileName)
-  nlpForm.append('raw_text', text)
+// Post-process OCR text to improve quality
+function postProcessText(text) {
+  if (!text) return ''
 
-  return await axios.post('http://localhost:8000/process-text', nlpForm)
+  return (
+    text
+      // Fix common OCR errors
+      .replace(/[|]/g, 'l') // Pipe to lowercase L
+      .replace(/0/g, 'O') // Zero to O in contexts where it makes sense
+      .replace(/5/g, 'S') // 5 to S in some contexts
+      .replace(/1/g, 'l') // 1 to lowercase L
+      // Clean up whitespace
+      .replace(/\s+/g, ' ') // Multiple spaces to single space
+      .replace(/\n\s*\n/g, '\n\n') // Clean up line breaks
+      // Remove artifacts
+      .replace(/[^\w\s.,;:!?()[\]{}\-_"'@#$%^&*+=<>/\\|`~°€£¥§\n]/g, '')
+      .trim()
+  )
+}
+
+// Log OCR quality metrics for debugging
+function logOCRMetrics(ocrData) {
+  console.log('OCR Quality Metrics:', {
+    confidence: Math.round(ocrData.confidence),
+    wordCount: ocrData.words ? ocrData.words.length : 0,
+    lineCount: ocrData.lines ? ocrData.lines.length : 0,
+    paragraphCount: ocrData.paragraphs ? ocrData.paragraphs.length : 0,
+  })
+}
+
+// Enhanced NLP service communication with retry logic
+async function sendToNLPService(formData, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await axios.post('http://localhost:8000/process-text', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      return response
+    } catch (error) {
+      console.warn(`NLP Service attempt ${attempt}/${maxRetries} failed:`, error.message)
+
+      if (attempt === maxRetries) {
+        throw error
+      }
+
+      // Exponential backoff
+      const delay = Math.pow(2, attempt) * 1000
+      await new Promise((resolve) => setTimeout(resolve, delay))
+    }
+  }
 }
 
 async function saveMetadataToDB(fileName, fileUrl, previewUrl, metadata) {
@@ -1047,10 +1168,16 @@ const handleUpload = async () => {
 
     // NLP processing
     let response = await processFileWithNLP(compressedFile, fileName)
+    console.log('NLP Response:', response)
 
     if (response.data.status === 'ocr_required') {
       console.log('OCR required, processing...')
-      response = await processImageWithOCR(response.data.image_base64, fileName)
+      for (const page of response.data.pages) {
+        await processImageWithOCR(
+          page.image_base64,
+          `${response.data.filename}_page${page.page_number}.png`,
+        )
+      }
     }
 
     const nlpData = response.data
@@ -1065,7 +1192,7 @@ const handleUpload = async () => {
 
     // Upload file
     try {
-      const uploadError = await uploadFileToSupabase(compressedFile, fileName)
+      const uploadError = await uploadFileToStorage(compressedFile, fileName)
       if (uploadError) {
         console.error('Supabase Upload Error:', uploadError)
         throw uploadError
