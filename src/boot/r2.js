@@ -15,14 +15,23 @@ const r2 = new S3Client({
 
 async function uploadFileToR2(file, folder, fileName) {
   try {
+    const buffer = await file.arrayBuffer()
     const key = `${folder}/${fileName}`
+
+    // Detect file extension and set MIME type
+    const ext = fileName.split('.').pop().toLowerCase()
+    let contentType = file.type || 'application/octet-stream'
+
+    if (ext === 'glb' || ext === 'gltf') {
+      contentType = 'model/gltf-binary'
+    }
 
     await r2.send(
       new PutObjectCommand({
         Bucket: r2BucketName,
         Key: key,
-        Body: file.stream ? file.stream() : file,
-        ContentType: file.type || 'application/octet-stream',
+        Body: buffer,
+        ContentType: contentType,
       }),
     )
 
