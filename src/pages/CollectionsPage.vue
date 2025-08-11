@@ -164,6 +164,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { supabase } from 'boot/supabase'
+import { uploadFileToR2 } from 'boot/r2'
 
 const user = ref({ first_name: '' })
 const collections = ref([])
@@ -278,6 +279,19 @@ async function loadCollections(userId) {
   isLoading.value = false
 }
 
+function handleImageUpload(event) {
+  const file = event.target.files[0]
+  if (!file) return
+
+  newCollection.value.coverFile = file
+
+  const reader = new FileReader()
+  reader.onload = () => {
+    previewImage.value = reader.result
+  }
+  reader.readAsDataURL(file)
+}
+
 function resetForm() {
   newCollectionTitle.value = ''
   newCollectionDesc.value = ''
@@ -304,23 +318,18 @@ async function addCollection() {
     const file = newCollection.value.coverFile
     const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`
 
-    const { error: uploadError } = await supabase.storage
-      .from('collection-covers')
-      .upload(fileName, file)
+    const { error, publicUrl } = await uploadFileToR2(file, 'collection-covers', fileName)
 
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
+    if (error) {
+      console.error('Upload error:', error)
     } else {
-      const { data: publicUrlData } = supabase.storage
-        .from('collection-covers')
-        .getPublicUrl(fileName)
-
-      coverUrl = publicUrlData?.publicUrl ?? ''
+      coverUrl = publicUrl
+      console.log('File uploaded successfully:', coverUrl)
     }
   }
 
   const defaultCover =
-    'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers/preservedcover.png'
+    'https://pub-8c8eb005cca947a7821974e5e66ea477.r2.dev/collection-covers/preservedcover.png'
 
   const { error: insertError } = await supabase.from('collections').insert([
     {

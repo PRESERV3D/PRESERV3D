@@ -1292,7 +1292,7 @@ async function addCollection() {
     }
 
     const defaultCover =
-      'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers/preservedcover.png'
+      'https://pub-8c8eb005cca947a7821974e5e66ea477.r2.dev/collection-covers/preservedcover.png'
 
     const { error: insertError } = await supabase.from('collections').insert([
       {

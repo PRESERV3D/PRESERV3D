@@ -529,7 +529,6 @@ onMounted(async () => {
 
   // Handle scanned file from DocumentScannerPage
   const routeState = history.state
-  console.log('Route state:', routeState)
 
   if (routeState?.scannedFile) {
     console.log('Found scanned file in route state:', routeState.scannedFile)
@@ -884,6 +883,7 @@ async function processImageWithOCR(base64Image, fileName) {
   })
 
   const text = result.data.text
+  console.log('OCR Result:', text)
 
   if (!text || text.trim() === '') {
     alert('OCR failed — no text detected. Please try again.')
@@ -951,7 +951,6 @@ function onFileSelected(file) {
 }
 
 function onFileDropped(file) {
-  console.log('File dropped:', file)
   if (file?.type === 'application/pdf') {
     onFileSelected(file)
   } else {
