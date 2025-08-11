@@ -19,11 +19,21 @@
           />
         </div>
         <div class="col">
-          <h2 class="document-title">{{ doc.metadata.title }}</h2>
+          <q-input
+            v-model="doc.metadata.title"
+            class="document-title"
+            style="font-size: 20px; font-weight: bold; margin-bottom: 2rem"
+            dense
+            outlined
+          />
           <div class="row items-center">
-            <p class="sub-font-3" style="font-size: 16px; margin: 0; max-width: 25rem">
-              {{ doc.metadata.author }}
-            </p>
+            <q-input
+              v-model="doc.metadata.author"
+              class="sub-font-3"
+              style="font-size: 16px; max-width: 25rem"
+              dense
+              outlined
+            />
             <div v-if="isAdmin" class="edit-delete-btns row">
               <q-btn label="Cancel" class="q-mr-md sub-font-3" no-caps flat @click="goBack" />
               <q-btn
@@ -110,8 +120,9 @@
               <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 2rem">
                 Description
               </div>
-              <div class="q-ml-md summary">
+              <div class="summary">
                 <q-input
+                  v-model="doc.metadata.summary"
                   type="textarea"
                   outlined
                   dense
