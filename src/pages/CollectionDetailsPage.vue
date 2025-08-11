@@ -600,6 +600,8 @@ const handleEditImageUpload = async (event) => {
 
   // Update the edit data with the new cover image URL
   editData.value.cover_url = publicUrl
+  console.log('Filename: ', fileName)
+  console.log('Cover image uploaded:', publicUrl)
 }
 
 const openEditDialog = () => {

@@ -387,6 +387,7 @@ import { useModelStore } from 'stores/modelStore'
 import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
+import { uploadFileToR2 } from 'boot/r2'
 import { useRouter } from 'vue-router'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import UploadDialog from 'src/components/UploadDialog.vue'
@@ -1230,20 +1231,13 @@ const handleUpload = async () => {
       }
     }, 200)
 
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from('artifacts')
-      .upload(`${fileName}`, file, {
-        cacheControl: '3600',
-        upsert: true,
-        contentType: 'model/gltf-binary',
-      })
+    // Upload to R2 Storage
+    const { uploadError } = await uploadFileToR2(file, 'artifacts', fileName)
 
     clearInterval(progressInterval)
     uploadProgress.value = 100
 
-    const { data: urlData } = supabase.storage.from('artifacts').getPublicUrl(`${fileName}`)
-    const fileUrl = urlData.publicUrl
+    const fileUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/artifacts/${encodeURIComponent(fileName)}`
 
     if (uploadError) {
       console.error('Upload error:', uploadError)
