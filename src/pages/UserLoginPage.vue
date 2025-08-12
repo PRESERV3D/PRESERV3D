@@ -58,7 +58,7 @@
       </div>
 
       <div class="column items-center q-pt-md">
-        <q-btn label="Log In" type="submit" class="log-in" />
+        <q-btn label="Log In" type="submit" class="log-in" :disable="cooldownActive" />
       </div>
 
       <div class="column items-center q-mt-md">
@@ -74,7 +74,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 // import { useUserStore } from 'src/stores/user'
@@ -200,17 +200,37 @@ async function loginUser() {
 }
 
 function startCooldown(seconds) {
+  const endTime = Date.now() + seconds * 1000
+
+  // Store cooldown end time in localStorage
+  localStorage.setItem('cooldownEndTime', endTime)
+
   cooldownActive.value = true
   cooldownTime.value = seconds
-  cooldownInterval && clearInterval(cooldownInterval)
 
+  cooldownInterval && clearInterval(cooldownInterval)
   cooldownInterval = setInterval(() => {
-    cooldownTime.value--
-    if (cooldownTime.value <= 0) {
+    const remaining = Math.ceil((endTime - Date.now()) / 1000)
+    cooldownTime.value = remaining > 0 ? remaining : 0
+
+    if (remaining <= 0) {
       cooldownActive.value = false
       loginAttempts.value = 0
+      localStorage.removeItem('cooldownEndTime')
       clearInterval(cooldownInterval)
     }
   }, 1000)
 }
+
+onMounted(() => {
+  const savedEndTime = localStorage.getItem('cooldownEndTime')
+  if (savedEndTime) {
+    const remaining = Math.ceil((savedEndTime - Date.now()) / 1000)
+    if (remaining > 0) {
+      startCooldown(remaining)
+    } else {
+      localStorage.removeItem('cooldownEndTime')
+    }
+  }
+})
 </script>
