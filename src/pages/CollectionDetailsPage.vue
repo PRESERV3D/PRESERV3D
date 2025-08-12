@@ -391,7 +391,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useModelStore } from 'stores/modelStore'
 import { useDocumentsStore } from 'stores/documentsStore'
-
+import { uploadFileToR2 } from 'boot/r2'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { uid } from 'quasar'
@@ -587,20 +587,21 @@ const handleEditImageUpload = async (event) => {
   if (!file || !file.type.startsWith('image/')) return
 
   const fileExt = file.name.split('.').pop()
-  const filePath = `collection-covers/${uid()}.${fileExt}`
+  const fileName = `${uid()}.${fileExt}`
 
-  const { error: uploadError } = await supabase.storage
-    .from('collection-covers')
-    .upload(filePath, file, { upsert: true })
+  // Upload to R2
+  const { error, publicUrl } = await uploadFileToR2(file, 'collection-covers', fileName)
 
-  if (uploadError) {
-    console.error(uploadError)
+  if (error) {
+    console.error(error)
     showMessageDialog('Upload Failed', 'Cover image upload failed.')
     return
   }
 
-  const { data: publicData } = supabase.storage.from('collection-covers').getPublicUrl(filePath)
-  editData.value.cover_url = publicData.publicUrl
+  // Update the edit data with the new cover image URL
+  editData.value.cover_url = publicUrl
+  console.log('Filename: ', fileName)
+  console.log('Cover image uploaded:', publicUrl)
 }
 
 const openEditDialog = () => {

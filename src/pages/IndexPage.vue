@@ -421,6 +421,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { supabase } from 'boot/supabase'
+import { uploadFileToR2 } from 'boot/r2'
 import { useRouter } from 'vue-router'
 import { useUserStore } from 'src/stores/user'
 import { useModelStore } from 'stores/modelStore'
@@ -1276,23 +1277,18 @@ async function addCollection() {
       const file = newCollection.value.coverFile
       const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('collection-covers')
-        .upload(fileName, file)
+      const { error, publicUrl } = await uploadFileToR2(file, 'collection-covers', fileName)
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError)
+      if (error) {
+        console.error('Upload error:', error)
       } else {
-        const { data: publicUrlData } = supabase.storage
-          .from('collection-covers')
-          .getPublicUrl(fileName)
-
-        coverUrl = publicUrlData?.publicUrl ?? ''
+        coverUrl = publicUrl
+        console.log('File uploaded successfully:', coverUrl)
       }
     }
 
     const defaultCover =
-      'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers/preservedcover.png'
+      'https://pub-8c8eb005cca947a7821974e5e66ea477.r2.dev/collection-covers/preservedcover.png'
 
     const { error: insertError } = await supabase.from('collections').insert([
       {
