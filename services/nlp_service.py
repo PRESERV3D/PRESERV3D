@@ -49,7 +49,6 @@ async def process_pdf(file: UploadFile = File(None), filename: str = Form(None),
         summary = summarizer(text[:3000])[0]['summary_text']
         keywords = kw_model.extract_keywords(text, top_n=5)
         metadata = extract_metadata(text, filename)
-        categories = classify_text(text)
 
         print("Summary:", summary)
         print("Keywords:", keywords)
@@ -60,33 +59,17 @@ async def process_pdf(file: UploadFile = File(None), filename: str = Form(None),
             "author": metadata.get("author"),
             "date": metadata.get("date"),
             "summary": summary,
-            "keywords": [kw for kw, _ in keywords],
-            "categories": categories,
+            "keywords": [kw for kw, _ in keywords]
         }
     except Exception as e:
         print("NLP error:", str(e))
-    
-# def pdf_preview(pdf_bytes, filename=None):
-#     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-#     print("Generating PDF preview...")
-
-#     if len(doc) == 0:
-#         return {"error": "Empty PDF document"}
-
-#     # Render first page to image
-#     page = doc[0]
-#     pix = page.get_pixmap(dpi=150)
-#     img_bytes = pix.tobytes("png")
-
-#     encoded = base64.b64encode(img_bytes).decode("utf-8")
-#     return encoded if encoded else {"error": "Failed to generate preview"}
 
 def extract_text(pdf_bytes, filename=None):
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     full_text = ""
     print("Extracting text from PDF...")
 
-    for page in doc[:3]:  # Limit to first 3 pages for performance
+    for page in doc[:10]:  # Limit to first 10 pages for performance
         text = page.get_text()
         if text.strip():  # If text exists, use it
             print(f"Extracted text from page {page.number + 1}")
@@ -180,6 +163,3 @@ def extract_metadata(text, filename=None):
         "author": author_str,
         "date": date,
     }
-
-def classify_text(text):
-    return ["Archives", "University Library"]

@@ -434,6 +434,7 @@ import { useDocumentsStore } from 'stores/documentsStore'
 import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
+import { uploadFileToR2 } from 'boot/r2'
 import { useRouter } from 'vue-router'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import UploadDialog from 'src/components/UploadDialog.vue'
@@ -529,7 +530,6 @@ onMounted(async () => {
 
   // Handle scanned file from DocumentScannerPage
   const routeState = history.state
-  console.log('Route state:', routeState)
 
   if (routeState?.scannedFile) {
     console.log('Found scanned file in route state:', routeState.scannedFile)
@@ -825,11 +825,7 @@ async function fileExists(fileName) {
 }
 
 async function uploadFileToSupabase(file, fileName) {
-  const { error } = await supabase.storage.from('documents').upload(fileName, file, {
-    cacheControl: '3600',
-    upsert: true,
-    contentType: 'application/pdf',
-  })
+  const { error } = await uploadFileToR2(file, 'documents', fileName)
   return error
 }
 
@@ -856,16 +852,13 @@ async function generatePdfPreview(file) {
 }
 
 async function uploadPreviewImage(previewDataUrl, previewFileName) {
-  // Remove base64 prefix and convert to binary
+  // Convert base64 PNG data to Blob
   const base64Data = previewDataUrl.replace(/^data:image\/png;base64,/, '')
   const byteArray = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))
   const blob = new Blob([byteArray], { type: 'image/png' })
 
-  // Upload using the correct filename
-  const { error } = await supabase.storage.from('pdf-previews').upload(previewFileName, blob, {
-    contentType: 'image/png',
-    upsert: true,
-  })
+  // Upload to R2 in "pdf-previews" folder
+  const { error } = await uploadFileToR2(blob, 'pdf-previews', previewFileName)
 
   return error
 }
@@ -884,6 +877,7 @@ async function processImageWithOCR(base64Image, fileName) {
   })
 
   const text = result.data.text
+  console.log('OCR Result:', text)
 
   if (!text || text.trim() === '') {
     alert('OCR failed — no text detected. Please try again.')
@@ -951,7 +945,6 @@ function onFileSelected(file) {
 }
 
 function onFileDropped(file) {
-  console.log('File dropped:', file)
   if (file?.type === 'application/pdf') {
     onFileSelected(file)
   } else {
@@ -1085,9 +1078,8 @@ const handleUpload = async () => {
     uploadProgress.value = 100
 
     // Get public URLs
-    const fileUrl = supabase.storage.from('documents').getPublicUrl(fileName).data.publicUrl
-    const previewUrl = supabase.storage.from('pdf-previews').getPublicUrl(previewFileName)
-      .data.publicUrl
+    const fileUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/documents/${encodeURIComponent(fileName)}`
+    const previewUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/pdf-previews/${encodeURIComponent(previewFileName)}`
 
     // Save metadata
     const { error: dbError } = await saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData)

@@ -180,7 +180,6 @@ watch(
   (newFile) => {
     if (newFile) {
       selectedFile.value = newFile
-      console.log('UploadDialog: Pre-selected file set:', newFile.name)
     }
   },
   { immediate: true },
