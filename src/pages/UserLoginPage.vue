@@ -42,6 +42,21 @@
         <router-link to="/forgotpassword" class="forgot-password-link">Forgot Password</router-link>
       </div>
 
+      <!-- Error message -->
+      <!-- Logim attempt counter -->
+      <div
+        v-if="message"
+        :class="messageType === 'error' ? 'text-red' : 'text-green'"
+        class="q-mt-md text-center"
+      >
+        {{ message }}
+      </div>
+
+      <!-- Cooldown Message -->
+      <div v-if="cooldownActive" class="text-red text-center q-mt-sm">
+        Too many failed attempts. Please wait {{ cooldownTime }} seconds before trying again.
+      </div>
+
       <div class="column items-center q-pt-md">
         <q-btn label="Log In" type="submit" class="log-in" />
       </div>
@@ -59,7 +74,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 // import { useUserStore } from 'src/stores/user'
@@ -73,28 +88,58 @@ const form = ref({
 
 const showPassword = ref(false)
 
+// ADDED: Login attempt tracking
+const message = ref('')
+const messageType = ref('')
+const loginAttempts = ref(0)
+const cooldownActive = ref(false)
+const cooldownTime = ref(0)
+const maxAttempts = 3
+const remainingAttempts = computed(() => maxAttempts - loginAttempts.value)
+let cooldownInterval = null
+
 async function loginUser() {
+  if (cooldownActive.value) {
+    return
+  }
+
+  message.value = ''
+  messageType.value = ''
+
   const { email, password } = form.value
 
   try {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      alert(error.message || 'Login failed.')
+      loginAttempts.value++
+
+      if (loginAttempts.value >= maxAttempts) {
+        startCooldown(60) // 60 seconds cooldown
+        messageType.value = 'error'
+        return
+      }
+
+      message.value = `Invalid login credentials. You have ${remainingAttempts.value} attempt/s remaining.`
+      messageType.value = 'error'
       return
     }
 
-    const user = data.user
+    // Reset after success
+    loginAttempts.value = 0
+    cooldownActive.value = false
 
+    const user = data.user
     if (!user) {
-      alert('Login failed. User data not returned.')
+      message.value = 'Login failed. User data not returned.'
+      messageType.value = 'error'
       return
     }
 
     const role = user.user_metadata?.role
-
     if (!role) {
-      alert('Access denied. User role not defined.')
+      message.value = 'Access denied. User role not defined.'
+      messageType.value = 'error'
       await supabase.auth.signOut()
       return
     }
@@ -121,7 +166,7 @@ async function loginUser() {
       await supabase.auth.signOut()
     }
 
-    // ADDED: Ensure Favorites collection exists
+    // Ensure Favorites collection exists
     const { data: favoritesCollection } = await supabase
       .from('collections')
       .select('*')
@@ -152,5 +197,20 @@ async function loginUser() {
     console.error('Login error:', err)
     alert('An unexpected error occurred. Check the console for details.')
   }
+}
+
+function startCooldown(seconds) {
+  cooldownActive.value = true
+  cooldownTime.value = seconds
+  cooldownInterval && clearInterval(cooldownInterval)
+
+  cooldownInterval = setInterval(() => {
+    cooldownTime.value--
+    if (cooldownTime.value <= 0) {
+      cooldownActive.value = false
+      loginAttempts.value = 0
+      clearInterval(cooldownInterval)
+    }
+  }, 1000)
 }
 </script>
