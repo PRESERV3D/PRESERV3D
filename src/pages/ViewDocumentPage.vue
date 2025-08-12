@@ -128,15 +128,7 @@
                     <!-- here are the links -->
                   </q-card-section>
                   <q-card-actions align="right">
-                    <q-btn
-                      flat
-                      label="Cancel"
-                      class="sub-font-2"
-                      style="color: #000000"
-                      v-close-popup
-                      no-caps
-                    />
-                    <q-btn label="Save" class="btn-save" flat @click="handleDelete" />
+                    <q-btn label="Close" class="btn-save" flat v-close-popup />
                   </q-card-actions>
                 </q-card>
               </q-dialog>
