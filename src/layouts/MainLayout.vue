@@ -96,7 +96,7 @@
         <div class="search-toolbar q-py-md q-px-md">
           <q-toolbar class="bg-transparent">
             <!-- Search Bar -->
-            <q-select
+            <!-- <q-select
               dense
               outlined
               v-model="searchType"
@@ -105,6 +105,7 @@
               map-options
               style="width: 9.375rem"
               class="q-mr-md"
+              @keyup.enter="performSearch"
             />
             <q-input
               dense
@@ -120,6 +121,34 @@
             >
               <template v-slot:prepend>
                 <q-icon name="search" @click="performSearch" class="cursor-pointer" />
+              </template>
+            </q-input> -->
+
+            <q-input
+              dense
+              outlined
+              v-model="search"
+              placeholder="Search name, work, year, etc."
+              class="q-mr-md search-input"
+              input-class="text-left"
+              clearable
+              clear-icon="close"
+              @keyup.enter="performSearch"
+              style="width: 100%; max-width: 43rem"
+            >
+              <!-- Prepend slot for dropdown  -->
+              <template v-slot:prepend>
+                <q-select
+                  dense
+                  outlined
+                  borderless
+                  v-model="searchType"
+                  :options="searchOptions"
+                  emit-value
+                  map-options
+                  style="width: 8rem"
+                  @update:model-value="performSearch"
+                />
               </template>
             </q-input>
 
@@ -184,6 +213,11 @@
               </q-menu> -->
             </q-btn>
           </q-toolbar>
+
+          <!-- Show search results heading -->
+          <!-- <div v-if="lastSearchTerm">
+            Search results for: <strong>{{ lastSearchTerm }}</strong>
+          </div> -->
         </div>
 
         <router-view />
@@ -266,22 +300,6 @@ const setActiveItem = (itemName) => {
   }
 }
 
-// Search functionality
-// const performSearch = async () => {
-//   const query = search.value
-//   const currentPath = route.path
-//   const isDocumentsPage = currentPath.includes('/documents')
-
-//   const type = isDocumentsPage ? 'documents' : 'artifacts'
-
-//   if (!query.trim()) {
-//     searchStore.clear()
-//   } else {
-//     await searchStore.search(query, type)
-//     console.log('Search performed:', search.value, type)
-//   }
-// }
-
 const searchType = ref('artifacts') // default selection
 const searchOptions = [
   { label: 'Artifacts', value: 'artifacts' },
@@ -296,15 +314,22 @@ const performSearch = async () => {
   }
 
   // Redirect based on selection
+  let targetRoute = ''
   if (searchType.value === 'artifacts') {
-    router.push('/artifacts')
+    targetRoute = '/artifacts'
   } else if (searchType.value === 'documents') {
-    router.push('/documents')
+    targetRoute = '/documents'
+  }
+
+  if (route.path !== targetRoute) {
+    await router.push(targetRoute) // Wait for navigation to complete
   }
 
   // Set store search type
   await searchStore.search(query, searchType.value)
   console.log('Search performed:', query, searchType.value)
+
+  search.value = ''
 }
 
 // Profile and user actions
@@ -336,6 +361,10 @@ onMounted(() => {
     } else if (route.name === 'artifacts') {
       searchType.value = 'artifacts'
     }
+  }
+
+  if (search.value || searchType.value) {
+    performSearch()
   }
 })
 
@@ -369,6 +398,11 @@ watch(
       activeItem.value = 'gallery'
     } else {
       activeItem.value = ''
+    }
+
+    if (search.value.trim()) {
+      performSearch()
+      search.value = ''
     }
   },
   { immediate: true },
