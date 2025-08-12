@@ -132,7 +132,6 @@
               </div>
               <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
               <!-- q-dialog for related links -->
-              <!-- to be edited -->
               <q-dialog v-model="showRelatedDialog" persistent>
                 <q-card class="related-box">
                   <q-card-section
@@ -142,9 +141,62 @@
                     Related Links
                   </q-card-section>
                   <q-separator />
-                  <q-card-section class="column items-start">
-                    <!-- here are the links -->
-                  </q-card-section>
+                  <div class="q-pt-md q-px-md column items-start">
+                    <!-- Links List with Drag -->
+                    <div
+                      v-for="(link, index) in links"
+                      :key="link.id"
+                      class="row items-center q-mb-xs full-width draggable-item"
+                      draggable="true"
+                      @dragstart="dragStart(index)"
+                      @dragover.prevent
+                      @drop="drop(index)"
+                    >
+                      <!-- Drag handle -->
+                      <q-icon name="menu" class="q-mr-md cursor-pointer" size="xs" color="black" />
+
+                      <!-- Link (inline beside icon) -->
+                      <div class="link-style" @click="openLink(link.url)">
+                        {{ link.url }}
+                      </div>
+
+                      <!-- Spacer pushes delete icon to far right -->
+                      <q-space />
+
+                      <!-- Delete button -->
+                      <q-btn
+                        flat
+                        round
+                        icon="delete"
+                        color="negative"
+                        size="sm"
+                        @click="deleteLink(index)"
+                      />
+                    </div>
+
+                    <!-- Add link input -->
+                    <q-input
+                      v-model="newLink"
+                      placeholder="Add new link"
+                      borderless
+                      dense
+                      class="q-mt-sm"
+                      @keyup.enter="addLink"
+                    >
+                      <template v-slot:prepend>
+                        <q-btn
+                          round
+                          dense
+                          outline
+                          color="black"
+                          icon="add"
+                          size="sm"
+                          @click="addLink"
+                        />
+                      </template>
+                    </q-input>
+                  </div>
+                  <!--Save and Cancel-->
                   <q-card-actions align="right">
                     <q-btn
                       flat
@@ -367,6 +419,33 @@ onMounted(async () => {
 })
 
 //
+const newLink = ref('')
+const links = ref([]) // starts empty
+let draggedIndex = null
+
+function addLink() {
+  if (newLink.value.trim() !== '') {
+    links.value.push({ id: Date.now(), url: newLink.value.trim() })
+    newLink.value = ''
+  }
+}
+
+function deleteLink(index) {
+  links.value.splice(index, 1)
+}
+
+function openLink(url) {
+  window.open(url, '_blank')
+}
+
+function dragStart(index) {
+  draggedIndex = index
+}
+
+function drop(index) {
+  const movedItem = links.value.splice(draggedIndex, 1)[0]
+  links.value.splice(index, 0, movedItem)
+}
 </script>
 
 <style scoped>
