@@ -246,45 +246,63 @@
         <!-- Status column -->
         <template v-slot:body-cell-status="props">
           <q-td :props="props" align="center">
-            <div class="status-icons">
-              <!-- If no decision yet, show icons -->
-              <template v-if="!props.row.status">
-                <q-btn
-                  flat
-                  dense
-                  round
-                  class="status-btn"
-                  @click="setStatus(props.row, 'Approved')"
-                >
-                  <q-icon name="check" color="green" size="18px" />
-                </q-btn>
-                <q-btn
-                  flat
-                  dense
-                  round
-                  class="status-btn"
-                  @click="setStatus(props.row, 'Rejected')"
-                >
-                  <q-icon name="close" color="red" size="18px" />
-                </q-btn>
-              </template>
+            <!-- If no decision yet -->
+            <template v-if="!props.row.status">
+              <q-btn
+                flat
+                dense
+                round
+                class="status-btn"
+                @click="openConfirmDialog(props.row, 'Approved')"
+              >
+                <q-icon name="check" color="green" size="18px" />
+              </q-btn>
+              <q-btn
+                flat
+                dense
+                round
+                class="status-btn"
+                @click="openConfirmDialog(props.row, 'Rejected')"
+              >
+                <q-icon name="close" color="red" size="18px" />
+              </q-btn>
+            </template>
 
-              <!-- If decided, show text -->
-              <template v-else>
-                <span
-                  class="status-text"
-                  :class="{
-                    'text-green': props.row.status === 'Approved',
-                    'text-red': props.row.status === 'Rejected',
-                  }"
-                >
-                  {{ props.row.status === 'Approved' ? 'Accepted' : 'Rejected' }}
-                </span>
-              </template>
-            </div>
+            <!-- If decided -->
+            <template v-else>
+              <span
+                class="status-text"
+                :class="{
+                  'text-green': props.row.status === 'Approved',
+                  'text-red': props.row.status === 'Rejected',
+                }"
+              >
+                {{ props.row.status === 'Approved' ? 'Accepted' : 'Rejected' }}
+              </span>
+            </template>
           </q-td>
         </template>
       </q-table>
+
+      <!-- Confirmation Dialog -->
+      <q-dialog v-model="confirmDialog.show">
+        <q-card class="conf-box">
+          <q-card-section class="sub-font" style="color: black">
+            Are you sure you want to set this referral letter as {{ confirmDialog.action }}?
+          </q-card-section>
+          <q-card-actions align="right">
+            <q-btn
+              flat
+              label="No"
+              class="sub-font-2"
+              style="color: #000000"
+              v-close-popup
+              no-caps
+            />
+            <q-btn flat label="Yes" class="btn-save" @click="confirmAction" />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
     </div>
   </q-page>
 </template>
@@ -550,15 +568,27 @@ const rows = ref([
   },
 ])
 
-/**
- * Set status for a row and show the label.
- * If you want to POST this change to your backend, do it here (axios/fetch).
- */
-function setStatus(row, status) {
-  row.status = status
-  row.showLabel = true
-  // Example: send to backend:
-  // axios.post('/api/referral/status', { id: row.id, status }).then(...)
+// function setStatus(row, status) {
+//   row.status = status
+//   row.showLabel = true
+
+const confirmDialog = ref({
+  show: false,
+  action: '',
+  row: null,
+})
+
+function openConfirmDialog(row, action) {
+  confirmDialog.value.show = true
+  confirmDialog.value.action = action
+  confirmDialog.value.row = row
+}
+
+function confirmAction() {
+  if (confirmDialog.value.row) {
+    confirmDialog.value.row.status = confirmDialog.value.action
+  }
+  confirmDialog.value.show = false
 }
 </script>
 
@@ -728,5 +758,16 @@ function setStatus(row, status) {
 .view-more-link {
   color: #880000;
   text-decoration: underline;
+}
+
+.conf-box {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  margin-top: 1rem;
+  border-radius: 10px !important;
+  background-color: #fbf4d0;
+  padding: 1rem;
+  text-align: center;
+  width: 25rem;
 }
 </style>

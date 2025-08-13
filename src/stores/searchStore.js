@@ -18,8 +18,8 @@ export const useSearchStore = defineStore('search', {
         .from(table)
         .select(
           type === 'documents'
-            ? 'id, file_name, file_url, preview_url, metadata, uploaded_at, updated_at'
-            : 'id, file_name, file_url, metadata, uploaded_at, updated_at',
+            ? 'id, file_name, file_url, preview_url, metadata, uploaded_at, updated_at, uploaded_by, search_text'
+            : 'id, file_name, file_url, metadata, uploaded_at, updated_at, search_text, data_source, donated_by, date_received',
         )
 
       // exact phrase search on all text (wrapped in "") - working
@@ -36,24 +36,18 @@ export const useSearchStore = defineStore('search', {
         }
       }
 
-      // intitle: keyword (matches metadata.title) - working
-      // else if (query.includes('intitle:')) {
-      //   const titleTerm = query.match(/intitle:([^\s]+)/)?.[1]
-      //   if (titleTerm) {
-      //     supabaseQuery = supabaseQuery.ilike('metadata->>title', `%${titleTerm}%`)
-      //   }
-      // }
+      // boolean OR - working
+      else if (query.includes('OR')) {
+        const terms = query.split('OR').map((t) => t.trim())
+        const orConditions = terms.map((term) => `search_text.ilike.%${term}%`).join(',')
+        supabaseQuery = supabaseQuery.or(orConditions)
+      }
 
-      // intitle: keyword (matches exact word on metadata.title) - working
+      // intitle: keyword (matches exact word on metadata.title) - with spaces working but words should be next to each other / not working for word in different order
       else if (query.includes('intitle:')) {
         const titleTerm = query.match(/intitle:([^\n\r]+)/)?.[1]?.trim()
         if (titleTerm) {
-          supabaseQuery = supabaseQuery.or(
-            `metadata->>title.eq.${titleTerm},` + // exact match
-              `metadata->>title.ilike.${titleTerm} %,` + // starts with
-              `metadata->>title.ilike.% ${titleTerm},` + // ends with
-              `metadata->>title.ilike.% ${titleTerm} %`, // middle
-          )
+          supabaseQuery = supabaseQuery.ilike('metadata->>title', `%${titleTerm}%`)
         }
       }
 
@@ -76,13 +70,13 @@ export const useSearchStore = defineStore('search', {
         supabaseQuery = supabaseQuery.gte('metadata->>date', start).lte('metadata->>date', end)
       }
 
-      // truncation (e.g. objecti*) → match word stems - working all text including summary
+      // truncation (e.g. objecti*) → match word stems - working all text including summary tho working on "objecti" "*objecti"
       else if (query.endsWith('*')) {
         const stem = query.slice(0, -1)
         supabaseQuery = supabaseQuery.ilike('search_text', `%${stem}%`)
       }
 
-      // Fallback to default ilike match
+      // Fallback to default ilike match - working but words should be next to each other
       else {
         supabaseQuery = supabaseQuery.ilike('search_text', `%${query}%`)
       }
