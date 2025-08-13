@@ -18,12 +18,22 @@
             style="margin-top: 1.5rem; z-index: 1"
           />
         </div>
-        <div class="col">
-          <h2 class="document-title">{{ doc.metadata.title }}</h2>
+        <div class="q-mt-xl col">
+          <q-input
+            v-model="doc.metadata.title"
+            class="document-title"
+            style="font-size: 20px; font-weight: bold; margin-bottom: 2rem"
+            dense
+            outlined
+          />
           <div class="row items-center">
-            <p class="sub-font-3" style="font-size: 16px; margin: 0; max-width: 25rem">
-              {{ doc.metadata.author }}
-            </p>
+            <q-input
+              v-model="doc.metadata.author"
+              class="sub-font-3"
+              style="font-size: 16px; max-width: 25rem"
+              dense
+              outlined
+            />
             <div v-if="isAdmin" class="edit-delete-btns row">
               <q-btn label="Cancel" class="q-mr-md sub-font-3" no-caps flat @click="goBack" />
               <q-btn
@@ -110,8 +120,9 @@
               <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 2rem">
                 Description
               </div>
-              <div class="q-ml-md summary">
+              <div class="summary">
                 <q-input
+                  v-model="doc.metadata.summary"
                   type="textarea"
                   outlined
                   dense
@@ -119,12 +130,99 @@
                   :input-style="{ minHeight: '60px' }"
                 />
               </div>
+              <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
+              <!-- q-dialog for related links -->
+              <q-dialog v-model="showRelatedDialog" persistent>
+                <q-card class="related-box">
+                  <q-card-section
+                    class="column sub-font-3 items-start"
+                    style="font-size: 16px; font-weight: 700"
+                  >
+                    Related Links
+                  </q-card-section>
+                  <q-separator />
+                  <div class="q-pt-md q-px-md column items-start">
+                    <!-- Links List with Drag -->
+                    <div
+                      v-for="(link, index) in links"
+                      :key="link.id"
+                      class="row items-center q-mb-xs full-width draggable-item"
+                      draggable="true"
+                      @dragstart="dragStart(index)"
+                      @dragover.prevent
+                      @drop="drop(index)"
+                    >
+                      <!-- Drag handle -->
+                      <q-icon name="menu" class="q-mr-md cursor-pointer" size="xs" color="black" />
+
+                      <!-- Link (inline beside icon) -->
+                      <div class="link-style" @click="openLink(link.url)">
+                        {{ link.url }}
+                      </div>
+
+                      <!-- Spacer pushes delete icon to far right -->
+                      <q-space />
+
+                      <!-- Delete button -->
+                      <q-btn
+                        flat
+                        round
+                        icon="delete"
+                        color="negative"
+                        size="sm"
+                        @click="deleteLink(index)"
+                      />
+                    </div>
+
+                    <!-- Add link input -->
+                    <q-input
+                      v-model="newLink"
+                      placeholder="Add new link"
+                      borderless
+                      dense
+                      class="q-mt-sm"
+                      @keyup.enter="addLink"
+                    >
+                      <template v-slot:prepend>
+                        <q-btn
+                          round
+                          dense
+                          outline
+                          color="black"
+                          icon="add"
+                          size="sm"
+                          @click="addLink"
+                        />
+                      </template>
+                    </q-input>
+                  </div>
+                  <!--Save and Cancel-->
+                  <q-card-actions align="right">
+                    <q-btn
+                      flat
+                      label="Cancel"
+                      class="sub-font-2"
+                      style="color: #000000"
+                      v-close-popup
+                      no-caps
+                    />
+                    <q-btn label="Save" class="btn-save" flat @click="handleDelete" />
+                  </q-card-actions>
+                </q-card>
+              </q-dialog>
             </div>
             <div class="meta-section">
               <div class="font-label">
                 <p><strong>Uploaded At:</strong> {{ formatDate(doc.uploaded_at) }}</p>
                 <p><strong>Updated At:</strong> {{ formatDate(doc.updated_at) }}</p>
-                <p><strong>Date:</strong> {{ doc.metadata.date }}</p>
+                <p>
+                  <strong>Date:</strong>
+                  <q-btn outline dense :label="doc.metadata.date || 'Select Date'" class="q-ml-sm">
+                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                      <q-date v-model="doc.metadata.date" mask="YYYY-MM-DD" />
+                    </q-popup-proxy>
+                  </q-btn>
+                </p>
               </div>
             </div>
           </div>
@@ -202,6 +300,9 @@ import { supabase } from 'boot/supabase'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import { useUserStore } from 'stores/user'
 import { useDocumentsStore } from 'stores/documentsStore'
+
+//
+const showRelatedDialog = ref(false)
 
 const documentsStore = useDocumentsStore()
 
@@ -316,6 +417,35 @@ onMounted(async () => {
   await documentsStore.fetchStarCounts()
   await documentsStore.fetchViewCounts()
 })
+
+//
+const newLink = ref('')
+const links = ref([]) // starts empty
+let draggedIndex = null
+
+function addLink() {
+  if (newLink.value.trim() !== '') {
+    links.value.push({ id: Date.now(), url: newLink.value.trim() })
+    newLink.value = ''
+  }
+}
+
+function deleteLink(index) {
+  links.value.splice(index, 1)
+}
+
+function openLink(url) {
+  window.open(url, '_blank')
+}
+
+function dragStart(index) {
+  draggedIndex = index
+}
+
+function drop(index) {
+  const movedItem = links.value.splice(draggedIndex, 1)[0]
+  links.value.splice(index, 0, movedItem)
+}
 </script>
 
 <style scoped>
