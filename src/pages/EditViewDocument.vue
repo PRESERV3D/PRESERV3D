@@ -36,7 +36,7 @@
             />
             <div v-if="isAdmin" class="edit-delete-btns row">
               <q-btn label="Cancel" class="q-mr-md sub-font-3" no-caps flat @click="goBack" />
-              <q-btn
+              <!-- <q-btn
                 flat
                 no-caps
                 dense
@@ -49,7 +49,7 @@
                     doc.metadata.categories,
                   )
                 "
-              />
+              /> -->
               <q-btn
                 flat
                 no-caps
