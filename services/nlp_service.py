@@ -3,6 +3,8 @@ import spacy
 import re
 import os
 import base64
+import json
+import subprocess
 from fastapi import FastAPI, UploadFile, File, Form
 from transformers import pipeline
 from keybert import KeyBERT
@@ -440,7 +442,20 @@ def extract_institutional_metadata(text, filename=None):
         "organization": ', '.join(organizations) if organizations else "Unknown",
     }
 
-# Replace the original extract_metadata function
 def extract_metadata(text, filename=None):
-    """Main metadata extraction function - now enhanced for institutional documents"""
     return extract_institutional_metadata(text, filename)
+
+@app.get("/related-links")
+async def related_links(title: str, author: str = "", categories: str = ""):
+    try:
+        result = subprocess.run(
+            ["node", "web_scraper.js", title, author, categories],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return json.loads(result.stdout)
+    except subprocess.CalledProcessError as e:
+        return {"error": e.stderr or "Puppeteer script failed"}
+    except json.JSONDecodeError:
+        return {"error": "Invalid JSON from Puppeteer"}
