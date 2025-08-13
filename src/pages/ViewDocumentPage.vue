@@ -126,6 +126,16 @@
                   <q-separator />
                   <q-card-section class="column items-start">
                     <!-- here are the links -->
+                    <div
+                      v-for="link in links"
+                      :key="link.id"
+                      class="row items-center q-mb-xs full-width"
+                      @click="openLink(link.url)"
+                    >
+                      <div class="link-style" @click="openLink(link.url)">
+                        {{ link.title || link.url }}
+                      </div>
+                    </div>
                   </q-card-section>
                   <q-card-actions align="right">
                     <q-btn label="Close" class="btn-save" flat v-close-popup />
@@ -245,6 +255,7 @@ const notifyDialogMessage = ref('')
 
 //added for related links
 const showRelatedDialog = ref(false)
+const links = ref([])
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)
@@ -255,12 +266,13 @@ function formatDate(dateStr) {
 }
 
 async function handleEdit() {
-  metadata.value = {
-    ...doc.value.metadata,
-    file_name: doc.value.file_name,
-  }
+  // metadata.value = {
+  //   ...doc.value.metadata,
+  //   file_name: doc.value.file_name,
+  // }
 
-  dialog.value = true
+  // dialog.value = true
+  router.push({ name: 'edit-document', params: { id: doc.value.id } })
 }
 
 async function saveMetadata(newMetadata) {
@@ -603,6 +615,14 @@ onMounted(async () => {
       bookmarked: false,
       starred: false,
     }
+
+    if (data.related_links && Array.isArray(data.related_links)) {
+      links.value = data.related_links.map((link, idx) => ({
+        id: link.id || Date.now() + idx,
+        title: link.title,
+        url: link.url,
+      }))
+    }
   }
 
   loading.value = false
@@ -636,6 +656,10 @@ onMounted(async () => {
   await documentsStore.fetchStarCounts()
   await documentsStore.fetchViewCounts()
 })
+
+function openLink(url) {
+  window.open(url, '_blank')
+}
 </script>
 
 <style scoped>
