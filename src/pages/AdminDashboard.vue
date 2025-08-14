@@ -290,7 +290,8 @@
           <q-card-section class="sub-font" style="color: black">
             Are you sure you want to set this referral letter as {{ confirmDialog.action }}?
           </q-card-section>
-          <q-card-actions align="right">
+          <q-card-actions align="center">
+            <q-btn flat label="Yes" class="btn-save" @click="confirmAction" />
             <q-btn
               flat
               label="No"
@@ -299,7 +300,6 @@
               v-close-popup
               no-caps
             />
-            <q-btn flat label="Yes" class="btn-save" @click="confirmAction" />
           </q-card-actions>
         </q-card>
       </q-dialog>
