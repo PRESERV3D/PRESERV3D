@@ -1,23 +1,39 @@
 <template>
   <q-page class="q-pa-md column items-center justify-start">
     <!-- Camera & Canvas Area -->
-    <div class="relative-position">
+
+    <div class="q-mt-lg items-center justify-center">
       <video ref="video" autoplay muted playsinline class="camera-preview" style="display: none" />
       <canvas ref="canvas" style="display: none" />
-      <canvas ref="resultCanvas" class="result-canvas" style="display: none" />
     </div>
+    <div class="camera-position">
+      <canvas ref="resultCanvas" class="result-canvas" style="display: none" />
 
-    <!-- Buttons -->
-    <div class="q-mt-md row q-gutter-sm">
-      <q-btn v-if="showTake" label="TAKE PHOTO" color="deep-orange-10" @click="takePhoto" />
-      <q-btn v-if="showTake" label="CHOOSE IMAGES" color="purple" @click="openFileInput" />
-      <q-btn v-if="showTransform" label="TRANSFORM" color="amber" @click="transformDocument" />
-      <q-btn v-if="showRetake" label="RETAKE" color="warning" @click="resetScan" />
-      <q-btn v-if="showSave" label="ROTATE" color="blue" @click="rotateTransformedImage" />
-      <q-btn v-if="showSave" label="SAVE" color="positive" @click="saveImage" />
+      <!-- Buttons -->
+      <div class="buttons-row">
+        <!-- RETAKE buttons moves to the left is result canva is shown -->
+        <div class="left-buttons" v-if="showRetake && showSave">
+          <q-btn label="RETAKE" class="btn2" @click="resetScan" />
+        </div>
+
+        <!-- Center group: used when resultCanvas is hidden -->
+        <div class="center-buttons" v-if="!showSave">
+          <q-btn v-if="showTake" label="TAKE PHOTO" class="btn1" @click="takePhoto" />
+          <q-btn v-if="showTake" label="CHOOSE IMAGES" class="btn2" @click="openFileInput" />
+          <q-btn v-if="showTransform" label="TRANSFORM" class="btn1" @click="transformDocument" />
+          <q-btn v-if="showRetake" label="RETAKE" class="btn2" @click="resetScan" />
+        </div>
+
+        <!-- Right side is ROTATE & SAVE -->
+        <div class="right-buttons" v-if="showSave">
+          <q-btn label="ROTATE" flat color="primary" @click="rotateTransformedImage" />
+          <q-btn label="SAVE" style="background-color: #408f4c; color: white" @click="saveImage" />
+        </div>
+      </div>
     </div>
 
     <!-- Hidden file input -->
+
     <input
       ref="fileInput"
       type="file"
@@ -49,7 +65,7 @@
       label="Export as PDF"
       color="primary"
       @click="openExportDialog"
-      class="q-mt-md"
+      class="q-mt-lg export"
     />
 
     <!-- Export Dialog -->
@@ -707,5 +723,52 @@ canvas {
 
 .thumbnail-wrapper:hover .thumbnail-delete {
   opacity: 1;
+}
+
+/* buttons */
+.export,
+.buttons-row {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+}
+
+.btn1 {
+  background: #880000;
+  color: white;
+}
+
+.btn2 {
+  background: #ccac00b2 !important;
+}
+
+.camera-position {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.buttons-row {
+  width: 30vw; /* same as result canvas */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1em;
+}
+
+.left-buttons {
+  display: flex;
+  gap: 0.5em;
+}
+
+.center-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.5em;
+  margin: 0 auto;
+}
+
+.right-buttons {
+  display: flex;
+  gap: 0.5em;
 }
 </style>
