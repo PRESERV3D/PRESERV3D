@@ -86,7 +86,7 @@ const routes = [
 
       {
         path: 'edit/documents/:id',
-        name: 'admin-view-document',
+        name: 'edit-document',
         component: () => import('pages/EditViewDocument.vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
