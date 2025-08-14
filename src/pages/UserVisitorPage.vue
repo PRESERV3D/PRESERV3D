@@ -64,14 +64,22 @@
 
       <div v-if="step === 2">
         <div class="column q-gutter-sm">
-          <label class="labelNames">Affiliation</label>
-          <q-input
-            dense
-            v-model="form.first_name"
-            lazy-rules
-            :rules="[(val) => !!val || 'Please enter your first name.']"
-            class="text-box"
-          />
+          <div class="row q-mt-lg">
+            <div class="col">
+              <label class="labelNames">Institution</label>
+              <q-input
+                dense
+                v-model="form.first_name"
+                lazy-rules
+                :rules="[(val) => !!val || 'Please enter your institution.']"
+                class="text-box-2"
+              />
+            </div>
+            <div class="col q-ml-md">
+              <label class="labelNames">Purpose</label>
+              <q-input filled dense v-model="form.purpose" class="text-box-2" />
+            </div>
+          </div>
 
           <div class="row q-my-md items-center justify-between">
             <label class="labelNames">Request/Referral Letter:</label>
@@ -225,7 +233,8 @@
 
         <div class="subtitle-logsign text-center" style="max-width: 360px; margin: 0 auto">
           Your request has been sent. Please allow 3–5 business days for processing.
-          <div class="q-mt-xl">
+          <div class="inquiries">For more inquiries, contact <b>preserv3d@gmail.com</b></div>
+          <div class="q-mt-lg">
             <!-- change this route to landing page -->
             <router-link to="/user/login" class="sub-font"> Back to Log In </router-link>
           </div>
@@ -331,5 +340,11 @@ const showDialog = ref(false)
 
 .sub-font {
   text-decoration: none;
+}
+
+.inquiries {
+  margin-top: 2rem;
+  font-size: 14px;
+  font-weight: 500;
 }
 </style>
