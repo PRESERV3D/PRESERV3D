@@ -27,7 +27,7 @@
         <!-- Right side is ROTATE & SAVE -->
         <div class="right-buttons" v-if="showSave">
           <q-btn label="ROTATE" flat color="primary" @click="rotateTransformedImage" />
-          <q-btn label="SAVE" color="positive" @click="saveImage" />
+          <q-btn label="SAVE" style="background-color: #408f4c; color: white" @click="saveImage" />
         </div>
       </div>
     </div>
