@@ -299,6 +299,35 @@
             <p class="a-info-text">{{ model.metadata.summary }}</p>
           </div>
 
+          <!-- Related Links -->
+          <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
+          <q-dialog v-model="showRelatedDialog" persistent>
+            <q-card class="related-box">
+              <q-card-section
+                class="column sub-font-3 items-start"
+                style="font-size: 16px; font-weight: 700"
+              >
+                Related Links
+              </q-card-section>
+              <q-separator />
+              <q-card-section class="column items-start">
+                <div
+                  v-for="link in links"
+                  :key="link.id"
+                  class="row items-center q-mb-xs full-width"
+                  @click="openLink(link.url)"
+                >
+                  <div class="link-style" @click="openLink(link.url)">
+                    {{ link.title || link.url }}
+                  </div>
+                </div>
+              </q-card-section>
+              <q-card-actions align="right">
+                <q-btn label="Close" class="btn-save" flat v-close-popup />
+              </q-card-actions>
+            </q-card>
+          </q-dialog>
+
           <!-- Two-Column Section -->
           <div class="two-column-details q-mb-lg">
             <div class="detail-row q-mb-md">
@@ -473,6 +502,9 @@ const notifyDialogMessage = ref('')
 const showDialog = ref(false)
 
 const showHelpOverlay = ref(false)
+
+const showRelatedDialog = ref(false)
+const links = ref([])
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)
@@ -825,6 +857,14 @@ onMounted(async () => {
       bookmarked: false,
       starred: false,
     }
+
+    if (data.related_links && Array.isArray(data.related_links)) {
+      links.value = data.related_links.map((link, idx) => ({
+        id: link.id || Date.now() + idx,
+        title: link.title,
+        url: link.url,
+      }))
+    }
   }
 
   loading.value = false
@@ -890,6 +930,10 @@ onMounted(async () => {
     }
   })
 })
+
+function openLink(url) {
+  window.open(url, '_blank')
+}
 
 async function handleDelete() {
   try {

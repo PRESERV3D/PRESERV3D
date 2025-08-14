@@ -147,7 +147,10 @@
                     Related Links
                   </q-card-section>
                   <q-separator />
-                  <div class="q-pt-md q-px-md column items-start">
+                  <div v-if="loadingRelatedLinks" class="q-pa-md flex flex-center">
+                    <q-spinner color="primary" size="40px" />
+                  </div>
+                  <div v-else class="q-pt-md q-px-md column items-start">
                     <!-- Links List with Drag -->
                     <div
                       v-for="(link, index) in links"
@@ -225,6 +228,7 @@
                             doc.metadata.title,
                             doc.metadata.author,
                             doc.metadata.categories,
+                            doc.metadata.date.slice(0, 4),
                           )
                         "
                       />
@@ -250,6 +254,7 @@
                             doc.metadata.title,
                             doc.metadata.author,
                             doc.metadata.categories,
+                            doc.metadata.date.slice(0, 4),
                           )
                         "
                       />
@@ -280,12 +285,6 @@
     <div v-else>
       <q-banner type="negative">Document not found.</q-banner>
     </div>
-    <!-- <ConfirmMetadata
-      v-model="dialog"
-      :metadata="metadata"
-      @confirm="saveMetadata"
-      @cancel="handleCancelMetadata"
-    /> -->
 
     <!-- Collection Dialog -->
     <q-dialog v-model="dialogOpen">
@@ -344,7 +343,6 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
-// import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import { useUserStore } from 'stores/user'
 import { useDocumentsStore } from 'stores/documentsStore'
 import axios from 'axios'
@@ -499,22 +497,27 @@ const showRelatedDialog = ref(false)
 const newLink = ref('')
 const links = ref([]) // starts empty
 const hasChanges = ref(false)
+const loadingRelatedLinks = ref(false)
 let draggedIndex = null
 
-async function fetchRelatedLinks(title, author, categories) {
+async function fetchRelatedLinks(title, author, categories, date) {
   try {
-    console.log('Fetching related links for:', title, author, categories)
+    console.log('Fetching related links for:', title, author, categories, date)
 
     const formData = new FormData()
     formData.append('title', title)
     formData.append('author', author)
     formData.append('categories', categories)
+    formData.append('date', date)
+
+    loadingRelatedLinks.value = true
 
     const { data } = await axios.get('http://localhost:8000/related-links', {
       params: {
         title,
         author,
         categories,
+        date,
       },
     })
 
@@ -529,6 +532,8 @@ async function fetchRelatedLinks(title, author, categories) {
     showRelatedDialog.value = true
   } catch (err) {
     console.error('Error fetching related links:', err)
+  } finally {
+    loadingRelatedLinks.value = false
   }
 }
 

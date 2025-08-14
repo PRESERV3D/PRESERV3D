@@ -146,8 +146,6 @@ createQuasarApp(createApp, quasarUserOptions)
       
       import('boot/axios'),
       
-      import('boot/pinia'),
-      
       import('boot/supabase'),
       
       import('boot/r2')

@@ -158,12 +158,6 @@
     <div v-else>
       <q-banner type="negative">Document not found.</q-banner>
     </div>
-    <ConfirmMetadata
-      v-model="dialog"
-      :metadata="metadata"
-      @confirm="saveMetadata"
-      @cancel="handleCancelMetadata"
-    />
 
     <!-- Collection Dialog -->
     <q-dialog v-model="dialogOpen">
@@ -222,7 +216,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from 'boot/supabase'
-import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+// import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import { useUserStore } from 'stores/user'
 import { useRouter } from 'vue-router'
 import { useDocumentsStore } from 'stores/documentsStore'
@@ -234,8 +228,6 @@ const route = useRoute()
 const doc = ref(null)
 const loading = ref(true)
 const showDialog = ref(false)
-const dialog = ref(false)
-const metadata = ref(null)
 const userStore = useUserStore()
 const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 
@@ -273,39 +265,6 @@ async function handleEdit() {
 
   // dialog.value = true
   router.push({ name: 'edit-document', params: { id: doc.value.id } })
-}
-
-async function saveMetadata(newMetadata) {
-  try {
-    console.log(newMetadata.metadata)
-    const { error } = await supabase
-      .from('documents_metadata')
-      .update({
-        metadata: {
-          title: newMetadata.title,
-          author: newMetadata.author,
-          date: newMetadata.date,
-          summary: newMetadata.summary,
-          keywords: newMetadata.keywords,
-          categories: newMetadata.categories,
-        },
-        updated_at: new Date(),
-      })
-      .eq('file_name', newMetadata.file_name)
-
-    if (error) {
-      console.error('Failed to update metadata:', error)
-      alert('Failed to update metadata.')
-    } else {
-      alert('Metadata saved successfully!')
-      dialog.value = false
-
-      location.reload()
-    }
-  } catch (err) {
-    console.error('Error saving metadata:', err)
-    alert('Unexpected error occurred.')
-  }
 }
 
 async function handleDelete() {

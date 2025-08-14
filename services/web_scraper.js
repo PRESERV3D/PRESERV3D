@@ -4,8 +4,8 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 
 puppeteer.use(StealthPlugin())
 
-const [, , title, author, categories] = process.argv
-const query = `${title} ${author || ''} ${categories || ''}`.trim()
+const [, , title, author, categories, date] = process.argv
+const query = `${title} ${author || ''} ${categories || ''} ${date || ''}`.trim()
 
 async function scrapeBing(page, query) {
   await page.setUserAgent(
