@@ -285,12 +285,6 @@
     <div v-else>
       <q-banner type="negative">Document not found.</q-banner>
     </div>
-    <!-- <ConfirmMetadata
-      v-model="dialog"
-      :metadata="metadata"
-      @confirm="saveMetadata"
-      @cancel="handleCancelMetadata"
-    /> -->
 
     <!-- Collection Dialog -->
     <q-dialog v-model="dialogOpen">
@@ -349,7 +343,6 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
-// import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import { useUserStore } from 'stores/user'
 import { useDocumentsStore } from 'stores/documentsStore'
 import axios from 'axios'
