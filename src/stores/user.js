@@ -131,7 +131,7 @@ export const useUserStore = defineStore('user', {
         this.profile = {
           ...adminData[0],
           role: 'admin',
-          // user_type: 'admin', // optional, if you want a type for admin
+          user_type: 'admin',
         }
         return
       }
