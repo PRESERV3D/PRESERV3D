@@ -63,9 +63,9 @@
       </div>
 
       <div v-if="step === 2">
-        <div class="column q-gutter-sm">
+        <div class="column q-mt-md q-gutter-sm">
           <div class="row q-mt-lg">
-            <div class="col">
+            <div class="col q-gutter-sm">
               <label class="labelNames">Institution</label>
               <q-input
                 dense
@@ -75,7 +75,7 @@
                 class="text-box-2"
               />
             </div>
-            <div class="col q-ml-md">
+            <div class="col q-ml-md q-gutter-sm">
               <label class="labelNames">Purpose</label>
               <q-input filled dense v-model="form.purpose" class="text-box-2" />
             </div>
