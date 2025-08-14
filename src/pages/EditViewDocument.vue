@@ -147,7 +147,10 @@
                     Related Links
                   </q-card-section>
                   <q-separator />
-                  <div class="q-pt-md q-px-md column items-start">
+                  <div v-if="loadingRelatedLinks" class="q-pa-md flex flex-center">
+                    <q-spinner color="primary" size="40px" />
+                  </div>
+                  <div v-else class="q-pt-md q-px-md column items-start">
                     <!-- Links List with Drag -->
                     <div
                       v-for="(link, index) in links"
@@ -225,6 +228,7 @@
                             doc.metadata.title,
                             doc.metadata.author,
                             doc.metadata.categories,
+                            doc.metadata.date.slice(0, 4),
                           )
                         "
                       />
@@ -250,6 +254,7 @@
                             doc.metadata.title,
                             doc.metadata.author,
                             doc.metadata.categories,
+                            doc.metadata.date.slice(0, 4),
                           )
                         "
                       />
@@ -499,22 +504,27 @@ const showRelatedDialog = ref(false)
 const newLink = ref('')
 const links = ref([]) // starts empty
 const hasChanges = ref(false)
+const loadingRelatedLinks = ref(false)
 let draggedIndex = null
 
-async function fetchRelatedLinks(title, author, categories) {
+async function fetchRelatedLinks(title, author, categories, date) {
   try {
-    console.log('Fetching related links for:', title, author, categories)
+    console.log('Fetching related links for:', title, author, categories, date)
 
     const formData = new FormData()
     formData.append('title', title)
     formData.append('author', author)
     formData.append('categories', categories)
+    formData.append('date', date)
+
+    loadingRelatedLinks.value = true
 
     const { data } = await axios.get('http://localhost:8000/related-links', {
       params: {
         title,
         author,
         categories,
+        date,
       },
     })
 
@@ -529,6 +539,8 @@ async function fetchRelatedLinks(title, author, categories) {
     showRelatedDialog.value = true
   } catch (err) {
     console.error('Error fetching related links:', err)
+  } finally {
+    loadingRelatedLinks.value = false
   }
 }
 
