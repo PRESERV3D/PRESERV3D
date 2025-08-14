@@ -96,34 +96,6 @@
         <div class="search-toolbar q-py-md q-px-md">
           <q-toolbar class="bg-transparent">
             <!-- Search Bar -->
-            <!-- <q-select
-              dense
-              outlined
-              v-model="searchType"
-              :options="searchOptions"
-              emit-value
-              map-options
-              style="width: 9.375rem"
-              class="q-mr-md"
-              @keyup.enter="performSearch"
-            />
-            <q-input
-              dense
-              outlined
-              v-model="search"
-              placeholder="Search name, work, year, etc."
-              class="q-mr-md search-input"
-              input-class="text-left"
-              clearable
-              clear-icon="close"
-              @keyup.enter="performSearch"
-              style="width: 100%; max-width: 43rem"
-            >
-              <template v-slot:prepend>
-                <q-icon name="search" @click="performSearch" class="cursor-pointer" />
-              </template>
-            </q-input> -->
-
             <q-input
               dense
               outlined
