@@ -20,9 +20,6 @@
             :src="model.file_url"
             camera-controls
             loading="lazy"
-            auto-rotate
-            auto-rotate-delay="1500"
-            rotation-per-second="10deg"
             shadow-intensity="1"
             class="large-artifacts"
           />
