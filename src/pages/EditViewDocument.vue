@@ -36,14 +36,20 @@
             />
             <div v-if="isAdmin" class="edit-delete-btns row">
               <q-btn label="Cancel" class="q-mr-md sub-font-3" no-caps flat @click="goBack" />
-              <q-btn
+              <!-- <q-btn
                 flat
                 no-caps
                 dense
                 label="Find More Info"
                 class="find-more-info-btn"
-                @click="findMoreInfo"
-              />
+                @click="
+                  fetchRelatedLinks(
+                    doc.metadata.title,
+                    doc.metadata.author,
+                    doc.metadata.categories,
+                  )
+                "
+              /> -->
               <q-btn
                 flat
                 no-caps
@@ -157,7 +163,7 @@
 
                       <!-- Link (inline beside icon) -->
                       <div class="link-style" @click="openLink(link.url)">
-                        {{ link.url }}
+                        {{ link.title || link.url }}
                       </div>
 
                       <!-- Spacer pushes delete icon to far right -->
@@ -198,15 +204,56 @@
                   </div>
                   <!--Save and Cancel-->
                   <q-card-actions align="right">
-                    <q-btn
-                      flat
-                      label="Cancel"
-                      class="sub-font-2"
-                      style="color: #000000"
-                      v-close-popup
-                      no-caps
-                    />
-                    <q-btn label="Save" class="btn-save" flat @click="handleDelete" />
+                    <template v-if="hasChanges">
+                      <q-btn
+                        flat
+                        label="Cancel"
+                        class="sub-font-2"
+                        style="color: #000000"
+                        v-close-popup
+                        no-caps
+                        @click="cancelChanges()"
+                      />
+                      <q-btn
+                        flat
+                        no-caps
+                        dense
+                        label="Find More Info"
+                        class="find-more-info-btn"
+                        @click="
+                          fetchRelatedLinks(
+                            doc.metadata.title,
+                            doc.metadata.author,
+                            doc.metadata.categories,
+                          )
+                        "
+                      />
+                      <q-btn label="Save" class="btn-save" flat @click="saveRelatedLinks" />
+                    </template>
+                    <template v-else>
+                      <q-btn
+                        flat
+                        label="Close"
+                        class="sub-font-2"
+                        style="color: #000000"
+                        v-close-popup
+                        no-caps
+                      />
+                      <q-btn
+                        flat
+                        no-caps
+                        dense
+                        label="Find More Info"
+                        class="find-more-info-btn"
+                        @click="
+                          fetchRelatedLinks(
+                            doc.metadata.title,
+                            doc.metadata.author,
+                            doc.metadata.categories,
+                          )
+                        "
+                      />
+                    </template>
                   </q-card-actions>
                 </q-card>
               </q-dialog>
@@ -233,12 +280,12 @@
     <div v-else>
       <q-banner type="negative">Document not found.</q-banner>
     </div>
-    <ConfirmMetadata
+    <!-- <ConfirmMetadata
       v-model="dialog"
       :metadata="metadata"
       @confirm="saveMetadata"
       @cancel="handleCancelMetadata"
-    />
+    /> -->
 
     <!-- Collection Dialog -->
     <q-dialog v-model="dialogOpen">
@@ -295,23 +342,21 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
-import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+// import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import { useUserStore } from 'stores/user'
 import { useDocumentsStore } from 'stores/documentsStore'
-
-//
-const showRelatedDialog = ref(false)
-
-const documentsStore = useDocumentsStore()
+import axios from 'axios'
 
 const route = useRoute()
+const router = useRouter()
 const doc = ref(null)
 const loading = ref(true)
 
-const dialog = ref(false)
-const metadata = ref(null)
+// const dialog = ref(false)
+// const metadata = ref(null)
+const documentsStore = useDocumentsStore()
 const userStore = useUserStore()
 // const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 
@@ -326,14 +371,37 @@ const notifyDialogMessage = ref('')
 
 //new add
 // Editing logic from doc page
+async function saveChanges() {
+  try {
+    if (!doc.value) return
+
+    const { error } = await supabase
+      .from('documents_metadata')
+      .update({
+        metadata: {
+          ...doc.value.metadata,
+          categories: editableCategories.value,
+        },
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', route.params.id)
+
+    if (error) throw error
+
+    console.log('Document changes saved successfully')
+    router.push({ name: 'view-document', params: { id: route.params.id } })
+  } catch (err) {
+    console.error('Error saving document changes:', err)
+  }
+}
+
+const goBack = () => {
+  window.history.back()
+}
+
 const newCategory = ref('')
 const editableCategories = ref([])
 const showCategoryInput = ref(false)
-
-const findMoreInfo = () => {
-  // Add your find more info logic here
-  console.log('Find More Info clicked')
-}
 
 // Category management functions
 const toggleCategoryInput = () => {
@@ -384,6 +452,14 @@ onMounted(async () => {
       bookmarked: false,
       starred: false,
     }
+
+    if (data.related_links && Array.isArray(data.related_links)) {
+      links.value = data.related_links.map((link, idx) => ({
+        id: link.id || Date.now() + idx,
+        title: link.title,
+        url: link.url,
+      }))
+    }
   }
 
   loading.value = false
@@ -419,19 +495,54 @@ onMounted(async () => {
 })
 
 //
+const showRelatedDialog = ref(false)
 const newLink = ref('')
 const links = ref([]) // starts empty
+const hasChanges = ref(false)
 let draggedIndex = null
+
+async function fetchRelatedLinks(title, author, categories) {
+  try {
+    console.log('Fetching related links for:', title, author, categories)
+
+    const formData = new FormData()
+    formData.append('title', title)
+    formData.append('author', author)
+    formData.append('categories', categories)
+
+    const { data } = await axios.get('http://localhost:8000/related-links', {
+      params: {
+        title,
+        author,
+        categories,
+      },
+    })
+
+    // assuming data.links is an array of URLs
+    links.value = data.links.map((link, idx) => ({
+      id: Date.now() + idx,
+      title: link.title,
+      url: link.url,
+    }))
+
+    hasChanges.value = true
+    showRelatedDialog.value = true
+  } catch (err) {
+    console.error('Error fetching related links:', err)
+  }
+}
 
 function addLink() {
   if (newLink.value.trim() !== '') {
     links.value.push({ id: Date.now(), url: newLink.value.trim() })
     newLink.value = ''
+    hasChanges.value = true
   }
 }
 
 function deleteLink(index) {
   links.value.splice(index, 1)
+  hasChanges.value = true
 }
 
 function openLink(url) {
@@ -445,6 +556,49 @@ function dragStart(index) {
 function drop(index) {
   const movedItem = links.value.splice(draggedIndex, 1)[0]
   links.value.splice(index, 0, movedItem)
+  hasChanges.value = true
+}
+
+async function saveRelatedLinks() {
+  try {
+    // Save directly to Supabase
+    const { error } = await supabase
+      .from('documents_metadata')
+      .update({
+        related_links: links.value,
+      })
+      .eq('id', route.params.id)
+
+    if (error) throw error
+
+    console.log('Related links saved successfully:', links.value)
+
+    hasChanges.value = false
+    showRelatedDialog.value = false
+  } catch (err) {
+    console.error('Error fetching/saving related links:', err)
+    console.log('Error saving related links:', err)
+  }
+}
+
+async function cancelChanges() {
+  // Reset the links to the original state
+  const { data } = await supabase
+    .from('documents_metadata')
+    .select('related_links')
+    .eq('id', route.params.id)
+    .single()
+
+  if (data && Array.isArray(data.related_links)) {
+    links.value = data.related_links.map((link, idx) => ({
+      id: link.id || Date.now() + idx,
+      title: link.title,
+      url: link.url,
+    }))
+  }
+
+  hasChanges.value = false
+  showRelatedDialog.value = false
 }
 </script>
 
