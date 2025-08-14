@@ -163,7 +163,7 @@
               </q-avatar>
               <div class="q-ml-lg gt-sm">
                 <div class="username-bg">{{ userName }}</div>
-                <div class="text-subtitle2 text-grey">{{ userRole }}</div>
+                <div class="text-subtitle2 text-grey">{{ userType }}</div>
               </div>
               <!-- <q-menu>
                 <q-list style="min-width: 150px">
@@ -231,7 +231,7 @@ const navItems = [
 // Get profile data from userStore
 const userProfile = computed(() => userStore.profile || {})
 const userName = computed(() => userProfile.value.first_name || 'User')
-const userRole = computed(() => userProfile.value.role || 'Unknown')
+const userType = computed(() => userProfile.value.user_type || 'Unknown')
 
 // Add a timeout to prevent rapid state changes
 let hoverTimeout = null

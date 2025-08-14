@@ -15,7 +15,7 @@
           lazy-rules
           :rules="[
             (val) => !!val || 'Please enter your email.',
-            (val) => val.includes('@iskolarngbayan.pup.edu.ph') || 'Use your PUP email only.',
+            // (val) => val.includes('@iskolarngbayan.pup.edu.ph') || 'Use your PUP email only.',
           ]"
           class="login-text-box"
         />
@@ -159,7 +159,7 @@ async function loginUser() {
       alert('Welcome, Admin!')
       await router.push('/admindash')
     } else if (role === 'user') {
-      alert('Welcome, PUPian!')
+      alert('Welcome, User!')
       await router.push('/home')
     } else {
       alert('Access denied. Unknown role.')
