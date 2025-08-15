@@ -156,16 +156,18 @@
         <div class="column q-mt-lg items-center">
           <div class="recent-box q-pa-xs column items-center">
             <div class="recent-card">
-              <component
-                :is="isGLB(currentItem?.file_name) ? 'model-viewer' : 'img'"
-                v-bind="
-                  isGLB(currentItem?.file_name)
-                    ? modelViewerProps(currentItem.file_url)
-                    : imgProps(currentItem)
-                "
-                class="q-mx-auto"
-                style="max-width: 200px; max-height: 250px"
-              />
+              <div class="flex flex-center">
+                <component
+                  :is="isGLB(currentItem?.file_name) ? 'model-viewer' : 'img'"
+                  v-bind="
+                    isGLB(currentItem?.file_name)
+                      ? modelViewerProps(currentItem.file_url)
+                      : imgProps(currentItem)
+                  "
+                  class="q-mx-auto"
+                  style="max-width: 200px; max-height: 240px"
+                />
+              </div>
             </div>
             <div class="q-mt-md self-start" style="margin-left: 1rem">
               <div class="fade-title-container" style="max-width: 10rem">
@@ -219,6 +221,88 @@
           </div>
         </div>
       </div>
+    </div>
+    <!-- <div class="referral-box"></div> -->
+    <div class="q-mt-md">
+      <q-table
+        class="referral-box"
+        flat
+        bordered
+        title="Referral Letters"
+        :rows="rows"
+        :columns="columns"
+        row-key="name"
+        :pagination="pagination"
+      >
+        <!-- Document column -->
+        <template v-slot:body-cell-document="props">
+          <q-td :props="props" align="center">
+            <router-link :to="`/documents/${props.row.document}`" class="view-more-link">
+              Downloadable Letter
+            </router-link>
+          </q-td>
+        </template>
+
+        <!-- Status column -->
+        <template v-slot:body-cell-status="props">
+          <q-td :props="props" align="center">
+            <!-- If no decision yet -->
+            <template v-if="!props.row.status">
+              <q-btn
+                flat
+                dense
+                round
+                class="status-btn"
+                @click="openConfirmDialog(props.row, 'Approved')"
+              >
+                <q-icon name="check" color="green" size="18px" />
+              </q-btn>
+              <q-btn
+                flat
+                dense
+                round
+                class="status-btn"
+                @click="openConfirmDialog(props.row, 'Rejected')"
+              >
+                <q-icon name="close" color="red" size="18px" />
+              </q-btn>
+            </template>
+
+            <!-- If decided -->
+            <template v-else>
+              <span
+                class="status-text"
+                :class="{
+                  'text-green': props.row.status === 'Approved',
+                  'text-red': props.row.status === 'Rejected',
+                }"
+              >
+                {{ props.row.status === 'Approved' ? 'Accepted' : 'Rejected' }}
+              </span>
+            </template>
+          </q-td>
+        </template>
+      </q-table>
+
+      <!-- Confirmation Dialog -->
+      <q-dialog v-model="confirmDialog.show">
+        <q-card class="conf-box">
+          <q-card-section class="sub-font" style="color: black">
+            Are you sure you want to set this referral letter as {{ confirmDialog.action }}?
+          </q-card-section>
+          <q-card-actions align="center">
+            <q-btn flat label="Yes" class="btn-save" @click="confirmAction" />
+            <q-btn
+              flat
+              label="No"
+              class="sub-font-2"
+              style="color: #000000"
+              v-close-popup
+              no-caps
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
     </div>
   </q-page>
 </template>
@@ -448,6 +532,64 @@ function imgProps(item) {
     alt,
   }
 }
+
+// sample referral letter data
+
+const pagination = {
+  page: 1,
+  rowsPerPage: 8,
+}
+
+const columns = [
+  { name: 'name', required: true, label: 'Name', align: 'center', field: (r) => r.name },
+  { name: 'affiliation', label: 'Affiliation', align: 'center', field: (r) => r.affiliation },
+  { name: 'document', label: 'Document', align: 'center', field: (r) => r.document },
+  { name: 'date', label: 'Date Filed', align: 'center', field: (r) => r.date },
+  { name: 'status', label: 'Status', align: 'center', field: (r) => r.status },
+]
+
+// sample data: note showLabel starts false (no label visible until click)
+const rows = ref([
+  {
+    name: 'Juan Dela Cruz',
+    affiliation: 'PUP Manila',
+    document: 'letter_juan.pdf',
+    date: '2025-08-01',
+    status: null, // null -> no selected icon color
+    showLabel: false, // label hidden until click
+  },
+  {
+    name: 'Maria Clara',
+    affiliation: 'UP Diliman',
+    document: 'letter_maria.pdf',
+    date: '2025-08-02',
+    status: 'Approved', // icon will appear colored, but label still hidden
+    showLabel: false,
+  },
+])
+
+// function setStatus(row, status) {
+//   row.status = status
+//   row.showLabel = true
+
+const confirmDialog = ref({
+  show: false,
+  action: '',
+  row: null,
+})
+
+function openConfirmDialog(row, action) {
+  confirmDialog.value.show = true
+  confirmDialog.value.action = action
+  confirmDialog.value.row = row
+}
+
+function confirmAction() {
+  if (confirmDialog.value.row) {
+    confirmDialog.value.row.status = confirmDialog.value.action
+  }
+  confirmDialog.value.show = false
+}
 </script>
 
 <style scoped>
@@ -572,5 +714,60 @@ function imgProps(item) {
   height: 24px;
   object-fit: contain;
   pointer-events: none;
+}
+
+/* .referral-box {
+  border-radius: 15px;
+  background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
+  height: 35rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+} */
+
+/*css referral letter*/
+
+.referral-box {
+  border-radius: 10px !important;
+  font-family: 'Poppins', sans-serif;
+  height: auto;
+  background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+}
+
+::v-deep(.referral-box .q-table__title) {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  color: #560505;
+  margin-top: 1rem;
+  margin-left: 1.5rem;
+}
+
+::v-deep(.referral-box .q-table__bottom) {
+  font-size: 14px;
+  color: black;
+}
+
+::v-deep(.referral-box thead tr th) {
+  padding: 1rem;
+  font-size: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.view-more-link {
+  color: #880000;
+  text-decoration: underline;
+}
+
+.conf-box {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  margin-top: 1rem;
+  border-radius: 10px !important;
+  background-color: #fbf4d0;
+  padding: 1rem;
+  text-align: center;
+  width: 25rem;
 }
 </style>

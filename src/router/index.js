@@ -46,7 +46,7 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     const session = userStore.session
 
     if (requiresAuth && !session) {
-      next('/user/login')
+      next('/landing')
       return
     }
 

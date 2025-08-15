@@ -112,6 +112,36 @@
               <div class="q-ml-md summary">
                 {{ doc.metadata.summary }}
               </div>
+              <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
+              <!-- q-dialog for related links -->
+              <!-- to be edited -->
+              <q-dialog v-model="showRelatedDialog" persistent>
+                <q-card class="related-box">
+                  <q-card-section
+                    class="column sub-font-3 items-start"
+                    style="font-size: 16px; font-weight: 700"
+                  >
+                    Related Links
+                  </q-card-section>
+                  <q-separator />
+                  <q-card-section class="column items-start">
+                    <!-- here are the links -->
+                    <div
+                      v-for="link in links"
+                      :key="link.id"
+                      class="row items-center q-mb-xs full-width"
+                      @click="openLink(link.url)"
+                    >
+                      <div class="link-style" @click="openLink(link.url)">
+                        {{ link.title || link.url }}
+                      </div>
+                    </div>
+                  </q-card-section>
+                  <q-card-actions align="right">
+                    <q-btn label="Close" class="btn-save" flat v-close-popup />
+                  </q-card-actions>
+                </q-card>
+              </q-dialog>
             </div>
             <div class="meta-section">
               <div class="font-label">
@@ -128,18 +158,12 @@
     <div v-else>
       <q-banner type="negative">Document not found.</q-banner>
     </div>
-    <ConfirmMetadata
-      v-model="dialog"
-      :metadata="metadata"
-      @confirm="saveMetadata"
-      @cancel="handleCancelMetadata"
-    />
 
     <!-- Collection Dialog -->
     <q-dialog v-model="dialogOpen">
       <q-card class="add-to-collections">
         <q-card-section class="collection-header">
-          <div class="sub-font-3" style="font-size: 18px; font-weight: 800">
+          <div class="sub-font-3" style="font-size: 18px; font-weight: 700">
             Choose a Collection
           </div>
         </q-card-section>
@@ -192,7 +216,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from 'boot/supabase'
-import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+// import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import { useUserStore } from 'stores/user'
 import { useRouter } from 'vue-router'
 import { useDocumentsStore } from 'stores/documentsStore'
@@ -204,8 +228,6 @@ const route = useRoute()
 const doc = ref(null)
 const loading = ref(true)
 const showDialog = ref(false)
-const dialog = ref(false)
-const metadata = ref(null)
 const userStore = useUserStore()
 const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 
@@ -223,6 +245,10 @@ const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
+//added for related links
+const showRelatedDialog = ref(false)
+const links = ref([])
+
 function formatDate(dateStr) {
   const date = new Date(dateStr)
   return `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA', {
@@ -232,45 +258,13 @@ function formatDate(dateStr) {
 }
 
 async function handleEdit() {
-  metadata.value = {
-    ...doc.value.metadata,
-    file_name: doc.value.file_name,
-  }
+  // metadata.value = {
+  //   ...doc.value.metadata,
+  //   file_name: doc.value.file_name,
+  // }
 
-  dialog.value = true
-}
-
-async function saveMetadata(newMetadata) {
-  try {
-    console.log(newMetadata.metadata)
-    const { error } = await supabase
-      .from('documents_metadata')
-      .update({
-        metadata: {
-          title: newMetadata.title,
-          author: newMetadata.author,
-          date: newMetadata.date,
-          summary: newMetadata.summary,
-          keywords: newMetadata.keywords,
-          categories: newMetadata.categories,
-        },
-        updated_at: new Date(),
-      })
-      .eq('file_name', newMetadata.file_name)
-
-    if (error) {
-      console.error('Failed to update metadata:', error)
-      alert('Failed to update metadata.')
-    } else {
-      alert('Metadata saved successfully!')
-      dialog.value = false
-
-      location.reload()
-    }
-  } catch (err) {
-    console.error('Error saving metadata:', err)
-    alert('Unexpected error occurred.')
-  }
+  // dialog.value = true
+  router.push({ name: 'edit-document', params: { id: doc.value.id } })
 }
 
 async function handleDelete() {
@@ -580,6 +574,14 @@ onMounted(async () => {
       bookmarked: false,
       starred: false,
     }
+
+    if (data.related_links && Array.isArray(data.related_links)) {
+      links.value = data.related_links.map((link, idx) => ({
+        id: link.id || Date.now() + idx,
+        title: link.title,
+        url: link.url,
+      }))
+    }
   }
 
   loading.value = false
@@ -613,6 +615,10 @@ onMounted(async () => {
   await documentsStore.fetchStarCounts()
   await documentsStore.fetchViewCounts()
 })
+
+function openLink(url) {
+  window.open(url, '_blank')
+}
 </script>
 
 <style scoped>
@@ -725,13 +731,6 @@ onMounted(async () => {
   width: 0.6rem;
   height: 0.6rem;
   object-fit: contain;
-}
-
-.edit-delete-btns {
-  display: flex;
-  gap: 1rem;
-  margin-left: auto;
-  margin-right: 2rem;
 }
 
 .summary {

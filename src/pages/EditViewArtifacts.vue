@@ -117,6 +117,134 @@
             />
           </div>
 
+          <!-- Related Links -->
+          <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
+          <!-- q-dialog for related links -->
+          <q-dialog v-model="showRelatedDialog" persistent>
+            <q-card class="related-box">
+              <q-card-section
+                class="column sub-font-3 items-start"
+                style="font-size: 16px; font-weight: 700"
+              >
+                Related Links
+              </q-card-section>
+              <q-separator />
+              <div v-if="loadingRelatedLinks" class="q-pa-md flex flex-center">
+                <q-spinner color="primary" size="40px" />
+              </div>
+              <div v-else class="q-pt-md q-px-md column items-start">
+                <!-- Links List with Drag -->
+                <div
+                  v-for="(link, index) in links"
+                  :key="link.id"
+                  class="row items-center q-mb-xs full-width draggable-item"
+                  draggable="true"
+                  @dragstart="dragStart(index)"
+                  @dragover.prevent
+                  @drop="drop(index)"
+                >
+                  <!-- Drag handle -->
+                  <q-icon name="menu" class="q-mr-md cursor-pointer" size="xs" color="black" />
+
+                  <!-- Link (inline beside icon) -->
+                  <div class="link-style" @click="openLink(link.url)">
+                    {{ link.title || link.url }}
+                  </div>
+
+                  <!-- Spacer pushes delete icon to far right -->
+                  <q-space />
+
+                  <!-- Delete button -->
+                  <q-btn
+                    flat
+                    round
+                    icon="delete"
+                    color="negative"
+                    size="sm"
+                    @click="deleteLink(index)"
+                  />
+                </div>
+
+                <!-- Add link input -->
+                <q-input
+                  v-model="newLink"
+                  placeholder="Add new link"
+                  borderless
+                  dense
+                  class="q-mt-sm"
+                  @keyup.enter="addLink"
+                >
+                  <template v-slot:prepend>
+                    <q-btn
+                      round
+                      dense
+                      outline
+                      color="black"
+                      icon="add"
+                      size="sm"
+                      @click="addLink"
+                    />
+                  </template>
+                </q-input>
+              </div>
+              <!--Save and Cancel-->
+              <q-card-actions align="right">
+                <template v-if="hasChanges">
+                  <q-btn
+                    flat
+                    label="Cancel"
+                    class="sub-font-2"
+                    style="color: #000000"
+                    v-close-popup
+                    no-caps
+                    @click="cancelRelatedLinks()"
+                  />
+                  <q-btn
+                    flat
+                    no-caps
+                    dense
+                    label="Find More Info"
+                    class="find-more-info-btn"
+                    @click="
+                      fetchRelatedLinks(
+                        editableData.title,
+                        editableData.author,
+                        editableData.categories,
+                        editableData.date.slice(0, 4),
+                      )
+                    "
+                  />
+                  <q-btn label="Save" class="btn-save" flat @click="saveRelatedLinks" />
+                </template>
+                <template v-else>
+                  <q-btn
+                    flat
+                    label="Close"
+                    class="sub-font-2"
+                    style="color: #000000"
+                    v-close-popup
+                    no-caps
+                  />
+                  <q-btn
+                    flat
+                    no-caps
+                    dense
+                    label="Find More Info"
+                    class="find-more-info-btn"
+                    @click="
+                      fetchRelatedLinks(
+                        editableData.title,
+                        editableData.author,
+                        editableData.categories,
+                        editableData.date.slice(0, 4),
+                      )
+                    "
+                  />
+                </template>
+              </q-card-actions>
+            </q-card>
+          </q-dialog>
+
           <!-- Two-Column Section -->
           <div class="two-column-details q-mb-lg">
             <div class="detail-row q-mb-md">
@@ -215,14 +343,14 @@
             <div class="save-cancel-actions q-mt-lg">
               <q-btn flat no-caps dense label="Cancel" class="cancel-btn" @click="cancelChanges" />
               <div class="button-group">
-                <q-btn
+                <!-- <q-btn
                   flat
                   no-caps
                   dense
                   label="Find More Info"
                   class="find-more-info-btn"
                   @click="findMoreInfo"
-                />
+                /> -->
                 <q-btn
                   flat
                   no-caps
@@ -304,6 +432,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useModelStore } from 'stores/modelStore'
 import '@google/model-viewer'
+import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
@@ -316,11 +445,6 @@ const loading = ref(true)
 const newCategory = ref('')
 const editableCategories = ref([])
 const showCategoryInput = ref(false)
-
-const findMoreInfo = () => {
-  // Add your find more info logic here
-  console.log('Find More Info clicked')
-}
 
 // Reactive reference for editable labels
 const editableLabels = ref({
@@ -684,10 +808,132 @@ onMounted(async () => {
       // bookmarked: false,
       starred: false,
     }
+
+    if (data.related_links && Array.isArray(data.related_links)) {
+      links.value = data.related_links.map((link, idx) => ({
+        id: link.id || Date.now() + idx,
+        title: link.title,
+        url: link.url,
+      }))
+    }
   }
 
   loading.value = false
 })
+
+// Related Links
+const showRelatedDialog = ref(false)
+const newLink = ref('')
+const links = ref([]) // starts empty
+const hasChanges = ref(false)
+const loadingRelatedLinks = ref(false)
+let draggedIndex = null
+
+async function fetchRelatedLinks(title, author, categories, date) {
+  try {
+    console.log('Fetching related links for:', title, author, categories, date)
+
+    const formData = new FormData()
+    formData.append('title', title)
+    formData.append('author', author)
+    formData.append('categories', categories)
+    formData.append('date', date)
+
+    loadingRelatedLinks.value = true
+
+    const { data } = await axios.get('http://localhost:8000/related-links', {
+      params: {
+        title,
+        author,
+        categories,
+        date,
+      },
+    })
+
+    // assuming data.links is an array of URLs
+    links.value = data.links.map((link, idx) => ({
+      id: Date.now() + idx,
+      title: link.title,
+      url: link.url,
+    }))
+
+    hasChanges.value = true
+    showRelatedDialog.value = true
+  } catch (err) {
+    console.error('Error fetching related links:', err)
+  } finally {
+    loadingRelatedLinks.value = false
+  }
+}
+
+function addLink() {
+  if (newLink.value.trim() !== '') {
+    links.value.push({ id: Date.now(), url: newLink.value.trim() })
+    newLink.value = ''
+    hasChanges.value = true
+  }
+}
+
+function deleteLink(index) {
+  links.value.splice(index, 1)
+  hasChanges.value = true
+}
+
+function openLink(url) {
+  window.open(url, '_blank')
+}
+
+function dragStart(index) {
+  draggedIndex = index
+}
+
+function drop(index) {
+  const movedItem = links.value.splice(draggedIndex, 1)[0]
+  links.value.splice(index, 0, movedItem)
+  hasChanges.value = true
+}
+
+async function saveRelatedLinks() {
+  try {
+    // Save directly to Supabase
+    const { error } = await supabase
+      .from('artifacts_metadata')
+      .update({
+        related_links: links.value,
+      })
+      .eq('id', route.params.id)
+
+    if (error) throw error
+
+    console.log('Related links saved successfully:', links.value)
+
+    hasChanges.value = false
+    showRelatedDialog.value = false
+  } catch (err) {
+    console.error('Error fetching/saving related links:', err)
+    console.log('Error saving related links:', err)
+  }
+}
+
+async function cancelRelatedLinks() {
+  // Reset the links to the original state
+  const { data } = await supabase
+    .from('documents_metadata')
+    .select('related_links')
+    .eq('id', route.params.id)
+    .single()
+
+  if (data && Array.isArray(data.related_links)) {
+    links.value = data.related_links.map((link, idx) => ({
+      id: link.id || Date.now() + idx,
+      title: link.title,
+      url: link.url,
+    }))
+  }
+
+  hasChanges.value = false
+  showRelatedDialog.value = false
+}
 </script>
 
 <style scoped>
@@ -988,47 +1234,10 @@ onMounted(async () => {
   text-align: left;
 }
 
-.func-btn {
-  color: #fbf4d0 !important;
-  background: #880000 !important;
-  border-radius: 5px !important;
-  transition: all 0.3s ease !important;
-  font-family: 'Poppins', sans-serif !important;
-  font-weight: 600 !important;
-  width: 100px !important;
-  min-height: auto !important;
-  padding: 8px 16px !important;
-  margin-left: auto !important;
-}
-
-.func-btn:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
-}
-
 .button-group {
   display: flex;
   align-items: center;
   margin-left: auto;
-}
-
-/* Find More Info button styles */
-.find-more-info-btn {
-  color: black !important;
-  background: #ccac00b2 !important;
-  border-radius: 5px !important;
-  transition: all 0.3s ease !important;
-  font-family: 'Poppins', sans-serif !important;
-  font-weight: 600 !important;
-  width: 140px !important;
-  min-height: auto !important;
-  padding: 8px 16px !important;
-  margin-right: 12px !important;
-}
-
-.find-more-info-btn:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
 @media (max-width: 768px) {

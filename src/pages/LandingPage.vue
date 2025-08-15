@@ -20,7 +20,7 @@
           label="Sign Up"
           style="color: #fbf4d0"
           class="btn"
-          @click="$router.push('/user/register')"
+          @click="$router.push('/user/register-option')"
         />
         <q-btn
           flat

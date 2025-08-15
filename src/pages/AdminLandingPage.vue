@@ -3,28 +3,23 @@
   <div class="page-background">
     <div class="page-header q-pa-md">
       <div class="logo-container">
-        <q-img
-          src="/img/logo.png"
-          alt="Logo"
-          style="width: 70px; height: 70px"
-          class="logo"
-        />
+        <q-img src="/img/logo.png" alt="Logo" style="width: 70px; height: 70px" class="logo" />
       </div>
 
       <!-- Trophy Images with Professional Positioning -->
-<!--      <div class="trophy-container">-->
-<!--        <q-img-->
-<!--          src="/img/L-trophy.png"-->
-<!--          alt="L Trophy"-->
-<!--          class="trophy trophy-left"-->
-<!--        />-->
+      <!--      <div class="trophy-container">-->
+      <!--        <q-img-->
+      <!--          src="/img/L-trophy.png"-->
+      <!--          alt="L Trophy"-->
+      <!--          class="trophy trophy-left"-->
+      <!--        />-->
 
-<!--        <q-img-->
-<!--          src="/img/R-trophy.png"-->
-<!--          alt="R Trophy"-->
-<!--          class="trophy trophy-right"-->
-<!--        />-->
-<!--      </div>-->
+      <!--        <q-img-->
+      <!--          src="/img/R-trophy.png"-->
+      <!--          alt="R Trophy"-->
+      <!--          class="trophy trophy-right"-->
+      <!--        />-->
+      <!--      </div>-->
 
       <!-- Text -->
       <div class="main-content" style="position: relative">
@@ -50,7 +45,7 @@
               unelevated
               label="Log In"
               class="auth-btn login-btn"
-              @click="$router.push('/admin/login')"
+              @click="$router.push('/user/login')"
             />
             <q-btn
               flat
@@ -75,8 +70,7 @@
 <style scoped>
 .page-background {
   background:
-    linear-gradient(0deg, rgba(63, 4, 4, 0.8) 70%, rgba(0, 0, 0, 0.9) 99%),
-    url('/img/bg-img.png');
+    linear-gradient(0deg, rgba(63, 4, 4, 0.8) 70%, rgba(0, 0, 0, 0.9) 99%), url('/img/bg-img.png');
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;

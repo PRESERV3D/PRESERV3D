@@ -1,36 +1,71 @@
 <template>
   <q-page class="q-pa-md column items-center justify-start">
     <!-- Camera & Canvas Area -->
-    <div class="relative-position">
+
+    <div class="q-mt-lg items-center justify-center">
       <video ref="video" autoplay muted playsinline class="camera-preview" style="display: none" />
       <canvas ref="canvas" style="display: none" />
+    </div>
+    <div class="camera-position">
       <canvas ref="resultCanvas" class="result-canvas" style="display: none" />
+
+      <!-- Buttons -->
+      <div class="buttons-row">
+        <!-- RETAKE buttons moves to the left is result canva is shown -->
+        <div class="left-buttons" v-if="showRetake && showSave">
+          <q-btn label="RETAKE" class="btn2" @click="resetScan" />
+        </div>
+
+        <!-- Center group: used when resultCanvas is hidden -->
+        <div class="center-buttons" v-if="!showSave">
+          <q-btn v-if="showTake" label="TAKE PHOTO" class="btn1" @click="takePhoto" />
+          <q-btn v-if="showTake" label="CHOOSE IMAGES" class="btn2" @click="openFileInput" />
+          <q-btn v-if="showTransform" label="TRANSFORM" class="btn1" @click="transformDocument" />
+          <q-btn v-if="showRetake" label="RETAKE" class="btn2" @click="resetScan" />
+        </div>
+
+        <!-- Right side is ROTATE & SAVE -->
+        <div class="right-buttons" v-if="showSave">
+          <q-btn label="ROTATE" flat color="primary" @click="rotateTransformedImage" />
+          <q-btn label="SAVE" style="background-color: #408f4c; color: white" @click="saveImage" />
+        </div>
+      </div>
     </div>
 
-    <!-- Buttons -->
-    <div class="q-mt-md row q-gutter-sm">
-      <q-btn v-if="showTake" label="TAKE PHOTO" color="deep-orange-10" @click="takePhoto" />
-      <q-btn v-if="showTransform" label="TRANSFORM" color="amber" @click="transformDocument" />
-      <q-btn v-if="showRetake" label="RETAKE" color="warning" @click="resetScan" />
-      <q-btn v-if="showSave" label="ROTATE" color="blue" @click="rotateTransformedImage" />
-      <q-btn v-if="showSave" label="SAVE" color="positive" @click="saveImage" />
-    </div>
+    <!-- Hidden file input -->
+
+    <input
+      ref="fileInput"
+      type="file"
+      multiple
+      accept=".jpg,.jpeg,.png,.gif,.webp"
+      style="display: none"
+      @change="handleFileSelection"
+    />
 
     <!-- Scanned Thumbnails Grid -->
     <div v-if="scannedImages.length" class="q-mt-lg row wrap justify-center q-gutter-md">
-      <div v-for="(img, index) in scannedImages" :key="index" class="thumbnail-wrapper">
+      <div v-for="(img, index) in scannedImages.slice(0, 4)" :key="index" class="thumbnail-wrapper">
         <img :src="img" class="thumbnail-image" />
-
-        <!-- Delete Button -->
         <q-btn dense round flat icon="close" class="thumbnail-delete" @click="deleteScan(index)" />
       </div>
+
+      <!-- "+N more" Thumbnail -->
+      <div
+        v-if="scannedImages.length > 4"
+        class="thumbnail-wrapper flex flex-center bg-grey-3 text-dark text-subtitle2"
+        style="position: relative"
+      >
+        +{{ scannedImages.length - 4 }} more
+      </div>
     </div>
+
     <q-btn
       v-if="scannedImages.length"
       label="Export as PDF"
       color="primary"
       @click="openExportDialog"
-      :disable="scannedImages.length === 0"
+      class="q-mt-lg export"
     />
 
     <!-- Export Dialog -->
@@ -55,7 +90,17 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="secondary" v-close-popup />
+          <q-btn
+            flat
+            label="Cancel"
+            color="secondary"
+            @click="
+              () => {
+                openCamera()
+                showExportDialog = false
+              }
+            "
+          />
           <q-btn label="Save PDF" color="primary" @click="confirmExport" />
           <q-btn
             label="Upload to Documents"
@@ -80,6 +125,7 @@ const transformedImage = ref(null)
 const video = ref(null)
 const canvas = ref(null)
 const resultCanvas = ref(null)
+const fileInput = ref(null)
 const corners = ref([])
 let draggingPointIndex = null
 let cleanImage = null
@@ -96,44 +142,19 @@ const pdfFileName = ref('scanned-document')
 const formattedPdfSize = ref('Calculating...')
 
 onMounted(async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: true,
-  })
-  video.value.srcObject = stream
-  await new Promise((resolve) => (video.value.onloadedmetadata = resolve))
-
-  // Match canvas size to actual video size
-  const { videoWidth, videoHeight } = video.value
-  canvas.value.width = videoWidth
-  canvas.value.height = videoHeight
-  resultCanvas.value.width = videoWidth
-  resultCanvas.value.height = videoHeight
-
-  video.value.play()
-  video.value.style.display = 'block'
-  canvas.value.style.display = 'none'
-  resultCanvas.value.style.display = 'none'
-
-  const ctx = canvas.value.getContext('2d')
-  requestAnimationFrame(function drawVideo() {
-    if (video.value && canvas.value && video.value.style.display === 'block') {
-      ctx.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height)
-    }
-    requestAnimationFrame(drawVideo)
-  })
-
-  canvas.value?.addEventListener('mousedown', onMouseDown)
-  canvas.value?.addEventListener('mousemove', onMouseMove)
-  canvas.value?.addEventListener('mouseup', onMouseUp)
+  openCamera()
 })
 
 onUnmounted(() => {
   stopCamera()
+  // Clean up image URLs
+  scannedImages.value.forEach((imgUrl) => URL.revokeObjectURL(imgUrl))
 })
 
 onBeforeRouteLeave(() => {
   stopCamera()
 })
+
 // watch route change as fallback
 watch(
   () => route.path,
@@ -154,6 +175,70 @@ watch(scannedImages, () => {
   }
 })
 
+// Image selection functions
+function openFileInput() {
+  fileInput.value.click()
+}
+
+async function handleFileSelection(event) {
+  const files = Array.from(event.target.files)
+  const validImages = files.filter(isValidImageFile)
+
+  if (validImages.length !== files.length) {
+    alert('Some files were filtered out. Only image files are allowed.')
+  }
+
+  if (validImages.length === 0) {
+    alert('Please select valid image files (JPG, JPEG, PNG, GIF, WebP)')
+    return
+  }
+
+  // Process each selected image and add directly to scanned images
+  for (const file of validImages) {
+    try {
+      const imageUrl = URL.createObjectURL(file)
+      const imageElement = await createImageElement(imageUrl)
+
+      // Create canvas with image
+      const canvas = document.createElement('canvas')
+      canvas.width = imageElement.width
+      canvas.height = imageElement.height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(imageElement, 0, 0)
+
+      // Convert to blob and create URL for scanned images
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 0.9))
+      const scannedImageUrl = URL.createObjectURL(blob)
+
+      scannedImages.value.push(scannedImageUrl)
+
+      // Clean up original URL
+      URL.revokeObjectURL(imageUrl)
+    } catch (error) {
+      console.error('Error processing image:', error)
+      alert(`Error processing ${file.name}. Please try again.`)
+    }
+  }
+
+  // Clear the file input
+  event.target.value = ''
+}
+
+function isValidImageFile(file) {
+  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+  return validTypes.includes(file.type)
+}
+
+function createImageElement(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
+}
+
+// Original camera functions
 function takePhoto() {
   const ctx = canvas.value.getContext('2d')
   ctx.drawImage(video.value, 0, 0, canvas.value.width, canvas.value.height)
@@ -165,6 +250,31 @@ function takePhoto() {
   canvas.value.style.display = 'block'
 
   detectEdges()
+}
+
+async function openCamera() {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+  })
+
+  video.value.srcObject = stream
+  video.value.style.display = 'block'
+  video.value.play()
+  canvas.value.style.display = 'none'
+  resultCanvas.value.style.display = 'none'
+
+  // Set canvas size to match video
+  video.value.onloadedmetadata = () => {
+    canvas.value.width = video.value.videoWidth
+    canvas.value.height = video.value.videoHeight
+    resultCanvas.value.width = video.value.videoWidth
+    resultCanvas.value.height = video.value.videoHeight
+  }
+
+  // Add event listeners for corner dragging
+  canvas.value.addEventListener('mousedown', onMouseDown)
+  canvas.value.addEventListener('mousemove', onMouseMove)
+  canvas.value.addEventListener('mouseup', onMouseUp)
 }
 
 function stopCamera() {
@@ -283,6 +393,7 @@ function onMouseDown(e) {
     if (Math.hypot(pt.x - x, pt.y - y) < 10) draggingPointIndex = i
   })
 }
+
 function onMouseMove(e) {
   if (draggingPointIndex !== null) {
     const { x, y } = getMousePos(e)
@@ -290,6 +401,7 @@ function onMouseMove(e) {
     drawCorners()
   }
 }
+
 function onMouseUp() {
   draggingPointIndex = null
 }
@@ -459,6 +571,8 @@ function saveImage() {
 }
 
 function deleteScan(index) {
+  const imgUrl = scannedImages.value[index]
+  URL.revokeObjectURL(imgUrl)
   scannedImages.value.splice(index, 1)
 }
 
@@ -488,6 +602,7 @@ async function estimatePdfSize() {
 }
 
 function openExportDialog() {
+  stopCamera()
   showExportDialog.value = true
   pdfFileName.value = 'scanned-document'
 }
@@ -535,6 +650,7 @@ async function confirmExport({ uploadPdf = false } = {}) {
   })
 
   // For uploading
+  stopCamera()
   const pdfBlob = pdf.output('blob')
   const file = new File([pdfBlob], `${pdfFileName.value}.pdf`, {
     type: 'application/pdf',
@@ -542,11 +658,11 @@ async function confirmExport({ uploadPdf = false } = {}) {
 
   if (uploadPdf) {
     router.push({ name: 'documents', state: { scannedFile: file } })
-    stopCamera()
   } else {
     pdf.save(`${pdfFileName.value || 'scanned-document'}.pdf`)
   }
 
+  showExportDialog.value = false
   resetScan()
 }
 </script>
@@ -607,5 +723,52 @@ canvas {
 
 .thumbnail-wrapper:hover .thumbnail-delete {
   opacity: 1;
+}
+
+/* buttons */
+.export,
+.buttons-row {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+}
+
+.btn1 {
+  background: #880000;
+  color: white;
+}
+
+.btn2 {
+  background: #ccac00b2 !important;
+}
+
+.camera-position {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.buttons-row {
+  width: 30vw; /* same as result canvas */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1em;
+}
+
+.left-buttons {
+  display: flex;
+  gap: 0.5em;
+}
+
+.center-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.5em;
+  margin: 0 auto;
+}
+
+.right-buttons {
+  display: flex;
+  gap: 0.5em;
 }
 </style>

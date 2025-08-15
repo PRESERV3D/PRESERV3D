@@ -32,8 +32,8 @@
             lazy-rules
             :rules="[
               (val) => !!val || 'Please enter your email.',
-              (val) =>
-                val.includes('@iskolarngbayan.pup.edu.ph') || 'Please use your PUP email only.',
+              // (val) =>
+              //   val.includes('@iskolarngbayan.pup.edu.ph') || 'Please use your PUP email only.',
             ]"
             class="text-box"
           />
@@ -151,11 +151,12 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { supabase } from 'boot/supabase'
 
-// Step state for form navigation
+const router = useRouter()
 const step = ref(1)
 
-// Example form object (add your actual form fields as needed)
 const form = ref({
   first_name: '',
   last_name: '',
@@ -163,46 +164,169 @@ const form = ref({
   contact: '',
   college: '',
   department: '',
-  year_section: '',
-  is_alumni: false,
   password: '',
   confirmPassword: '',
 })
 
-// Example collegeDepartment object (replace with your actual data)
-const collegeDepartment = ref({
-  'College of Science': ['Department of Math', 'Department of Physics'],
-  'College of Engineering': [
-    'Department of Civil Engineering',
-    'Department of Mechanical Engineering',
+const collegeDepartment = {
+  'College of Computer and Information Sciences': [
+    'Bachelor of Science in Computer Science',
+    'Bachelor of Science in Information Technology',
   ],
-})
-
-// Computed department options based on selected college
-const departmentOptions = computed(() => {
-  return collegeDepartment.value[form.value.college] || []
-})
-
-// Example password strength logic (replace with your actual logic)
-const passwordStrength = computed(() => {
-  if (form.value.password.length >= 8) return 'Strong'
-  if (form.value.password.length > 0) return 'Weak'
-  return ''
-})
-const passwordStrengthColor = computed(() => {
-  if (form.value.password.length >= 8) return 'green'
-  if (form.value.password.length > 0) return 'red'
-  return ''
-})
-
-// Example validateStepOne function (implement your actual validation logic)
-function validateStepOne() {
-  // Add your validation logic here
-  step.value = 2
+  'College of Social Sciences and Development': [
+    'Bachelor of Arts in History',
+    'Bachelor of Arts in Sociology',
+    'Bachelor of Science in Cooperatives',
+    'Bachelor of Science in Economics',
+    'Bachelor of Science in Psychology',
+  ],
+  'College of Arts and Letters': [
+    'Bachelor of Arts in English Language Studies',
+    'Bachelor of Arts in Filipinology',
+    'Bachelor of Arts in Literary and Cultural Studies',
+    'Bachelor of Arts in Philosophy',
+    'Bachelor of Performing Arts major in Theater Arts',
+  ],
+  'College of Education': [
+    'Bachelor of Technology and Livelihood Education',
+    'Bachelor of Library and Information Science',
+    'Bachelor of Secondary Education',
+    'Bachelor of Elementary Education',
+    'Bachelor of Early Childhood Education',
+  ],
+  'College of Political Science and Public Administration': [
+    'Bachelor of Public Administration',
+    'Bachelor of Arts in International Studies',
+    'Bachelor of Arts in Political Economy',
+    'Bachelor of Arts in Political Science',
+  ],
 }
 
-// Example registerUser function (implement your actual registration logic)
-function registerUser() {
-  // Add your registration logic here
+const departmentOptions = computed(() => {
+  return collegeDepartment[form.value.college] || []
+})
+
+// Password strength status
+const passwordStrength = computed(() => {
+  const pwd = form.value.password
+  if (!pwd) return ''
+
+  const hasUpper = /[A-Z]/.test(pwd)
+  const hasNumber = /[0-9]/.test(pwd)
+  const hasSpecial = /[^a-zA-Z0-9]/.test(pwd)
+  const isLongEnough = pwd.length >= 8
+
+  return hasUpper && hasNumber && hasSpecial && isLongEnough ? 'Strong' : 'Weak'
+})
+
+const passwordStrengthColor = computed(() =>
+  passwordStrength.value === 'Strong' ? 'green' : 'red',
+)
+
+// Validate step one inputs
+function validateStepOne() {
+  const { first_name, last_name, email, contact } = form.value
+
+  if (!first_name || !last_name || !email || !contact) {
+    alert('Please fill out all required fields.')
+    return
+  }
+
+  // if (!email.includes('@iskolarngbayan.pup.edu.ph')) {
+  //   alert('Please use your PUP email only.')
+  //   return
+  // }
+
+  step.value++
+}
+
+// Register user
+async function registerUser() {
+  const { first_name, last_name, email, contact, college, department, password, confirmPassword } =
+    form.value
+
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/
+  if (!passwordRegex.test(password)) {
+    alert(
+      'Password must be at least 8 characters long and contain an uppercase letter, a number, and a special character.',
+    )
+    return
+  }
+
+  if (password !== confirmPassword) {
+    alert('Passwords do not match!')
+    return
+  }
+
+  if (!college || !department) {
+    alert('Please fill out all required fields.')
+    return
+  }
+
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          role: 'user',
+          type: 'faculty',
+        },
+        redirectTo: 'http://localhost:9000/user/login',
+      },
+    })
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    if (data.user) {
+      const { error: profileError } = await supabase.from('registered_faculty').insert([
+        {
+          id: data.user.id,
+          first_name,
+          last_name,
+          email,
+          contact,
+          college,
+          department,
+          created_at: new Date(),
+        },
+      ])
+
+      if (profileError) {
+        console.error(profileError)
+        alert('User created, but failed to save profile.')
+        return
+      }
+
+      const { error: favoritesCollectionError } = await supabase.from('collections').insert([
+        {
+          collection_name: 'Favorites',
+          description: 'Items you marked as favorite will appear here.',
+          user_id: data.user.id,
+          is_default: true,
+          is_locked: true,
+          created_at: new Date(),
+          updated_at: new Date(),
+          cover_url:
+            'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers//favoritescover.png',
+        },
+      ])
+
+      if (favoritesCollectionError) {
+        console.error(favoritesCollectionError)
+        alert('User created, but failed to create Favorites collection.')
+        return
+      }
+
+      alert('Registration successful! Please check your email to confirm your account.')
+      router.push('/user/login')
+    }
+  } catch (err) {
+    console.error('Unexpected error:', err)
+    alert('An unexpected error occurred.')
+  }
 }
 </script>

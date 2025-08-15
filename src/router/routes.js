@@ -39,6 +39,20 @@ const routes = [
         component: () => import('pages/AdminDashboard.vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
+      //admin appointments
+      {
+        path: 'adminappointments',
+        name: 'admin-appointments',
+        component: () => import('pages/AdminAppointmentPage.vue'),
+        meta: { requiresAuth: true, allowedRoles: ['admin'] },
+      },
+      {
+        path: 'appointmentdetails', // to be changed to 'appointmentdetails/:id'
+        name: 'apointment-details',
+        component: () => import('pages/AdminAppointmentDetailsPage.vue'),
+        meta: { requiresAuth: true, allowedRoles: ['admin'] },
+      },
+
       {
         path: 'documents/:id',
         name: 'view-document',
@@ -67,6 +81,13 @@ const routes = [
         path: 'edit/artifacts/:id',
         name: 'admin-view-artifact',
         component: () => import('pages/EditViewArtifacts.vue'),
+        meta: { requiresAuth: true, allowedRoles: ['admin'] },
+      },
+
+      {
+        path: 'edit/documents/:id',
+        name: 'edit-document',
+        component: () => import('pages/EditViewDocument.vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
 
@@ -113,12 +134,12 @@ const routes = [
   },
 
   {
-    path: '/LandingPage',
+    path: '/landing',
     component: () => import('pages/LandingPage.vue'), // Landing Page
   },
 
   {
-    path: '/AdminLandingPage',
+    path: '/admin/landing',
     component: () => import('pages/AdminLandingPage.vue'), // Landing Page
   },
 
