@@ -103,6 +103,13 @@ const routes = [
         component: () => import('pages/AppointmentBooking.vue'),
         meta: { requiresAuth: true },
       },
+
+      {
+        path: 'highlights',
+        name: 'highlights',
+        component: () => import('pages/HighlightPage.vue'),
+        meta: { requiresAuth: true },
+      },
     ],
   },
   {
