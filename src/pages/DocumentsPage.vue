@@ -1,9 +1,9 @@
 <template>
   <q-page class="q-pa-md">
     <div class="page-header">
-      <div class="q-mt-xs title">Documents</div>
-      <div class="row q-mb-md subtitle justify-between items-center">
-        Browse selected digital books from the university archives.
+      <h2 class="q-mb-sm title">Documents</h2>
+      <div class="subtitle-btn-row">
+      <h5 class="q-mt-xs q-mb-lg subtitle">Browse selected digital books from the university archives.</h5>
         <q-btn
           v-if="isAdmin"
           @click="showDialog = true"
@@ -16,6 +16,7 @@
         />
       </div>
     </div>
+
 
     <!-- Upload Dialog -->
     <UploadDialog
