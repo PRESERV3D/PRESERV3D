@@ -76,6 +76,12 @@ const routes = [
         component: () => import('pages/DocumentScannerPage.vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
+      {
+        path: 'appointment',
+        name: 'appointment',
+        component: () => import('pages/AppointmentBooking.vue'),
+        meta: { requiresAuth: true },
+      },
     ],
   },
   {
