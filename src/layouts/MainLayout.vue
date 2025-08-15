@@ -240,7 +240,9 @@ const notifications = ref([
 ])
 
 const notificationCount = computed(() => notifications.value.length)
-const navItems = [
+
+// Base navigation items
+const baseNavItems = [
   { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
   { name: 'appointment', label: 'Appointment', icon: '\\icons\\appointment.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
@@ -253,6 +255,21 @@ const navItems = [
 const userProfile = computed(() => userStore.profile || {})
 const userName = computed(() => userProfile.value.first_name || 'User')
 const userRole = computed(() => userProfile.value.role || 'Unknown')
+
+// Add computed property to check if user role is 'user'
+const isUser = computed(() => userRole.value === 'user')
+
+// Filtered navigation items based on user role
+const navItems = computed(() => {
+  return baseNavItems.filter(item => {
+    // Show collections only for users with 'user' role
+    if (item.name === 'collections') {
+      return isUser.value
+    }
+    // Show all other items for everyone
+    return true
+  })
+})
 
 // Add a timeout to prevent rapid state changes
 let hoverTimeout = null
