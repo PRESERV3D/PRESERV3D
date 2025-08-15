@@ -145,7 +145,21 @@
             unelevated
           />
 
-          <q-dialog v-model="showDialog" persistent>
+          <!-- Upload Dialog -->
+          <UploadDialog
+            v-model="showDialog"
+            upload-type="artifacts"
+            accept=".glb"
+            :show-camera="false"
+            :uploading="uploading"
+            :upload-progress="uploadProgress"
+            @file-selected="onFileSelected"
+            @file-dropped="onFileDropped"
+            @upload-click="handleUpload"
+            @cancel-click="handleCancel"
+          />
+
+          <!-- <q-dialog v-model="showDialog" persistent>
             <q-card class="add-documentarti-card">
               <q-card-section
                 class="box-upload-docuarti"
@@ -176,7 +190,7 @@
                   <div class="selected-documentarti-name q-mt-md">
                     {{ selectedFile.name }}
                   </div>
-                  <!-- Upload progress bar -->
+                  // Upload progress bar
                   <q-linear-progress
                     v-if="uploading"
                     :value="uploadProgress / 100"
@@ -216,14 +230,18 @@
                 />
               </q-card-actions>
             </q-card>
-          </q-dialog>
+          </q-dialog> -->
         </div>
       </div>
     </div>
 
     <!-- Three Artifacts per Row Grid -->
     <div class="artifacts-grid">
-      <div v-for="(model, i) in displayedModels" :key="i" class="artifact-card-wrapper">
+      <div
+        v-for="(model, i) in searchStore.query ? searchStore.results : modelStore.models"
+        :key="i"
+        class="artifact-card-wrapper"
+      >
         <q-card class="my-card" rounded bordered>
           <div class="card">
             <model-viewer
@@ -369,8 +387,10 @@ import { useModelStore } from 'stores/modelStore'
 import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
+import { uploadFileToR2 } from 'boot/r2'
 import { useRouter } from 'vue-router'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+import UploadDialog from 'src/components/UploadDialog.vue'
 import '@google/model-viewer'
 
 const router = useRouter()
@@ -395,8 +415,8 @@ const dateOptions = ref([])
 // Dialog for upload pop up
 const showDialog = ref(false)
 const selectedFile = ref(null)
-const fileInput = ref(null)
-const isDragging = ref(false)
+// const fileInput = ref(null)
+// const isDragging = ref(false)
 const dialog = ref(false)
 const loading = ref(false)
 const uploading = ref(false)
@@ -968,35 +988,49 @@ const metadata = ref({
   categories: [],
 })
 
-function triggerFileInput() {
-  fileInput.value?.click()
+// function triggerFileInput() {
+//   fileInput.value?.click()
+// }
+
+// function handleFileChange(event) {
+//   const file = event.target.files[0]
+//   if (file) {
+//     selectedFile.value = file
+//   } else {
+//     selectedFile.value = null
+//   }
+// }
+
+// function onDragOver() {
+//   isDragging.value = true
+// }
+
+// function onDragLeave() {
+//   isDragging.value = false
+// }
+
+// function onFileDrop(e) {
+//   isDragging.value = false
+//   const files = e.dataTransfer.files
+//   console.log(files)
+//   if (files.length > 0 && files[0].name.endsWith('.glb')) {
+//     selectedFile.value = files[0]
+//   } else {
+//     alert('Only GLB files are allowed.')
+//   }
+// }
+
+// File selection handlers
+function onFileSelected(file) {
+  selectedFile.value = file
 }
 
-function handleFileChange(event) {
-  const file = event.target.files[0]
-  if (file) {
+function onFileDropped(file) {
+  if (file && file.name.endsWith('.glb')) {
     selectedFile.value = file
   } else {
-    selectedFile.value = null
-  }
-}
-
-function onDragOver() {
-  isDragging.value = true
-}
-
-function onDragLeave() {
-  isDragging.value = false
-}
-
-function onFileDrop(e) {
-  isDragging.value = false
-  const files = e.dataTransfer.files
-  console.log(files)
-  if (files.length > 0 && files[0].name.endsWith('.glb')) {
-    selectedFile.value = files[0]
-  } else {
     alert('Only GLB files are allowed.')
+    selectedFile.value = null
   }
 }
 
@@ -1005,76 +1039,178 @@ function sanitizeFileName(name) {
 }
 
 // ADDED: Compress GLB
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+// import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
+// import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 
-const loader = new GLTFLoader()
+// const loader = new GLTFLoader()
 
-// Setup DRACO loader
-const dracoLoader = new DRACOLoader()
-dracoLoader.setDecoderPath('/draco/') // Ensure you serve decoder files from this path
-loader.setDRACOLoader(dracoLoader)
+// // Setup DRACO loader
+// const dracoLoader = new DRACOLoader()
+// dracoLoader.setDecoderPath('/draco/') // Ensure you serve decoder files from this path
+// loader.setDRACOLoader(dracoLoader)
 
-async function compressGLB(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = async (e) => {
-      const arrayBuffer = e.target.result
+// async function compressGLB(file) {
+//   return new Promise((resolve, reject) => {
+//     const reader = new FileReader()
+//     reader.onload = async (e) => {
+//       const arrayBuffer = e.target.result
 
-      const loader = new GLTFLoader()
+//       const loader = new GLTFLoader()
 
-      // DRACO decoding setup
-      const dracoLoader = new DRACOLoader()
-      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/') // CDN
-      loader.setDRACOLoader(dracoLoader)
+//       // DRACO decoding setup
+//       const dracoLoader = new DRACOLoader()
+//       dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/') // CDN
+//       loader.setDRACOLoader(dracoLoader)
 
-      loader.parse(
-        arrayBuffer,
-        '',
-        (gltf) => {
-          const exporter = new GLTFExporter()
+//       loader.parse(
+//         arrayBuffer,
+//         '',
+//         (gltf) => {
+//           const exporter = new GLTFExporter()
 
-          exporter.parse(
-            gltf.scene,
-            (result) => {
-              const blob = new Blob([result], { type: 'model/gltf-binary' })
-              resolve(blob)
-            },
-            {
-              binary: true,
-              embedImages: true,
-              animations: gltf.animations,
-              truncateDrawRange: true,
-              includeCustomExtensions: true,
-              dracoOptions: {
-                compressionLevel: 10,
-              },
-            },
-          )
-        },
-        (error) => {
-          reject(error)
-        },
-      )
-    }
+//           exporter.parse(
+//             gltf.scene,
+//             (result) => {
+//               const blob = new Blob([result], { type: 'model/gltf-binary' })
+//               resolve(blob)
+//             },
+//             {
+//               binary: true,
+//               embedImages: true,
+//               animations: gltf.animations,
+//               truncateDrawRange: true,
+//               includeCustomExtensions: true,
+//               dracoOptions: {
+//                 compressionLevel: 10,
+//               },
+//             },
+//           )
+//         },
+//         (error) => {
+//           reject(error)
+//         },
+//       )
+//     }
 
-    reader.onerror = reject
-    reader.readAsArrayBuffer(file)
-  })
-}
+//     reader.onerror = reject
+//     reader.readAsArrayBuffer(file)
+//   })
+// }
+
+// const handleUpload = async () => {
+//   const originalFile = selectedFile.value
+//   if (!originalFile) return
+
+//   const fileName = sanitizeFileName(originalFile.name)
+//   uploading.value = true
+//   uploadProgress.value = 0
+
+//   if (!fileName.endsWith('.glb')) {
+//     alert('Only .glb files are allowed.')
+//     uploading.value = false
+//     return
+//   }
+
+//   loading.value = true
+
+//   try {
+//     const alreadyExists = await fileExists(fileName)
+//     if (alreadyExists) {
+//       alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
+//       uploading.value = false
+//       loading.value = false
+//       return
+//     }
+
+//     console.log(`Starting GLB compression for: ${fileName}`)
+//     console.log(`GLB Original size: ${(originalFile.size / 1024).toFixed(2)} KB`)
+
+//     const compressedFile = await compressGLB(originalFile)
+
+//     console.log(`GLB Compression complete: ${fileName}`)
+//     console.log(`GLB Compressed size: ${(compressedFile.size / 1024).toFixed(2)} KB`)
+
+//     const saved = (originalFile.size - compressedFile.size) / 1024
+//     console.log(`GLB compression saved: ${saved.toFixed(2)} KB`)
+
+//     // Progress bar simulation
+//     const progressInterval = setInterval(() => {
+//       if (uploadProgress.value < 90) {
+//         uploadProgress.value += 1
+//       }
+//     }, 200)
+
+//     const { error: uploadError } = await supabase.storage
+//       .from('artifacts')
+//       .upload(fileName, compressedFile, {
+//         cacheControl: '3600',
+//         upsert: true,
+//         contentType: 'model/gltf-binary',
+//       })
+
+//     clearInterval(progressInterval)
+//     uploadProgress.value = 100
+
+//     if (uploadError) {
+//       console.error('Upload error:', uploadError)
+//       alert('Upload failed.')
+//       uploading.value = false
+//       loading.value = false
+//       return
+//     }
+
+//     const { data: urlData } = supabase.storage.from('artifacts').getPublicUrl(fileName)
+//     const fileUrl = urlData.publicUrl
+
+//     const insertData = {
+//       file_name: fileName,
+//       file_url: fileUrl,
+//       uploaded_at: new Date(),
+//       updated_at: new Date(),
+//     }
+
+//     const { error: dbError } = await supabase.from('artifacts_metadata').insert([insertData])
+//     if (dbError) {
+//       console.error('Supabase insert error:', dbError)
+//       alert('Upload succeeded but metadata failed to save.')
+//     } else {
+//       console.log('Upload Success')
+//     }
+
+//     setTimeout(() => {
+//       uploading.value = false
+//       uploadProgress.value = 0
+//     }, 1000)
+
+//     metadata.value = {
+//       file_name: fileName,
+//       file_url: fileUrl,
+//       title: '',
+//       author: '',
+//       date: '',
+//       summary: '',
+//       keywords: [],
+//       categories: [],
+//     }
+
+//     dialog.value = true
+//   } catch (err) {
+//     console.error('Upload failed:', err)
+//     alert('Upload failed. See console for details.')
+//   } finally {
+//     loading.value = false
+//   }
+// }
 
 const handleUpload = async () => {
-  const originalFile = selectedFile.value
-  if (!originalFile) return
-
-  const fileName = sanitizeFileName(originalFile.name)
+  const file = selectedFile.value
+  const fileName = sanitizeFileName(file.name)
   uploading.value = true
   uploadProgress.value = 0
 
-  if (!fileName.endsWith('.glb')) {
+  if (!file || !fileName.endsWith('.glb')) {
     alert('Only .glb files are allowed.')
-    uploading.value = false
     return
   }
 
@@ -1082,53 +1218,34 @@ const handleUpload = async () => {
 
   try {
     const alreadyExists = await fileExists(fileName)
+
     if (alreadyExists) {
       alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
-      uploading.value = false
-      loading.value = false
       return
     }
 
-    console.log(`Starting GLB compression for: ${fileName}`)
-    console.log(`GLB Original size: ${(originalFile.size / 1024).toFixed(2)} KB`)
-
-    const compressedFile = await compressGLB(originalFile)
-
-    console.log(`GLB Compression complete: ${fileName}`)
-    console.log(`GLB Compressed size: ${(compressedFile.size / 1024).toFixed(2)} KB`)
-
-    const saved = (originalFile.size - compressedFile.size) / 1024
-    console.log(`GLB compression saved: ${saved.toFixed(2)} KB`)
-
-    // Progress bar simulation
+    // Fake progress bar animation
     const progressInterval = setInterval(() => {
       if (uploadProgress.value < 90) {
         uploadProgress.value += 1
       }
     }, 200)
 
-    const { error: uploadError } = await supabase.storage
-      .from('artifacts')
-      .upload(fileName, compressedFile, {
-        cacheControl: '3600',
-        upsert: true,
-        contentType: 'model/gltf-binary',
-      })
+    // Upload to R2 Storage
+    const { uploadError } = await uploadFileToR2(file, 'artifacts', fileName)
 
     clearInterval(progressInterval)
     uploadProgress.value = 100
 
+    const fileUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/artifacts/${encodeURIComponent(fileName)}`
+
     if (uploadError) {
       console.error('Upload error:', uploadError)
       alert('Upload failed.')
-      uploading.value = false
-      loading.value = false
       return
     }
 
-    const { data: urlData } = supabase.storage.from('artifacts').getPublicUrl(fileName)
-    const fileUrl = urlData.publicUrl
-
+    // Save metadata
     const insertData = {
       file_name: fileName,
       file_url: fileUrl,
@@ -1140,6 +1257,7 @@ const handleUpload = async () => {
     if (dbError) {
       console.error('Supabase insert error:', dbError)
       alert('Upload succeeded but metadata failed to save.')
+      return
     } else {
       console.log('Upload Success')
     }
@@ -1149,6 +1267,7 @@ const handleUpload = async () => {
       uploadProgress.value = 0
     }, 1000)
 
+    // Open metadata confirmation dialog
     metadata.value = {
       file_name: fileName,
       file_url: fileUrl,

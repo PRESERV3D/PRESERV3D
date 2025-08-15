@@ -15,14 +15,12 @@
 
       <div class="main-content">
         <!-- Left Side: 3D Model Viewer Card -->
-        <div class="artifact-card">
+        <div class="artifact-card" ref="artifactCard">
           <model-viewer
+            ref="artifactViewer"
             :src="model.file_url"
             camera-controls
             loading="lazy"
-            auto-rotate
-            auto-rotate-delay="1500"
-            rotation-per-second="10deg"
             shadow-intensity="1"
             class="large-artifacts"
           />
@@ -37,7 +35,7 @@
                 style="width: 19.5px; height: 19.5px"
               />
             </button>
-            <button class="control-btn" title="Reset View">
+            <button class="control-btn" title="Reset View" @click="resetModelView">
               <img
                 src="/icons/reset.png"
                 alt="Reset View"
@@ -45,7 +43,7 @@
                 style="width: 20px; height: 20px"
               />
             </button>
-            <button class="control-btn" title="Zoom">
+            <button class="control-btn" title="Zoom" @click="viewFullScreen">
               <img
                 src="/icons/zoom-in.png"
                 alt="Zoom"
@@ -53,6 +51,89 @@
                 style="width: 16px; height: 16px"
               />
             </button>
+          </div>
+
+          <!-- Help Overlay -->
+          <div v-if="showHelpOverlay" class="help-overlay">
+            <div class="help-content">
+              <button class="help-close-btn" @click="closeHelp">
+                <q-icon name="close" size="20px" />
+              </button>
+              <div class="help-title">Navigation Controls</div>
+              <div class="help-sections">
+                <!-- Orbit Section -->
+                <div class="help-section">
+                  <div class="help-section-title">
+                    <q-icon name="3d_rotation" class="help-icon" />
+                    <span>Orbit</span>
+                  </div>
+                  <div class="help-methods">
+                    <div class="help-method">
+                      <q-icon name="mouse" class="method-icon" />
+                      <span>Left-click and drag</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="touch_app" class="method-icon" />
+                      <span>One-finger drag</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="keyboard" class="method-icon" />
+                      <span>Arrow keys</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pan Section -->
+                <div class="help-section">
+                  <div class="help-section-title">
+                    <q-icon name="pan_tool" class="help-icon" />
+                    <span>Pan</span>
+                  </div>
+                  <div class="help-methods">
+                    <div class="help-method">
+                      <q-icon name="mouse" class="method-icon" />
+                      <span>Right-click and drag</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="touch_app" class="method-icon" />
+                      <span>Two-finger drag</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="keyboard" class="method-icon" />
+                      <span>Shift + Arrow keys</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Zoom Section -->
+                <div class="help-section">
+                  <div class="help-section-title">
+                    <q-icon name="zoom_in" class="help-icon" />
+                    <span>Zoom</span>
+                  </div>
+                  <div class="help-methods">
+                    <div class="help-method">
+                      <q-icon name="mouse" class="method-icon" />
+                      <span>Mouse wheel</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="touch_app" class="method-icon" />
+                      <span>Two-finger pinch</span>
+                    </div>
+                    <div class="help-divider">Or</div>
+                    <div class="help-method">
+                      <q-icon name="keyboard" class="method-icon" />
+                      <span>Ctrl + Arrow keys</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Help Overlay - positioned over the artifact card -->
@@ -218,6 +299,35 @@
             <p class="a-info-text">{{ model.metadata.summary }}</p>
           </div>
 
+          <!-- Related Links -->
+          <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
+          <q-dialog v-model="showRelatedDialog" persistent>
+            <q-card class="related-box">
+              <q-card-section
+                class="column sub-font-3 items-start"
+                style="font-size: 16px; font-weight: 700"
+              >
+                Related Links
+              </q-card-section>
+              <q-separator />
+              <q-card-section class="column items-start">
+                <div
+                  v-for="link in links"
+                  :key="link.id"
+                  class="row items-center q-mb-xs full-width"
+                  @click="openLink(link.url)"
+                >
+                  <div class="link-style" @click="openLink(link.url)">
+                    {{ link.title || link.url }}
+                  </div>
+                </div>
+              </q-card-section>
+              <q-card-actions align="right">
+                <q-btn label="Close" class="btn-save" flat v-close-popup />
+              </q-card-actions>
+            </q-card>
+          </q-dialog>
+
           <!-- Two-Column Section -->
           <div class="two-column-details q-mb-lg">
             <div class="detail-row q-mb-md">
@@ -358,7 +468,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useModelStore } from 'stores/modelStore'
@@ -377,6 +487,8 @@ const isAdmin = computed(() => userRole === 'admin')
 const model = ref(null)
 const loading = ref(true)
 
+const artifactViewer = ref(null)
+
 const dialogOpen = ref(false)
 const selectedModel = ref(null)
 const selectedItemType = ref('artifact')
@@ -390,6 +502,9 @@ const notifyDialogMessage = ref('')
 const showDialog = ref(false)
 
 const showHelpOverlay = ref(false)
+
+const showRelatedDialog = ref(false)
+const links = ref([])
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)
@@ -407,6 +522,32 @@ const toggleHelp = () => {
 // Close help overlay
 const closeHelp = () => {
   showHelpOverlay.value = false
+}
+
+// ADDED: Reset model view function
+let defaultOrbit = ''
+let defaultFOV = ''
+function resetModelView() {
+  if (artifactViewer.value) {
+    artifactViewer.value.setAttribute('camera-orbit', defaultOrbit)
+    artifactViewer.value.setAttribute('field-of-view', defaultFOV)
+  }
+}
+
+// ADDED: View full screen function
+function viewFullScreen() {
+  const el = artifactViewer.value
+  if (!el) return
+
+  if (el.requestFullscreen) {
+    el.requestFullscreen()
+  } else if (el.webkitRequestFullscreen) {
+    // Safari
+    el.webkitRequestFullscreen()
+  } else if (el.msRequestFullscreen) {
+    // IE/Edge
+    el.msRequestFullscreen()
+  }
 }
 
 // Action button methods
@@ -607,7 +748,7 @@ const loadUserCollections = async () => {
     .eq('user_id', userId)
 
   if (!error) {
-    // ADDED: Exclude "Favorites" from the list
+    // Exclude "Favorites" from the list
     userCollections.value = data.filter((c) => c.collection_name !== 'Favorites')
   } else {
     console.error('Failed to load collections:', error)
@@ -716,11 +857,19 @@ onMounted(async () => {
       bookmarked: false,
       starred: false,
     }
+
+    if (data.related_links && Array.isArray(data.related_links)) {
+      links.value = data.related_links.map((link, idx) => ({
+        id: link.id || Date.now() + idx,
+        title: link.title,
+        url: link.url,
+      }))
+    }
   }
 
   loading.value = false
 
-  // ADDED: Check if the artifact is in user's Favorites collection
+  // Check if the artifact is in user's Favorites collection
   const { data: authData } = await supabase.auth.getUser()
   const userId = authData?.user?.id
 
@@ -770,7 +919,21 @@ onMounted(async () => {
 
   await modelStore.fetchStarCounts()
   await modelStore.fetchViewCounts()
+
+  // ADDED: Wait for model to render & load
+  nextTick(() => {
+    if (artifactViewer.value) {
+      artifactViewer.value.addEventListener('load', () => {
+        defaultOrbit = artifactViewer.value.getAttribute('camera-orbit') || '0deg 75deg auto'
+        defaultFOV = artifactViewer.value.getAttribute('field-of-view') || 'auto'
+      })
+    }
+  })
 })
+
+function openLink(url) {
+  window.open(url, '_blank')
+}
 
 async function handleDelete() {
   try {
