@@ -143,7 +143,16 @@
     <!-- Document Highlights Section -->
     <div class="column q-py-md q-gutter-lg">
       <div class="box-highlights">
-        <p class="q-ml-lg title-font-2" style="font-size: 16px">Document Highlights</p>
+        <div class="row justify-between q-px-lg q-pt-lg q-mb-md">
+          <p class="title-font-2" style="font-size: 16px; margin: 0">Document Highlights</p>
+
+          <!-- See All Link -->
+          <router-link to="/collections" class="see-all-link q-mt-xs">
+            See All
+            <q-icon name="arrow_forward" size="16px" class="q-ml-xs" />
+          </router-link>
+        </div>
+
         <div class="row docs-gap justify-start">
           <div v-for="(doc, index) in topDocuments" :key="index">
             <div class="row q-mb-lg">
