@@ -39,20 +39,6 @@ const routes = [
         component: () => import('pages/AdminDashboard.vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
-      //admin appointments
-      {
-        path: 'adminappointments',
-        name: 'admin-appointments',
-        component: () => import('pages/AdminAppointmentPage.vue'),
-        meta: { requiresAuth: true, allowedRoles: ['admin'] },
-      },
-      {
-        path: 'appointmentdetails', // to be changed to 'appointmentdetails/:id'
-        name: 'apointment-details',
-        component: () => import('pages/AdminAppointmentDetailsPage.vue'),
-        meta: { requiresAuth: true, allowedRoles: ['admin'] },
-      },
-
       {
         path: 'documents/:id',
         name: 'view-document',
@@ -175,6 +161,39 @@ const routes = [
         path: 'login',
         name: 'admin-login',
         component: () => import('pages/AdminLoginPage.vue'),
+      },
+      // Admin appointments
+      {
+        path: 'appointment',
+        name: 'admin-appointments',
+        component: () => import('pages/AdminAppointmentPage.vue'),
+        meta: { requiresAuth: true, allowedRoles: ['admin'] },
+      },
+      {
+        path: 'appointment/:id',
+        name: 'appointment-details',
+        component: () => import('pages/AdminAppointmentDetailsPage.vue'),
+        meta: { requiresAuth: true, allowedRoles: ['admin'] },
+      },
+    ],
+  },
+
+  {
+    path: '/admin',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      // Admin appointments
+      {
+        path: 'appointments',
+        name: 'admin-appointments',
+        component: () => import('pages/AdminAppointmentPage.vue'),
+        meta: { requiresAuth: true, allowedRoles: ['admin'] },
+      },
+      {
+        path: 'appointments/details',
+        name: 'appointment-details',
+        component: () => import('pages/AdminAppointmentDetailsPage.vue'),
+        meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
     ],
   },
