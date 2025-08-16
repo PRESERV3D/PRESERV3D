@@ -13,7 +13,9 @@
       >
         <template v-slot:body-cell-actions>
           <q-td align="center">
-            <router-link to="/appointmentdetails" class="view-more-link"> View More </router-link>
+            <router-link to="/admin/appointments/details" class="view-more-link">
+              View More
+            </router-link>
           </q-td>
         </template>
       </q-table>

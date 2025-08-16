@@ -4,20 +4,9 @@
       <!-- Mobile Menu Button -->
       <q-header elevated class="mobile-header" v-if="$q.screen.lt.md">
         <q-toolbar>
-          <q-btn
-            flat
-            dense
-            round
-            icon="menu"
-            aria-label="Menu"
-            @click="drawer = !drawer"
-          />
+          <q-btn flat dense round icon="menu" aria-label="Menu" @click="drawer = !drawer" />
           <q-toolbar-title class="mobile-logo">
-            <img
-              src="\img\logo.png"
-              alt="Logo"
-              class="mobile-logo-img"
-            />
+            <img src="\img\logo.png" alt="Logo" class="mobile-logo-img" />
           </q-toolbar-title>
           <!-- Mobile notifications -->
           <q-btn flat round dense class="mobile-notif-btn">
@@ -110,7 +99,9 @@
                   </div>
                 </q-item-section>
                 <q-item-section>
-                  <span :class="{ 'text-hidden': miniState && $q.screen.gt.sm }" class="nav-text">{{ item.label }}</span>
+                  <span :class="{ 'text-hidden': miniState && $q.screen.gt.sm }" class="nav-text">{{
+                    item.label
+                  }}</span>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -118,7 +109,10 @@
 
           <!-- Logout Section - Fixed at bottom -->
           <div class="logout-section">
-            <q-separator class="q-mb-md" v-show="(!miniState && $q.screen.gt.sm) || $q.screen.lt.md" />
+            <q-separator
+              class="q-mb-md"
+              v-show="(!miniState && $q.screen.gt.sm) || $q.screen.lt.md"
+            />
             <q-item
               clickable
               v-ripple
@@ -140,7 +134,7 @@
       </q-drawer>
 
       <q-page-container>
-        <div class="search-toolbar q-py-md q-px-md">
+        <div v-if="hasSearchBar" class="search-toolbar q-py-md q-px-md">
           <q-toolbar class="bg-transparent responsive-toolbar">
             <!-- Search Bar Container -->
             <div class="search-container">
@@ -193,7 +187,7 @@
                 </q-menu>
               </q-btn>
 
-              <q-space/>
+              <q-space />
 
               <!-- User Profile Button -->
               <q-btn flat dense class="user-profile-btn">
@@ -261,7 +255,7 @@ const isUser = computed(() => userRole.value === 'user')
 
 // Filtered navigation items based on user role
 const navItems = computed(() => {
-  return baseNavItems.filter(item => {
+  return baseNavItems.filter((item) => {
     // Show collections only for users with 'user' role
     if (item.name === 'collections') {
       return isUser.value
@@ -287,6 +281,7 @@ const onDrawerMouseLeave = () => {
 }
 
 const activeItem = ref('home')
+const hasSearchBar = ref(false)
 
 const setActiveItem = (itemName) => {
   activeItem.value = itemName
@@ -376,12 +371,21 @@ watch(
     } else {
       activeItem.value = ''
     }
+
+    // Search bar visibility
+    if (
+      newPath.includes('admindash') ||
+      newPath.includes('home') ||
+      newPath.includes('artifacts') ||
+      newPath.includes('documents')
+    ) {
+      hasSearchBar.value = true
+    } else {
+      hasSearchBar.value = false
+    }
   },
   { immediate: true },
 )
-
-
-
 </script>
 
 <style scoped>
@@ -684,7 +688,6 @@ watch(
   display: flex;
 
   align-items: center;
-
 }
 
 .user-profile-btn:hover {

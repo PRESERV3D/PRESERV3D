@@ -1,7 +1,7 @@
 <template>
   <q-page class="q-pa-md">
     <div class="items-start q-mt-sm">
-      <router-link to="/adminappointments" class="back-button-top">
+      <router-link to="/admin/appointments" class="back-button-top">
         <q-btn flat icon="arrow_back" label="Back to Appointments" />
       </router-link>
     </div>

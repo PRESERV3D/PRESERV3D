@@ -62,6 +62,18 @@ export default defineRouter(function (/* { store, ssrContext } */) {
       }
     }
 
+    // Role-based redirect if going to appointment
+    if (to.path === '/appointment') {
+      const role = session.user.user_metadata?.role
+      if (role === 'admin') {
+        next('/admin/appointments')
+        return
+      } else if (role === 'user') {
+        next()
+        return
+      }
+    }
+
     // Role-based access control
     if (requiresAuth && allowedRoles) {
       const role = session.user.user_metadata?.role
