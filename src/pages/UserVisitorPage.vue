@@ -32,8 +32,7 @@
             lazy-rules
             :rules="[
               (val) => !!val || 'Please enter your email.',
-              (val) =>
-                val.includes('@iskolarngbayan.pup.edu.ph') || 'Please use your PUP email only.',
+              (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || 'Please enter a valid email.',
             ]"
             class="text-box"
           />
@@ -69,7 +68,7 @@
               <label class="labelNames">Institution</label>
               <q-input
                 dense
-                v-model="form.first_name"
+                v-model="form.institution"
                 lazy-rules
                 :rules="[(val) => !!val || 'Please enter your institution.']"
                 class="text-box-2"
@@ -77,7 +76,14 @@
             </div>
             <div class="col q-ml-md q-gutter-sm">
               <label class="labelNames">Purpose</label>
-              <q-input filled dense v-model="form.purpose" class="text-box-2" />
+              <q-input
+                filled
+                dense
+                v-model="form.purpose"
+                lazy-rules
+                :rules="[(val) => !!val || 'Please enter your purpose of registration.']"
+                class="text-box-2"
+              />
             </div>
           </div>
 
@@ -87,96 +93,81 @@
             <div class="column q-gutter-sm">
               <q-btn
                 @click="showDialog = true"
-                label="Choose File"
+                :label="selectedFile ? selectedFile.name : 'Choose File'"
                 class="choose-file"
                 no-caps
                 unelevated
               />
 
-              <!-- <q-dialog v-model="showDialog" persistent>
-                  <q-card class="add-documentarti-card">
-                    <q-card-section
-                      class="box-upload-docuarti"
-                      @dragover.prevent="onDragOver"
-                      @dragleave.prevent="onDragLeave"
-                      @drop.prevent="onFileDrop"
-                      :class="{ 'drag-over': isDragging }"
-                    >
-                      <q-img
-                        src="/img/drag-drop-icon.png"
-                        alt="Upload-Document"
-                        class="upload-icon-docu"
-                      />
-                      <div
-                        v-if="!selectedFile"
-                        class="sub-font-3 text-center"
-                        style="font-size: 14px; font-weight: 200"
-                      >
-                        <div
-                          class="sub-font-3 text-center"
-                          style="font-size: 18px; font-weight: 200"
-                        >
-                          DRAG and DROP files
-                        </div>
-                        or
-                        <a href="#" @click.prevent="triggerFileInput"
-                          ><strong>Browse Files</strong></a
-                        >
-                        on your computer
-                      </div>
-                      <div v-else class="documentarti-preview text-center">
-                        <q-img
-                          src="/img/document-icon.png"
-                          alt="Document"
-                          class="document-icon"
-                        />
-                        <div class="selected-document-name q-mt-md">
-                          {{ selectedFile.name }}
-                        </div>
-                        <q-linear-progress
-                          v-if="uploading"
-                          :value="uploadProgress / 100"
-                          color="primary"
-                          class="q-mt-md full-width"
-                        />
-                      </div>
-                      <input
-                        type="file"
-                        ref="fileInput"
-                        accept=".pdf"
-                        style="display: none"
-                        @change="handleFileChange"
-                      />
-                    </q-card-section>
-
-                    <q-card-actions class="row q-ml-lg justify-between items-center">
-                      <div></div>
-                      <q-btn
-                        v-if="!uploading"
-                        label="Upload"
-                        class="q-ml-xl q-mt-sm btn-save"
-                        @click="handleUpload"
-                        no-caps
-                      />
-
-                      <q-spinner v-else color="primary" size="2em" class="q-ml-xl q-mt-sm" />
-
-                      <q-btn
-                        flat
-                        label="Cancel"
-                        class="q-mt-sm sub-font-2"
-                        style="color: #000000"
-                        v-close-popup
-                        no-caps
-                        @click="handleCancel"
-                      />
-                    </q-card-actions>
-                  </q-card>
-                </q-dialog> -->
+              <!--  Upload Dialog -->
+              <UploadDialog
+                v-model="showDialog"
+                upload-type="documents"
+                accept="application/pdf"
+                :uploading="uploading"
+                :upload-progress="uploadProgress"
+                :pre-selected-file="selectedFile"
+                @file-selected="onFileSelected"
+                @file-dropped="onFileDropped"
+                @cancel-click="handleCancel"
+                @upload-click="handleUploadClick"
+              />
             </div>
-            <label class="q-mt-md note">File type: .pdf or .docx only</label>
           </div>
-          <label class="labelNames">Password</label>
+
+          <!-- Start Date with Date Validation -->
+          <div class="column q-mt-md">
+            <label class="labelNames">Start Date</label>
+            <q-input
+              dense
+              v-model="form.start_date"
+              mask="####-##-##"
+              placeholder="YYYY-MM-DD"
+              :rules="[(val) => !!val || 'Please select a start date.']"
+              class="text-box-2"
+            >
+              <template v-slot:append>
+                <q-icon name="event" class="cursor-pointer" @click="$refs.startDatePicker.show()" />
+              </template>
+              <q-popup-proxy ref="startDatePicker" transition-show="scale" transition-hide="scale">
+                <q-date
+                  v-model="form.start_date"
+                  mask="YYYY-MM-DD"
+                  :options="startDateOptions"
+                  :min="minDate"
+                  :max="maxDate"
+                />
+              </q-popup-proxy>
+            </q-input>
+          </div>
+
+          <!-- End Date with Date Validation -->
+          <div class="column q-mt-md">
+            <label class="labelNames">End Date</label>
+            <q-input
+              dense
+              v-model="form.end_date"
+              mask="####-##-##"
+              placeholder="YYYY-MM-DD"
+              :rules="[(val) => !!val || 'Please select an end date.']"
+              class="text-box-2"
+            >
+              <template v-slot:append>
+                <q-icon name="event" class="cursor-pointer" @click="$refs.endDatePicker.show()" />
+              </template>
+              <q-popup-proxy ref="endDatePicker" transition-show="scale" transition-hide="scale">
+                <q-date
+                  v-model="form.end_date"
+                  mask="YYYY-MM-DD"
+                  :options="endDateOptions"
+                  :min="minDate"
+                  :max="maxDate"
+                />
+              </q-popup-proxy>
+            </q-input>
+          </div>
+
+          <!-- <label class="labelNames">Password</label>
           <q-input
             dense
             v-model="form.password"
@@ -204,7 +195,7 @@
               (val) => val === form.password || 'Passwords do not match.',
             ]"
             class="text-box"
-          />
+          /> -->
         </div>
 
         <div class="column items-center">
@@ -232,11 +223,12 @@
         <div class="q-my-md evaluating-title">EVALUATING PROFILE CREATION</div>
 
         <div class="subtitle-logsign text-center" style="max-width: 360px; margin: 0 auto">
-          Your request has been sent. Please allow 3–5 business days for processing.
+          Your registration has been sent. Please check your email within 3-5 business days for
+          confirmation.
           <div class="inquiries">For more inquiries, contact <b>preserv3d@gmail.com</b></div>
           <div class="q-mt-lg">
             <!-- change this route to landing page -->
-            <router-link to="/user/login" class="sub-font"> Back to Log In </router-link>
+            <router-link to="/landing" class="sub-font"> Back to Log In </router-link>
           </div>
         </div>
       </div>
@@ -245,46 +237,286 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
+import { supabase } from 'boot/supabase'
+import { uploadFileToR2 } from 'boot/r2'
+import UploadDialog from 'components/UploadDialog.vue'
+// import { date } from 'quasar'
 
-// Step state for form navigation
 const step = ref(1)
 
-// Example form object (add your actual form fields as needed)
+const showDialog = ref(false)
+
 const form = ref({
   first_name: '',
   last_name: '',
   email: '',
   contact: '',
-  password: '',
-  confirmPassword: '',
+  institution: '',
+  purpose: '',
+  letter_url: '',
+  start_date: '',
+  end_date: '',
 })
 
-// Example password strength logic (replace with your actual logic)
-const passwordStrength = computed(() => {
-  if (form.value.password.length >= 8) return 'Strong'
-  if (form.value.password.length > 0) return 'Weak'
-  return ''
-})
-const passwordStrengthColor = computed(() => {
-  if (form.value.password.length >= 8) return 'green'
-  if (form.value.password.length > 0) return 'red'
-  return ''
-})
+// Code for 7 days from and within 6 mos duration
+// Current date
+// const today = new Date()
+// const minDate = ref(date.formatDate(today, 'YYYY-MM-DD'))
 
-// Example validateStepOne function (implement your actual validation logic)
+// // Max selectable date: 6 months from current date
+// const maxDateObj = new Date(today)
+// maxDateObj.setMonth(maxDateObj.getMonth() + 6)
+// const maxDate = ref(date.formatDate(maxDateObj, 'YYYY-MM-DD'))
+
+// // Allow only dates starting 8 days from today until 6 months later
+// const startDateOptions = (val) => {
+//   const dt = new Date(val) // convert string to Date
+//   const diff = Math.floor((dt - today) / (1000 * 60 * 60 * 24)) // days difference
+
+//   return diff > 7 && diff <= 183 // 183 days ≈ 6 months
+// }
+
+// // Same rule for end date
+// const endDateOptions = (val) => startDateOptions(val)
+
+const startDateOptions = () => true
+const endDateOptions = () => true
+
+const handleUploadClick = () => {
+  alert('File has been added to your registration.')
+  showDialog.value = false
+}
+// Password strength status
+// const passwordStrength = computed(() => {
+//   const pwd = form.value.password
+//   if (!pwd) return ''
+
+//   const hasUpper = /[A-Z]/.test(pwd)
+//   const hasNumber = /[0-9]/.test(pwd)
+//   const hasSpecial = /[^a-zA-Z0-9]/.test(pwd)
+//   const isLongEnough = pwd.length >= 8
+
+//   return hasUpper && hasNumber && hasSpecial && isLongEnough ? 'Strong' : 'Weak'
+// })
+
+// const passwordStrengthColor = computed(() =>
+//   passwordStrength.value === 'Strong' ? 'green' : 'red',
+// )
+
+// Validate step one inputs
 function validateStepOne() {
-  // Add your validation logic here
-  step.value = 2
+  const { first_name, last_name, email, contact } = form.value
+
+  if (!first_name || !last_name || !email || !contact) {
+    alert('Please fill out all required fields.')
+    return
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    alert('Please enter a valid email address.')
+    return
+  }
+
+  step.value++
 }
 
-// Example registerUser function (implement your actual registration logic)
-function registerUser() {
-  step.value = 3
-  // Add your registration logic here
+// Register user
+async function registerUser() {
+  const {
+    first_name,
+    last_name,
+    email,
+    contact,
+    institution,
+    purpose,
+    start_date,
+    end_date,
+    // letter_url,
+    // password,
+    // confirmPassword,
+  } = form.value
+
+  // const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/
+  // if (!passwordRegex.test(password)) {
+  //   alert(
+  //     'Password must be at least 8 characters long and contain an uppercase letter, a number, and a special character.',
+  //   )
+  //   return
+  // }
+
+  // if (password !== confirmPassword) {
+  //   alert('Passwords do not match!')
+  //   return
+  // }
+
+  if (!institution || !purpose) {
+    alert('Please fill out all required fields.')
+    return
+  }
+
+  if (!selectedFile.value) {
+    alert('Please upload your request/referral letter.')
+    return
+  }
+
+  if (!start_date) {
+    alert('Please select a start date.')
+    return
+  }
+
+  if (!end_date) {
+    alert('Please select an end date.')
+    return
+  }
+
+  if (end_date < start_date) {
+    alert('End date must be after the start date.')
+    return
+  }
+
+  try {
+    const fileUrl = await handleUpload()
+    form.value.letter_url = fileUrl
+
+    const { error } = await supabase.from('registration_visitors').insert([
+      {
+        first_name,
+        last_name,
+        email,
+        contact,
+        institution,
+        purpose,
+        letter_url: fileUrl,
+        status: 'Pending',
+        start_date,
+        end_date,
+      },
+    ])
+
+    if (error) {
+      alert('Failed to save registration.')
+      console.error('Insert error:', error)
+      return
+    }
+
+    // all working now (registration) except for this part: display step 3 instead
+    step.value = 3
+  } catch (err) {
+    console.log('Error during registration:', err)
+    alert('An error occurred during registration. Please try again later.')
+  }
 }
 
-const showDialog = ref(false)
+const selectedFile = ref(null)
+const uploading = ref(false)
+const uploadProgress = ref(0)
+
+const onFileSelected = async (file) => {
+  selectedFile.value = file
+  await prepareFile()
+}
+
+function onFileDropped(file) {
+  if (file?.type === 'application/pdf') {
+    onFileSelected(file)
+  } else {
+    alert('Only PDF files are allowed.')
+    selectedFile.value = null
+  }
+}
+
+function sanitizeFileName(name) {
+  return name.replace(/[^\w.-]/g, '_')
+}
+
+async function uploadFileToStorage(file, fileName) {
+  const { error } = await uploadFileToR2(file, 'visitor-letters', fileName)
+  return error
+}
+
+function handleCancel() {
+  selectedFile.value = null
+  showDialog.value = false
+  uploading.value = false
+  uploadProgress.value = 0
+}
+
+const prepareFile = async () => {
+  if (!selectedFile.value || selectedFile.value.type !== 'application/pdf') {
+    alert('Only .pdf files are allowed.')
+    return
+  }
+
+  const compressedFile = await compressPdf(selectedFile.value)
+  if (!compressedFile) {
+    alert('Compression failed. Please try again.')
+    return
+  }
+
+  const fileName = sanitizeFileName(compressedFile.name)
+  form.value.pendingLetterFile = { file: compressedFile, name: fileName }
+}
+
+// Upload handler
+const handleUpload = async () => {
+  if (!form.value.pendingLetterFile) {
+    throw new Error('No file prepared for upload.')
+  }
+
+  uploading.value = true
+  uploadProgress.value = 0
+
+  const progressInterval = setInterval(() => {
+    if (uploadProgress.value < 90) uploadProgress.value += 1
+  }, 200)
+
+  // Upload file
+  try {
+    const { file, name } = form.value.pendingLetterFile
+    const uploadError = await uploadFileToStorage(file, name)
+
+    if (uploadError) throw uploadError
+
+    clearInterval(progressInterval)
+    uploadProgress.value = 100
+
+    return `${import.meta.env.VITE_R2_PUBLIC_URL}/visitor-letters/${encodeURIComponent(name)}`
+  } finally {
+    clearInterval(progressInterval)
+    uploading.value = false
+    uploadProgress.value = 0
+  }
+}
+
+// Compress pdf on upload
+import { PDFDocument } from 'pdf-lib'
+
+async function compressPdf(file) {
+  console.log(`Starting PDF compression for: ${file.name}`)
+  const originalSize = file.size
+
+  const arrayBuffer = await file.arrayBuffer()
+  const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true })
+
+  const compressedBytes = await pdfDoc.save()
+  const compressedFile = new File([compressedBytes], file.name, { type: 'application/pdf' })
+
+  const originalKB = originalSize / 1024
+  const compressedKB = compressedFile.size / 1024
+  const savedKB = originalKB - compressedKB
+
+  console.log(`PDF Compression success: ${file.name}`)
+  console.log(`Original size: ${originalKB.toFixed(2)} KB`)
+  console.log(`Compressed size: ${compressedKB.toFixed(2)} KB`)
+  console.log(
+    `PDF Compression Saved: ${
+      savedKB > 0 ? savedKB.toFixed(2) + ' KB' : 'no space (already optimized)'
+    }`,
+  )
+
+  return compressedFile
+}
 </script>
 
 <style scoped>

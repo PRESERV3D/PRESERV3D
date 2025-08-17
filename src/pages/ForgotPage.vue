@@ -56,7 +56,7 @@ const emailSent = ref(false)
 // Check if email exists
 async function checkEmail() {
   const { data, error } = await supabase
-    .from('registered_users')
+    .from('all_users')
     .select('email')
     .eq('email', email.value)
     .single()
