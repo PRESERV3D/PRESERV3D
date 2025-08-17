@@ -302,6 +302,7 @@ async function registerUser() {
       options: {
         data: {
           role: 'user',
+          type: 'student',
         },
         redirectTo: 'http://localhost:9000/user/login',
       },

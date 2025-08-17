@@ -145,7 +145,7 @@ async function loginUser() {
     }
 
     const { error: profileError } = await supabase
-      .from('registered_users')
+      .from('all_users')
       .select('*')
       .eq('id', user.id)
       .maybeSingle()
