@@ -635,19 +635,6 @@ async function confirmAction() {
 
     // If Approved, insert into approved_users
     if (action === 'Approved') {
-      const insertResponse = await supabase.from('approved_visitors').insert({
-        registration_id: row.id,
-        approved_at: new Date().toISOString(),
-        approved_by: adminName,
-        email: row.email,
-      })
-
-      console.log('Insert response:', insertResponse)
-
-      if (insertResponse.error) {
-        throw insertResponse.error
-      }
-
       // Sign up the user in Supabase Auth and send confirmation email
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: row.email,
@@ -665,6 +652,22 @@ async function confirmAction() {
 
       if (signUpError) throw signUpError
       console.log('SignUp confirmation email sent:', signUpData)
+
+      const authUserId = signUpData.user.id
+
+      const insertResponse = await supabase.from('approved_visitors').insert({
+        user_id: authUserId,
+        registration_id: row.id,
+        approved_at: new Date().toISOString(),
+        approved_by: adminName,
+        email: row.email,
+      })
+
+      console.log('Insert response:', insertResponse)
+
+      if (insertResponse.error) {
+        throw insertResponse.error
+      }
 
       // Close the dialog
       confirmDialog.value.show = false
