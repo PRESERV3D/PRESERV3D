@@ -112,7 +112,7 @@ export const useUserStore = defineStore('user', {
         this.profile = {
           ...facultyData[0],
           role: 'user',
-          user_type: 'faculty', // always faculty for this table
+          user_type: 'faculty',
         }
         return
       }
