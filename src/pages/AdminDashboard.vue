@@ -659,6 +659,8 @@ async function confirmAction() {
         approved_at: new Date().toISOString(),
         approved_by: adminName,
         email: row.email,
+        first_name: row.first_name,
+        last_name: row.last_name,
       })
 
       console.log('Insert response:', insertResponse)

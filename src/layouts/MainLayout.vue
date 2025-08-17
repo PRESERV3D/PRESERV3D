@@ -196,7 +196,7 @@
                 </q-avatar>
                 <div class="q-ml-sm user-info" v-if="$q.screen.gt.md">
                   <div class="username-bg">{{ userName }}</div>
-                  <div class="text-subtitle2 text-grey user-role">{{ userRole }}</div>
+                  <div class="text-subtitle2 text-grey user-role">{{ userType }}</div>
                 </div>
               </q-btn>
             </div>
@@ -249,6 +249,7 @@ const baseNavItems = [
 const userProfile = computed(() => userStore.profile || {})
 const userName = computed(() => userProfile.value.first_name || 'User')
 const userRole = computed(() => userProfile.value.role || 'Unknown')
+const userType = computed(() => userProfile.value.user_type || 'Unknown')
 
 // Add computed property to check if user role is 'user'
 const isUser = computed(() => userRole.value === 'user')

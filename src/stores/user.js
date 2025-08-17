@@ -112,7 +112,7 @@ export const useUserStore = defineStore('user', {
         this.profile = {
           ...facultyData[0],
           role: 'user',
-          user_type: 'faculty', // always faculty for this table
+          user_type: 'faculty',
         }
         return
       }
@@ -142,7 +142,7 @@ export const useUserStore = defineStore('user', {
 
       // Check approved_users
       const { data: visitorData, error: visitorError } = await supabase
-        .from('approved_users')
+        .from('approved_visitors')
         .select('*')
         .eq('id', userId)
 
