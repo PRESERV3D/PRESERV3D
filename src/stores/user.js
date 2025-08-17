@@ -86,7 +86,7 @@ export const useUserStore = defineStore('user', {
       if (!userId) return
 
       // Check registered_users (students)
-      let { data: userData, error: userError } = await supabase
+      const { data: userData, error: userError } = await supabase
         .from('registered_users')
         .select('*')
         .eq('id', userId)
@@ -142,7 +142,7 @@ export const useUserStore = defineStore('user', {
 
       // Check approved_users
       const { data: visitorData, error: visitorError } = await supabase
-        .from('approved_users')
+        .from('approved_visitors')
         .select('*')
         .eq('id', userId)
 
