@@ -636,7 +636,7 @@ async function confirmAction() {
     // If Approved, insert into approved_users
     if (action === 'Approved') {
       // Sign up the user in Supabase Auth and send confirmation email
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: row.email,
         password: generateTempPassword(), // generate a temporary password
         options: {
@@ -651,12 +651,10 @@ async function confirmAction() {
       })
 
       if (signUpError) throw signUpError
-      console.log('SignUp confirmation email sent:', signUpData)
-
-      const authUserId = signUpData.user.id
+      console.log('SignUp confirmation email sent:', data)
 
       const insertResponse = await supabase.from('approved_visitors').insert({
-        user_id: authUserId,
+        id: data.user.id, // Use the user ID from the sign-up response
         registration_id: row.id,
         approved_at: new Date().toISOString(),
         approved_by: adminName,
