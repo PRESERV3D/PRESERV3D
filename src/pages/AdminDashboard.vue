@@ -608,7 +608,7 @@ function openConfirmDialog(row, action) {
   confirmDialog.value.row = row
 }
 
-// all working now except for not yet kuha yung current session user for approved visitors
+// all working now except for not yet kuha yung current session user for approved visitors and fix user id for visitors
 async function confirmAction() {
   if (!confirmDialog.value.row) return
 
@@ -650,7 +650,7 @@ async function confirmAction() {
 
       // Sign up the user in Supabase Auth and send confirmation email
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: row.email, // visitor's email
+        email: row.email,
         password: generateTempPassword(), // generate a temporary password
         options: {
           data: {
@@ -659,7 +659,7 @@ async function confirmAction() {
             start_date: row.start_date,
             end_date: row.end_date,
           },
-          emailRedirectTo: `${window.location.origin}/forgotpassword`, // full URL
+          emailRedirectTo: `${window.location.origin}/resetpassword`, // full URL
         },
       })
 
@@ -679,11 +679,29 @@ async function confirmAction() {
 
 // Helper to generate a temporary password
 function generateTempPassword(length = 12) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()'
+  const lower = 'abcdefghijklmnopqrstuvwxyz'
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  const numbers = '0123456789'
+  const symbols = '!@#$%^&*()_+-=[]{};\'":|<>?,./`~'
+
+  // Ensure at least one character of each type
   let password = ''
-  for (let i = 0; i < length; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length))
+  password += lower[Math.floor(Math.random() * lower.length)]
+  password += upper[Math.floor(Math.random() * upper.length)]
+  password += numbers[Math.floor(Math.random() * numbers.length)]
+  password += symbols[Math.floor(Math.random() * symbols.length)]
+
+  // Fill the rest randomly from all characters
+  const allChars = lower + upper + numbers + symbols
+  for (let i = 4; i < length; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)]
   }
+
+  // Shuffle the password
+  password = password
+    .split('')
+    .sort(() => 0.5 - Math.random())
+    .join('')
   return password
 }
 </script>
