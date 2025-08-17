@@ -231,23 +231,29 @@
         title="Referral Letters"
         :rows="rows"
         :columns="columns"
-        row-key="name"
+        row-key="id"
         :pagination="pagination"
       >
         <!-- Document column -->
-        <template v-slot:body-cell-document="props">
+        <template v-slot:body-cell-letter_url="props">
           <q-td :props="props" align="center">
-            <router-link :to="`/documents/${props.row.document}`" class="view-more-link">
-              Downloadable Letter
-            </router-link>
+            <a
+              v-if="props.row.letter_url"
+              :href="props.row.letter_url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="view-more-link"
+            >
+              Letter
+            </a>
           </q-td>
         </template>
 
         <!-- Status column -->
         <template v-slot:body-cell-status="props">
           <q-td :props="props" align="center">
-            <!-- If no decision yet -->
-            <template v-if="!props.row.status">
+            <!-- If pending -->
+            <template v-if="props.row.status === 'Pending'">
               <q-btn
                 flat
                 dense
@@ -277,7 +283,7 @@
                   'text-red': props.row.status === 'Rejected',
                 }"
               >
-                {{ props.row.status === 'Approved' ? 'Accepted' : 'Rejected' }}
+                {{ props.row.status }}
               </span>
             </template>
           </q-td>
@@ -311,6 +317,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import '@google/model-viewer'
 import { supabase } from 'boot/supabase'
+import { useUserStore } from 'stores/user'
 import { useRecentStore } from 'stores/recentStore'
 import {
   Chart,
@@ -352,6 +359,9 @@ const recentStore = useRecentStore()
 const currentIndex = ref(0)
 const currentItem = computed(() => recentStore.recentItems[currentIndex.value])
 
+// const userStore = useUserStore()
+// const userProfile = computed(() => userStore.profile || {})
+
 onMounted(async () => {
   const chartData = await prepareChartData()
   const usersData = await prepareUsersData()
@@ -369,7 +379,23 @@ onMounted(async () => {
 
   initChart(chartData)
   initUsersPerMonthChart(usersData)
+
+  await fetchVisitors()
 })
+
+// Fetch visitors with status from DB
+async function fetchVisitors() {
+  const { data, error } = await supabase
+    .from('registration_visitors')
+    .select('*')
+    .order('created_at', { descending: false })
+
+  if (error) {
+    console.error('Error fetching visitors:', error.message)
+    return
+  }
+  rows.value = data
+}
 
 function initChart(data) {
   chartInstance = new Chart(uploadedArchives.value, {
@@ -533,40 +559,38 @@ function imgProps(item) {
   }
 }
 
-// sample referral letter data
-
 const pagination = {
   page: 1,
   rowsPerPage: 8,
 }
 
-const columns = [
-  { name: 'name', required: true, label: 'Name', align: 'center', field: (r) => r.name },
-  { name: 'affiliation', label: 'Affiliation', align: 'center', field: (r) => r.affiliation },
-  { name: 'document', label: 'Document', align: 'center', field: (r) => r.document },
-  { name: 'date', label: 'Date Filed', align: 'center', field: (r) => r.date },
-  { name: 'status', label: 'Status', align: 'center', field: (r) => r.status },
-]
+const rows = ref([])
 
-// sample data: note showLabel starts false (no label visible until click)
-const rows = ref([
+const columns = [
   {
-    name: 'Juan Dela Cruz',
-    affiliation: 'PUP Manila',
-    document: 'letter_juan.pdf',
-    date: '2025-08-01',
-    status: null, // null -> no selected icon color
-    showLabel: false, // label hidden until click
+    name: 'name',
+    label: 'Name',
+    align: 'center',
+    field: (row) => `${row.first_name} ${row.last_name}`,
+  },
+  { name: 'institution', label: 'Institution', align: 'center', field: 'institution' },
+  { name: 'purpose', label: 'Purpose', align: 'center', field: 'purpose' },
+  {
+    name: 'letter_url',
+    label: 'Letter',
+    align: 'center',
+    field: 'letter_url',
   },
   {
-    name: 'Maria Clara',
-    affiliation: 'UP Diliman',
-    document: 'letter_maria.pdf',
-    date: '2025-08-02',
-    status: 'Approved', // icon will appear colored, but label still hidden
-    showLabel: false,
+    name: 'created_at',
+    label: 'Date Filed',
+    align: 'center',
+    field: (row) => new Date(row.created_at).toLocaleDateString('en-CA'),
   },
-])
+  { name: 'start_date', label: 'Start Date', align: 'center', field: 'start_date' },
+  { name: 'end_date', label: 'End Date', align: 'center', field: 'end_date' },
+  { name: 'status', label: 'Status', align: 'center', field: 'status' },
+]
 
 // function setStatus(row, status) {
 //   row.status = status
@@ -584,11 +608,83 @@ function openConfirmDialog(row, action) {
   confirmDialog.value.row = row
 }
 
-function confirmAction() {
-  if (confirmDialog.value.row) {
-    confirmDialog.value.row.status = confirmDialog.value.action
+// all working now except for not yet kuha yung current session user for approved visitors
+async function confirmAction() {
+  if (!confirmDialog.value.row) return
+
+  const row = confirmDialog.value.row
+  const action = confirmDialog.value.action
+  const userStore = useUserStore()
+
+  // Get current session admin full name
+  const adminName =
+    `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+
+  try {
+    // Update registration_visitors status
+    const updateResponse = await supabase
+      .from('registration_visitors')
+      .update({ status: action })
+      .eq('id', row.id)
+
+    console.log('Update response:', updateResponse)
+
+    if (updateResponse.error) {
+      throw updateResponse.error
+    }
+
+    // If Approved, insert into approved_users
+    if (action === 'Approved') {
+      const insertResponse = await supabase.from('approved_visitors').insert({
+        registration_id: row.id,
+        approved_at: new Date().toISOString(),
+        approved_by: adminName,
+        email: row.email,
+      })
+
+      console.log('Insert response:', insertResponse)
+
+      if (insertResponse.error) {
+        throw insertResponse.error
+      }
+
+      // Sign up the user in Supabase Auth and send confirmation email
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: row.email, // visitor's email
+        password: generateTempPassword(), // generate a temporary password
+        options: {
+          data: {
+            role: 'user',
+            type: 'visitor',
+            start_date: row.start_date,
+            end_date: row.end_date,
+          },
+          emailRedirectTo: `${window.location.origin}/forgotpassword`, // full URL
+        },
+      })
+
+      if (signUpError) throw signUpError
+      console.log('SignUp confirmation email sent:', signUpData)
+
+      // Close the dialog
+      confirmDialog.value.show = false
+
+      // Refresh your data table
+      await fetchVisitors()
+    }
+  } catch (err) {
+    console.error('Error updating status:', err)
   }
-  confirmDialog.value.show = false
+}
+
+// Helper to generate a temporary password
+function generateTempPassword(length = 12) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()'
+  let password = ''
+  for (let i = 0; i < length; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return password
 }
 </script>
 

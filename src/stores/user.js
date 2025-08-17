@@ -140,6 +140,25 @@ export const useUserStore = defineStore('user', {
         console.error('Error fetching admin profile:', adminError)
       }
 
+      // Check approved_users
+      const { data: visitorData, error: visitorError } = await supabase
+        .from('approved_users')
+        .select('*')
+        .eq('id', userId)
+
+      if (visitorData?.length > 0) {
+        this.profile = {
+          ...visitorData[0],
+          role: 'user',
+          user_type: 'visitor',
+        }
+        return
+      }
+
+      if (visitorError) {
+        console.error('Error fetching admin profile:', visitorError)
+      }
+
       // If all fail
       console.warn('No matching profile found for user:', userId)
     },
