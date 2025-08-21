@@ -3,7 +3,9 @@
     <div class="page-header">
       <h2 class="q-mb-sm title">Documents</h2>
       <div class="subtitle-btn-row">
-      <h5 class="q-mt-xs q-mb-lg subtitle">Browse selected digital books from the university archives.</h5>
+        <h5 class="q-mt-xs q-mb-lg subtitle">
+          Browse selected digital books from the university archives.
+        </h5>
         <q-btn
           v-if="isAdmin"
           @click="showDialog = true"
@@ -16,7 +18,6 @@
         />
       </div>
     </div>
-
 
     <!-- Upload Dialog -->
     <UploadDialog
@@ -1648,7 +1649,7 @@ const toggleFavorite = async (doc, itemType = 'document') => {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 1rem;
+  gap: 0.2rem;
   margin-right: 1rem;
 }
 
