@@ -4,7 +4,7 @@
 
 <script setup>
 import { useUserStore } from 'src/stores/user'
-import { trackAuthChanges } from '/services/authService.js'
+import { trackAuthChanges } from '/services/auth_service.js'
 import { onMounted } from 'vue'
 
 onMounted(() => {
