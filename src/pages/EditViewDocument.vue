@@ -66,14 +66,14 @@
 
       <div class="preview-container">
         <div class="box-view">
-          <div class="row">
+          <div class="row items-center">
             <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
             <div class="tags">
               <!-- <span class="tag-box" v-for="(category, i) in doc.metadata.categories" :key="i">
                 {{ category }}
               </span> -->
               <template v-if="editableCategories && editableCategories.length > 0">
-                <q-chip
+                <span
                   v-for="(category, i) in editableCategories"
                   :key="i"
                   class="tag-box"
@@ -81,11 +81,11 @@
                   @remove="removeCategory(i)"
                 >
                   {{ category }}
-                </q-chip>
+                </span>
               </template>
               <template v-else>
                 <!-- Fallback placeholder category as there are no data yet -->
-                <q-chip class="q-mr-sm q-mt-xs tag-box"> Uncategorized </q-chip>
+                <span class="q-mr-sm q-mt-xs tag-box"> Uncategorized </span>
               </template>
               <!-- Add Category Input -->
               <q-input
@@ -114,6 +114,7 @@
                 flat
                 dense
                 icon="add"
+                size="sm"
                 class="add-category-btn q-mt-xs"
                 @click="toggleCategoryInput"
                 v-show="!showCategoryInput"
