@@ -1642,6 +1642,7 @@ const toggleFavorite = async (doc, itemType = 'document') => {
 
 .document {
   height: 14rem;
+  object-fit: cover;
   border-bottom: 2px solid #880000;
 }
 
