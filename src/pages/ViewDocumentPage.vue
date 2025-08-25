@@ -98,9 +98,14 @@
           <div class="row">
             <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
             <div class="tags">
-              <span class="tag-box" v-for="(category, i) in doc.metadata.categories" :key="i">
-                {{ category }}
-              </span>
+              <template v-if="doc.metadata.categories && doc.metadata.categories.length">
+                <span class="tag-box" v-for="(category, i) in doc.metadata.categories" :key="i">
+                  {{ category }}
+                </span>
+              </template>
+              <template v-else>
+                <span class="tag-box">Uncategorized</span>
+              </template>
             </div>
           </div>
 
