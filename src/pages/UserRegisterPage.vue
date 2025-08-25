@@ -304,7 +304,7 @@ async function registerUser() {
           role: 'user',
           type: 'student',
         },
-        redirectTo: 'http://localhost:9000/user/login',
+        emailRedirectTo: 'http://localhost:9000/user/login',
       },
     })
 
