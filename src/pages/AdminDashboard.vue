@@ -809,6 +809,7 @@ function generateTempPassword(length = 12) {
   border-radius: 10px;
   background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
   flex-shrink: 0;
+  align-content: center;
 }
 .arrow-button {
   margin-top: 3.5rem;
