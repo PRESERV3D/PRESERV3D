@@ -1627,7 +1627,7 @@ const toggleFavorite = async (doc, itemType = 'document') => {
 }
 
 .card-wrapper-2 {
-  perspective: 1000px;
+  flex: 0 1 200px;
 }
 
 .docCard {
