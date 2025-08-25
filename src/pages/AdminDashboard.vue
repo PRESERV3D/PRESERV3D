@@ -364,7 +364,7 @@ import '@google/model-viewer'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 import { useRecentStore } from 'stores/recentStore'
-import { generateMonthlyReport } from '/services/reportService.js'
+import { generateMonthlyReport } from '/services/report_service.js'
 import {
   Chart,
   LineController,
