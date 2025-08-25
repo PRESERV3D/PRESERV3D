@@ -57,7 +57,52 @@
         <div class="row item-center justify-between q-mb-sm">
           <p class="q-ml-md title-font-2">Reports</p>
           <div class="q-mt-md">
-            <q-btn label="Generate Report" class="btn-report" no-caps />
+            <q-btn
+              label="Generate Report"
+              class="btn-report"
+              @click="reportDialog = true"
+              no-caps
+            />
+
+            <!-- Report Dialog -->
+            <q-dialog v-model="reportDialog">
+              <q-card class="q-pa-md" style="min-width: 400px">
+                <q-card-section>
+                  <div class="text-h6">Generate Monthly Usage Report</div>
+                </q-card-section>
+
+                <q-card-section>
+                  <!-- Month & Year Selection -->
+                  <div class="q-gutter-md">
+                    <q-select
+                      v-model="selectedMonth"
+                      :options="months"
+                      label="Select Month"
+                      dense
+                      outlined
+                    />
+
+                    <q-select
+                      v-model="selectedYear"
+                      :options="years"
+                      label="Select Year"
+                      dense
+                      outlined
+                    />
+                  </div>
+                </q-card-section>
+
+                <q-card-actions align="right">
+                  <q-btn flat label="Cancel" color="negative" v-close-popup />
+                  <q-btn
+                    label="Generate"
+                    color="primary"
+                    @click="generateReport"
+                    :disable="!selectedMonth || !selectedYear"
+                  />
+                </q-card-actions>
+              </q-card>
+            </q-dialog>
           </div>
         </div>
         <div class="row q-gutter-md q-px-sm">
@@ -319,6 +364,7 @@ import '@google/model-viewer'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 import { useRecentStore } from 'stores/recentStore'
+import { generateMonthlyReport } from '/services/reportService.js'
 import {
   Chart,
   LineController,
@@ -361,6 +407,39 @@ const currentItem = computed(() => recentStore.recentItems[currentIndex.value])
 
 // const userStore = useUserStore()
 // const userProfile = computed(() => userStore.profile || {})
+
+// Report Generation
+const reportDialog = ref(false)
+const selectedMonth = ref(null)
+const selectedYear = ref(null)
+
+const allMonths = Array.from({ length: 12 }, (_, i) => {
+  const monthName = new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
+  return { label: monthName, value: i + 1 }
+})
+
+const currentYear = new Date().getFullYear()
+const currentMonth = new Date().getMonth() + 1
+
+const months = computed(() => {
+  if (selectedYear.value === currentYear) {
+    return allMonths.filter((m) => m.value <= currentMonth)
+  }
+  return allMonths
+})
+
+const years = Array.from({ length: 10 }, (_, i) => {
+  const year = currentYear - i
+  return { label: year.toString(), value: year }
+})
+
+const generateReport = async () => {
+  await generateMonthlyReport({
+    month: selectedMonth.value,
+    year: selectedYear.value,
+  })
+  reportDialog.value = false
+}
 
 onMounted(async () => {
   const chartData = await prepareChartData()
