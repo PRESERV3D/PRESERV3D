@@ -310,7 +310,7 @@
           </div>
 
           <!-- Document in Categories -->
-          <div class="row q-gutter-md q-ma-md justify-between">
+          <div class="row q-gutter-lg q-ma-md justify-between">
             <div
               v-for="(doc, i) in searchStore.query
                 ? searchStore.results
