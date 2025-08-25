@@ -73,7 +73,7 @@
                 {{ category }}
               </span> -->
               <template v-if="editableCategories && editableCategories.length > 0">
-                <span
+                <q-chip
                   v-for="(category, i) in editableCategories"
                   :key="i"
                   class="tag-box"
@@ -81,11 +81,11 @@
                   @remove="removeCategory(i)"
                 >
                   {{ category }}
-                </span>
+                </q-chip>
               </template>
               <template v-else>
                 <!-- Fallback placeholder category as there are no data yet -->
-                <span class="q-mr-sm q-mt-xs tag-box"> Uncategorized </span>
+                <q-chip class="q-mr-sm q-mt-xs tag-box"> Uncategorized </q-chip>
               </template>
               <!-- Add Category Input -->
               <q-input
@@ -626,24 +626,6 @@ async function cancelChanges() {
   margin-top: 0;
 }
 
-.tags {
-  margin-top: 10rem;
-  font-size: 12px;
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.tag-box {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  background-color: rgba(204, 172, 0, 0.7);
-  color: #560505;
-  padding: 0.3rem 1.5rem;
-  border-radius: 5px;
-  margin-left: 0.5rem;
-}
-
 .description-row {
   display: flex;
   justify-content: space-between;
@@ -738,5 +720,9 @@ async function cancelChanges() {
 
 .summary-input {
   width: 100%;
+}
+
+.add-category-input {
+  max-width: 200px;
 }
 </style>
