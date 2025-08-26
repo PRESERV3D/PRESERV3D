@@ -51,6 +51,19 @@
                 style="width: 16px; height: 16px"
               />
             </button>
+            <button
+              class="control-btn"
+              :class="{ 'active': isSpeaking }"
+              :title="isSpeaking ? 'Stop Text-to-Speech' : 'Start Text-to-Speech'"
+              @click="toggleTextToSpeech"
+            >
+              <q-icon
+                :name="isSpeaking ? 'volume_off' : 'volume_up'"
+                class="control-icon"
+                size="24px"
+                style="font-size: 22px !important;"
+              />
+            </button>
           </div>
 
           <!-- Help Overlay -->
@@ -512,6 +525,14 @@ function formatDate(dateStr) {
     hour: '2-digit',
     minute: '2-digit',
   })}`
+}
+
+const isSpeaking = ref(false)
+
+// Simple toggle method
+const toggleTextToSpeech = () => {
+  isSpeaking.value = !isSpeaking.value
+  console.log('Volume toggled:', isSpeaking.value ? 'ON' : 'OFF')
 }
 
 // Help button click
