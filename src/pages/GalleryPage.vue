@@ -317,8 +317,8 @@ async function loadModelUrls() {
   right: 30px;
   z-index: 10000;
   background: rgba(212, 175, 55, 0.1);
-  color: #d4af37;
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: #8a8a8a;
+  border: 1px solid rgb(89, 89, 89);
   border-radius: 25px;
   padding: 0.5rem 1.2rem;
   transition: all 0.3s ease;
