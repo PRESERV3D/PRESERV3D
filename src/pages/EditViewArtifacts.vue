@@ -118,7 +118,8 @@
           </div>
 
           <!-- Related Links -->
-          <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
+          <div class="q-mb-md link" @click="showRelatedDialog = true"
+               style="margin-left: 0; margin-bottom: 5px; text-align: left;">Show Related Links</div>
           <!-- q-dialog for related links -->
           <q-dialog v-model="showRelatedDialog" persistent>
             <q-card class="related-box">
@@ -246,7 +247,7 @@
           </q-dialog>
 
           <!-- Two-Column Section -->
-          <div class="two-column-details q-mb-lg">
+          <div class="two-column-details q-mt-md q-mb-lg">
             <div class="detail-row q-mb-md">
               <div class="detail-label">
                 <div class="inline-edit-container">
