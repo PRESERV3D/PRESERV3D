@@ -1009,6 +1009,46 @@ async function handleDelete() {
 </script>
 
 <style scoped>
+/* Standard fullscreen */
+model-viewer:fullscreen {
+  background: radial-gradient(
+    110.32% 94.3% at 50% 57.87%,
+    #b69f9f 0%,
+    #640c0c 51.92%,
+    #121212 95.67%
+  );
+}
+
+/* Webkit browsers (Safari, Chrome) */
+model-viewer:-webkit-full-screen {
+  background: radial-gradient(
+    110.32% 94.3% at 50% 57.87%,
+    #b69f9f 0%,
+    #640c0c 51.92%,
+    #121212 95.67%
+  );
+}
+
+/* Firefox */
+model-viewer:-moz-full-screen {
+  background: radial-gradient(
+    110.32% 94.3% at 50% 57.87%,
+    #b69f9f 0%,
+    #640c0c 51.92%,
+    #121212 95.67%
+  );
+}
+
+/* IE/Edge */
+model-viewer:-ms-fullscreen {
+  background: radial-gradient(
+    110.32% 94.3% at 50% 57.87%,
+    #b69f9f 0%,
+    #640c0c 51.92%,
+    #121212 95.67%
+  );
+}
+
 .action-buttons {
   display: flex;
   align-items: center;
