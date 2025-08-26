@@ -29,12 +29,12 @@
           <div class="row items-center">
             <q-input
               v-model="doc.metadata.author"
-              class="sub-font-3"
+              class="sub-font-3 q-mb-md"
               style="font-size: 16px; max-width: 25rem"
               dense
               outlined
             />
-            <div v-if="isAdmin" class="edit-delete-btns row">
+            <div v-if="isAdmin" class="edit-delete-btns row q-mb-md">
               <q-btn label="Cancel" class="q-mr-md sub-font-3" no-caps flat @click="goBack" />
               <!-- <q-btn
                 flat
@@ -66,7 +66,7 @@
 
       <div class="preview-container">
         <div class="box-view">
-          <div class="row">
+          <div class="row items-center">
             <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
             <div class="tags">
               <!-- <span class="tag-box" v-for="(category, i) in doc.metadata.categories" :key="i">
@@ -87,8 +87,8 @@
                 <!-- Fallback placeholder category as there are no data yet -->
                 <q-chip class="q-mr-sm q-mt-xs tag-box"> Uncategorized </q-chip>
               </template>
-              <!-- Add Category Input -->
-              <q-input
+              <!-- Add Category Input: Change this to a pop up -->
+              <!-- <q-input
                 v-model="newCategory"
                 dense
                 borderless
@@ -107,17 +107,85 @@
                     :disable="!newCategory.trim()"
                   />
                 </template>
-              </q-input>
+              </q-input> -->
 
               <!-- Add category icon -->
               <q-btn
                 flat
                 dense
                 icon="add"
+                size="sm"
                 class="add-category-btn q-mt-xs"
-                @click="toggleCategoryInput"
+                @click="showCategoriesDialog = true"
                 v-show="!showCategoryInput"
               />
+
+              <!-- Category Dialog -->
+              <q-dialog v-model="showCategoriesDialog" persistent>
+                <q-card class="cat-box">
+                  <!-- Header -->
+                  <q-card-section
+                    class="column items-start"
+                    style="font-size: 16px; font-weight: 700"
+                  >
+                    Categories
+                  </q-card-section>
+                  <q-separator />
+
+                  <!-- Categories List -->
+                  <div class="q-pt-md q-px-md column items-start full-width">
+                    <div
+                      v-for="category in categories"
+                      :key="category.id"
+                      class="row items-center justify-between full-width q-mb-xs"
+                    >
+                      <!-- Left side: checkbox + name -->
+                      <div class="row items-center">
+                        <q-checkbox v-model="category.selected" color="primary" size="xs" />
+                        <div class="category-style q-ml-sm">{{ category.name }}</div>
+                      </div>
+
+                      <!-- Right side: delete button -->
+                      <q-btn
+                        flat
+                        round
+                        icon="delete"
+                        color="negative"
+                        size="sm"
+                        @click="deleteCategory(category.id)"
+                      />
+                    </div>
+
+                    <!-- Add new category -->
+                    <q-input
+                      v-model="newCategory"
+                      placeholder="Add new Category"
+                      borderless
+                      dense
+                      class="q-mt-sm full-width"
+                      @keyup.enter="addCategory"
+                    >
+                      <template v-slot:prepend>
+                        <q-btn
+                          round
+                          dense
+                          outline
+                          color="black"
+                          icon="add"
+                          size="xs"
+                          @click="addCategory"
+                        />
+                      </template>
+                    </q-input>
+                  </div>
+                  <!-- Save or Cancel -->
+                  <q-card-actions align="right">
+                    <q-btn flat label="Close" color="black" v-close-popup no-caps />
+                    <q-btn label="Save" class="btn-save" flat @click="saveCategories" />
+                    <!--need fixing in backend-->
+                  </q-card-actions>
+                </q-card>
+              </q-dialog>
             </div>
           </div>
 
@@ -199,7 +267,7 @@
                           outline
                           color="black"
                           icon="add"
-                          size="sm"
+                          size="xs"
                           @click="addLink"
                         />
                       </template>
@@ -397,27 +465,47 @@ const goBack = () => {
   window.history.back()
 }
 
-const newCategory = ref('')
-const editableCategories = ref([])
-const showCategoryInput = ref(false)
+//
+
+// const showCategoryDialog = ref(false)
+// const newCategory = ref('')
+
+// const showCategoryInput = ref(false)
 
 // Category management functions
-const toggleCategoryInput = () => {
-  showCategoryInput.value = true
-  setTimeout(() => {
-    const input = document.querySelector('.add-category-input input')
-    if (input) input.focus()
-  }, 100)
-}
 
-const addCategory = () => {
-  if (newCategory.value.trim() && !editableCategories.value.includes(newCategory.value.trim())) {
-    editableCategories.value.push(newCategory.value.trim())
+const showCategoriesDialog = ref(false)
+const categories = ref([])
+const newCategory = ref('')
+const editableCategories = ref([])
+
+function addCategory() {
+  if (newCategory.value.trim()) {
+    categories.value.push({
+      id: Date.now(),
+      name: newCategory.value,
+      selected: false,
+    })
     newCategory.value = ''
-    showCategoryInput.value = false
   }
 }
+// const toggleCategoryInput = () => {
+//   showCategoryInput.value = true
+//   setTimeout(() => {
+//     const input = document.querySelector('.add-category-input input')
+//     if (input) input.focus()
+//   }, 100)
+// }
 
+// const addCategory = () => {
+//   if (newCategory.value.trim() && !editableCategories.value.includes(newCategory.value.trim())) {
+//     editableCategories.value.push(newCategory.value.trim())
+//     newCategory.value = ''
+//     showCategoryInput.value = false
+//   }
+// }
+
+//still need for backend if an artifact/document selected category is to be removed
 const removeCategory = (index) => {
   editableCategories.value.splice(index, 1)
 }
@@ -625,24 +713,6 @@ async function cancelChanges() {
   margin-top: 0;
 }
 
-.tags {
-  margin-top: 10rem;
-  font-size: 12px;
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.tag-box {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  background-color: rgba(204, 172, 0, 0.7);
-  color: #560505;
-  padding: 0.3rem 1.5rem;
-  border-radius: 5px;
-  margin-left: 0.5rem;
-}
-
 .description-row {
   display: flex;
   justify-content: space-between;
@@ -737,5 +807,9 @@ async function cancelChanges() {
 
 .summary-input {
   width: 100%;
+}
+
+.add-category-input {
+  max-width: 200px;
 }
 </style>

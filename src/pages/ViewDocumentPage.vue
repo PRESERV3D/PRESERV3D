@@ -21,10 +21,10 @@
         <div class="col">
           <h2 class="document-title">{{ doc.metadata.title }}</h2>
           <div class="row items-center">
-            <p class="sub-font-3" style="font-size: 16px; margin: 0; max-width: 25rem">
+            <p class="sub-font-3" style="font-size: 16px; margin-bottom: 1rem; max-width: 25rem">
               {{ doc.metadata.author }}
             </p>
-            <div v-if="isAdmin" class="edit-delete-btns row q-gutter-sm">
+            <div v-if="isAdmin" class="edit-delete-btns row q-gutter-sm q-mb-md">
               <q-btn label="Edit" class="actions" no-caps flat @click="handleEdit" />
 
               <q-btn label="Delete" class="actions" no-caps flat @click="showDialog = true" />
@@ -98,9 +98,14 @@
           <div class="row">
             <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
             <div class="tags">
-              <span class="tag-box" v-for="(category, i) in doc.metadata.categories" :key="i">
-                {{ category }}
-              </span>
+              <template v-if="doc.metadata.categories && doc.metadata.categories.length">
+                <span class="tag-box" v-for="(category, i) in doc.metadata.categories" :key="i">
+                  {{ category }}
+                </span>
+              </template>
+              <template v-else>
+                <span class="tag-box">Uncategorized</span>
+              </template>
             </div>
           </div>
 
@@ -637,24 +642,6 @@ function openLink(url) {
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
   z-index: 0;
   margin-top: 0;
-}
-
-.tags {
-  margin-top: 10rem;
-  font-size: 12px;
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.tag-box {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  background-color: rgba(204, 172, 0, 0.7);
-  color: #560505;
-  padding: 0.3rem 1.5rem;
-  border-radius: 5px;
-  margin-left: 0.5rem;
 }
 
 .description-row {

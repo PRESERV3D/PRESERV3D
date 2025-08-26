@@ -1,25 +1,28 @@
 <template>
   <q-dialog v-model="dialogVisible">
-    <q-card class="q-pa-md" style="min-width: 500px">
+    <q-card class="q-pa-md meta-box">
       <q-card-section>
-        <div class="text-h6">Review and Edit Metadata</div>
+        <div class="sub-font-3" style="font-size: 20px; font-weight: 600">
+          Review and Edit Metadata
+        </div>
       </q-card-section>
 
       <q-card-section>
-        <q-input filled v-model="localMetadata.title" label="Title" />
-        <q-input filled v-model="localMetadata.author" label="Author(s)" class="q-mt-sm" />
-        <q-input filled v-model="localMetadata.date" type="date" label="Date" class="q-mt-sm" />
-        <q-editor
+        <q-input outlined v-model="localMetadata.title" label="Title" />
+        <q-input outlined v-model="localMetadata.author" label="Author(s)" class="meta-info" />
+        <q-input outlined v-model="localMetadata.date" type="date" label="Date" class="q-mt-sm" />
+        <q-input
           v-model="localMetadata.summary"
+          type="textarea"
           label="Summary"
-          height="150px"
-          class="q-mt-sm"
+          outlined
+          class="meta-summary q-mt-sm"
           placeholder="Enter summary here..."
         />
       </q-card-section>
 
       <q-card-actions align="right">
-        <q-btn flat label="Cancel" color="grey" @click="cancel" />
+        <q-btn flat label="Cancel" @click="cancel" />
         <q-btn flat label="Save" color="primary" :loading="saving" @click="confirm" />
       </q-card-actions>
     </q-card>
@@ -120,3 +123,20 @@ const confirm = async () => {
   }
 }
 </script>
+
+<style scoped>
+.meta-box {
+  width: 60rem !important;
+  font-family: Poppins, sans-serif;
+  border-radius: 10px !important;
+  background-color: #fbf4d0;
+}
+
+.meta-info {
+  margin-top: 0.5rem;
+}
+
+.meta-summary ::v-deep(textarea) {
+  resize: none !important;
+}
+</style>
