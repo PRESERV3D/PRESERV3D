@@ -99,9 +99,7 @@ const remainingAttempts = computed(() => maxAttempts - loginAttempts.value)
 let cooldownInterval = null
 
 async function loginUser() {
-  if (cooldownActive.value) {
-    return
-  }
+  if (cooldownActive.value) return
 
   message.value = ''
   messageType.value = ''
@@ -109,17 +107,89 @@ async function loginUser() {
   const { email, password } = form.value
 
   try {
+    // Find user by email in all_users
+    const { data: profile, error: profileError } = await supabase
+      .from('all_users')
+      .select('id, user_type')
+      .eq('email', email)
+      .maybeSingle()
+
+    if (profileError) {
+      console.error('Profile lookup failed:', profileError.message)
+      alert('Unable to verify user. Please try again.')
+      return
+    }
+
+    if (!profile) {
+      const { data: visitorRegistration, error: visitorRegisError } = await supabase
+        .from('registration_visitors')
+        .select('status')
+        .eq('email', email)
+        .maybeSingle()
+
+      if (visitorRegisError) {
+        console.error('Registration lookup failed:', visitorRegisError.message)
+        alert('Unable to verify registration status. Please try again.')
+        return
+      }
+
+      if (visitorRegistration) {
+        if (visitorRegistration.status === 'Pending') {
+          alert('Please wait for the admin to evaluate your registration.')
+        } else if (visitorRegistration.status === 'Rejected') {
+          alert('Sorry. Your registration has been Rejected.')
+        } else {
+          alert('Your registration is not approved yet.')
+        }
+      } else {
+        alert('No account found with this email.')
+      }
+      return // Do not proceed to login
+    }
+
+    // If visitor, check status BEFORE signing in
+    if (profile.user_type === 'visitor') {
+      const { data: visitorStatus, error: visitorError } = await supabase
+        .from('approved_visitors_status')
+        .select('access_status')
+        .eq('user_id', profile.id)
+        .maybeSingle()
+
+      if (visitorError) {
+        console.error('Visitor status lookup failed:', visitorError.message)
+        alert('Unable to verify visitor status. Please try again.')
+        return
+      }
+
+      const accessStatus = visitorStatus?.access_status
+
+      if (accessStatus !== 'Active') {
+        if (accessStatus === 'Expired') {
+          alert('Your access has expired.')
+        } else if (accessStatus === 'Not Started') {
+          alert('Your access date has not started yet.')
+        } else if (accessStatus === 'Pending Confirmation') {
+          alert(
+            'Please check your email for account authentication first and make sure to set a password.',
+          )
+        } else {
+          alert('Access denied. Unknown visitor status.')
+        }
+        clearForm()
+        return // Do not proceed to login
+      }
+    }
+
+    // Proceed to login
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       loginAttempts.value++
-
       if (loginAttempts.value >= maxAttempts) {
-        startCooldown(60) // 60 seconds cooldown
+        startCooldown(60)
         messageType.value = 'error'
         return
       }
-
       message.value = `Invalid login credentials. You have ${remainingAttempts.value} attempt/s remaining.`
       messageType.value = 'error'
       return
@@ -137,24 +207,6 @@ async function loginUser() {
     }
 
     const role = user.user_metadata?.role
-    if (!role) {
-      message.value = 'Access denied. User role not defined.'
-      messageType.value = 'error'
-      await supabase.auth.signOut()
-      return
-    }
-
-    const { error: profileError } = await supabase
-      .from('all_users')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    if (profileError) {
-      console.warn('Could not load user profile:', profileError.message)
-    }
-
-    // Redirect based on role
     if (role === 'admin') {
       alert('Welcome, Admin!')
       await router.push('/admindash')
@@ -197,6 +249,11 @@ async function loginUser() {
     console.error('Login error:', err)
     alert('An unexpected error occurred. Check the console for details.')
   }
+}
+
+function clearForm() {
+  form.value.email = ''
+  form.value.password = ''
 }
 
 function startCooldown(seconds) {

@@ -608,7 +608,6 @@ function openConfirmDialog(row, action) {
   confirmDialog.value.row = row
 }
 
-// all working now except for not yet kuha yung current session user for approved visitors and fix user id for visitors
 async function confirmAction() {
   if (!confirmDialog.value.row) return
 
