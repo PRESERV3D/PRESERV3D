@@ -172,18 +172,17 @@
                           outline
                           color="black"
                           icon="add"
-                          size="sm"
+                          size="xs"
                           @click="addCategory"
                         />
                       </template>
                     </q-input>
                   </div>
-
                   <!-- Save or Cancel -->
                   <q-card-actions align="right">
                     <q-btn flat label="Close" color="black" v-close-popup no-caps />
                     <q-btn label="Save" class="btn-save" flat @click="saveCategories" />
-                    <!--need fixing-->
+                    <!--need fixing in backend-->
                   </q-card-actions>
                 </q-card>
               </q-dialog>
@@ -268,7 +267,7 @@
                           outline
                           color="black"
                           icon="add"
-                          size="sm"
+                          size="xs"
                           @click="addLink"
                         />
                       </template>
