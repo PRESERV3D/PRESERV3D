@@ -519,6 +519,7 @@ const showHelpOverlay = ref(false)
 
 const showRelatedDialog = ref(false)
 const links = ref([])
+const artifactCard = ref(null)
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)
@@ -558,7 +559,7 @@ function resetModelView() {
 
 // ADDED: View full screen function
 function viewFullScreen() {
-  const el = artifactViewer.value
+  const el = artifactCard.value
   if (!el) return
 
   if (el.requestFullscreen) {
