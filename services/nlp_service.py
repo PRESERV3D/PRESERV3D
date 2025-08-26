@@ -16,7 +16,7 @@ app = FastAPI()
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:9000"],  
+    allow_origins=["http://localhost:9000", "https://preserv3d.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
