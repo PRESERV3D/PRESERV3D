@@ -505,6 +505,7 @@ function addCategory() {
 //   }
 // }
 
+//still need for backend if an artifact/document selected category is to be removed
 const removeCategory = (index) => {
   editableCategories.value.splice(index, 1)
 }
