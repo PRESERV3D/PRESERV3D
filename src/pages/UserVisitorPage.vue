@@ -401,7 +401,8 @@ async function registerUser() {
       return
     }
 
-    // all working now (registration) except for this part: display step 3 instead
+    console.log('Registration successfully saved.')
+
     step.value = 3
   } catch (err) {
     console.log('Error during registration:', err)

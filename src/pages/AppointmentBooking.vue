@@ -25,14 +25,7 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Name</label>
-              <q-input
-                v-model="form.name"
-                dense
-                outlined
-                placeholder="Enter full name"
-                class="form-input"
-                :rules="[(val) => !!val || 'Please enter your name']"
-              />
+              <q-input v-model="form.name" dense outlined class="form-input" readonly />
             </div>
 
             <div class="form-group">
@@ -42,26 +35,13 @@
                 dense
                 outlined
                 type="email"
-                placeholder="Enter email"
                 class="form-input"
-                :rules="[(val) => !!val || 'Please enter your email']"
+                readonly
               />
             </div>
           </div>
 
           <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Contact Number</label>
-              <q-input
-                v-model="form.contact"
-                dense
-                outlined
-                placeholder="Enter contact number"
-                class="form-input"
-                :rules="[(val) => !!val || 'Please enter your contact number']"
-              />
-            </div>
-
             <div class="form-group-split">
               <div class="form-group half-width">
                 <label class="form-label">Date</label>
@@ -69,19 +49,15 @@
                   v-model="form.date"
                   dense
                   outlined
+                  mask="####-##-##"
                   placeholder="Preferred Date"
                   class="form-input"
                   :rules="[(val) => !!val || 'Please select a date']"
-
                 >
                   <template v-slot:append>
                     <q-icon name="event" class="cursor-pointer">
                       <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                        <q-date
-                          v-model="form.date"
-                          mask="MMMM DD, YYYY"
-                          :options="datePickerOptions"
-                        >
+                        <q-date v-model="form.date" mask="YYYY-MM-DD" :options="datePickerOptions">
                           <div class="row items-center justify-end">
                             <q-btn v-close-popup label="Close" color="primary" flat />
                           </div>
@@ -101,7 +77,6 @@
                   placeholder="Preferred Time"
                   class="form-input"
                   :rules="[(val) => !!val || 'Please select a time']"
-
                 >
                   <template v-slot:append>
                     <q-icon name="schedule" class="cursor-pointer">
@@ -109,26 +84,10 @@
                         <q-time
                           v-model="form.time"
                           mask="h:mm A"
-                          format24h="false"
-                          :options="timeOptions"
-                          hour-options="[7,8,9,10,11,12,1,2,3,4,5,6]"
-                          minute-options="[0,15,30,45]"
+                          :options="hourOptions"
+                          :minute-options="[0, 15, 30, 45]"
                         >
                           <div class="row items-center justify-end q-gutter-sm">
-                            <q-btn
-                              @click="setTime('9:00 AM')"
-                              label="9:00 AM"
-                              color="primary"
-                              flat
-                              size="sm"
-                            />
-                            <q-btn
-                              @click="setTime('1:00 PM')"
-                              label="1:00 PM"
-                              color="primary"
-                              flat
-                              size="sm"
-                            />
                             <q-btn v-close-popup label="Close" color="primary" flat />
                           </div>
                         </q-time>
@@ -168,15 +127,7 @@
 
             <div class="form-group button-group">
               <label class="form-label invisible-label">Action</label>
-              <q-btn
-                type="submit"
-                class="book-btn"
-                push
-                no-caps
-                :loading="loading"
-              >
-                BOOK
-              </q-btn>
+              <q-btn type="submit" class="book-btn" push no-caps :loading="loading"> BOOK </q-btn>
             </div>
           </div>
         </q-form>
@@ -200,7 +151,7 @@
               :color="getStatusColor(props.value)"
               :label="props.value"
               class="text-weight-medium"
-              style="font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 12px;"
+              style="font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 12px"
             />
           </q-td>
         </template>
@@ -217,18 +168,13 @@
         <q-card-section class="success-content text-center">
           <h3 class="success-title q-mb-md">SUCCESSFULLY BOOKED!</h3>
           <p class="success-message">
-            We've got your booking! Your booking is under review. Please wait for a
-            confirmation email and SMS before you visit.
+            We've got your booking! Your booking is under review. Please wait for a confirmation
+            email and SMS before you visit.
           </p>
         </q-card-section>
 
         <q-card-actions class="success-actions">
-          <q-btn
-            @click="returnToDashboard"
-            class="return-btn"
-            no-caps
-            flat
-          >
+          <q-btn @click="returnToDashboard" class="return-btn" no-caps flat>
             Return to Dashboard
           </q-btn>
         </q-card-actions>
@@ -238,20 +184,24 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useUserStore } from 'src/stores/user'
+import { supabase } from 'boot/supabase'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const activeTab = ref('information')
 const loading = ref(false)
 const showSuccessModal = ref(false)
 
+const userStore = useUserStore()
 const form = ref({
-  name: '',
-  email: '',
-  contact: '',
+  name: userStore.profile?.first_name + ' ' + userStore.profile?.last_name || '',
+  email: userStore.profile?.email || '',
   date: '',
   time: '',
   purpose: '',
-  notes: ''
+  notes: '',
 })
 
 const pagination = {
@@ -261,105 +211,78 @@ const pagination = {
 
 const columns = [
   {
-    name: 'id',
+    name: 'purpose',
     required: true,
-    label: 'Appointment ID',
+    label: 'Purpose of Visit',
     align: 'center',
-    field: 'id',
-    sortable: true
+    field: 'purpose',
+    sortable: true,
   },
   {
-    name: 'description',
+    name: 'appointmentDate',
     required: true,
-    label: 'Description',
+    label: 'Appointment Date',
     align: 'center',
-    field: 'description',
-    sortable: true
+    field: 'appointmentDate',
+    sortable: true,
   },
   {
-    name: 'dateFiled',
+    name: 'time',
     required: true,
-    label: 'Date Filed',
+    label: 'Time',
     align: 'center',
-    field: 'dateFiled',
-    sortable: true
+    field: 'time',
+    sortable: true,
   },
   {
-    name: 'status',
+    name: 'approvalStatus',
     required: true,
-    label: 'Status',
+    label: 'Approval Status',
     align: 'center',
-    field: 'status',
-    sortable: true
+    field: 'approvalStatus',
+    sortable: true,
+  },
+  {
+    name: 'appointmentStatus',
+    required: true,
+    label: 'Appointment Status',
+    align: 'center',
+    field: 'appointmentStatus',
+    sortable: true,
   },
   {
     name: 'remarks',
-    required: true,
+    required: false,
     label: 'Remarks',
     align: 'center',
     field: 'remarks',
-    sortable: true
-  }
+    sortable: true,
+  },
 ]
 
-const appointments = [
-  {
-    id: 18,
-    description: 'Lorem ipsum dolor sit...',
-    dateFiled: '07/25/2025',
-    status: 'ON GOING',
-    remarks: ''
-  },
-  {
-    id: 17,
-    description: 'Lorem ipsum dolor sit...',
-    dateFiled: '07/22/2025',
-    status: 'ON GOING',
-    remarks: ''
-  },
-  {
-    id: 16,
-    description: 'Lorem ipsum dolor sit...',
-    dateFiled: '07/13/2025',
-    status: 'ON GOING',
-    remarks: ''
-  },
-  {
-    id: 15,
-    description: 'Lorem ipsum dolor sit...',
-    dateFiled: '06/16/2025',
-    status: 'ON GOING',
-    remarks: ''
-  },
-  {
-    id: 14,
-    description: 'Lorem ipsum dolor sit...',
-    dateFiled: '05/17/2025',
-    status: 'REJECTED',
-    remarks: ''
-  },
-  {
-    id: 13,
-    description: 'Lorem ipsum dolor sit...',
-    dateFiled: '04/8/2025',
-    status: 'ACCEPTED',
-    remarks: 'August 20, 2025 at 03:00 PM'
-  },
-  {
-    id: 12,
-    description: 'Lorem ipsum dolor sit...',
-    dateFiled: '04/7/2025',
-    status: 'REJECTED',
-    remarks: ''
-  },
-  {
-    id: 11,
-    description: 'Lorem ipsum dolor sit...',
-    dateFiled: '02/20/2025',
-    status: 'REJECTED',
-    remarks: ''
+const appointments = ref([])
+
+onMounted(async () => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { data, error } = await supabase
+    .from('appointment_booking')
+    .select('*')
+    .eq('user_id', user.id)
+
+  if (!error && data) {
+    appointments.value = data.map((a) => ({
+      purpose: a.purpose,
+      appointmentDate: a.date,
+      time: a.time,
+      approvalStatus: a.approval_status,
+      appointmentStatus: a.appointment_status,
+      remarks: a.remarks,
+    }))
   }
-]
+})
 
 const datePickerOptions = (date) => {
   const today = new Date()
@@ -367,45 +290,70 @@ const datePickerOptions = (date) => {
   return selectedDate >= today
 }
 
-const timeOptions = (hr, min) => {
-  if (hr < 7 || hr > 18) return false
-  return min % 15 === 0
-}
-
-function setTime(time) {
-  form.value.time = time
+const hourOptions = (hr) => {
+  // Allow 8:00 → 11:45 AM
+  if (hr >= 8 && hr <= 11) return true
+  // Block 12:00 PM hour
+  if (hr === 12) return false
+  // Allow 1:00 → 7:45 PM
+  if (hr >= 13 && hr <= 19) return true
+  return false
 }
 
 async function submitBooking() {
-  loading.value = true
+  const { name, email, date, time, purpose, notes } = form.value
+
+  if (!date || !time || !purpose) {
+    alert('Please fill out all required fields.')
+    return
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   try {
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    console.log('Booking submitted:', form.value)
+    const { error } = await supabase.from('appointment_booking').insert([
+      {
+        name,
+        email,
+        date,
+        time,
+        purpose,
+        notes,
+        user_type: userStore.profile?.user_type || 'User',
+        user_id: user.id,
+        approval_status: 'Pending',
+        appointment_status: 'Pending',
+      },
+    ])
 
-    activeTab.value = 'status'
-    showSuccessModal.value = true
-
-    form.value = {
-      name: '',
-      email: '',
-      contact: '',
-      date: '',
-      time: '',
-      purpose: '',
-      notes: ''
+    if (error) {
+      alert('Failed to save appointment booking.')
+      console.error('Insert error:', error)
+      return
     }
-  } catch (error) {
-    console.error('Booking error:', error)
-    alert('Failed to book appointment. Please try again.')
-  } finally {
-    loading.value = false
+
+    console.log('Appointment booking successfully saved.')
+    showSuccessModal.value = true
+    resetForm()
+  } catch (err) {
+    console.log('Error during appointment booking:', err)
+    alert('An error occurred during booking. Please try again later.')
   }
+}
+
+function resetForm() {
+  form.value.date = ''
+  form.value.time = ''
+  form.value.purpose = ''
+  form.value.notes = ''
 }
 
 function returnToDashboard() {
   showSuccessModal.value = false
   console.log('Returning to dashboard...')
+  router.push('/home')
 }
 
 function getStatusColor(status) {
@@ -430,8 +378,6 @@ function getStatusColor(status) {
   font-style: normal;
 }
 
-
-
 /* Layout Components */
 .tabs-container {
   margin-bottom: 2rem;
@@ -451,7 +397,9 @@ function getStatusColor(status) {
 
 .appointment-tabs :deep(.q-tab) {
   text-transform: none;
-  font: 500 16px 'Poppins', sans-serif;
+  font:
+    500 16px 'Poppins',
+    sans-serif;
   color: #666;
   padding: 0.75rem 2rem;
   min-height: 48px;
@@ -474,7 +422,7 @@ function getStatusColor(status) {
 }
 
 .form-card {
-  background: #FFFDF9;
+  background: #fffdf9;
   border-radius: 37.5px;
   padding: 3.5rem;
   box-shadow: 0 15px 52.5px 0 rgba(86, 89, 146, 0.25);
@@ -484,7 +432,9 @@ function getStatusColor(status) {
 }
 
 .form-card-title {
-  font: 600 22px 'Poppins', sans-serif;
+  font:
+    600 22px 'Poppins',
+    sans-serif;
   color: #000;
   margin: 0 0 1.5rem 0;
 }
@@ -529,7 +479,9 @@ function getStatusColor(status) {
 
 /* Form Elements */
 .form-label {
-  font: 600 14px 'Poppins', sans-serif;
+  font:
+    600 14px 'Poppins',
+    sans-serif;
   color: #560505;
   margin-bottom: 0.4rem;
 }
@@ -541,25 +493,31 @@ function getStatusColor(status) {
 .form-input :deep(.q-field__control) {
   border-radius: 13.5px;
   border: 2.25px solid #000;
-  background: #FFF;
+  background: #fff;
   min-height: 35px;
 }
 
 .form-input :deep(.q-field__native) {
-  font: 400 13px 'Poppins', sans-serif;
+  font:
+    400 13px 'Poppins',
+    sans-serif;
   color: #000 !important;
   letter-spacing: 0.5px;
   padding: 8px 12px;
 }
 
 .form-input :deep(.q-field__input::placeholder) {
-  font: 500 13px 'Poppins', sans-serif;
+  font:
+    500 13px 'Poppins',
+    sans-serif;
   color: #a3a3a3;
   letter-spacing: 0.5px;
 }
 
 .form-input :deep(.q-input .q-field__label) {
-  font: 400 13px 'Poppins', sans-serif;
+  font:
+    400 13px 'Poppins',
+    sans-serif;
   color: #a3a3a3;
   letter-spacing: 0.96px;
   position: absolute !important;
@@ -585,11 +543,12 @@ function getStatusColor(status) {
   margin-top: 4px;
 }
 
-
 .book-btn {
   background: #660000;
   color: white;
-  font: 600 1rem 'Poppins', sans-serif;
+  font:
+    600 1rem 'Poppins',
+    sans-serif;
   border-radius: 13.5px;
   height: 30px;
   min-width: 120px;
@@ -641,7 +600,6 @@ function getStatusColor(status) {
   color: white !important;
 }
 
-
 /* Success Modal */
 .success-modal {
   width: 100%;
@@ -656,7 +614,17 @@ function getStatusColor(status) {
 }
 
 .success-header {
-  background: linear-gradient(90deg, #000 0%, #320606 0.01%, #640C0C 20.19%, #B69F9F 50.48%, #8D5656 66.59%, #640C0C 82.69%, #320606 99.99%, #000 100%);
+  background: linear-gradient(
+    90deg,
+    #000 0%,
+    #320606 0.01%,
+    #640c0c 20.19%,
+    #b69f9f 50.48%,
+    #8d5656 66.59%,
+    #640c0c 82.69%,
+    #320606 99.99%,
+    #000 100%
+  );
   padding: 3rem 2rem;
   text-align: center;
   height: 160px;
@@ -671,14 +639,18 @@ function getStatusColor(status) {
 }
 
 .success-title {
-  font: 600 26px 'Poppins', sans-serif;
+  font:
+    600 26px 'Poppins',
+    sans-serif;
   color: #560505;
   text-transform: uppercase;
   margin: 1rem 0 0 0;
 }
 
 .success-message {
-  font: 400 12px 'Poppins', sans-serif;
+  font:
+    400 12px 'Poppins',
+    sans-serif;
   color: #560505;
   line-height: 1.5;
   margin: 0 2rem;
@@ -692,8 +664,10 @@ function getStatusColor(status) {
 }
 
 .return-btn {
-  font: 500 12px 'Poppins', sans-serif;
-  color: #B33022;
+  font:
+    500 12px 'Poppins',
+    sans-serif;
+  color: #b33022;
   text-decoration: underline;
   padding: 0.5rem 1rem;
 }
