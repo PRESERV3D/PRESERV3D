@@ -3,7 +3,9 @@
     <div class="page-header">
       <h2 class="q-mb-sm title">Documents</h2>
       <div class="subtitle-btn-row">
-      <h5 class="q-mt-xs q-mb-lg subtitle">Browse selected digital books from the university archives.</h5>
+        <h5 class="q-mt-xs q-mb-lg subtitle">
+          Browse selected digital books from the university archives.
+        </h5>
         <q-btn
           v-if="isAdmin"
           @click="showDialog = true"
@@ -16,7 +18,6 @@
         />
       </div>
     </div>
-
 
     <!-- Upload Dialog -->
     <UploadDialog
@@ -309,7 +310,7 @@
           </div>
 
           <!-- Document in Categories -->
-          <div class="row q-gutter-md q-ma-md justify-between">
+          <div class="row q-gutter-lg q-ma-md justify-between">
             <div
               v-for="(doc, i) in searchStore.query
                 ? searchStore.results
@@ -1626,7 +1627,7 @@ const toggleFavorite = async (doc, itemType = 'document') => {
 }
 
 .card-wrapper-2 {
-  perspective: 1000px;
+  flex: 0 1 200px;
 }
 
 .docCard {
@@ -1641,6 +1642,7 @@ const toggleFavorite = async (doc, itemType = 'document') => {
 
 .document {
   height: 14rem;
+  object-fit: cover;
   border-bottom: 2px solid #880000;
 }
 
@@ -1648,7 +1650,7 @@ const toggleFavorite = async (doc, itemType = 'document') => {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 1rem;
+  gap: 0.2rem;
   margin-right: 1rem;
 }
 
