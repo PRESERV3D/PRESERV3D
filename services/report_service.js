@@ -43,11 +43,13 @@ export async function generateMonthlyReport({ month, year }) {
   if (error) console.error(error)
 
   // Active users (logged in that month)
-  const { count: activeUsers } = await supabase
+  const { data } = await supabase
     .from('logins')
-    .select('user_id', { count: 'exact', head: true })
+    .select('user_id')
     .gte('login_at', startDate.toString())
     .lte('login_at', endDate.toString())
+
+  const activeUsers = new Set((data || []).map((r) => r.user_id)).size
 
   // Users by user type
   const { data: usersByTypeData } = await supabase
