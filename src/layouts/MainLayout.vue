@@ -332,7 +332,7 @@ const handleLogout = async () => {
   try {
     if (confirm('Are you sure you want to logout?')) {
       await userStore.signOut()
-      router.replace('/user/login')
+      router.push('/user/login')
     }
   } catch (error) {
     console.error('Error signing out:', error)
