@@ -1,49 +1,62 @@
 <template>
-  <q-page class="q-pa-md">
-    <div class="page-header">
-      <h2 class="q-mb-sm title">Gallery</h2>
-      <h5 class="q-mt-xs q-mb-lg">Lorem ipsum dolor sit, amet consectetur adipisicing elit.</h5>
-    </div>
+  <q-page class="preserv3d-page">
+    <!-- Hero Section -->
+    <div v-if="!showGodot" class="hero-section">
+      <div class="hero-content">
+        <h1 class="font-benne text-tertiary text-center title-spacing main-title">
+          PRESERV<span class="text-secondary title-3d">3D</span>
+        </h1>
 
-    <!-- Start Button Section -->
-    <div v-if="!showGodot" class="start-section">
-      <div class="text-center q-pa-xl">
-        <div class="q-mb-lg">
-          <q-icon name="view_in_ar" size="4rem" color="primary" />
+        <div class="gallery-image-container">
+          <q-img
+            src="/img/gallery.png"
+            alt="PRESERV3D Gallery"
+            class="gallery-image"
+          />
         </div>
-        <h4 class="q-mb-md">3D Model Gallery</h4>
-        <p class="q-mb-xl text-grey-7">
-          Explore interactive 3D models in our gallery.
-          {{ modelUrls.length }} models are ready to view.
+
+        <p class="hero-subtitle">
+          A virtual gallery that showcases PUP's archival materials, highlighting its rich culture and heritage.
         </p>
-        <q-btn
-          size="lg"
-          color="primary"
-          icon="play_arrow"
-          label="Start Gallery"
-          @click="startGallery"
-          :loading="loading"
-          :disable="modelUrls.length === 0"
-        />
-        <div v-if="loading" class="q-mt-md text-grey-6">Loading models...</div>
+
+        <div class="button-container">
+          <q-btn
+            size="md"
+            class="start-tour-btn"
+            label="Start Tour"
+            @click="startGallery"
+            :loading="loading"
+            :disable="modelUrls.length === 0"
+            no-caps
+          />
+        </div>
+
+        <div v-if="loading" class="loading-text">Loading models...</div>
       </div>
     </div>
 
     <!-- Godot Iframe Section -->
     <div v-if="showGodot" class="godot-section">
-      <div class="q-mb-md text-right">
-        <q-btn flat icon="close" label="Close Gallery" @click="closeGallery" color="grey-7" />
+      <div class="godot-container">
+        <!-- X Button positioned in upper right -->
+        <q-btn
+          flat
+          icon="close"
+          @click="closeGallery"
+          class="exit-btn"
+        />
+
+        <iframe
+          ref="godotIframe"
+          :src="godotIframeSrc"
+          width="100%"
+          height="100%"
+          frameborder="0"
+          allow="fullscreen"
+          sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"
+          class="godot-iframe"
+        />
       </div>
-      <iframe
-        ref="godotIframe"
-        :src="godotIframeSrc"
-        width="100%"
-        height="600"
-        frameborder="0"
-        allow="fullscreen"
-        sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"
-        class="godot-iframe"
-      />
     </div>
   </q-page>
 </template>
@@ -158,20 +171,172 @@ async function loadModelUrls() {
 </script>
 
 <style scoped>
-.start-section {
-  min-height: 400px;
+@font-face {
+  font-family: 'Benne';
+  src: url('src/assets/fonts/Benne.ttf') format('truetype');
+}
+
+.font-benne {
+  font-family: 'Benne', serif;
+}
+
+.preserv3d-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, rgba(77, 0, 0, 0.90) 0%, #101010 100%);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Hero Section */
+.hero-section {
+  position: relative;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Title Styling */
+.main-title {
+  font-size: 6rem;
+  margin: 0.25rem;
+  line-height: 1.1;
+  letter-spacing: 0.75rem;
+}
+
+.title-3d {
+  color: #ffd700;
+  font-weight: 600;
+}
+
+/* Gallery Image Container */
+.gallery-image-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: -5.5rem 0 1rem 0;
+}
+
+.gallery-image {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* Hero Subtitle */
+.hero-subtitle {
+  font-size: 1.1rem;
+  color: #FBF4D0;
+  line-height: 1.4;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+  font-weight: 300;
+  max-width: 800px;
+  margin: -0.5rem 0 0 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Button Container */
+.button-container {
+  margin: 1rem 0;
+}
+
+.start-tour-btn {
+  background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%);
+  color: #2d1810;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  padding: 1rem 3rem;
+  border-radius: 10px;
+  box-shadow:
+    0 8px 32px rgba(212, 175, 55, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  border: none;
+  text-transform: none;
+  letter-spacing: 0.025em;
+}
+
+.start-tour-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 40px rgba(212, 175, 55, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);
+}
+
+.start-tour-btn:active {
+  transform: translateY(0);
+}
+
+.loading-text {
+  color: #d4af37;
+  font-size: 1rem;
+  opacity: 0.8;
+  margin: 0;
+}
+
+/* Godot Section - Fullscreen*/
+.godot-section {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  animation: fadeIn 0.5s ease-in-out;
+  background: #000;
+}
+
+.godot-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  background: #000;
+}
+
+.exit-btn {
+  position: absolute;
+  top: 10px;
+  right: 30px;
+  z-index: 10000;
+  background: rgba(212, 175, 55, 0.1);
+  color: #d4af37;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 25px;
+  padding: 0.5rem 1.2rem;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.exit-btn:hover {
+  background: rgba(212, 175, 55, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
 }
 
 .godot-iframe {
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.godot-section {
-  animation: fadeIn 0.3s ease-in-out;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #000;
+  display: block;
 }
 
 @keyframes fadeIn {
@@ -182,6 +347,106 @@ async function loadModelUrls() {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .main-title {
+    font-size: 4rem;
+  }
+
+  .hero-content {
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 2rem 1.5rem;
+  }
+
+  .hero-content {
+    gap: 1.5rem;
+  }
+
+  .main-title {
+    font-size: 3.2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+    padding: 0 1rem;
+    white-space: normal;
+    max-width: 90%;
+  }
+
+  .start-tour-btn {
+    font-size: 1.1rem;
+    padding: 0.9rem 2.5rem;
+  }
+
+  .exit-btn {
+    top: 15px;
+    right: 15px;
+    padding: 0.6rem 1.4rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 1.5rem 1rem;
+  }
+
+  .hero-content {
+    gap: 1.2rem;
+  }
+
+  .main-title {
+    font-size: 2.8rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.95rem;
+    padding: 0 0.5rem;
+    white-space: normal;
+    max-width: 95%;
+  }
+
+  .start-tour-btn {
+    font-size: 1rem;
+    padding: 0.8rem 2rem;
+  }
+
+  .exit-btn {
+    top: 10px;
+    right: 10px;
+    padding: 0.6rem 1.4rem;
+    font-size: 0.9rem;
+  }
+
+  .godot-container {
+    border: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .main-title {
+    font-size: 2.4rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .start-tour-btn {
+    padding: 0.7rem 1.8rem;
+    font-size: 0.95rem;
+  }
+
+  .godot-container {
+    border: none;
   }
 }
 </style>
