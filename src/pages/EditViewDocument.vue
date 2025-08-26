@@ -29,12 +29,12 @@
           <div class="row items-center">
             <q-input
               v-model="doc.metadata.author"
-              class="sub-font-3"
+              class="sub-font-3 q-mb-md"
               style="font-size: 16px; max-width: 25rem"
               dense
               outlined
             />
-            <div v-if="isAdmin" class="edit-delete-btns row">
+            <div v-if="isAdmin" class="edit-delete-btns row q-mb-md">
               <q-btn label="Cancel" class="q-mr-md sub-font-3" no-caps flat @click="goBack" />
               <!-- <q-btn
                 flat
@@ -122,7 +122,7 @@
 
               <!-- Category Dialog -->
               <q-dialog v-model="showCategoriesDialog" persistent>
-                <q-card class="cat-box" style="min-width: 350px">
+                <q-card class="cat-box">
                   <!-- Header -->
                   <q-card-section
                     class="column items-start"
