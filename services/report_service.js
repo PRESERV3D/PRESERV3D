@@ -43,11 +43,13 @@ export async function generateMonthlyReport({ month, year }) {
   if (error) console.error(error)
 
   // Active users (logged in that month)
-  const { count: activeUsers } = await supabase
+  const { data } = await supabase
     .from('logins')
-    .select('user_id', { count: 'exact', head: true })
+    .select('user_id')
     .gte('login_at', startDate.toString())
     .lte('login_at', endDate.toString())
+
+  const activeUsers = new Set((data || []).map((r) => r.user_id)).size
 
   // Users by user type
   const { data: usersByTypeData } = await supabase
@@ -105,6 +107,19 @@ export async function generateMonthlyReport({ month, year }) {
     users,
   }))
 
+  // Total artifacts
+  const { count: totalArtifacts } = await supabase
+    .from('artifacts_metadata')
+    .select('*', { count: 'exact', head: true })
+    .lte('uploaded_at', endDate.toString())
+
+  // Uploaded Artifacts
+  const { count: uploadedArtifacts } = await supabase
+    .from('artifacts_metadata')
+    .select('*', { count: 'exact', head: true })
+    .gte('uploaded_at', startDate.toString())
+    .lte('uploaded_at', endDate.toString())
+
   // Top viewed artifacts
   const { data: artifactLogs } = await supabase
     .from('user_activity_log')
@@ -133,6 +148,19 @@ export async function generateMonthlyReport({ month, year }) {
     const meta = artifactsMeta?.find((a) => a.item_id === id)
     return { name: meta?.title ?? `Artifact ${id}`, views }
   })
+
+  // Total Documents
+  const { count: totalDocuments } = await supabase
+    .from('documents_metadata')
+    .select('*', { count: 'exact', head: true })
+    .lte('uploaded_at', endDate.toString())
+
+  // Uploaded Documents
+  const { count: uploadedDocuments } = await supabase
+    .from('documents_metadata')
+    .select('*', { count: 'exact', head: true })
+    .gte('uploaded_at', startDate.toString())
+    .lte('uploaded_at', endDate.toString())
 
   // Top viewed documents
   const { data: documentLogs } = await supabase
@@ -165,68 +193,185 @@ export async function generateMonthlyReport({ month, year }) {
 
   // PDF Generation
   const doc = new jsPDF()
-  const title = `Monthly Usage Report - ${months[month.value - 1]} ${year.value}`
+
+  const TABLE_WIDTH = 150
   const pageWidth = doc.internal.pageSize.getWidth()
+  const centeredMargin = {
+    left: (pageWidth - TABLE_WIDTH) / 2,
+    right: (pageWidth - TABLE_WIDTH) / 2,
+  }
+
+  const tableOptions = {
+    theme: 'grid',
+    styles: {
+      halign: 'center', // text inside cells
+      valign: 'middle',
+      fontSize: 11,
+    },
+    headStyles: {
+      fillColor: [41, 128, 185],
+      textColor: 255,
+      halign: 'center',
+    },
+    columnStyles: {
+      0: { halign: 'left', cellWidth: 100 }, // label
+      1: { halign: 'center', cellWidth: 50 }, // value
+    },
+    tableWidth: TABLE_WIDTH,
+    margin: centeredMargin,
+  }
+
+  const tableOptions3Col = {
+    theme: 'grid',
+    styles: { fontSize: 11, halign: 'center' },
+    headStyles: { fillColor: [41, 128, 185], halign: 'center' },
+    columnStyles: {
+      0: { cellWidth: 50 },
+      1: { cellWidth: 50 },
+      2: { cellWidth: 50 },
+    },
+    tableWidth: TABLE_WIDTH,
+    margin: centeredMargin,
+  }
+
+  const title = 'PRESERV3D Monthly Usage Report'
   const textWidth = doc.getTextWidth(title)
 
   // Title (centered)
   doc.setFontSize(16)
   doc.text(title, (pageWidth - textWidth) / 2, 20)
+  doc.setFontSize(14)
+  doc.text(`${months[month.value - 1]} ${year.value}`, pageWidth / 2, 27, {
+    align: 'center',
+  })
+  let currentY = 40
 
-  // Summary section
+  doc.setFontSize(14)
+  doc.text('Users Overview', pageWidth / 2, currentY, { align: 'center' })
+  currentY += 5
+
+  // Summary table
   doc.setFontSize(12)
-  doc.text(`Total Users: ${totalUsers ?? 0}`, 14, 35)
-  doc.text(`New Users: ${newUsers ?? 0}`, 14, 42)
-  doc.text(`Active Users: ${activeUsers ?? 0}`, 14, 49)
+  autoTable(doc, {
+    ...tableOptions3Col,
+    startY: currentY,
+    head: [['Total Users', 'New Users', 'Active Users']],
+    body: [[totalUsers ?? 0, newUsers ?? 0, activeUsers ?? 0]],
+  })
+  currentY = doc.lastAutoTable.finalY + 5
 
   // User type stats
-  autoTable(doc, {
-    startY: 60,
-    head: [['User Type', 'Count']],
-    body: userTypeStats.map((u) => [u.type, u.count]),
-  })
+  if (userTypeStats && userTypeStats.length > 0) {
+    autoTable(doc, {
+      ...tableOptions,
+      startY: currentY + 5,
+      head: [['User Type', 'Count']],
+      body: userTypeStats.map((u) => [u.type, u.count]),
+    })
+    currentY = doc.lastAutoTable.finalY + 10
+  }
 
   // Students section
-  doc.setFontSize(12)
-  doc.text('Students', 14, doc.lastAutoTable.finalY + 10)
-  autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 15,
-    head: [['Department', 'Users']],
-    body: departmentStats.map((d) => [d.name, d.users]),
-  })
+  if (departmentStats && departmentStats.length > 0) {
+    doc.setFontSize(12)
+    doc.text('Students', pageWidth / 2, currentY, { align: 'center' })
+
+    autoTable(doc, {
+      ...tableOptions,
+      startY: currentY + 5,
+      head: [['Department', 'Users']],
+      body: departmentStats.map((d) => [d.name, d.users]),
+    })
+    currentY = doc.lastAutoTable.finalY + 10
+  }
 
   // Faculty section
-  doc.setFontSize(12)
-  doc.text('Faculty', 14, doc.lastAutoTable.finalY + 10)
-  autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 15,
-    head: [['Department', 'Users']],
-    body: facultyDepartmentStats.map((d) => [d.name, d.users]),
-  })
+  if (facultyDepartmentStats && facultyDepartmentStats.length > 0) {
+    doc.setFontSize(12)
+    doc.text('Faculty', pageWidth / 2, currentY, { align: 'center' })
+
+    autoTable(doc, {
+      ...tableOptions,
+      startY: currentY + 5,
+      head: [['Department', 'Users']],
+      body: facultyDepartmentStats.map((d) => [d.name, d.users]),
+    })
+
+    currentY = doc.lastAutoTable.finalY + 10
+  }
 
   // Visitors section
-  doc.setFontSize(12)
-  doc.text('Visitors', 14, doc.lastAutoTable.finalY + 10)
+  if (institutionStats && institutionStats.length > 0) {
+    doc.setFontSize(12)
+    doc.text('Visitors', pageWidth / 2, currentY, { align: 'center' })
+    autoTable(doc, {
+      ...tableOptions,
+      startY: currentY + 5,
+      head: [['Institution', 'Users']],
+      body: institutionStats.map((i) => [i.name, i.users]),
+    })
+    currentY = doc.lastAutoTable.finalY + 10
+  }
+
+  doc.setFontSize(14)
+  doc.text('Artifacts & Documents Overview', pageWidth / 2, currentY, { align: 'center' })
+  currentY += 7
+
+  // Combined Artifacts & Documents table
   autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 15,
-    head: [['Institution', 'Users']],
-    body: institutionStats.map((i) => [i.name, i.users]),
+    ...tableOptions3Col,
+    columnStyles: {
+      0: { halign: 'left' },
+    },
+    startY: currentY,
+    head: [['Type', 'Uploaded', 'Total']],
+    body: [
+      ['Artifacts', uploadedArtifacts ?? 0, totalArtifacts ?? 0],
+      ['Documents', uploadedDocuments ?? 0, totalDocuments ?? 0],
+    ],
   })
+  currentY = doc.lastAutoTable.finalY + 10
 
   // Top Artifacts
+  doc.setFontSize(12)
+  doc.text('Top Artifacts', pageWidth / 2, currentY, { align: 'center' })
   autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 15,
-    head: [['Top Artifacts', 'Views']],
+    ...tableOptions,
+    startY: currentY + 5,
+    head: [['Name', 'Views']],
     body: topArtifacts?.map((a) => [a.name, a.views]) ?? [],
   })
+  currentY = doc.lastAutoTable.finalY + 10
 
   // Top Documents
+  doc.setFontSize(12)
+  doc.text('Top Documents', pageWidth / 2, currentY, { align: 'center' })
   autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 15,
-    head: [['Top Documents', 'Views']],
+    ...tableOptions,
+    startY: currentY + 5,
+    head: [['Name', 'Views']],
     body: topDocuments?.map((d) => [d.name, d.views]) ?? [],
+  })
+  currentY = doc.lastAutoTable.finalY + 10
+
+  // Summary table
+  doc.setFontSize(14)
+  doc.text('Summary Overview', pageWidth / 2, currentY, { align: 'center' })
+  autoTable(doc, {
+    ...tableOptions,
+    startY: currentY + 5,
+    head: [['Category', 'Value']],
+    body: [
+      ['Total Users', totalUsers ?? 0],
+      ['New Users', newUsers ?? 0],
+      ['Active Users', activeUsers ?? 0],
+      ['Total Artifacts', totalArtifacts ?? 0],
+      ['Uploaded Artifacts', uploadedArtifacts ?? 0],
+      ['Total Documents', totalDocuments ?? 0],
+      ['Uploaded Documents', uploadedDocuments ?? 0],
+    ],
   })
 
   // Download
-  doc.save(`UsageReport-${year.value}-${month.value}.pdf`)
+  doc.save(`PRESERV3D_UsageReport_${year.value}-${months[month.value - 1]}.pdf`)
 }
