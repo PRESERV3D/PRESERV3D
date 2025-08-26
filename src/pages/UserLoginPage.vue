@@ -147,7 +147,7 @@ async function loginUser() {
       return // Do not proceed to login
     }
 
-    // If visitor, check status BEFORE signing in
+    // If visitor, check status before signing in
     if (profile.user_type === 'visitor') {
       const { data: visitorStatus, error: visitorError } = await supabase
         .from('approved_visitors_status')

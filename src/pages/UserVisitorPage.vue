@@ -259,7 +259,7 @@ const form = ref({
   end_date: '',
 })
 
-// Code for 7 days from and within 6 mos duration
+// Code for 8 days from current date and within 6 mos duration
 // Current date
 // const today = new Date()
 // const minDate = ref(date.formatDate(today, 'YYYY-MM-DD'))
@@ -280,6 +280,7 @@ const form = ref({
 // // Same rule for end date
 // const endDateOptions = (val) => startDateOptions(val)
 
+// No date restrictions for date options
 const startDateOptions = () => true
 const endDateOptions = () => true
 
