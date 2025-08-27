@@ -186,6 +186,23 @@
                   </q-card-actions>
                 </q-card>
               </q-dialog>
+
+              <!-- Delete Category Error Dialog -->
+              <q-dialog v-model="showDeleteErrorDialog">
+                <q-card>
+                  <q-card-section class="text-h6 text-negative">
+                    Cannot Delete Category
+                  </q-card-section>
+
+                  <q-card-section>
+                    {{ deleteErrorMessage }}
+                  </q-card-section>
+
+                  <q-card-actions align="right">
+                    <q-btn flat label="OK" color="primary" v-close-popup />
+                  </q-card-actions>
+                </q-card>
+              </q-dialog>
             </div>
           </div>
 
@@ -590,6 +607,47 @@ function formatDate(dateStr) {
     hour: '2-digit',
     minute: '2-digit',
   })}`
+}
+
+// Delete a category by ID
+const showDeleteErrorDialog = ref(false)
+const deleteErrorMessage = ref('')
+
+async function deleteCategory(categoryId) {
+  // Find the category being deleted
+  const category = categories.value.find((c) => c.id === categoryId)
+  if (!category) return
+
+  // Check if any documents are using this category
+  const { data: docs, error: docsError } = await supabase
+    .from('documents_metadata')
+    .select('id, metadata')
+    .contains('metadata', { categories: [category.name] })
+
+  if (docsError) {
+    console.error('Error checking documents:', docsError)
+    return
+  }
+
+  if (docs && docs.length > 0) {
+    deleteErrorMessage.value = `The category "${category.name}" is still used in ${docs.length} document(s). Please remove it from those documents before deleting.`
+    showDeleteErrorDialog.value = true
+    return
+  }
+
+  // Safe to delete from Supabase
+  const { error } = await supabase.from('categories').delete().eq('id', categoryId)
+
+  if (error) {
+    console.error('Error deleting category:', error)
+    return
+  }
+
+  // Remove from local categories list
+  categories.value = categories.value.filter((c) => c.id !== categoryId)
+
+  // If it was selected for this document, remove it from editableCategories too
+  editableCategories.value = editableCategories.value.filter((name) => name !== category.name)
 }
 
 onMounted(async () => {
