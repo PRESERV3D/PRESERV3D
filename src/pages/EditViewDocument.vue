@@ -630,9 +630,17 @@ async function deleteCategory(categoryId) {
   }
 
   if (docs && docs.length > 0) {
-    deleteErrorMessage.value = `The category "${category.name}" is still used in ${docs.length} document(s). Please remove it from those documents before deleting.`
-    showDeleteErrorDialog.value = true
-    return
+    if (
+      docs.length === 1 &&
+      docs[0].id === route.params.id &&
+      !editableCategories.value.includes(category.name)
+    ) {
+      // Safe to delete
+    } else {
+      deleteErrorMessage.value = `The category "${category.name}" is still used in ${docs.length} document(s). Please remove it from those documents before deleting.`
+      showDeleteErrorDialog.value = true
+      return
+    }
   }
 
   // Safe to delete from Supabase
