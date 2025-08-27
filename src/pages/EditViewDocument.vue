@@ -480,14 +480,20 @@ const newCategory = ref('')
 const editableCategories = ref([])
 
 function addCategory() {
-  if (newCategory.value.trim()) {
+  const name = newCategory.value.trim()
+  if (!name) return
+
+  // prevent duplicate category names
+  const exists = categories.value.some((c) => c.name.toLowerCase() === name.toLowerCase())
+  if (!exists) {
     categories.value.push({
       id: Date.now(),
-      name: newCategory.value,
-      selected: false,
+      name,
+      selected: true, // auto-select when added
     })
-    newCategory.value = ''
   }
+
+  newCategory.value = ''
 }
 // const toggleCategoryInput = () => {
 //   showCategoryInput.value = true
@@ -506,8 +512,20 @@ function addCategory() {
 // }
 
 //still need for backend if an artifact/document selected category is to be removed
-const removeCategory = (index) => {
+function removeCategory(index) {
+  const removed = editableCategories.value[index]
   editableCategories.value.splice(index, 1)
+
+  // Uncheck it in the dialog list as well
+  const found = categories.value.find((c) => c.name === removed)
+  if (found) found.selected = false
+}
+
+// Save selected categories from dialog to editableCategories
+function saveCategories() {
+  editableCategories.value = categories.value.filter((c) => c.selected).map((c) => c.name)
+
+  showCategoriesDialog.value = false
 }
 
 function formatDate(dateStr) {
