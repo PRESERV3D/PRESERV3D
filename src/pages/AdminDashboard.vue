@@ -354,6 +354,34 @@
           </q-card-actions>
         </q-card>
       </q-dialog>
+      <div>
+        <div class="q-mt-lg">
+          <q-table
+            class="incomplete-box"
+            flat
+            bordered
+            title="Incomplete Metadata List"
+            :rows="incompleteRows"
+            :columns="incompleteColumns"
+            row-key="id"
+          >
+            <!-- clickable link cell -->
+            <template v-slot:body-cell-materialLink="props">
+              <q-td :props="props">
+                <a :href="props.row.materialLink" target="_blank">
+                  <q-icon name="link" color="primary" size="20px" />
+                </a>
+              </q-td>
+            </template>
+
+            <template v-slot:bottom>
+              <div class="q-pa-sm full-width row justify-end">
+                <q-btn flat label="SEE ALL" color="primary" :to="{ name: 'incomplete-metadata' }" />
+              </div>
+            </template>
+          </q-table>
+        </div>
+      </div>
     </div>
   </q-page>
 </template>
@@ -785,6 +813,68 @@ function generateTempPassword(length = 12) {
     .join('')
   return password
 }
+
+//Sample backend for Incomplete metadata
+const incompleteColumns = [
+  {
+    name: 'materialNo',
+    label: 'Archival Material No.',
+    align: 'center',
+    field: 'materialNo',
+  },
+  {
+    name: 'materialType',
+    label: 'Archival Material Type',
+    align: 'center',
+    field: 'materialType',
+  },
+  {
+    name: 'materialName',
+    label: 'Archival Material Name',
+    align: 'center',
+    field: 'materialName',
+  },
+  {
+    name: 'materialIncompleteData',
+    label: 'Incomplete Data',
+    align: 'center',
+    field: 'materialIncompleteData',
+  },
+
+  {
+    name: 'materialLink',
+    label: 'Archival Material Link',
+    align: 'center',
+    field: 'materialLink',
+  },
+]
+
+const incompleteRows = ref([
+  {
+    id: 1,
+    materialNo: 'AM-001',
+    materialType: 'Document',
+    materialName: 'Annual Report',
+    materialIncompleteData: 'Author, Date',
+    materialLink: 'http://example.com/notes',
+  },
+  {
+    id: 2,
+    materialNo: 'AM-002',
+    materialType: 'Artifact',
+    materialName: 'Cat Toy',
+    materialIncompleteData: 'Description',
+    materialLink: 'http://example.com/cattoy',
+  },
+  {
+    id: 3,
+    materialNo: 'AM-003',
+    materialType: 'Artifact',
+    materialName: 'Campus Plaque',
+    materialIncompleteData: 'Author',
+    materialLink: 'http://example.com/campus',
+  },
+])
 </script>
 
 <style scoped>
@@ -921,15 +1011,17 @@ function generateTempPassword(length = 12) {
 
 /*css referral letter*/
 
-.referral-box {
-  border-radius: 10px !important;
+.referral-box,
+.incomplete-box {
   font-family: 'Poppins', sans-serif;
+  border-radius: 10px !important;
   height: auto;
   background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
   box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
 }
 
-::v-deep(.referral-box .q-table__title) {
+::v-deep(.referral-box .q-table__title),
+::v-deep(.incomplete-box .q-table__title) {
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
   font-size: 20px;
@@ -939,12 +1031,15 @@ function generateTempPassword(length = 12) {
 }
 
 ::v-deep(.referral-box .q-table__bottom) {
+  font-family: 'Poppins', sans-serif;
   font-size: 14px;
   color: black;
 }
 
-::v-deep(.referral-box thead tr th) {
+::v-deep(.referral-box thead tr th),
+::v-deep(.incomplete-box thead tr th) {
   padding: 1rem;
+  font-family: 'Poppins', sans-serif;
   font-size: 14px;
   position: sticky;
   top: 0;
