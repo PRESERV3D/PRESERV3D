@@ -168,14 +168,14 @@
         <q-card-section class="success-content text-center">
           <h3 class="success-title q-mb-md">SUCCESSFULLY BOOKED!</h3>
           <p class="success-message">
-            We've got your booking! Your booking is under review. Please wait for a confirmation
-            email and SMS before you visit.
+            We've got your booking! Your booking is under review. Please wait for your booking
+            confirmation.
           </p>
         </q-card-section>
 
         <q-card-actions class="success-actions">
-          <q-btn @click="returnToDashboard" class="return-btn" no-caps flat>
-            Return to Dashboard
+          <q-btn @click="viewAppointments" class="return-btn" no-caps flat>
+            View Appointment Bookings
           </q-btn>
         </q-card-actions>
       </q-card>
@@ -187,9 +187,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useUserStore } from 'src/stores/user'
 import { supabase } from 'boot/supabase'
-import { useRouter } from 'vue-router'
 
-const router = useRouter()
 const activeTab = ref('information')
 const loading = ref(false)
 const showSuccessModal = ref(false)
@@ -352,10 +350,11 @@ function resetForm() {
   form.value.remarks = ''
 }
 
-function returnToDashboard() {
+function viewAppointments() {
   showSuccessModal.value = false
-  console.log('Returning to dashboard...')
-  router.push('/home')
+  console.log('Going to Status tab...')
+  activeTab.value = 'status'
+  fetchAppointments()
 }
 
 // not working yet
