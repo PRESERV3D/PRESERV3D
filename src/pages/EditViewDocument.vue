@@ -117,7 +117,6 @@
                 size="sm"
                 class="add-category-btn q-mt-xs"
                 @click="showCategoriesDialog = true"
-                v-show="!showCategoryInput"
               />
 
               <!-- Category Dialog -->
@@ -174,6 +173,7 @@
                           icon="add"
                           size="xs"
                           @click="addCategory"
+                          :disable="!newCategory.trim()"
                         />
                       </template>
                     </q-input>
@@ -479,22 +479,22 @@ const categories = ref([])
 const newCategory = ref('')
 const editableCategories = ref([])
 
-function addCategory() {
-  const name = newCategory.value.trim()
-  if (!name) return
+// function addCategory() {
+//   const name = newCategory.value.trim()
+//   if (!name) return
 
-  // prevent duplicate category names
-  const exists = categories.value.some((c) => c.name.toLowerCase() === name.toLowerCase())
-  if (!exists) {
-    categories.value.push({
-      id: Date.now(),
-      name,
-      selected: true, // auto-select when added
-    })
-  }
+//   // prevent duplicate category names
+//   const exists = categories.value.some((c) => c.name.toLowerCase() === name.toLowerCase())
+//   if (!exists) {
+//     categories.value.push({
+//       id: Date.now(),
+//       name,
+//       selected: true, // auto-select when added
+//     })
+//   }
 
-  newCategory.value = ''
-}
+//   newCategory.value = ''
+// }
 // const toggleCategoryInput = () => {
 //   showCategoryInput.value = true
 //   setTimeout(() => {
@@ -511,21 +511,66 @@ function addCategory() {
 //   }
 // }
 
-//still need for backend if an artifact/document selected category is to be removed
+// Fetch categories from Supabase when dialog opens or on mount
+async function loadCategories(doc) {
+  const docCategories = doc.metadata?.categories || []
+  editableCategories.value = docCategories
+
+  // Sync checkbox states in dialog
+  categories.value = categories.value.map((c) => ({
+    ...c,
+    selected: docCategories.includes(c.name),
+  }))
+}
+
+// Add new category (save to DB + local list)
+async function addCategory() {
+  const name = newCategory.value.trim()
+  if (!name) return
+
+  // check if category already exists in DB
+  const exists = categories.value.some((c) => c.name.toLowerCase() === name.toLowerCase())
+  if (exists) {
+    console.warn('Category already exists:', name)
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('categories')
+    .insert([{ type: 'document', category: name }])
+    .select()
+
+  if (error) {
+    console.error('Error adding category:', error)
+    return
+  }
+
+  // push to local list
+  categories.value.push({
+    id: data[0].id,
+    name: data[0].category,
+    selected: true,
+  })
+
+  newCategory.value = ''
+}
+
+// Save selected categories for the current document
+async function saveCategories() {
+  // update the chips
+  editableCategories.value = categories.value.filter((c) => c.selected).map((c) => c.name)
+
+  showCategoriesDialog.value = false
+}
+
+// Remove chip
 function removeCategory(index) {
   const removed = editableCategories.value[index]
   editableCategories.value.splice(index, 1)
 
-  // Uncheck it in the dialog list as well
+  // Uncheck in categories dialog list
   const found = categories.value.find((c) => c.name === removed)
   if (found) found.selected = false
-}
-
-// Save selected categories from dialog to editableCategories
-function saveCategories() {
-  editableCategories.value = categories.value.filter((c) => c.selected).map((c) => c.name)
-
-  showCategoriesDialog.value = false
 }
 
 function formatDate(dateStr) {
@@ -596,6 +641,7 @@ onMounted(async () => {
 
   await documentsStore.fetchStarCounts()
   await documentsStore.fetchViewCounts()
+  loadCategories(data)
 })
 
 //
