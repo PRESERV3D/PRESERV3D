@@ -376,7 +376,12 @@
 
             <template v-slot:bottom>
               <div class="q-pa-sm full-width row justify-end">
-                <q-btn flat label="SEE ALL" color="primary" :to="{ name: 'incomplete-metadata' }" />
+                <q-btn
+                  flat
+                  label="SEE ALL"
+                  class="incomplete-see-all"
+                  :to="{ name: 'incomplete-metadata' }"
+                />
               </div>
             </template>
           </q-table>
@@ -1060,5 +1065,14 @@ const incompleteRows = ref([
   padding: 1rem;
   text-align: center;
   width: 25rem;
+}
+
+.incomplete-see-all {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: #880000;
+  height: 2rem;
+  width: 6rem;
 }
 </style>
