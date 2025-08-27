@@ -8,8 +8,8 @@
         bordered
         :rows="appointments"
         :columns="columns"
-        row-key="name"
-        :pagination="{ page: 1, rowsPerPage: 8 }"
+        row-key="appointment_id"
+        :pagination="pagination"
       >
         <!-- Approval Status -->
         <template v-slot:body-cell-approvalStatus="props">
@@ -142,21 +142,7 @@ const columns = [
 
 const appointments = ref([])
 
-onMounted(async () => {
-  const { data, error } = await supabase.from('appointment_booking').select('*')
-
-  if (!error && data) {
-    appointments.value = data.map((a) => ({
-      appointment_id: a.appointment_id,
-      name: a.name,
-      userType: a.user_type,
-      purpose: a.purpose,
-      appointmentDate: a.date,
-      time: a.time,
-      approvalStatus: a.status,
-    }))
-  }
-})
+onMounted(fetchAppointments)
 
 const confirmDialog = ref({
   show: false,
@@ -193,9 +179,10 @@ async function confirmAction() {
       .from('appointment_booking')
       .update(updateData)
       .eq('appointment_id', row.appointment_id)
-      .select()
+      .select('*')
 
-    console.log('Update response:', updateResponse)
+    console.log('Update response data:', updateResponse.data)
+    console.log('Update response error:', updateResponse.error)
 
     if (updateResponse.error) {
       throw updateResponse.error
@@ -209,17 +196,24 @@ async function confirmAction() {
   }
 }
 
-// Fetch appointments with status from DB
+// Fetch appointments from DB
 async function fetchAppointments() {
-  const { data, error } = await supabase
-    .from('appointment_booking')
-    .select('name, user_type, purpose, date, time, status')
+  const { data, error } = await supabase.from('appointment_booking').select('*')
 
   if (error) {
-    console.error('Error fetching visitors:', error.message)
+    console.error('Error fetching appointments:', error.message)
     return
   }
-  appointments.value = data
+
+  appointments.value = data.map((a) => ({
+    appointment_id: a.appointment_id,
+    name: a.name,
+    userType: a.user_type,
+    purpose: a.purpose,
+    appointmentDate: a.date,
+    time: a.time,
+    approvalStatus: a.status,
+  }))
 }
 </script>
 
