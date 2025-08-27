@@ -6,11 +6,52 @@
         class="my-sticky-header-table"
         flat
         bordered
-        :rows="rows"
+        :rows="appointments"
         :columns="columns"
         row-key="name"
         :pagination="pagination"
       >
+        <!-- Approval Status -->
+        <template v-slot:body-cell-approvalStatus="props">
+          <q-td :props="props" align="center">
+            <!-- If pending -->
+            <template v-if="props.row.approvalStatus === 'Pending'">
+              <q-btn
+                flat
+                dense
+                round
+                class="status-btn"
+                @click="openConfirmDialog(props.row, 'Approved', 'approvalStatus')"
+              >
+                <q-icon name="check" color="green" size="18px" />
+              </q-btn>
+              <q-btn
+                flat
+                dense
+                round
+                class="status-btn"
+                @click="openConfirmDialog(props.row, 'Rejected', 'approvalStatus')"
+              >
+                <q-icon name="close" color="red" size="18px" />
+              </q-btn>
+            </template>
+
+            <!-- If decided -->
+            <template v-else>
+              <span
+                class="status-text"
+                :class="{
+                  'text-green': props.row.approvalStatus === 'Approved',
+                  'text-red': props.row.approvalStatus === 'Rejected',
+                }"
+              >
+                {{ props.row.approvalStatus }}
+              </span>
+            </template>
+          </q-td>
+        </template>
+
+        <!-- Actions -->
         <template v-slot:body-cell-actions>
           <q-td align="center">
             <router-link to="/admin/appointments/details" class="view-more-link">
@@ -19,11 +60,35 @@
           </q-td>
         </template>
       </q-table>
+
+      <!-- Confirmation Dialog -->
+      <q-dialog v-model="confirmDialog.show">
+        <q-card class="conf-box">
+          <q-card-section class="sub-font" style="color: black">
+            Are you sure you want to set this appoinment as {{ confirmDialog.action }}?
+          </q-card-section>
+          <q-card-actions align="center">
+            <q-btn flat label="Yes" class="btn-save" @click="confirmAction" />
+            <q-btn
+              flat
+              label="No"
+              class="sub-font-2"
+              style="color: #000000"
+              v-close-popup
+              no-caps
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
     </div>
   </q-page>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
+import { supabase } from 'boot/supabase'
+import { useUserStore } from 'stores/user'
+
 const pagination = {
   page: 1,
   rowsPerPage: 8,
@@ -35,146 +100,127 @@ const columns = [
     required: true,
     label: 'Name',
     align: 'center',
-    field: (row) => row.name,
-    format: (val) => `${val}`,
+    field: 'name',
   },
   {
-    name: 'email',
-    label: 'Email',
+    name: 'userType',
+    label: 'User Type',
     align: 'center',
-    field: (row) => row.email,
+    field: 'userType',
   },
   {
-    name: 'contact',
-    label: 'Contact Number',
+    name: 'purpose',
+    label: 'Purpose of Visit',
     align: 'center',
-    field: (row) => row.contact,
+    field: 'purpose',
   },
   {
-    name: 'date',
-    label: 'Date',
+    name: 'appointmentDate',
+    label: 'Appointment Date',
     align: 'center',
-    field: (row) => row.date,
+    field: 'appointmentDate',
   },
   {
     name: 'time',
     label: 'Time',
     align: 'center',
-    field: (row) => row.time,
+    field: 'time',
   },
   {
-    name: 'status',
-    label: 'Status',
+    name: 'approvalStatus',
+    label: 'Approval Status',
     align: 'center',
-    field: (row) => row.status || 'Pending', // Default to 'Pending' if status is not defined
+    field: 'status',
   },
   {
     name: 'actions',
     align: 'center',
-    field: (row) => row.id,
+    field: (row) => row.appointment_id,
     sortable: false,
   },
 ]
 
-//FOR EXAMPLE ONLY
-const rows = [
-  {
-    id: 1,
-    name: 'Juan Dela Cruz',
-    email: ' juandelacruz@iskolarngbayan.pup.edu.ph',
-    contact: '09171234567',
-    date: '2025-08-10',
-    time: '10:00 AM',
-  },
-  {
-    id: 2,
-    name: 'Maria Clara',
-    email: 'maria@example.com',
-    contact: '09180001122',
-    date: '2025-08-11',
-    time: '11:30 AM',
-  },
-  {
-    id: 3,
-    name: 'Jose Rizal',
-    email: 'rizal@example.com',
-    contact: '09998887766',
-    date: '2025-08-12',
-    time: '01:00 PM',
-  },
-  {
-    id: 4,
-    name: 'Andres Bonifacio',
-    email: 'andresb@example.com',
-    contact: '09175551234',
-    date: '2025-08-13',
-    time: '02:00 PM',
-  },
-  {
-    id: 5,
-    name: 'Gregoria de Jesus',
-    email: 'oriang@example.com',
-    contact: '09172223344',
-    date: '2025-08-14',
-    time: '09:30 AM',
-  },
-  {
-    id: 6,
-    name: 'Emilio Aguinaldo',
-    email: 'emilio@example.com',
-    contact: '09223334455',
-    date: '2025-08-15',
-    time: '03:00 PM',
-  },
-  {
-    id: 7,
-    name: 'Melchora Aquino',
-    email: 'melchora@example.com',
-    contact: '09176667788',
-    date: '2025-08-16',
-    time: '10:45 AM',
-  },
-  {
-    id: 8,
-    name: 'Antonio Luna',
-    email: 'luna@example.com',
-    contact: '09178889900',
-    date: '2025-08-17',
-    time: '01:15 PM',
-  },
-  {
-    id: 9,
-    name: 'Apolinario Mabini',
-    email: 'mabini@example.com',
-    contact: '09227778899',
-    date: '2025-08-18',
-    time: '11:00 AM',
-  },
-  {
-    id: 10,
-    name: 'Trinidad Tecson',
-    email: 'trinidad@example.com',
-    contact: '09331112233',
-    date: '2025-08-19',
-    time: '02:30 PM',
-  },
-  {
-    id: 11,
-    name: 'Manuel Quezon',
-    email: 'quezon@example.com',
-    contact: '09170005566',
-    date: '2025-08-20',
-    time: '09:00 AM',
-  },
-  {
-    id: 12,
-    name: 'Sergio Osmeña',
-    email: 'osmena@example.com',
-    contact: '09221114455',
-    date: '2025-08-21',
-    time: '04:00 PM',
-  },
-]
+const appointments = ref([])
+
+onMounted(async () => {
+  const { data, error } = await supabase.from('appointment_booking').select('*')
+
+  if (!error && data) {
+    appointments.value = data.map((a) => ({
+      appointment_id: a.appointment_id,
+      name: a.name,
+      userType: a.user_type,
+      purpose: a.purpose,
+      appointmentDate: a.date,
+      time: a.time,
+      approvalStatus: a.status,
+    }))
+  }
+})
+
+const confirmDialog = ref({
+  show: false,
+  action: '',
+  row: null,
+})
+
+function openConfirmDialog(row, action) {
+  confirmDialog.value.show = true
+  confirmDialog.value.action = action
+  confirmDialog.value.row = row
+}
+
+async function confirmAction() {
+  if (!confirmDialog.value.row) return
+
+  const row = confirmDialog.value.row
+  const action = confirmDialog.value.action
+  const userStore = useUserStore()
+
+  const adminName =
+    `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+
+  try {
+    // Data to update
+    const updateData = {
+      status: action,
+      reviewed_by: adminName,
+      reviewed_at: new Date().toISOString(),
+    }
+
+    // Update registration_visitors status
+    const updateResponse = await supabase
+      .from('appointment_booking')
+      .update(updateData)
+      .eq('appointment_id', row.appointment_id)
+      .select()
+
+    console.log('Update response:', updateResponse)
+
+    if (updateResponse.error) {
+      throw updateResponse.error
+    }
+
+    confirmDialog.value.show = false
+
+    fetchAppointments()
+  } catch (err) {
+    console.error('Error updating status:', err)
+  }
+}
+
+// Fetch appointments with status from DB
+async function fetchAppointments() {
+  const { data, error } = await supabase
+    .from('appointment_booking')
+    .select('name, user_type, purpose, date, time, status')
+
+  if (error) {
+    console.error('Error fetching visitors:', error.message)
+    return
+  }
+  appointments.value = data
+}
 </script>
 
 <style scoped>
