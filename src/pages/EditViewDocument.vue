@@ -514,13 +514,24 @@ const editableCategories = ref([])
 // Fetch categories from Supabase when dialog opens or on mount
 async function loadCategories(doc) {
   const docCategories = doc.metadata?.categories || []
+  const { data, error } = await supabase.from('categories').select('id, type, category')
+
+  if (error) {
+    console.error('Error loading categories:', error)
+    return
+  }
+
+  // Populate the chips with existing selected categories
   editableCategories.value = docCategories
 
-  // Sync checkbox states in dialog
-  categories.value = categories.value.map((c) => ({
-    ...c,
-    selected: docCategories.includes(c.name),
-  }))
+  // Map DB data to local structure with checkbox state
+  categories.value = data
+    .filter((c) => c.type === 'document')
+    .map((c) => ({
+      id: c.id,
+      name: c.category,
+      selected: docCategories.includes(c.category),
+    }))
 }
 
 // Add new category (save to DB + local list)
