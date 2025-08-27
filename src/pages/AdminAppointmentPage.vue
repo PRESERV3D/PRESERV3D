@@ -9,7 +9,7 @@
         :rows="rows"
         :columns="columns"
         row-key="name"
-        :pagination="pagination"
+        :pagination="{ page: 1, rowsPerPage: 8 }"
       >
         <template v-slot:body-cell-actions>
           <q-td align="center">
@@ -24,11 +24,6 @@
 </template>
 
 <script setup>
-const pagination = {
-  page: 1,
-  rowsPerPage: 8,
-}
-
 const columns = [
   {
     name: 'name',
@@ -178,12 +173,6 @@ const rows = [
 </script>
 
 <style scoped>
-.my-sticky-header-table {
-  border-radius: 10px !important;
-  font-family: 'Poppins', sans-serif;
-  height: auto; /* Ensure scrollable height */
-}
-
 /* Color bottom toolbars inside table */
 ::v-deep(.my-sticky-header-table .q-table__bottom) {
   font-size: 14px;
