@@ -117,7 +117,6 @@
                 size="sm"
                 class="add-category-btn q-mt-xs"
                 @click="showCategoriesDialog = true"
-                v-show="!showCategoryInput"
               />
 
               <!-- Category Dialog -->
@@ -174,6 +173,7 @@
                           icon="add"
                           size="xs"
                           @click="addCategory"
+                          :disable="!newCategory.trim()"
                         />
                       </template>
                     </q-input>
@@ -183,6 +183,23 @@
                     <q-btn flat label="Close" color="black" v-close-popup no-caps />
                     <q-btn label="Save" class="btn-save" flat @click="saveCategories" />
                     <!--need fixing in backend-->
+                  </q-card-actions>
+                </q-card>
+              </q-dialog>
+
+              <!-- Delete Category Error Dialog -->
+              <q-dialog v-model="showDeleteErrorDialog">
+                <q-card>
+                  <q-card-section class="text-h6 text-negative">
+                    Cannot Delete Category
+                  </q-card-section>
+
+                  <q-card-section>
+                    {{ deleteErrorMessage }}
+                  </q-card-section>
+
+                  <q-card-actions align="right">
+                    <q-btn flat label="OK" color="primary" v-close-popup />
                   </q-card-actions>
                 </q-card>
               </q-dialog>
@@ -479,16 +496,22 @@ const categories = ref([])
 const newCategory = ref('')
 const editableCategories = ref([])
 
-function addCategory() {
-  if (newCategory.value.trim()) {
-    categories.value.push({
-      id: Date.now(),
-      name: newCategory.value,
-      selected: false,
-    })
-    newCategory.value = ''
-  }
-}
+// function addCategory() {
+//   const name = newCategory.value.trim()
+//   if (!name) return
+
+//   // prevent duplicate category names
+//   const exists = categories.value.some((c) => c.name.toLowerCase() === name.toLowerCase())
+//   if (!exists) {
+//     categories.value.push({
+//       id: Date.now(),
+//       name,
+//       selected: true, // auto-select when added
+//     })
+//   }
+
+//   newCategory.value = ''
+// }
 // const toggleCategoryInput = () => {
 //   showCategoryInput.value = true
 //   setTimeout(() => {
@@ -505,9 +528,77 @@ function addCategory() {
 //   }
 // }
 
-//still need for backend if an artifact/document selected category is to be removed
-const removeCategory = (index) => {
+// Fetch categories from Supabase when dialog opens or on mount
+async function loadCategories(doc) {
+  const docCategories = doc.metadata?.categories || []
+  const { data, error } = await supabase.from('categories').select('id, type, category')
+
+  if (error) {
+    console.error('Error loading categories:', error)
+    return
+  }
+
+  // Populate the chips with existing selected categories
+  editableCategories.value = docCategories
+
+  // Map DB data to local structure with checkbox state
+  categories.value = data
+    .filter((c) => c.type === 'document')
+    .map((c) => ({
+      id: c.id,
+      name: c.category,
+      selected: docCategories.includes(c.category),
+    }))
+}
+
+// Add new category (save to DB + local list)
+async function addCategory() {
+  const name = newCategory.value.trim()
+  if (!name) return
+
+  // check if category already exists in DB
+  const exists = categories.value.some((c) => c.name.toLowerCase() === name.toLowerCase())
+  if (exists) {
+    console.warn('Category already exists:', name)
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('categories')
+    .insert([{ type: 'document', category: name }])
+    .select()
+
+  if (error) {
+    console.error('Error adding category:', error)
+    return
+  }
+
+  // push to local list
+  categories.value.push({
+    id: data[0].id,
+    name: data[0].category,
+    selected: true,
+  })
+
+  newCategory.value = ''
+}
+
+// Save selected categories for the current document
+async function saveCategories() {
+  // update the chips
+  editableCategories.value = categories.value.filter((c) => c.selected).map((c) => c.name)
+
+  showCategoriesDialog.value = false
+}
+
+// Remove chip
+function removeCategory(index) {
+  const removed = editableCategories.value[index]
   editableCategories.value.splice(index, 1)
+
+  // Uncheck in categories dialog list
+  const found = categories.value.find((c) => c.name === removed)
+  if (found) found.selected = false
 }
 
 function formatDate(dateStr) {
@@ -516,6 +607,55 @@ function formatDate(dateStr) {
     hour: '2-digit',
     minute: '2-digit',
   })}`
+}
+
+// Delete a category by ID
+const showDeleteErrorDialog = ref(false)
+const deleteErrorMessage = ref('')
+
+async function deleteCategory(categoryId) {
+  // Find the category being deleted
+  const category = categories.value.find((c) => c.id === categoryId)
+  if (!category) return
+
+  // Check if any documents are using this category
+  const { data: docs, error: docsError } = await supabase
+    .from('documents_metadata')
+    .select('id, metadata')
+    .contains('metadata', { categories: [category.name] })
+
+  if (docsError) {
+    console.error('Error checking documents:', docsError)
+    return
+  }
+
+  if (docs && docs.length > 0) {
+    if (
+      docs.length === 1 &&
+      docs[0].id === route.params.id &&
+      !editableCategories.value.includes(category.name)
+    ) {
+      // Safe to delete
+    } else {
+      deleteErrorMessage.value = `The category "${category.name}" is still used in ${docs.length} document(s). Please remove it from those documents before deleting.`
+      showDeleteErrorDialog.value = true
+      return
+    }
+  }
+
+  // Safe to delete from Supabase
+  const { error } = await supabase.from('categories').delete().eq('id', categoryId)
+
+  if (error) {
+    console.error('Error deleting category:', error)
+    return
+  }
+
+  // Remove from local categories list
+  categories.value = categories.value.filter((c) => c.id !== categoryId)
+
+  // If it was selected for this document, remove it from editableCategories too
+  editableCategories.value = editableCategories.value.filter((name) => name !== category.name)
 }
 
 onMounted(async () => {
@@ -578,6 +718,7 @@ onMounted(async () => {
 
   await documentsStore.fetchStarCounts()
   await documentsStore.fetchViewCounts()
+  loadCategories(data)
 })
 
 //

@@ -118,7 +118,13 @@
           </div>
 
           <!-- Related Links -->
-          <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
+          <div
+            class="q-mb-md link"
+            @click="showRelatedDialog = true"
+            style="margin-left: 0; margin-bottom: 5px; text-align: left"
+          >
+            Show Related Links
+          </div>
           <!-- q-dialog for related links -->
           <q-dialog v-model="showRelatedDialog" persistent>
             <q-card class="related-box">
@@ -246,7 +252,7 @@
           </q-dialog>
 
           <!-- Two-Column Section -->
-          <div class="two-column-details q-mb-lg">
+          <div class="two-column-details q-mt-md q-mb-lg">
             <div class="detail-row q-mb-md">
               <div class="detail-label">
                 <div class="inline-edit-container">
@@ -541,11 +547,16 @@ const toggleCategoryInput = () => {
 }
 
 const addCategory = () => {
-  if (newCategory.value.trim() && !editableCategories.value.includes(newCategory.value.trim())) {
-    editableCategories.value.push(newCategory.value.trim())
-    newCategory.value = ''
-    showCategoryInput.value = false
+  const trimmed = newCategory.value.trim()
+
+  // Only add if not empty and not already in the list
+  if (trimmed && !editableCategories.value.includes(trimmed)) {
+    editableCategories.value.push(trimmed)
   }
+
+  // Reset input and hide again
+  newCategory.value = ''
+  showCategoryInput.value = false
 }
 
 const removeCategory = (index) => {

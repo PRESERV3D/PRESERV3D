@@ -51,6 +51,19 @@
                 style="width: 16px; height: 16px"
               />
             </button>
+            <button
+              class="control-btn"
+              :class="{ active: isSpeaking }"
+              :title="isSpeaking ? 'Stop Text-to-Speech' : 'Start Text-to-Speech'"
+              @click="toggleTextToSpeech"
+            >
+              <q-icon
+                :name="isSpeaking ? 'volume_up' : 'volume_off'"
+                class="control-icon"
+                size="24px"
+                style="font-size: 22px !important"
+              />
+            </button>
           </div>
 
           <!-- Help Overlay -->
@@ -300,7 +313,13 @@
           </div>
 
           <!-- Related Links -->
-          <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
+          <div
+            class="q-mb-md link"
+            @click="showRelatedDialog = true"
+            style="margin-left: 0; margin-bottom: 5px; text-align: left"
+          >
+            Show Related Links
+          </div>
           <q-dialog v-model="showRelatedDialog" persistent>
             <q-card class="related-box">
               <q-card-section
@@ -329,7 +348,7 @@
           </q-dialog>
 
           <!-- Two-Column Section -->
-          <div class="two-column-details q-mb-lg">
+          <div class="two-column-details q-mt-md q-mb-lg">
             <div class="detail-row q-mb-md">
               <div class="detail-label">
                 <div class="a-info-title2">Author</div>
@@ -360,7 +379,7 @@
 
             <!-- User Info with side-by-side layout -->
             <div class="side-by-side-details q-mb-lg">
-              <div class="detail-row q-mb-md">
+              <div v-if="hasValue" class="detail-row q-mb-md">
                 <div class="detail-label">
                   <div class="a-info-title2">Donated/Loaned By:</div>
                 </div>
@@ -468,11 +487,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useModelStore } from 'stores/modelStore'
 import { useUserStore } from 'stores/user'
+import { generateNarration } from '/services/narration_service.js'
 import '@google/model-viewer'
 
 const route = useRoute()
@@ -505,6 +525,9 @@ const showHelpOverlay = ref(false)
 
 const showRelatedDialog = ref(false)
 const links = ref([])
+const artifactCard = ref(null)
+
+const hasValue = ref(false)
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)
@@ -512,6 +535,48 @@ function formatDate(dateStr) {
     hour: '2-digit',
     minute: '2-digit',
   })}`
+}
+
+const isSpeaking = ref(false)
+let currentUtterance = null
+
+const toggleTextToSpeech = async () => {
+  const { data: artifactData } = await supabase
+    .from('artifacts_metadata')
+    .select('*')
+    .eq('id', route.params.id)
+    .single()
+
+  if (isSpeaking.value) {
+    window.speechSynthesis.cancel()
+    isSpeaking.value = false
+    return
+  }
+
+  const narration = generateNarration(artifactData)
+  if (!narration) return
+
+  // Create speech utterance
+  currentUtterance = new SpeechSynthesisUtterance(narration)
+  currentUtterance.lang = 'en-US'
+  currentUtterance.rate = 0.95
+  currentUtterance.pitch = 1.05
+
+  // Pick a more natural female voice if available
+  const voices = window.speechSynthesis.getVoices()
+  const preferredVoice = voices.find(
+    (v) =>
+      v.lang === 'en-US' &&
+      (v.name.includes('Google US English Female') || v.name.includes('Microsoft')), // adjust for your browser
+  )
+  if (preferredVoice) currentUtterance.voice = preferredVoice
+
+  currentUtterance.onend = () => {
+    isSpeaking.value = false
+  }
+
+  window.speechSynthesis.speak(currentUtterance)
+  isSpeaking.value = true
 }
 
 // Help button click
@@ -536,7 +601,7 @@ function resetModelView() {
 
 // ADDED: View full screen function
 function viewFullScreen() {
-  const el = artifactViewer.value
+  const el = artifactCard.value
   if (!el) return
 
   if (el.requestFullscreen) {
@@ -867,6 +932,12 @@ onMounted(async () => {
     }
   }
 
+  if (!data.donated_by || data.donated_by === '[Donor/Lender Name]') {
+    hasValue.value = false
+  } else {
+    hasValue.value = true
+  }
+
   loading.value = false
 
   // Check if the artifact is in user's Favorites collection
@@ -931,6 +1002,13 @@ onMounted(async () => {
   })
 })
 
+onUnmounted(() => {
+  if (isSpeaking.value) {
+    window.speechSynthesis.cancel()
+    isSpeaking.value = false
+  }
+})
+
 function openLink(url) {
   window.open(url, '_blank')
 }
@@ -987,6 +1065,46 @@ async function handleDelete() {
 </script>
 
 <style scoped>
+/* Standard fullscreen */
+model-viewer:fullscreen {
+  background: radial-gradient(
+    110.32% 94.3% at 50% 57.87%,
+    #b69f9f 0%,
+    #640c0c 51.92%,
+    #121212 95.67%
+  );
+}
+
+/* Webkit browsers (Safari, Chrome) */
+model-viewer:-webkit-full-screen {
+  background: radial-gradient(
+    110.32% 94.3% at 50% 57.87%,
+    #b69f9f 0%,
+    #640c0c 51.92%,
+    #121212 95.67%
+  );
+}
+
+/* Firefox */
+model-viewer:-moz-full-screen {
+  background: radial-gradient(
+    110.32% 94.3% at 50% 57.87%,
+    #b69f9f 0%,
+    #640c0c 51.92%,
+    #121212 95.67%
+  );
+}
+
+/* IE/Edge */
+model-viewer:-ms-fullscreen {
+  background: radial-gradient(
+    110.32% 94.3% at 50% 57.87%,
+    #b69f9f 0%,
+    #640c0c 51.92%,
+    #121212 95.67%
+  );
+}
+
 .action-buttons {
   display: flex;
   align-items: center;

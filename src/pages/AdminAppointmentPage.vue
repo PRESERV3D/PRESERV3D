@@ -9,7 +9,7 @@
         :rows="appointments"
         :columns="columns"
         row-key="name"
-        :pagination="pagination"
+        :pagination="{ page: 1, rowsPerPage: 8 }"
       >
         <!-- Approval Status -->
         <template v-slot:body-cell-approvalStatus="props">
@@ -89,10 +89,10 @@ import { ref, onMounted } from 'vue'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 
-const pagination = {
-  page: 1,
-  rowsPerPage: 8,
-}
+// const pagination = {
+//   page: 1,
+//   rowsPerPage: 8,
+// }
 
 const columns = [
   {
@@ -224,12 +224,6 @@ async function fetchAppointments() {
 </script>
 
 <style scoped>
-.my-sticky-header-table {
-  border-radius: 10px !important;
-  font-family: 'Poppins', sans-serif;
-  height: auto; /* Ensure scrollable height */
-}
-
 /* Color bottom toolbars inside table */
 ::v-deep(.my-sticky-header-table .q-table__bottom) {
   font-size: 14px;

@@ -1145,11 +1145,11 @@ document-title-2 {
 //related links
 
 .link {
-  margin-top: 2rem;
+  //margin-top: 2rem;
   font-family: 'Poppins', sans-serif;
   color: #560505;
   font-weight: 500;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
   text-decoration: underline;
 }
@@ -1163,17 +1163,17 @@ document-title-2 {
   padding: 1rem;
   text-align: center;
   width: 35rem;
+}
 
-  .link-style {
-    font-family: 'Poppins', sans-serif;
-    font-size: 14px;
-    font-weight: 400;
-    color: #000000;
-    text-decoration: underline;
-    cursor: pointer;
-    width: 25rem;
-    text-align: start;
-  }
+.link-style {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #000000;
+  text-decoration: underline;
+  cursor: pointer;
+  width: 25rem;
+  text-align: start;
 }
 
 // Category css
@@ -1186,13 +1186,21 @@ document-title-2 {
   padding: 1rem;
   text-align: center;
   width: 25rem;
+}
 
-  .category-style {
-    font-family: 'Poppins', sans-serif;
-    font-size: 14px;
-    font-weight: 400;
-    color: #000000;
-    width: 10rem;
-    text-align: start;
-  }
+.category-style {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #000000;
+  width: 10rem;
+  text-align: start;
+}
+
+//
+
+.my-sticky-header-table {
+  border-radius: 10px !important;
+  font-family: 'Poppins', sans-serif;
+  height: auto;
 }
