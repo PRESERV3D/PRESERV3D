@@ -117,7 +117,7 @@
             <div class="form-group notes-group">
               <label class="form-label">Notes</label>
               <q-input
-                v-model="form.notes"
+                v-model="form.remarks"
                 dense
                 outlined
                 placeholder="Special Requests"
@@ -142,7 +142,7 @@
         bordered
         :rows="appointments"
         :columns="columns"
-        row-key="id"
+        row-key="appointment_id"
         :pagination="pagination"
       >
         <template v-slot:body-cell-status="props">
@@ -184,7 +184,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useUserStore } from 'src/stores/user'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
@@ -201,7 +201,7 @@ const form = ref({
   date: '',
   time: '',
   purpose: '',
-  notes: '',
+  remarks: '',
 })
 
 const pagination = {
@@ -243,14 +243,6 @@ const columns = [
     sortable: true,
   },
   {
-    name: 'appointmentStatus',
-    required: true,
-    label: 'Appointment Status',
-    align: 'center',
-    field: 'appointmentStatus',
-    sortable: true,
-  },
-  {
     name: 'remarks',
     required: false,
     label: 'Remarks',
@@ -262,7 +254,7 @@ const columns = [
 
 const appointments = ref([])
 
-onMounted(async () => {
+const fetchAppointments = async () => {
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -274,13 +266,22 @@ onMounted(async () => {
 
   if (!error && data) {
     appointments.value = data.map((a) => ({
+      // appointment_id: a.appointment_id,
       purpose: a.purpose,
       appointmentDate: a.date,
       time: a.time,
-      approvalStatus: a.approval_status,
-      appointmentStatus: a.appointment_status,
+      approvalStatus: a.status,
       remarks: a.remarks,
     }))
+  }
+}
+
+onMounted(fetchAppointments)
+
+// watch tab change
+watch(activeTab, (newTab) => {
+  if (newTab === 'status') {
+    fetchAppointments()
   }
 })
 
@@ -301,7 +302,7 @@ const hourOptions = (hr) => {
 }
 
 async function submitBooking() {
-  const { name, email, date, time, purpose, notes } = form.value
+  const { name, email, date, time, purpose, remarks } = form.value
 
   if (!date || !time || !purpose) {
     alert('Please fill out all required fields.')
@@ -320,11 +321,12 @@ async function submitBooking() {
         date,
         time,
         purpose,
-        notes,
+        remarks,
         user_type: userStore.profile?.user_type || 'User',
         user_id: user.id,
-        approval_status: 'Pending',
-        appointment_status: 'Pending',
+        status: 'Pending',
+        reviewed_by: null,
+        reviewed_at: null,
       },
     ])
 
@@ -347,7 +349,7 @@ function resetForm() {
   form.value.date = ''
   form.value.time = ''
   form.value.purpose = ''
-  form.value.notes = ''
+  form.value.remarks = ''
 }
 
 function returnToDashboard() {
@@ -356,13 +358,12 @@ function returnToDashboard() {
   router.push('/home')
 }
 
+// not working yet
 function getStatusColor(status) {
   switch (status) {
-    case 'ON GOING':
-      return 'orange'
-    case 'ACCEPTED':
+    case 'Approved':
       return 'green'
-    case 'REJECTED':
+    case 'Rejected':
       return 'red'
     default:
       return 'grey'
