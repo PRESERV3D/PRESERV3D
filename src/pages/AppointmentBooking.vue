@@ -115,9 +115,9 @@
 
           <div class="form-row">
             <div class="form-group notes-group">
-              <label class="form-label">Notes</label>
+              <label class="form-label">Remarks</label>
               <q-input
-                v-model="form.remarks"
+                v-model="form.user_remarks"
                 dense
                 outlined
                 placeholder="Special Requests"
@@ -193,13 +193,14 @@ const loading = ref(false)
 const showSuccessModal = ref(false)
 
 const userStore = useUserStore()
+
 const form = ref({
-  name: userStore.profile?.first_name + ' ' + userStore.profile?.last_name || '',
+  name: `${userStore.profile.first_name || ''} ${userStore.profile.last_name || ''}`.trim(),
   email: userStore.profile?.email || '',
   date: '',
   time: '',
   purpose: '',
-  remarks: '',
+  user_remarks: '',
 })
 
 const pagination = {
@@ -214,7 +215,7 @@ const columns = [
     label: 'Purpose of Visit',
     align: 'center',
     field: 'purpose',
-    sortable: true,
+    // sortable: true,
   },
   {
     name: 'appointmentDate',
@@ -222,7 +223,7 @@ const columns = [
     label: 'Appointment Date',
     align: 'center',
     field: 'appointmentDate',
-    sortable: true,
+    // sortable: true,
   },
   {
     name: 'time',
@@ -230,23 +231,34 @@ const columns = [
     label: 'Time',
     align: 'center',
     field: 'time',
-    sortable: true,
   },
   {
-    name: 'approvalStatus',
+    name: 'user_remarks',
+    required: false,
+    label: 'User Remarks',
+    align: 'center',
+    field: 'user_remarks',
+  },
+  {
+    name: 'status',
     required: true,
     label: 'Approval Status',
     align: 'center',
-    field: 'approvalStatus',
-    sortable: true,
+    field: 'status',
   },
   {
-    name: 'remarks',
-    required: false,
-    label: 'Remarks',
+    name: 'reviewed_by',
+    required: true,
+    label: 'Reviewed By',
     align: 'center',
-    field: 'remarks',
-    sortable: true,
+    field: 'reviewed_by',
+  },
+  {
+    name: 'admin_remarks',
+    required: false,
+    label: 'Admin Remarks',
+    align: 'center',
+    field: 'admin_remarks',
   },
 ]
 
@@ -264,14 +276,24 @@ const fetchAppointments = async () => {
 
   if (!error && data) {
     appointments.value = data.map((a) => ({
-      // appointment_id: a.appointment_id,
+      appointment_id: a.appointment_id,
       purpose: a.purpose,
       appointmentDate: a.date,
-      time: a.time,
-      approvalStatus: a.status,
-      remarks: a.remarks,
+      time: formatTimeTo12Hour(a.time),
+      status: a.status,
+      user_remarks: a.user_remarks,
+      admin_remarks: a.admin_remarks,
+      reviewed_by: a.reviewed_by,
     }))
   }
+}
+
+function formatTimeTo12Hour(timeStr) {
+  if (!timeStr) return ''
+  const [hour, minute] = timeStr.split(':').map(Number)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const formattedHour = hour % 12 || 12 // 0 -> 12
+  return `${formattedHour}:${minute.toString().padStart(2, '0')} ${ampm}`
 }
 
 onMounted(fetchAppointments)
@@ -300,7 +322,7 @@ const hourOptions = (hr) => {
 }
 
 async function submitBooking() {
-  const { name, email, date, time, purpose, remarks } = form.value
+  const { name, email, date, time, purpose, user_remarks } = form.value
 
   if (!date || !time || !purpose) {
     alert('Please fill out all required fields.')
@@ -319,12 +341,13 @@ async function submitBooking() {
         date,
         time,
         purpose,
-        remarks,
+        user_remarks,
         user_type: userStore.profile?.user_type || 'User',
         user_id: user.id,
         status: 'Pending',
-        reviewed_by: null,
-        reviewed_at: null,
+        // reviewed_by: null,
+        // reviewed_at: null,
+        created_at: new Date().toISOString(),
       },
     ])
 
@@ -347,7 +370,7 @@ function resetForm() {
   form.value.date = ''
   form.value.time = ''
   form.value.purpose = ''
-  form.value.remarks = ''
+  form.value.user_remarks = ''
 }
 
 function viewAppointments() {
@@ -357,7 +380,6 @@ function viewAppointments() {
   fetchAppointments()
 }
 
-// not working yet
 function getStatusColor(status) {
   switch (status) {
     case 'Approved':
