@@ -246,7 +246,7 @@
                   <div class="row q-pa-md">
                     <!-- Authors Column (Left) -->
                     <div class="col q-pr-sm">
-                      <div class="sub-font-3 q-mb-sm">Authors</div>
+                      <div class="sub-font-3 q-mb-sm">Author</div>
                       <q-scroll-area style="height: 12rem; width: 12rem">
                         <q-list dense>
                           <q-item
