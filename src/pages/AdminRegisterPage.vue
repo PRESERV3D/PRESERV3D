@@ -25,8 +25,10 @@
               type="email"
               v-model="form.email"
               :rules="[
-                (val) => !!val || 'Email required',
-                (val) => val.includes('@iskolarngbayan.pup.edu.ph') || 'Use your PUP email only',
+                (val) => !!val || 'Please enter your email.',
+                (val) =>
+                  val.includes('@iskolarngbayan.pup.edu.ph') || 'Please use your PUP email only',
+                checkEmailUnique,
               ]"
               class="text-box-2 q-mr-lg"
             />
@@ -97,6 +99,24 @@ const form = ref({
   password: '',
   confirmPassword: '',
 })
+
+// Check if email already exists in all_users table
+const checkEmailUnique = async (val) => {
+  if (!val) return true
+
+  const { data, error } = await supabase
+    .from('all_users')
+    .select('id')
+    .eq('email', val)
+    .maybeSingle()
+
+  if (error) {
+    console.error(error)
+    return true
+  }
+
+  return !data || 'An account with this email already exists.'
+}
 
 // Password strength
 const passwordStrength = computed(() => {
