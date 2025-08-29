@@ -33,6 +33,7 @@
             :rules="[
               (val) => !!val || 'Please enter your email.',
               (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || 'Please enter a valid email.',
+              checkEmailUnique,
             ]"
             class="text-box"
           />
@@ -241,7 +242,8 @@ import { ref } from 'vue'
 import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
 import UploadDialog from 'components/UploadDialog.vue'
-// import { date } from 'quasar'
+import { date } from 'quasar'
+import { addMonths, differenceInCalendarDays } from 'date-fns'
 
 const step = ref(1)
 
@@ -259,30 +261,30 @@ const form = ref({
   end_date: '',
 })
 
-// Code for 8 days from current date and within 6 mos duration
-// Current date
-// const today = new Date()
-// const minDate = ref(date.formatDate(today, 'YYYY-MM-DD'))
+// Allowed dates: 7 days from current date and within 6 months only
+const today = new Date()
 
-// // Max selectable date: 6 months from current date
-// const maxDateObj = new Date(today)
-// maxDateObj.setMonth(maxDateObj.getMonth() + 6)
-// const maxDate = ref(date.formatDate(maxDateObj, 'YYYY-MM-DD'))
+// Min selectable date: current date
+const minDate = ref(date.formatDate(today, 'YYYY-MM-DD'))
 
-// // Allow only dates starting 8 days from today until 6 months later
-// const startDateOptions = (val) => {
-//   const dt = new Date(val) // convert string to Date
-//   const diff = Math.floor((dt - today) / (1000 * 60 * 60 * 24)) // days difference
+// Max selectable date: 6 months from current date
+const maxDateObj = addMonths(today, 6)
+const maxDate = ref(date.formatDate(maxDateObj, 'YYYY-MM-DD'))
 
-//   return diff > 7 && diff <= 183 // 183 days ≈ 6 months
-// }
+// Allow only dates starting 7 days from today until 6 months later
+const startDateOptions = (val) => {
+  const date = new Date(val) // convert string to Date
+  const diff = differenceInCalendarDays(date, today)
 
-// // Same rule for end date
-// const endDateOptions = (val) => startDateOptions(val)
+  return diff >= 7 && diff <= differenceInCalendarDays(maxDateObj, today)
+}
+
+// Same rule for end date
+const endDateOptions = (val) => startDateOptions(val)
 
 // No date restrictions for date options
-const startDateOptions = () => true
-const endDateOptions = () => true
+// const startDateOptions = () => true
+// const endDateOptions = () => true
 
 const handleUploadClick = () => {
   alert('File has been added to your registration.')
@@ -306,7 +308,7 @@ const handleUploadClick = () => {
 // )
 
 // Validate step one inputs
-function validateStepOne() {
+async function validateStepOne() {
   const { first_name, last_name, email, contact } = form.value
 
   if (!first_name || !last_name || !email || !contact) {
@@ -319,7 +321,31 @@ function validateStepOne() {
     return
   }
 
+  const emailUnique = await checkEmailUnique(email)
+  if (emailUnique !== true) {
+    alert(emailUnique)
+    return
+  }
+
   step.value++
+}
+
+// Check if email already exists in all_users table
+const checkEmailUnique = async (val) => {
+  if (!val) return true
+
+  const { data, error } = await supabase
+    .from('all_users')
+    .select('id')
+    .eq('email', val)
+    .maybeSingle()
+
+  if (error) {
+    console.error(error)
+    return true
+  }
+
+  return !data || 'An account with this email already exists. Please use a different email.'
 }
 
 // Register user
