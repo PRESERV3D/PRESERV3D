@@ -11,53 +11,91 @@
         row-key="appointment_id"
         :pagination="pagination"
       >
-        <!-- Approval Status -->
-        <template v-slot:body-cell-approvalStatus="props">
-          <q-td :props="props" align="center">
-            <!-- If pending -->
-            <template v-if="props.row.approvalStatus === 'Pending'">
-              <q-btn
-                flat
-                dense
-                round
-                class="status-btn"
-                @click="openConfirmDialog(props.row, 'Approved', 'approvalStatus')"
-              >
-                <q-icon name="check" color="green" size="18px" />
-              </q-btn>
-              <q-btn
-                flat
-                dense
-                round
-                class="status-btn"
-                @click="openConfirmDialog(props.row, 'Rejected', 'approvalStatus')"
-              >
-                <q-icon name="close" color="red" size="18px" />
-              </q-btn>
-            </template>
+        <!-- Expandable row -->
+        <template v-slot:body="props">
+          <!-- Main row -->
+          <q-tr :props="props">
+            <q-td v-for="col in props.cols" :key="col.name" :props="props" align="center">
+              <!-- Actions column for expand button -->
+              <template v-if="col.name === 'actions'">
+                <q-btn flat size="sm" icon="expand_more" @click="props.expand = !props.expand" />
+              </template>
+              <template v-else-if="col.name === 'status'">
+                <template v-if="props.row.status === 'Pending'">
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    class="status-btn"
+                    @click="openConfirmDialog(props.row, 'Approved')"
+                  >
+                    <q-icon name="check" color="green" size="18px" />
+                  </q-btn>
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    class="status-btn"
+                    @click="openConfirmDialog(props.row, 'Rejected')"
+                  >
+                    <q-icon name="close" color="red" size="18px" />
+                  </q-btn>
+                </template>
+                <template v-else>
+                  <span
+                    class="status-text"
+                    :class="{
+                      'text-green': props.row.status === 'Approved',
+                      'text-red': props.row.status === 'Rejected',
+                    }"
+                  >
+                    {{ props.row.status }}
+                  </span>
+                </template>
+              </template>
+              <template v-else>
+                {{ props.row[col.field] }}
+              </template>
+            </q-td>
+          </q-tr>
 
-            <!-- If decided -->
-            <template v-else>
-              <span
-                class="status-text"
-                :class="{
-                  'text-green': props.row.approvalStatus === 'Approved',
-                  'text-red': props.row.approvalStatus === 'Rejected',
-                }"
-              >
-                {{ props.row.approvalStatus }}
-              </span>
-            </template>
-          </q-td>
-        </template>
-
-        <!-- Actions -->
-        <template v-slot:body-cell-actions>
-          <q-td align="center">
-            <router-link to="/admin/appointments/details" class="view-more-link">
-              View More
-            </router-link>
-          </q-td>
+          <!-- Expanded row -->
+          <q-tr v-show="props.expand">
+            <q-td colspan="100%">
+              <div class="q-pa-md bg-grey-2 rounded-borders">
+                <p><strong>User Type:</strong> {{ props.row.user_type }}</p>
+                <p><strong>Email:</strong> {{ props.row.email }}</p>
+                <p><strong>User Remarks:</strong> {{ props.row.user_remarks }}</p>
+                <p><strong>Reviewed by:</strong> {{ props.row.reviewed_by }}</p>
+                <p><strong>Reviewed at:</strong> {{ props.row.reviewed_at }}</p>
+                <div style="display: flex; align-items: flex-start; gap: 8px">
+                  <p><strong>Admin Remarks:</strong></p>
+                  <q-input
+                    v-model="props.row.admin_remarks"
+                    type="textarea"
+                    dense
+                    outlined
+                    autogrow
+                    placeholder="Enter admin remarks"
+                    style="max-height: 120px; overflow-y: auto; flex: 1"
+                    :readonly="props.row.adminRemarksSaved"
+                  >
+                    <template v-slot:append>
+                      <q-btn
+                        flat
+                        dense
+                        round
+                        color="green"
+                        icon="check"
+                        v-if="!props.row.adminRemarksSaved && props.row.admin_remarks.trim() !== ''"
+                        @click="saveRemarks(props.row)"
+                      />
+                    </template>
+                  </q-input>
+                </div>
+              </div>
+            </q-td>
+          </q-tr>
         </template>
       </q-table>
 
@@ -65,7 +103,7 @@
       <q-dialog v-model="confirmDialog.show">
         <q-card class="conf-box">
           <q-card-section class="sub-font" style="color: black">
-            Are you sure you want to set this appoinment as {{ confirmDialog.action }}?
+            Are you sure you want to set this appointment as {{ confirmDialog.action }}?
           </q-card-section>
           <q-card-actions align="center">
             <q-btn flat label="Yes" class="btn-save" @click="confirmAction" />
@@ -103,12 +141,6 @@ const columns = [
     field: 'name',
   },
   {
-    name: 'userType',
-    label: 'User Type',
-    align: 'center',
-    field: 'userType',
-  },
-  {
     name: 'purpose',
     label: 'Purpose of Visit',
     align: 'center',
@@ -116,7 +148,7 @@ const columns = [
   },
   {
     name: 'appointmentDate',
-    label: 'Appointment Date',
+    label: 'Date',
     align: 'center',
     field: 'appointmentDate',
   },
@@ -127,8 +159,8 @@ const columns = [
     field: 'time',
   },
   {
-    name: 'approvalStatus',
-    label: 'Approval Status',
+    name: 'status',
+    label: 'Status',
     align: 'center',
     field: 'status',
   },
@@ -172,6 +204,7 @@ async function confirmAction() {
       status: action,
       reviewed_by: adminName,
       reviewed_at: new Date().toISOString(),
+      admin_remarks: row.admin_remarks || '',
     }
 
     // Update registration_visitors status
@@ -208,12 +241,44 @@ async function fetchAppointments() {
   appointments.value = data.map((a) => ({
     appointment_id: a.appointment_id,
     name: a.name,
-    userType: a.user_type,
+    email: a.email,
+    user_type: a.user_type,
     purpose: a.purpose,
     appointmentDate: a.date,
-    time: a.time,
-    approvalStatus: a.status,
+    time: formatTimeTo12Hour(a.time),
+    status: a.status,
+    user_remarks: a.user_remarks,
+    admin_remarks: a.admin_remarks || '',
+    reviewed_by: a.reviewed_by,
+    reviewed_at: a.reviewed_at,
+    adminRemarksSaved: !!a.admin_remarks,
   }))
+}
+
+async function saveRemarks(row) {
+  try {
+    const { error } = await supabase
+      .from('appointment_booking')
+      .update({ admin_remarks: row.admin_remarks })
+      .eq('appointment_id', row.appointment_id)
+
+    if (error) throw error
+
+    console.log('Remarks saved successfully.')
+
+    // Mark as saved so input becomes read-only
+    row.adminRemarksSaved = true
+  } catch (err) {
+    console.error('Error saving remarks:', err)
+  }
+}
+
+function formatTimeTo12Hour(timeString) {
+  if (!timeString) return ''
+  const [hour, minute] = timeString.split(':').map(Number)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const formattedHour = hour % 12 || 12 // 0 -> 12
+  return `${formattedHour}:${minute.toString().padStart(2, '0')} ${ampm}`
 }
 </script>
 

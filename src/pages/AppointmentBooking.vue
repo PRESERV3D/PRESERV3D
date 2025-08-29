@@ -115,9 +115,9 @@
 
           <div class="form-row">
             <div class="form-group notes-group">
-              <label class="form-label">Notes</label>
+              <label class="form-label">Remarks</label>
               <q-input
-                v-model="form.remarks"
+                v-model="form.user_remarks"
                 dense
                 outlined
                 placeholder="Special Requests"
@@ -187,19 +187,21 @@
 import { ref, onMounted, watch } from 'vue'
 import { useUserStore } from 'src/stores/user'
 import { supabase } from 'boot/supabase'
+import { addBusinessDays, addMonths, isWithinInterval, isWeekend } from 'date-fns'
 
 const activeTab = ref('information')
 const loading = ref(false)
 const showSuccessModal = ref(false)
 
 const userStore = useUserStore()
+
 const form = ref({
-  name: userStore.profile?.first_name + ' ' + userStore.profile?.last_name || '',
+  name: `${userStore.profile.first_name || ''} ${userStore.profile.last_name || ''}`.trim(),
   email: userStore.profile?.email || '',
   date: '',
   time: '',
   purpose: '',
-  remarks: '',
+  user_remarks: '',
 })
 
 const pagination = {
@@ -214,7 +216,7 @@ const columns = [
     label: 'Purpose of Visit',
     align: 'center',
     field: 'purpose',
-    sortable: true,
+    // sortable: true,
   },
   {
     name: 'appointmentDate',
@@ -222,7 +224,7 @@ const columns = [
     label: 'Appointment Date',
     align: 'center',
     field: 'appointmentDate',
-    sortable: true,
+    // sortable: true,
   },
   {
     name: 'time',
@@ -230,28 +232,40 @@ const columns = [
     label: 'Time',
     align: 'center',
     field: 'time',
-    sortable: true,
   },
   {
-    name: 'approvalStatus',
+    name: 'user_remarks',
+    required: false,
+    label: 'User Remarks',
+    align: 'center',
+    field: 'user_remarks',
+  },
+  {
+    name: 'status',
     required: true,
     label: 'Approval Status',
     align: 'center',
-    field: 'approvalStatus',
-    sortable: true,
+    field: 'status',
   },
   {
-    name: 'remarks',
-    required: false,
-    label: 'Remarks',
+    name: 'reviewed_by',
+    required: true,
+    label: 'Reviewed By',
     align: 'center',
-    field: 'remarks',
-    sortable: true,
+    field: 'reviewed_by',
+  },
+  {
+    name: 'admin_remarks',
+    required: false,
+    label: 'Admin Remarks',
+    align: 'center',
+    field: 'admin_remarks',
   },
 ]
 
 const appointments = ref([])
 
+// Fetch appointments of the logged-in user
 const fetchAppointments = async () => {
   const {
     data: { user },
@@ -264,43 +278,55 @@ const fetchAppointments = async () => {
 
   if (!error && data) {
     appointments.value = data.map((a) => ({
-      // appointment_id: a.appointment_id,
+      appointment_id: a.appointment_id,
       purpose: a.purpose,
       appointmentDate: a.date,
-      time: a.time,
-      approvalStatus: a.status,
-      remarks: a.remarks,
+      time: formatTimeTo12Hour(a.time),
+      status: a.status,
+      user_remarks: a.user_remarks,
+      admin_remarks: a.admin_remarks,
+      reviewed_by: a.reviewed_by,
     }))
   }
 }
 
-onMounted(fetchAppointments)
-
-// watch tab change
-watch(activeTab, (newTab) => {
-  if (newTab === 'status') {
-    fetchAppointments()
-  }
-})
-
+// Allowed dates: 3 business days from current date and within 3 months only
 const datePickerOptions = (date) => {
   const today = new Date()
   const selectedDate = new Date(date)
-  return selectedDate >= today
+
+  const minDate = addBusinessDays(today, 3)
+  const maxDate = addMonths(today, 3)
+
+  // Rule 1: must be within interval
+  const withinRange = isWithinInterval(selectedDate, { start: minDate, end: maxDate })
+
+  // Rule 2: weekends not allowed
+  const notWeekend = !isWeekend(selectedDate)
+
+  return withinRange && notWeekend
+}
+
+function formatTimeTo12Hour(timeString) {
+  if (!timeString) return ''
+  const [hour, minute] = timeString.split(':').map(Number)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const formattedHour = hour % 12 || 12 // 0 -> 12
+  return `${formattedHour}:${minute.toString().padStart(2, '0')} ${ampm}`
 }
 
 const hourOptions = (hr) => {
-  // Allow 8:00 → 11:45 AM
+  // Allow 8:00 to  11:45 AM
   if (hr >= 8 && hr <= 11) return true
   // Block 12:00 PM hour
   if (hr === 12) return false
-  // Allow 1:00 → 7:45 PM
+  // Allow 1:00 to 7:45 PM
   if (hr >= 13 && hr <= 19) return true
   return false
 }
 
 async function submitBooking() {
-  const { name, email, date, time, purpose, remarks } = form.value
+  const { name, email, date, time, purpose, user_remarks } = form.value
 
   if (!date || !time || !purpose) {
     alert('Please fill out all required fields.')
@@ -319,12 +345,13 @@ async function submitBooking() {
         date,
         time,
         purpose,
-        remarks,
+        user_remarks,
         user_type: userStore.profile?.user_type || 'User',
         user_id: user.id,
         status: 'Pending',
-        reviewed_by: null,
-        reviewed_at: null,
+        // reviewed_by: null,
+        // reviewed_at: null,
+        created_at: new Date().toISOString(),
       },
     ])
 
@@ -347,8 +374,16 @@ function resetForm() {
   form.value.date = ''
   form.value.time = ''
   form.value.purpose = ''
-  form.value.remarks = ''
+  form.value.user_remarks = ''
 }
+
+onMounted(fetchAppointments)
+
+watch(activeTab, (newTab) => {
+  if (newTab === 'status') {
+    fetchAppointments()
+  }
+})
 
 function viewAppointments() {
   showSuccessModal.value = false
@@ -357,7 +392,6 @@ function viewAppointments() {
   fetchAppointments()
 }
 
-// not working yet
 function getStatusColor(status) {
   switch (status) {
     case 'Approved':
