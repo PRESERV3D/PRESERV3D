@@ -273,7 +273,7 @@
         class="referral-box"
         flat
         bordered
-        title="Referral Letters"
+        title="Visitor Registrations"
         :rows="rows"
         :columns="columns"
         row-key="id"
@@ -694,7 +694,6 @@ async function confirmAction() {
   const action = confirmDialog.value.action
   const userStore = useUserStore()
 
-  // Get current session admin full name
   const adminName =
     `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
 
@@ -732,7 +731,7 @@ async function confirmAction() {
       console.log('SignUp confirmation email sent:', data)
 
       const insertResponse = await supabase.from('approved_visitors').insert({
-        id: data.user.id, // Use the user ID from the sign-up response
+        id: data.user.id, // Use user ID from the sign-up response
         registration_id: row.id,
         approved_at: new Date().toISOString(),
         approved_by: adminName,
@@ -747,10 +746,9 @@ async function confirmAction() {
         throw insertResponse.error
       }
 
-      // Close the dialog
       confirmDialog.value.show = false
 
-      // Refresh your data table
+      // Refresh data table
       await fetchVisitors()
     }
   } catch (err) {
@@ -758,14 +756,14 @@ async function confirmAction() {
   }
 }
 
-// Helper to generate a temporary password
+// Generate a temporary password
 function generateTempPassword(length = 12) {
   const lower = 'abcdefghijklmnopqrstuvwxyz'
   const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   const numbers = '0123456789'
   const symbols = '!@#$%^&*()_+-=[]{};\'":|<>?,./`~'
 
-  // Ensure at least one character of each type
+  // At least one character of each type
   let password = ''
   password += lower[Math.floor(Math.random() * lower.length)]
   password += upper[Math.floor(Math.random() * upper.length)]

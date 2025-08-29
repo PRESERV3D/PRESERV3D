@@ -11,7 +11,7 @@
         row-key="appointment_id"
         :pagination="pagination"
       >
-        <!-- Custom body for expandable rows -->
+        <!-- Expandable row -->
         <template v-slot:body="props">
           <!-- Main row -->
           <q-tr :props="props">
@@ -140,12 +140,6 @@ const columns = [
     align: 'center',
     field: 'name',
   },
-  // {
-  //   name: 'user_type',
-  //   label: 'User Type',
-  //   align: 'center',
-  //   field: 'user_type',
-  // },
   {
     name: 'purpose',
     label: 'Purpose of Visit',
@@ -170,18 +164,6 @@ const columns = [
     align: 'center',
     field: 'status',
   },
-  // {
-  //   name: 'user_remarks',
-  //   label: 'Remarks',
-  //   align: 'center',
-  //   field: 'user_remarks',
-  // },
-  // {
-  //   name: 'admin_remarks',
-  //   label: 'Admin Remarks',
-  //   align: 'center',
-  //   field: 'admin_remarks',
-  // },
   {
     name: 'actions',
     align: 'center',
@@ -291,9 +273,9 @@ async function saveRemarks(row) {
   }
 }
 
-function formatTimeTo12Hour(timeStr) {
-  if (!timeStr) return ''
-  const [hour, minute] = timeStr.split(':').map(Number)
+function formatTimeTo12Hour(timeString) {
+  if (!timeString) return ''
+  const [hour, minute] = timeString.split(':').map(Number)
   const ampm = hour >= 12 ? 'PM' : 'AM'
   const formattedHour = hour % 12 || 12 // 0 -> 12
   return `${formattedHour}:${minute.toString().padStart(2, '0')} ${ampm}`

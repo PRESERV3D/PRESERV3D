@@ -35,6 +35,7 @@
               (val) => !!val || 'Please enter your email.',
               (val) =>
                 val.includes('@iskolarngbayan.pup.edu.ph') || 'Please use your PUP email only.',
+              checkEmailUnique,
             ]"
             class="text-box"
           />
@@ -246,7 +247,7 @@ const passwordStrengthColor = computed(() =>
 )
 
 // Validate step one inputs
-function validateStepOne() {
+async function validateStepOne() {
   const { first_name, last_name, email, contact } = form.value
 
   if (!first_name || !last_name || !email || !contact) {
@@ -259,7 +260,31 @@ function validateStepOne() {
     return
   }
 
+  const emailUnique = await checkEmailUnique(email)
+  if (emailUnique !== true) {
+    alert(emailUnique)
+    return
+  }
+
   step.value++
+}
+
+// Check if email already exists in all_users table
+const checkEmailUnique = async (val) => {
+  if (!val) return true
+
+  const { data, error } = await supabase
+    .from('all_users')
+    .select('id')
+    .eq('email', val)
+    .maybeSingle()
+
+  if (error) {
+    console.error(error)
+    return true
+  }
+
+  return !data || 'An account with this email already exists. Please use a different email.'
 }
 
 // Register user

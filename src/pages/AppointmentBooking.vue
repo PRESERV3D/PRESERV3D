@@ -187,6 +187,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useUserStore } from 'src/stores/user'
 import { supabase } from 'boot/supabase'
+import { addBusinessDays, addMonths, isWithinInterval, isWeekend } from 'date-fns'
 
 const activeTab = ref('information')
 const loading = ref(false)
@@ -264,6 +265,7 @@ const columns = [
 
 const appointments = ref([])
 
+// Fetch appointments of the logged-in user
 const fetchAppointments = async () => {
   const {
     data: { user },
@@ -288,35 +290,37 @@ const fetchAppointments = async () => {
   }
 }
 
-function formatTimeTo12Hour(timeStr) {
-  if (!timeStr) return ''
-  const [hour, minute] = timeStr.split(':').map(Number)
+// Allowed dates: 3 business days from current date and within 3 months only
+const datePickerOptions = (date) => {
+  const today = new Date()
+  const selectedDate = new Date(date)
+
+  const minDate = addBusinessDays(today, 3)
+  const maxDate = addMonths(today, 3)
+
+  // Rule 1: must be within interval
+  const withinRange = isWithinInterval(selectedDate, { start: minDate, end: maxDate })
+
+  // Rule 2: weekends not allowed
+  const notWeekend = !isWeekend(selectedDate)
+
+  return withinRange && notWeekend
+}
+
+function formatTimeTo12Hour(timeString) {
+  if (!timeString) return ''
+  const [hour, minute] = timeString.split(':').map(Number)
   const ampm = hour >= 12 ? 'PM' : 'AM'
   const formattedHour = hour % 12 || 12 // 0 -> 12
   return `${formattedHour}:${minute.toString().padStart(2, '0')} ${ampm}`
 }
 
-onMounted(fetchAppointments)
-
-// watch tab change
-watch(activeTab, (newTab) => {
-  if (newTab === 'status') {
-    fetchAppointments()
-  }
-})
-
-const datePickerOptions = (date) => {
-  const today = new Date()
-  const selectedDate = new Date(date)
-  return selectedDate >= today
-}
-
 const hourOptions = (hr) => {
-  // Allow 8:00 → 11:45 AM
+  // Allow 8:00 to  11:45 AM
   if (hr >= 8 && hr <= 11) return true
   // Block 12:00 PM hour
   if (hr === 12) return false
-  // Allow 1:00 → 7:45 PM
+  // Allow 1:00 to 7:45 PM
   if (hr >= 13 && hr <= 19) return true
   return false
 }
@@ -372,6 +376,14 @@ function resetForm() {
   form.value.purpose = ''
   form.value.user_remarks = ''
 }
+
+onMounted(fetchAppointments)
+
+watch(activeTab, (newTab) => {
+  if (newTab === 'status') {
+    fetchAppointments()
+  }
+})
 
 function viewAppointments() {
   showSuccessModal.value = false
