@@ -100,8 +100,8 @@
                 </q-item-section>
                 <q-item-section>
                   <span :class="{ 'text-hidden': miniState && $q.screen.gt.sm }" class="nav-text">{{
-                    item.label
-                  }}</span>
+                      item.label
+                    }}</span>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -138,21 +138,35 @@
           <q-toolbar class="bg-transparent responsive-toolbar">
             <!-- Search Bar Container -->
             <div class="search-container">
-              <q-input
-                dense
-                outlined
-                v-model="search"
-                placeholder="Search name, work, year, etc."
-                class="search-input"
-                input-class="text-left"
-                clearable
-                clear-icon="close"
-                @keyup.enter="performSearch"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="search" @click="performSearch" class="cursor-pointer" />
-                </template>
-              </q-input>
+              <!-- Dropdown positioned at the edge (outside) -->
+              <div class="search-with-dropdown">
+                <q-select
+                  dense
+                  outlined
+                  v-model="searchType"
+                  :options="searchOptions"
+                  emit-value
+                  map-options
+                  style="width: 9rem"
+                  @update:model-value="performSearch"
+                  class="search-dropdown"
+                />
+                <q-input
+                  dense
+                  outlined
+                  v-model="search"
+                  placeholder="Search name, work, year, etc."
+                  class="search-input"
+                  input-class="text-left"
+                  clearable
+                  clear-icon="close"
+                  @keyup.enter="performSearch"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="search" @click="performSearch" class="cursor-pointer" />
+                  </template>
+                </q-input>
+              </div>
             </div>
 
             <!-- Desktop notifications and user profile -->
@@ -210,7 +224,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
@@ -226,6 +240,13 @@ const session = userStore.session
 const drawer = ref(false)
 const miniState = ref(true)
 const search = ref('')
+
+// Search dropdown options
+const searchType = ref('artifacts') // default selection
+const searchOptions = [
+  { label: 'Artifacts', value: 'artifacts' },
+  { label: 'Documents', value: 'documents' },
+]
 
 // User and notifications data
 const notifications = ref([
@@ -315,17 +336,28 @@ const setActiveItem = (itemName) => {
 // Search functionality
 const performSearch = async () => {
   const query = search.value
-  const currentPath = route.path
-  const isDocumentsPage = currentPath.includes('/documents')
-
-  const type = isDocumentsPage ? 'documents' : 'artifacts'
-
   if (!query.trim()) {
     searchStore.clear()
-  } else {
-    await searchStore.search(query, type)
-    console.log('Search performed:', search.value, type)
+    return
   }
+
+  // Redirect based on dropdown selection
+  let targetRoute = ''
+  if (searchType.value === 'artifacts') {
+    targetRoute = '/artifacts'
+  } else if (searchType.value === 'documents') {
+    targetRoute = '/documents'
+  }
+
+  if (route.path !== targetRoute) {
+    await router.push(targetRoute) // Wait for navigation to complete
+  }
+
+  // Set store search type based on dropdown selection
+  await searchStore.search(query, searchType.value)
+  console.log('Search performed:', query, searchType.value)
+
+  search.value = ''
 }
 
 const handleLogout = async () => {
@@ -338,6 +370,22 @@ const handleLogout = async () => {
     console.error('Error signing out:', error)
   }
 }
+
+onMounted(() => {
+  // Set search type based on current route
+  if (searchType.value) {
+    if (route.name === 'documents') {
+      searchType.value = 'documents'
+    } else if (route.name === 'artifacts') {
+      searchType.value = 'artifacts'
+    }
+  }
+
+  // Perform search if there's existing search value
+  if (search.value || searchType.value) {
+    performSearch()
+  }
+})
 
 // Watch search bar input and run query
 watch(search, async (query) => {
@@ -363,8 +411,10 @@ watch(
       activeItem.value = 'appointment'
     } else if (newPath.includes('artifacts')) {
       activeItem.value = 'artifacts'
+      searchType.value = 'artifacts'
     } else if (newPath.includes('documents') || newPath.includes('document-scanner')) {
       activeItem.value = 'documents'
+      searchType.value = 'documents'
     } else if (newPath.includes('collections')) {
       activeItem.value = 'collections'
     } else if (newPath.includes('gallery')) {
@@ -390,6 +440,34 @@ watch(
 </script>
 
 <style scoped>
+/* Search dropdown left alignment */
+.dropdown-left-align {
+  text-align: left !important;
+}
+
+.dropdown-left-align .q-field__native {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+.dropdown-left-align .q-field__control {
+  text-align: left !important;
+}
+
+.dropdown-left-align .q-select__dropdown-icon {
+  margin-left: auto !important;
+}
+
+/* Dropdown popup left alignment */
+.dropdown-popup-left .q-item {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+.dropdown-popup-left .q-item__section {
+  text-align: left !important;
+}
+
 /* Mobile Header */
 .mobile-header {
   background: linear-gradient(135deg, #880000 0%, #660000 100%);
@@ -624,18 +702,49 @@ watch(
   max-width: 830px;
 }
 
-.search-input {
-  background: rgba(255, 255, 255, 0.9) !important;
-  border-radius: 8px;
-  backdrop-filter: blur(10px);
+.search-with-dropdown {
+  display: flex;
+  gap: 0;
   width: 100%;
+  align-items: center;
 }
 
-.search-input .q-field__control {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-radius: 8px;
-  backdrop-filter: blur(10px);
+/* Clean border radius removal for seamless connection */
+.search-dropdown,
+.search-dropdown .q-field__control {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 8px 0 0 8px !important;
+  border-right: none !important;
 }
+
+.search-input,
+.search-input .q-field__control {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 0 8px 8px 0 !important;
+  border-left: none !important;
+  backdrop-filter: blur(10px);
+  flex: 1;
+}
+
+/* Even more specific targeting */
+.search-with-dropdown .q-select .q-field__control,
+.search-with-dropdown .q-select .q-field__control-container,
+.search-with-dropdown .q-select .q-field__outlined {
+  border-radius: 8px 0 0 8px !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.search-with-dropdown .q-input .q-field__control,
+.search-with-dropdown .q-input .q-field__control-container,
+.search-with-dropdown .q-input .q-field__outlined {
+  border-radius: 0 8px 8px 0 !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+
 
 .search-input .q-field__native {
   color: #333 !important;
@@ -683,11 +792,9 @@ watch(
 .user-profile-btn {
   background-color: #f8f9fa !important;
   border-radius: 10px;
-
   min-height: 44px;
   width: 282px;
   display: flex;
-
   align-items: center;
 }
 
@@ -724,6 +831,10 @@ watch(
     max-width: 400px;
   }
 
+  .search-dropdown {
+    width: 8rem !important;
+  }
+
   .username-bg {
     max-width: 100px;
   }
@@ -732,6 +843,10 @@ watch(
 @media (max-width: 1199px) {
   .search-container {
     max-width: 300px;
+  }
+
+  .search-dropdown {
+    width: 7rem !important;
   }
 }
 
@@ -752,6 +867,32 @@ watch(
     width: 100%;
   }
 
+  .search-with-dropdown {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Mobile: Both elements get full border radius */
+  .search-dropdown {
+    width: 100% !important;
+    border-radius: 8px !important;
+    border-right: 1px solid rgba(0, 0, 0, 0.24) !important;
+  }
+
+  .search-dropdown .q-field__control {
+    border-radius: 8px !important;
+    border-right: 1px solid rgba(0, 0, 0, 0.24) !important;
+  }
+
+  .search-input {
+    border-radius: 8px !important;
+  }
+
+  .search-input .q-field__control {
+    border-left: 1px solid rgba(0, 0, 0, 0.24) !important;
+    border-radius: 8px !important;
+  }
+
   .desktop-actions {
     justify-content: center;
     width: 100%;
@@ -770,6 +911,10 @@ watch(
 
   .responsive-toolbar {
     gap: 8px;
+  }
+
+  .search-dropdown {
+    width: 100% !important;
   }
 
   .user-profile-btn {
