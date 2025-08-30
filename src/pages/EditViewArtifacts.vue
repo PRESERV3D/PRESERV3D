@@ -56,37 +56,98 @@
                 <q-chip class="q-mr-sm q-mt-xs category-tag"> Uncategorized </q-chip>
               </template>
 
-              <!-- Add Category Input -->
-              <q-input
-                v-model="newCategory"
-                dense
-                borderless
-                placeholder="Add category"
-                class="add-category-input"
-                @keyup.enter="addCategory"
-                :class="{ 'input-hidden': !showCategoryInput }"
-                v-show="showCategoryInput"
-              >
-                <template v-slot:append>
-                  <q-btn
-                    flat
-                    dense
-                    icon="check"
-                    @click="addCategory"
-                    :disable="!newCategory.trim()"
-                  />
-                </template>
-              </q-input>
-
-              <!-- Add category icon -->
+              <!-- Add category icon - Changed to open dialog -->
               <q-btn
                 flat
                 dense
                 icon="add"
                 class="add-category-btn q-mt-xs"
-                @click="toggleCategoryInput"
-                v-show="!showCategoryInput"
+                @click="showCategoriesDialog = true"
               />
+
+              <!-- Category Dialog -->
+              <q-dialog v-model="showCategoriesDialog" persistent>
+                <q-card class="cat-box">
+                  <!-- Header -->
+                  <q-card-section
+                    class="column items-start"
+                    style="font-size: 16px; font-weight: 700"
+                  >
+                    Categories
+                  </q-card-section>
+                  <q-separator />
+
+                  <!-- Categories List -->
+                  <div class="q-pt-md q-px-md column items-start full-width">
+                    <div
+                      v-for="category in categories"
+                      :key="category.id"
+                      class="row items-center justify-between full-width q-mb-xs"
+                    >
+                      <!-- Left side: checkbox + name -->
+                      <div class="row items-center">
+                        <q-checkbox v-model="category.selected" color="primary" size="xs" />
+                        <div class="category-style q-ml-sm">{{ category.name }}</div>
+                      </div>
+
+                      <!-- Right side: delete button -->
+                      <q-btn
+                        flat
+                        round
+                        icon="delete"
+                        color="negative"
+                        size="sm"
+                        @click="deleteCategory(category.id)"
+                      />
+                    </div>
+
+                    <!-- Add new category -->
+                    <q-input
+                      v-model="newCategory"
+                      placeholder="Add new Category"
+                      borderless
+                      dense
+                      class="q-mt-sm full-width"
+                      @keyup.enter="addCategory"
+                    >
+                      <template v-slot:prepend>
+                        <q-btn
+                          round
+                          dense
+                          outline
+                          color="black"
+                          icon="add"
+                          size="xs"
+                          @click="addCategory"
+                          :disable="!newCategory.trim()"
+                        />
+                      </template>
+                    </q-input>
+                  </div>
+                  <!-- Save or Cancel -->
+                  <q-card-actions align="right">
+                    <q-btn flat label="Close" color="black" v-close-popup no-caps />
+                    <q-btn label="Save" class="btn-save" flat @click="saveCategories" />
+                  </q-card-actions>
+                </q-card>
+              </q-dialog>
+
+              <!-- Delete Category Error Dialog -->
+              <q-dialog v-model="showDeleteErrorDialog">
+                <q-card>
+                  <q-card-section class="text-h6 text-negative">
+                    Cannot Delete Category
+                  </q-card-section>
+
+                  <q-card-section>
+                    {{ deleteErrorMessage }}
+                  </q-card-section>
+
+                  <q-card-actions align="right">
+                    <q-btn flat label="OK" color="primary" v-close-popup />
+                  </q-card-actions>
+                </q-card>
+              </q-dialog>
 
               <!-- Action icons -->
               <div class="action-icons">
@@ -419,11 +480,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          notifyDialogTitle
-        }}</q-card-section>
+            notifyDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-          notifyDialogMessage
-        }}</q-card-section>
+            notifyDialogMessage
+          }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -538,29 +599,132 @@ watch(
 )
 
 // Category management functions
-const toggleCategoryInput = () => {
-  showCategoryInput.value = true
-  setTimeout(() => {
-    const input = document.querySelector('.add-category-input input')
-    if (input) input.focus()
-  }, 100)
-}
+const showCategoriesDialog = ref(false)
+const categories = ref([])
+const showDeleteErrorDialog = ref(false)
+const deleteErrorMessage = ref('')
+// const toggleCategoryInput = () => {
+//   showCategoryInput.value = true
+//   setTimeout(() => {
+//     const input = document.querySelector('.add-category-input input')
+//     if (input) input.focus()
+//   }, 100)
+// }
 
-const addCategory = () => {
-  const trimmed = newCategory.value.trim()
+// Fetch categories from Supabase when dialog opens or on mount
+async function loadCategories() {
+  const artifactCategories = editableCategories.value || []
+  const { data, error } = await supabase.from('categories').select('id, type, category')
 
-  // Only add if not empty and not already in the list
-  if (trimmed && !editableCategories.value.includes(trimmed)) {
-    editableCategories.value.push(trimmed)
+  if (error) {
+    console.error('Error loading categories:', error)
+    return
   }
 
-  // Reset input and hide again
-  newCategory.value = ''
-  showCategoryInput.value = false
+  // Map DB data to local structure with checkbox state
+  categories.value = data
+    .filter((c) => c.type === 'artifact') // Changed from 'document' to 'artifact'
+    .map((c) => ({
+      id: c.id,
+      name: c.category,
+      selected: artifactCategories.includes(c.category),
+    }))
 }
 
+// Add new category (save to DB + local list)
+async function addCategory() {
+  const name = newCategory.value.trim()
+  if (!name) return
+
+  // check if category already exists in DB
+  const exists = categories.value.some((c) => c.name.toLowerCase() === name.toLowerCase())
+  if (exists) {
+    console.warn('Category already exists:', name)
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('categories')
+    .insert([{ type: 'artifact', category: name }]) // Changed from 'document' to 'artifact'
+    .select()
+
+  if (error) {
+    console.error('Error adding category:', error)
+    return
+  }
+
+  // push to local list
+  categories.value.push({
+    id: data[0].id,
+    name: data[0].category,
+    selected: true,
+  })
+
+  newCategory.value = ''
+}
+
+// Save selected categories for the current artifact
+async function saveCategories() {
+  // update the chips
+  editableCategories.value = categories.value.filter((c) => c.selected).map((c) => c.name)
+
+  showCategoriesDialog.value = false
+}
+
+// Delete a category by ID
+async function deleteCategory(categoryId) {
+  // Find the category being deleted
+  const category = categories.value.find((c) => c.id === categoryId)
+  if (!category) return
+
+  // Check if any artifacts are using this category
+  const { data: artifacts, error: artifactsError } = await supabase
+    .from('artifacts_metadata') // Changed from 'documents_metadata'
+    .select('id, metadata')
+    .contains('metadata', { categories: [category.name] })
+
+  if (artifactsError) {
+    console.error('Error checking artifacts:', artifactsError)
+    return
+  }
+
+  if (artifacts && artifacts.length > 0) {
+    if (
+      artifacts.length === 1 &&
+      artifacts[0].id === route.params.id &&
+      !editableCategories.value.includes(category.name)
+    ) {
+      // Safe to delete
+    } else {
+      deleteErrorMessage.value = `The category "${category.name}" is still used in ${artifacts.length} artifact(s). Please remove it from those artifacts before deleting.`
+      showDeleteErrorDialog.value = true
+      return
+    }
+  }
+
+  // Safe to delete from Supabase
+  const { error } = await supabase.from('categories').delete().eq('id', categoryId)
+
+  if (error) {
+    console.error('Error deleting category:', error)
+    return
+  }
+
+  // Remove from local categories list
+  categories.value = categories.value.filter((c) => c.id !== categoryId)
+
+  // If it was selected for this artifact, remove it from editableCategories too
+  editableCategories.value = editableCategories.value.filter((name) => name !== category.name)
+}
+
+// Modify your existing removeCategory function to also uncheck in dialog:
 const removeCategory = (index) => {
+  const removed = editableCategories.value[index]
   editableCategories.value.splice(index, 1)
+
+  // Uncheck in categories dialog list
+  const found = categories.value.find((c) => c.name === removed)
+  if (found) found.selected = false
 }
 
 // Save and Cancel functions
@@ -830,6 +994,9 @@ onMounted(async () => {
   }
 
   loading.value = false
+  if (model.value) {
+    await loadCategories()
+  }
 })
 
 // Related Links
