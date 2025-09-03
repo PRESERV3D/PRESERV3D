@@ -9,7 +9,10 @@ from fastapi import FastAPI, UploadFile, File, Form
 from transformers import pipeline
 from keybert import KeyBERT
 from dateutil.parser import parse as date_parse
+from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
+from supabase import create_client, Client
+from dotenv import load_dotenv
 
 app = FastAPI()
 
@@ -65,12 +68,16 @@ async def process_pdf(file: UploadFile = File(None), filename: str = Form(None),
 
             metadata = extract_metadata(cleaned_text, filename)
 
+            # Check for inconsistencies
+            issues = detect_inconsistencies(metadata)
+            log_inconsistencies(metadata.get("file_name"), issues)
+
             return {
                 "file_name": filename or file.filename,
                 "title": metadata.get("title"),
                 "author": metadata.get("author"),
                 "date": metadata.get("date"),
-                "document_type": metadata.get("document_type"),
+                "categories": metadata.get("categories"),
                 "organization": metadata.get("organization"),
                 "summary": summary,
                 "keywords": [kw for kw, _ in keywords]
@@ -128,7 +135,7 @@ def extract_text(pdf_bytes, filename=None):
     print("Extracted combined text:", full_text[:1000])
     return full_text.strip()
 
-def detect_document_type(text, filename=None):
+def detect_categories(text, filename=None):
     """Detect the type of document based on content and filename patterns"""
     
     text_lower = text.lower()
@@ -262,7 +269,7 @@ def extract_institutional_metadata(text, filename=None):
             entities[ent.label_].append(ent.text.strip())
     
     # Detect document type
-    document_type = detect_document_type(text, filename)
+    categories = detect_categories(text, filename)
     
     # Extract organization info
     organizations = extract_organization_info(text)
@@ -363,7 +370,7 @@ def extract_institutional_metadata(text, filename=None):
         if base:
             title = base.replace('_', ' ').replace('-', ' ').title()
         else:
-            title = f"{document_type} Document"
+            title = f"{categories} Document"
     
     if not title:
         title = "Unknown Document"
@@ -438,12 +445,131 @@ def extract_institutional_metadata(text, filename=None):
         "title": title,
         "author": contributor_str,
         "date": date,
-        "document_type": document_type,
+        "categories": categories,
         "organization": ', '.join(organizations) if organizations else "Unknown",
     }
 
 def extract_metadata(text, filename=None):
     return extract_institutional_metadata(text, filename)
+
+def detect_inconsistencies(metadata):
+    issues = []
+
+    for field in ["title", "author", "summary", "date", "categories"]:
+        if not metadata.get(field) or metadata[field] in ["Unknown", ""]:
+            issues.append({
+                "field": field,
+                "issue": f"Missing or unknown {field}"
+            })
+
+    date_val = metadata.get("date")
+    if date_val and date_val != "Unknown":
+        try:
+            parsed = date_parse(date_val)
+            if parsed.year > 2025:
+                issues.append({
+                    "field": "date",
+                    "issue": f"Future date detected: {date_val}"
+                })
+        except:
+            issues.append({
+                "field": "date",
+                "issue": f"Invalid date format: {date_val}"
+            })
+
+    return issues
+
+# Initialize Supabase
+load_dotenv()
+url = os.getenv("VITE_SUPABASE_URL")
+key = os.getenv("VITE_SUPABASE_ANON_KEY")
+supabase: Client = create_client(url, key)
+
+def log_inconsistencies(file_name, issues):
+    if not issues:
+        return
+    
+    for issue in issues:
+        supabase.table("inconsistencies").insert({
+            "file_name": file_name,
+            "issue": issue
+        }).execute()
+
+@app.post("/rescan-documents")
+async def rescan_documents():
+    try:
+        docs = supabase.table("documents_metadata").select("*").execute()
+        if not docs.data:
+            return {"success": True, "message": "No documents to scan."}
+
+        for doc in docs.data:
+            metadata_json = doc.get("metadata") or {}
+
+            title = metadata_json.get("title")
+            author = metadata_json.get("author")
+            date = metadata_json.get("date")
+            summary = metadata_json.get("summary")
+            keywords = metadata_json.get("keywords", [])
+            categories = metadata_json.get("categories", [])
+
+            issues_raw = detect_inconsistencies({
+                "title": title,
+                "author": author,
+                "date": date,
+                "summary": summary,
+                "keywords": keywords,
+                "categories": categories
+            })
+
+            merged_issues = [
+                {"field": issue["field"], "issue": issue["issue"]}
+                for issue in issues_raw
+            ]
+
+            existing = supabase.table("inconsistencies").select("*").eq("document_id", doc["id"]).execute()
+
+            if merged_issues:
+                row_data = {
+                    "document_id": doc["id"],
+                    "file_name": doc.get("file_name"),
+                    "file_url": doc.get("file_url"),
+                    "title": title,
+                    "issues": merged_issues,
+                    "last_scanned_at": datetime.utcnow().isoformat()
+                }
+
+                if existing.data:
+                    if existing.data[0]["issues"] != merged_issues:
+                        # Different issues → mark Open again
+                        supabase.table("inconsistencies").update({
+                            "issues": merged_issues,
+                            "status": "Open",
+                            "updated_at": datetime.utcnow().isoformat()
+                        }).eq("document_id", doc["id"]).execute()
+                    else:
+                        # Same issues → only refresh scan timestamp
+                        supabase.table("inconsistencies").update({
+                            "last_scanned_at": datetime.utcnow().isoformat()
+                        }).eq("document_id", doc["id"]).execute()
+                else:
+                    # Insert new record
+                    supabase.table("inconsistencies").insert({
+                        **row_data,
+                        "status": "Open",
+                        "created_at": datetime.utcnow().isoformat()
+                    }).execute()
+
+            else:
+                if existing.data and existing.data[0]["status"] != "Resolved":
+                    supabase.table("inconsistencies").update({
+                        "status": "Resolved",
+                        "resolved_at": datetime.utcnow().isoformat()
+                    }).eq("document_id", doc["id"]).execute()
+
+        return {"success": True}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 @app.get("/related-links")
 async def related_links(title: str, author: str = "", categories: str = ""):
@@ -459,3 +585,5 @@ async def related_links(title: str, author: str = "", categories: str = ""):
         return {"error": e.stderr or "Puppeteer script failed"}
     except json.JSONDecodeError:
         return {"error": "Invalid JSON from Puppeteer"}
+
+
