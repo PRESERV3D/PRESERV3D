@@ -103,6 +103,12 @@ const routes = [
         component: () => import('pages/HighlightPage.vue'),
         meta: { requiresAuth: true },
       },
+      {
+        path: 'data-quality',
+        name: 'data-quality',
+        component: () => import('pages/DataQualityPage.vue'),
+        meta: { requiresAuth: true, allowedRoles: ['admin'] },
+      },
     ],
   },
   {
@@ -168,19 +174,6 @@ const routes = [
         path: 'login',
         name: 'admin-login',
         component: () => import('pages/AdminLoginPage.vue'),
-      },
-      // Admin appointments
-      {
-        path: 'appointment',
-        name: 'admin-appointments',
-        component: () => import('pages/AdminAppointmentPage.vue'),
-        meta: { requiresAuth: true, allowedRoles: ['admin'] },
-      },
-      {
-        path: 'appointment/:id',
-        name: 'appointment-details',
-        component: () => import('pages/AdminAppointmentDetailsPage.vue'),
-        meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
     ],
   },
