@@ -100,8 +100,8 @@
                 </q-item-section>
                 <q-item-section>
                   <span :class="{ 'text-hidden': miniState && $q.screen.gt.sm }" class="nav-text">{{
-                      item.label
-                    }}</span>
+                    item.label
+                  }}</span>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -140,30 +140,31 @@
             <div class="search-container">
               <!-- Dropdown positioned at the edge (outside) -->
               <div class="search-with-dropdown">
-                <q-select
-                  dense
-                  outlined
-                  v-model="searchType"
-                  :options="searchOptions"
-                  emit-value
-                  map-options
-                  style="width: 9rem"
-                  @update:model-value="performSearch"
-                  class="search-dropdown"
-                />
                 <q-input
                   dense
                   outlined
                   v-model="search"
                   placeholder="Search name, work, year, etc."
-                  class="search-input"
+                  class="q-mr-md search-input"
                   input-class="text-left"
                   clearable
                   clear-icon="close"
                   @keyup.enter="performSearch"
+                  style="width: 100%; max-width: 43rem"
                 >
+                  <!-- Prepend slot for dropdown  -->
                   <template v-slot:prepend>
-                    <q-icon name="search" @click="performSearch" class="cursor-pointer" />
+                    <q-select
+                      dense
+                      outlined
+                      borderless
+                      v-model="searchType"
+                      :options="searchOptions"
+                      emit-value
+                      map-options
+                      style="width: 8rem"
+                      @update:model-value="performSearch"
+                    />
                   </template>
                 </q-input>
               </div>
@@ -743,8 +744,6 @@ watch(
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
 }
-
-
 
 .search-input .q-field__native {
   color: #333 !important;
