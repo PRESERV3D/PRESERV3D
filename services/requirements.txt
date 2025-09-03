@@ -6,3 +6,5 @@ keybert
 sentence-transformers
 spacy
 python-dateutil
+supabase
+python-dotenv
