@@ -34,7 +34,6 @@ export const useDocumentsStore = defineStore('documentsStore', {
       }, {})
     },
     async fetchStarCounts() {
-      // ADDED: Fetch star counts
       const { data, error } = await supabase
         .from('documents_star_count')
         .select('item_id, star_count')
@@ -76,23 +75,59 @@ export const useDocumentsStore = defineStore('documentsStore', {
         }
       })
     },
-    filterBy({ category, author, date }) {
+    // filterBy({ categories = [], authors = [], dates = [] }) {
+    //   this.filteredDocuments = this.documents.filter((doc) => {
+    //     const meta = doc.metadata || {}
+
+    //     const matchesCategory =
+    //       categories.size === 0 ||
+    //       categories.has('All') ||
+    //       (Array.isArray(meta.categories) &&
+    //         meta.categories.some((c) => categories.has(c.toLowerCase())))
+
+    //     const matchesAuthor =
+    //       authors.size === 0 ||
+    //       (Array.isArray(meta.authors) &&
+    //         meta.authors.some((a) =>
+    //           [...authors].some((selected) => a.toLowerCase() === selected.toLowerCase()),
+    //         ))
+
+    //     const matchesDate = dates.size === 0 || (meta.date && dates.has(meta.date.slice(0, 4))) // match year
+
+    //     return matchesCategory && matchesAuthor && matchesDate
+    //   })
+
+    //   console.log(
+    //     'Filtered documents:',
+    //     this.filteredDocuments.map((d) => d.metadata?.title),
+    //   )
+    // },
+    filterBy({ categories, authors, dates }) {
       this.filteredDocuments = this.documents.filter((doc) => {
         const meta = doc.metadata || {}
 
         const matchesCategory =
-          !category ||
+          !categories.length ||
+          categories.includes('All') ||
           (Array.isArray(meta.categories) &&
-            meta.categories.some((c) => c.toLowerCase() === category.toLowerCase()))
+            meta.categories.some((c) =>
+              categories.map((cat) => cat.toLowerCase()).includes(c.toLowerCase()),
+            ))
 
         const matchesAuthor =
-          !author || (meta.author && meta.author.toLowerCase().includes(author.toLowerCase()))
+          !authors.length ||
+          (meta.author &&
+            meta.author
+              .split(',')
+              .some((a) => authors.map((au) => au.toLowerCase()).includes(a.trim().toLowerCase())))
 
-        const matchesDate = !date || (meta.date && meta.date.startsWith(date)) // year-only match
+        const matchesDate =
+          !dates.length || (meta.date && dates.some((d) => meta.date.startsWith(d))) // match year
 
         return matchesCategory && matchesAuthor && matchesDate
       })
     },
+
     resetFilters() {
       this.filteredDocuments = this.documents
     },

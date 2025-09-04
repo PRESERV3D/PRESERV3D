@@ -223,13 +223,13 @@
             <!-- Category Section -->
             <div class="row q-gutter-sm col-auto">
               <q-btn
-                v-for="cat in categoryOptions"
-                :key="cat"
-                :label="cat"
+                v-for="categoryOption in categoryOptions"
+                :key="categoryOption"
+                :label="categoryOption"
                 class="btn-1"
-                :class="{ active: selectedCategories.has(cat) }"
+                :class="{ active: selectedCategories.has(categoryOption) }"
                 unelevated
-                @click="toggleCategory(cat)"
+                @click="toggleCategory(categoryOption)"
               />
             </div>
             <div class="row q-gutter-sm col-auto">
@@ -259,7 +259,7 @@
                           >
                             <q-item-section avatar>
                               <q-checkbox
-                                :model-value="author === authorOption"
+                                :model-value="selectedAuthors.has(authorOption)"
                                 @update:model-value="toggleAuthor(authorOption)"
                               />
                             </q-item-section>
@@ -269,7 +269,7 @@
                       </q-scroll-area>
                       <!-- Clear Authors -->
                       <q-btn
-                        v-if="author"
+                        v-if="selectedAuthors.size > 0"
                         flat
                         dense
                         color="primary"
@@ -293,7 +293,7 @@
                           >
                             <q-item-section avatar>
                               <q-checkbox
-                                :model-value="date === dateOption"
+                                :model-value="selectedDates.has(dateOption)"
                                 @update:model-value="toggleDate(dateOption)"
                               />
                             </q-item-section>
@@ -303,7 +303,7 @@
                       </q-scroll-area>
                       <!-- Clear Years -->
                       <q-btn
-                        v-if="date"
+                        v-if="selectedDates.size > 0"
                         flat
                         dense
                         color="primary"
@@ -318,26 +318,29 @@
                       <q-scroll-area style="height: 12rem; width: 12rem">
                         <q-list dense>
                           <q-item
-                            v-for="categoryOptions in categoryOptions"
-                            :key="categoryOptions"
+                            v-for="categoryOption in categoryOptions"
+                            :key="categoryOption"
                             clickable
                             class="sub-font-2"
                             style="color: #000000"
-                            @click="toggleCategories(categoryOptions)"
+                            @click="toggleCategory(categoryOption)"
                           >
                             <q-item-section avatar>
                               <q-checkbox
-                                :model-value="category === categoryOptions"
-                                @update:model-value="toggleCategories(categoryOptions)"
+                                :model-value="selectedCategories.has(categoryOption)"
+                                @update:model-value="toggleCategory(categoryOption)"
                               />
                             </q-item-section>
-                            <q-item-section>{{ categoryOptions }}</q-item-section>
+                            <q-item-section>{{ categoryOption }}</q-item-section>
                           </q-item>
                         </q-list>
                       </q-scroll-area>
                       <!-- Clear Categories -->
                       <q-btn
-                        v-if="category"
+                        v-if="
+                          selectedCategories.size > 0 &&
+                          !(selectedCategories.size === 1 && selectedCategories.has('All'))
+                        "
                         flat
                         dense
                         color="primary"
@@ -348,6 +351,13 @@
                     </div>
                   </div>
                   <q-separator />
+                  <!-- <q-item clickable v-close-popup @click="applyFilters">
+                    <q-item-section class="flex items-center">
+                      <div class="sub-font-3" style="color: #008000; font-weight: 500">
+                        APPLY FILTERS
+                      </div>
+                    </q-item-section>
+                  </q-item> -->
                   <q-item clickable v-close-popup @click="clearFilters">
                     <q-item-section class="flex items-center">
                       <div class="sub-font-3" style="color: #880000; font-weight: 500">
@@ -535,15 +545,17 @@ const userStore = useUserStore()
 
 const scannedFile = ref(null)
 const topDocuments = ref([])
-const author = ref('')
-const date = ref('')
-const category = ref('') //added
+// const author = ref('')
+// const date = ref('')
+// const category = ref('') //added
 const sortOption = ref('Newest')
 const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
-const selectedCategories = ref(new Set(['All']))
 const categoryOptions = ref([])
 const authorOptions = ref([])
 const dateOptions = ref([])
+const selectedCategories = ref(new Set(['All']))
+const selectedAuthors = ref(new Set())
+const selectedDates = ref(new Set())
 
 const showDialog = ref(false)
 const dialogOpen = ref(false)
@@ -658,42 +670,6 @@ function onSort() {
       documentsStore.sortBy('title', 'asc')
       break
   }
-}
-
-function applyFilters() {
-  documentsStore.filterBy({
-    categories: Array.from(selectedCategories.value),
-    author: author.value,
-    date: date.value,
-  })
-}
-
-//Clear All Filters Function
-const clearFilters = () => {
-  author.value = null
-  date.value = null
-  applyFilters()
-}
-//
-
-function toggleCategory(cat) {
-  if (cat === 'All') {
-    // If "All" is clicked, reset all categories
-    selectedCategories.value = new Set(['All'])
-    return
-  }
-
-  if (selectedCategories.value.has(cat)) {
-    selectedCategories.value.delete(cat)
-  } else {
-    selectedCategories.value.add(cat)
-    selectedCategories.value.delete('All') // Remove "All" if any specific category is selected
-  }
-
-  // Reassign to trigger reactivity
-  selectedCategories.value = new Set(selectedCategories.value)
-
-  applyFilters()
 }
 
 async function logClick(itemId, itemType) {
@@ -840,7 +816,7 @@ const fetchAllDocuments = async () => {
 
 // for populating filter options
 watch(
-  () => documentsStore.filteredDocuments,
+  () => documentsStore.documents,
   (docs) => {
     const authors = new Set()
     const years = new Set()
@@ -1509,7 +1485,7 @@ function resetForm() {
   existingCollectionIds.value = []
 }
 
-// ADDED: Toggle favorite icon
+// Toggle favorite icon
 const toggleFavorite = async (doc, itemType = 'document') => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
@@ -1616,34 +1592,74 @@ const toggleFavorite = async (doc, itemType = 'document') => {
   }
 }
 
-// additional for filter
+function applyFilters() {
+  const filterData = {
+    categories: Array.from(selectedCategories.value),
+    authors: Array.from(selectedAuthors.value),
+    dates: Array.from(selectedDates.value),
+  }
+  console.log('Applying filters:', filterData)
+
+  documentsStore.filterBy(filterData)
+}
+
+const clearFilters = () => {
+  selectedAuthors.value = new Set()
+  selectedDates.value = new Set()
+  selectedCategories.value = new Set(['All'])
+  applyFilters()
+}
+//
+
+function toggleCategory(categoryOption) {
+  if (categoryOption === 'All') {
+    selectedCategories.value = new Set(['All'])
+  } else {
+    selectedCategories.value.delete('All')
+    if (selectedCategories.value.has(categoryOption)) {
+      selectedCategories.value.delete(categoryOption)
+    } else {
+      selectedCategories.value.add(categoryOption)
+    }
+  }
+
+  selectedCategories.value = new Set(selectedCategories.value)
+  applyFilters()
+}
+
 function toggleAuthor(authorOption) {
-  author.value = authorOption
+  if (selectedAuthors.value.has(authorOption)) {
+    selectedAuthors.value.delete(authorOption)
+  } else {
+    selectedAuthors.value.add(authorOption)
+  }
+
+  selectedAuthors.value = new Set(selectedAuthors.value)
   applyFilters()
 }
 
 function toggleDate(dateOption) {
-  date.value = dateOption
-  applyFilters()
-}
-
-function toggleCategories(categoryOptions) {
-  category.value = categoryOptions
+  if (selectedDates.value.has(dateOption)) {
+    selectedDates.value.delete(dateOption)
+  } else {
+    selectedDates.value.add(dateOption)
+  }
+  selectedDates.value = new Set(selectedDates.value)
   applyFilters()
 }
 
 function clearAuthor() {
-  author.value = ''
+  selectedAuthors.value = new Set()
   applyFilters()
 }
 
 function clearDate() {
-  date.value = ''
+  selectedDates.value = new Set()
   applyFilters()
 }
 
 function clearCategories() {
-  category.value = ''
+  selectedCategories.value = new Set(['All'])
   applyFilters()
 }
 </script>
