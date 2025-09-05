@@ -259,6 +259,7 @@ const notificationCount = computed(() => notifications.value.length)
 // Base navigation items
 const baseNavItems = [
   { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
+  { name: 'data-quality', label: 'Data Quality', icon: '\\icons\\data_quality.png' },
   { name: 'appointment', label: 'Appointment', icon: '\\icons\\appointment.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
   { name: 'documents', label: 'Documents', icon: '\\icons\\book.png' },
