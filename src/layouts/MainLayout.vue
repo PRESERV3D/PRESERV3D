@@ -136,37 +136,48 @@
       <q-page-container>
         <div v-if="hasSearchBar" class="search-toolbar q-py-md q-px-md">
           <q-toolbar class="bg-transparent responsive-toolbar">
-            <!-- Search Bar Container -->
+            <!-- Search Bar Container with Internal Dropdown -->
             <div class="search-container">
-              <!-- Dropdown positioned at the edge (outside) -->
-              <div class="search-with-dropdown">
-                <q-select
-                  dense
-                  outlined
-                  v-model="searchType"
-                  :options="searchOptions"
-                  emit-value
-                  map-options
-                  style="width: 9rem"
-                  @update:model-value="performSearch"
-                  class="search-dropdown"
-                />
-                <q-input
-                  dense
-                  outlined
-                  v-model="search"
-                  placeholder="Search name, work, year, etc."
-                  class="search-input"
-                  input-class="text-left"
-                  clearable
-                  clear-icon="close"
-                  @keyup.enter="performSearch"
-                >
-                  <template v-slot:prepend>
-                    <q-icon name="search" @click="performSearch" class="cursor-pointer" />
-                  </template>
-                </q-input>
-              </div>
+              <q-input
+                dense
+                outlined
+                v-model="search"
+                placeholder="Search name, work, year, etc."
+                clearable
+                clear-icon="close"
+                @keyup.enter="performSearch"
+                class="search-input no-gap"
+              >
+                <!-- dropdown select on the far left -->
+                <template v-slot:prepend>
+                  <q-select
+                    dense
+                    borderless
+                    flat
+                    v-model="searchType"
+                    :options="searchOptions"
+                    emit-value
+                    map-options
+                    @update:model-value="performSearch"
+                    style="width: 140px; text-align: center;"
+                    popup-content-style="text-align: center; text-transform: capitalize;"
+                  >
+                    <template v-slot:selected>
+                      <div style="width: 100%; text-align: center; text-transform: capitalize;">
+                        {{ searchType }}
+                      </div>
+                    </template>
+                  </q-select>
+
+                  <!-- search icon appears right after dropdown -->
+                  <q-icon
+                    name="search"
+                    @click="performSearch"
+                    class="cursor-pointer"
+                    style="margin: 0 8px;"
+                  />
+                </template>
+              </q-input>
             </div>
 
             <!-- Desktop notifications and user profile -->
@@ -441,33 +452,18 @@ watch(
 </script>
 
 <style scoped>
-/* Search dropdown left alignment */
-.dropdown-left-align {
-  text-align: left !important;
+
+
+.no-gap :deep(.q-field__prepend) {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  min-width: 0 !important;
 }
 
-.dropdown-left-align .q-field__native {
-  text-align: left !important;
-  justify-content: flex-start !important;
+.no-gap :deep(.q-field__control) {
+  padding-left: 0 !important;
 }
 
-.dropdown-left-align .q-field__control {
-  text-align: left !important;
-}
-
-.dropdown-left-align .q-select__dropdown-icon {
-  margin-left: auto !important;
-}
-
-/* Dropdown popup left alignment */
-.dropdown-popup-left .q-item {
-  text-align: left !important;
-  justify-content: flex-start !important;
-}
-
-.dropdown-popup-left .q-item__section {
-  text-align: left !important;
-}
 
 /* Mobile Header */
 .mobile-header {
@@ -682,7 +678,7 @@ watch(
   height: 1px;
 }
 
-/* Search toolbar completely responsive */
+/* Updated Search Styles - Single input with internal dropdown */
 .search-toolbar {
   background: transparent !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
@@ -703,48 +699,29 @@ watch(
   max-width: 830px;
 }
 
-.search-with-dropdown {
-  display: flex;
-  gap: 0; /* Remove gap between dropdown and search input */
+/* Single search input with internal dropdown */
+.search-input-with-dropdown {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 8px !important;
+  backdrop-filter: blur(10px);
   width: 100%;
-  align-items: center;
 }
 
-/* UPDATED: Zero border radius for seamless connection */
-.search-dropdown {
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.9) !important;
-  border-radius: 8px 0 0 8px !important; /* Zero on right side (top-right and bottom-right) */
-  border-right: none;
-}
-
-.search-dropdown .q-field__control {
+.search-input-with-dropdown .q-field__control {
   background: rgba(255, 255, 255, 0.95) !important;
-  border-radius: 8px 0 0 8px !important; /* Zero on right side (top-right and bottom-right) */
-  border-right: none !important;
-}
-
-.search-input {
-  background: rgba(255, 255, 255, 0.9) !important;
-  border-radius: 0 8px 8px 0 !important; /* Zero on left side (top-left and bottom-left) */
-  backdrop-filter: blur(10px);
-  flex: 1;
-}
-
-.search-input .q-field__control {
-  border-left: none !important;
-  border-radius: 0 8px 8px 0 !important; /* Zero on left side (top-left and bottom-left) */
-  background: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 8px !important;
   backdrop-filter: blur(10px);
 }
 
-.search-input .q-field__native {
+.search-input-with-dropdown .q-field__native {
   color: #333 !important;
 }
 
-.search-input .q-placeholder {
+.search-input-with-dropdown .q-placeholder {
   color: #666 !important;
 }
+
+
 
 .desktop-actions {
   display: flex;
@@ -823,10 +800,6 @@ watch(
     max-width: 400px;
   }
 
-  .search-dropdown {
-    width: 8rem !important;
-  }
-
   .username-bg {
     max-width: 100px;
   }
@@ -835,10 +808,6 @@ watch(
 @media (max-width: 1199px) {
   .search-container {
     max-width: 300px;
-  }
-
-  .search-dropdown {
-    width: 7rem !important;
   }
 }
 
@@ -857,32 +826,6 @@ watch(
   .search-container {
     max-width: none;
     width: 100%;
-  }
-
-  .search-with-dropdown {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  /* Mobile: Both elements get full border radius */
-  .search-dropdown {
-    width: 100% !important;
-    border-radius: 8px !important;
-    border-right: 1px solid rgba(0, 0, 0, 0.24) !important;
-  }
-
-  .search-dropdown .q-field__control {
-    border-radius: 8px !important;
-    border-right: 1px solid rgba(0, 0, 0, 0.24) !important;
-  }
-
-  .search-input {
-    border-radius: 8px !important;
-  }
-
-  .search-input .q-field__control {
-    border-left: 1px solid rgba(0, 0, 0, 0.24) !important;
-    border-radius: 8px !important;
   }
 
   .desktop-actions {
@@ -905,10 +848,6 @@ watch(
     gap: 8px;
   }
 
-  .search-dropdown {
-    width: 100% !important;
-  }
-
   .user-profile-btn {
     min-width: 120px;
     padding: 6px 8px !important;
@@ -922,6 +861,7 @@ watch(
   .user-role {
     font-size: 11px !important;
   }
+
 }
 
 /* Ensure drawer content is scrollable on mobile */
