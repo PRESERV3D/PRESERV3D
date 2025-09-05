@@ -230,10 +230,14 @@ import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
+import { useDocumentsStore } from 'src/stores/documentsStore'
+import { useDocumentsFilter } from 'src/utils/useDocumentsFilter'
+const { clearFilters } = useDocumentsFilter()
 
 const $q = useQuasar()
 const userStore = useUserStore()
 const searchStore = useSearchStore()
+const documentsStore = useDocumentsStore()
 const router = useRouter()
 const route = useRoute()
 const session = userStore.session
@@ -337,6 +341,9 @@ const setActiveItem = (itemName) => {
 
 // Search functionality
 const performSearch = async () => {
+  documentsStore.resetFilters()
+  clearFilters()
+
   const query = search.value
   if (!query.trim()) {
     searchStore.clear()

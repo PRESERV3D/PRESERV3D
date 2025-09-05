@@ -384,7 +384,7 @@
                     clickable
                     v-close-popup
                     class="collection-sort-menu"
-                    @click="((sortOption = option), onSort(option))"
+                    @click="((sortOption = option), applySort(option))"
                   >
                     <q-item-section>{{ option }}</q-item-section>
                     <q-item-section side v-if="sortOption === option">
@@ -643,6 +643,8 @@ onMounted(async () => {
 
   await documentsStore.fetchViewCounts()
   await documentsStore.fetchStarCounts()
+
+  console.log('Sorting by: ', sortOption.value)
 })
 
 onUnmounted(() => {
@@ -653,23 +655,6 @@ function showNotifyDialog(title, message) {
   notifyDialogTitle.value = title
   notifyDialogMessage.value = message
   notifyDialogOpen.value = true
-}
-
-function onSort() {
-  switch (sortOption.value) {
-    case 'Newest':
-      documentsStore.sortBy('uploaded_at', 'desc')
-      break
-    case 'Oldest':
-      documentsStore.sortBy('uploaded_at', 'asc')
-      break
-    case 'Title A-Z':
-      documentsStore.sortBy('title', 'desc')
-      break
-    case 'Title Z-A':
-      documentsStore.sortBy('title', 'asc')
-      break
-  }
 }
 
 async function logClick(itemId, itemType) {
@@ -815,36 +800,77 @@ const fetchAllDocuments = async () => {
 }
 
 // for populating filter options
+// watch(
+//   () => documentsStore.documents,
+//   (docs) => {
+//     const authors = new Set()
+//     const years = new Set()
+//     const categories = new Set(['All'])
+
+//     docs.forEach((doc) => {
+//       const meta = doc.metadata || {}
+
+//       // Author
+//       if (meta.author) {
+//         meta.author.split(',').forEach((a) => authors.add(a.trim()))
+//       }
+
+//       // Date
+//       if (meta.date) {
+//         const year = meta.date.slice(0, 4)
+//         years.add(year)
+//       }
+
+//       // Categories
+//       if (Array.isArray(meta.categories)) {
+//         meta.categories.forEach((cat) => categories.add(cat))
+//       }
+//     })
+
+//     authorOptions.value = [...authors].sort()
+//     categoryOptions.value = [...categories].sort()
+//     dateOptions.value = [...years].sort((a, b) => b - a) // descending
+//   },
+//   { immediate: true },
+// )
+
 watch(
   () => documentsStore.documents,
   (docs) => {
-    const authors = new Set()
+    const authors = new Map()
     const years = new Set()
-    const categories = new Set(['All'])
+    const categories = new Map([['all', 'All']])
 
     docs.forEach((doc) => {
       const meta = doc.metadata || {}
 
-      // Author
       if (meta.author) {
-        meta.author.split(',').forEach((a) => authors.add(a.trim()))
+        meta.author.split(',').forEach((a) => {
+          const standardized = a.trim().toLowerCase()
+          if (!authors.has(standardized)) {
+            authors.set(standardized, a.trim())
+          }
+        })
       }
 
-      // Date
       if (meta.date) {
         const year = meta.date.slice(0, 4)
         years.add(year)
       }
 
-      // Categories
       if (Array.isArray(meta.categories)) {
-        meta.categories.forEach((cat) => categories.add(cat))
+        meta.categories.forEach((cat) => {
+          const standardized = cat.trim().toLowerCase()
+          if (!categories.has(standardized)) {
+            categories.set(standardized, cat.trim())
+          }
+        })
       }
     })
 
-    authorOptions.value = [...authors].sort()
-    categoryOptions.value = [...categories].sort()
-    dateOptions.value = [...years].sort((a, b) => b - a) // descending
+    authorOptions.value = [...authors.values()].sort()
+    categoryOptions.value = [...categories.values()].sort()
+    dateOptions.value = [...years].sort((a, b) => b - a)
   },
   { immediate: true },
 )
@@ -1303,7 +1329,7 @@ const handleUpload = async () => {
   }
 }
 
-// ADDED: Compress pdf on upload
+// Compress pdf on upload
 import { PDFDocument } from 'pdf-lib'
 
 async function compressPdf(file) {
@@ -1380,7 +1406,6 @@ async function loadUserCollections() {
     .eq('user_id', userId)
 
   if (!error) {
-    // ADDED: Exclude "Favorites" from the list
     userCollections.value = data.filter((c) => c.collection_name !== 'Favorites')
   } else {
     console.error('Failed to load collections:', error)
@@ -1412,7 +1437,6 @@ async function saveToSelectedCollections() {
         item_type: selectedItemType.value,
       })
 
-      // ADDED: Mark document as bookmarked if added to a collection
       doc.bookmarked = true
 
       if (insertError) {
@@ -1496,7 +1520,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
   }
 
   try {
-    // Find or create Favorites collection
     let { data: favoritesCollection } = await supabase
       .from('collections')
       .select('*')
@@ -1533,7 +1556,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
     const collectionId = favoritesCollection.collection_id
     const itemName = doc.metadata?.title || doc.file_name
 
-    // Check if item already exists
     const { data: existing } = await supabase
       .from('collection_items')
       .select('*')
@@ -1542,7 +1564,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
       .eq('item_type', itemType)
 
     if (existing.length > 0) {
-      // Remove from favorites
       await supabase
         .from('collection_items')
         .delete()
@@ -1553,7 +1574,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
       doc.starred = false
       showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
     } else {
-      // Add to favorites
       await supabase.from('collection_items').insert({
         collection_id: collectionId,
         item_id: doc.id,
@@ -1564,7 +1584,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
       showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
     }
 
-    // Get star count
     const { data: metaCheck, error: metaError } = await supabase
       .from('documents_metadata')
       .select('id')
@@ -1581,7 +1600,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
       if (starData && starData.star_count !== undefined) {
         documentsStore.updateStarCount(doc.id, starData.star_count)
       } else {
-        // If no row exists, star count is 0
         documentsStore.updateStarCount(doc.id, 0)
       }
     } else {
@@ -1593,6 +1611,8 @@ const toggleFavorite = async (doc, itemType = 'document') => {
 }
 
 function applyFilters() {
+  searchStore.clear()
+
   const filterData = {
     categories: Array.from(selectedCategories.value),
     authors: Array.from(selectedAuthors.value),
@@ -1600,7 +1620,7 @@ function applyFilters() {
   }
   console.log('Applying filters:', filterData)
 
-  documentsStore.filterBy(filterData)
+  documentsStore.filterBy(filterData, sortOption.value)
 }
 
 const clearFilters = () => {
@@ -1609,7 +1629,6 @@ const clearFilters = () => {
   selectedCategories.value = new Set(['All'])
   applyFilters()
 }
-//
 
 function toggleCategory(categoryOption) {
   if (categoryOption === 'All') {
@@ -1623,7 +1642,7 @@ function toggleCategory(categoryOption) {
     }
   }
 
-  selectedCategories.value = new Set(selectedCategories.value)
+  // selectedCategories.value = new Set(selectedCategories.value)
   applyFilters()
 }
 
@@ -1634,7 +1653,7 @@ function toggleAuthor(authorOption) {
     selectedAuthors.value.add(authorOption)
   }
 
-  selectedAuthors.value = new Set(selectedAuthors.value)
+  // selectedAuthors.value = new Set(selectedAuthors.value)
   applyFilters()
 }
 
@@ -1644,7 +1663,7 @@ function toggleDate(dateOption) {
   } else {
     selectedDates.value.add(dateOption)
   }
-  selectedDates.value = new Set(selectedDates.value)
+  // selectedDates.value = new Set(selectedDates.value)
   applyFilters()
 }
 
@@ -1661,6 +1680,32 @@ function clearDate() {
 function clearCategories() {
   selectedCategories.value = new Set(['All'])
   applyFilters()
+}
+
+// function applySort() {
+//   switch (sortOption.value) {
+//     case 'Newest':
+//       documentsStore.sortBy('uploaded_at', 'desc')
+//       break
+//     case 'Oldest':
+//       documentsStore.sortBy('uploaded_at', 'asc')
+//       break
+//     case 'Title A-Z':
+//       documentsStore.sortBy('title', 'desc')
+//       break
+//     case 'Title Z-A':
+//       documentsStore.sortBy('title', 'asc')
+//       break
+//   }
+// }
+
+function applySort(option) {
+  sortOption.value = option
+  if (searchStore.query) {
+    searchStore.sortResults(option)
+  } else {
+    documentsStore.sortByField(option)
+  }
 }
 </script>
 
