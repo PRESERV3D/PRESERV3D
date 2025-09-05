@@ -1,0 +1,40 @@
+import { ref } from 'vue'
+import { useSearchStore } from 'src/stores/searchStore'
+import { useDocumentsStore } from 'src/stores/documentsStore'
+
+const documentsStore = useDocumentsStore()
+const searchStore = useSearchStore()
+
+export function useDocumentsFilter() {
+  const selectedAuthors = ref(new Set())
+  const selectedDates = ref(new Set())
+  const selectedCategories = ref(new Set(['All']))
+
+  const applyFilters = () => {
+    searchStore.clear()
+
+    const filterData = {
+      categories: Array.from(selectedCategories.value),
+      authors: Array.from(selectedAuthors.value),
+      dates: Array.from(selectedDates.value),
+    }
+    console.log('Applying filters:', filterData)
+
+    documentsStore.filterBy(filterData)
+  }
+
+  const clearFilters = () => {
+    selectedAuthors.value = new Set()
+    selectedDates.value = new Set()
+    selectedCategories.value = new Set(['All'])
+    applyFilters()
+  }
+
+  return {
+    selectedAuthors,
+    selectedDates,
+    selectedCategories,
+    applyFilters,
+    clearFilters,
+  }
+}
