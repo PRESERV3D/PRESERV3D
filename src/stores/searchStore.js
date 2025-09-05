@@ -9,7 +9,7 @@ export const useSearchStore = defineStore('search', {
     favoriteIds: [],
   }),
   actions: {
-    async search(query, type) {
+    async search(query, type, sortOption) {
       this.query = query
       this.type = type
 
@@ -97,6 +97,10 @@ export const useSearchStore = defineStore('search', {
         ...item,
         starred: favoriteIds.includes(item.id),
       }))
+
+      if (sortOption) {
+        this.sortResults(sortOption)
+      }
     },
 
     async fetchFavorites(type) {
@@ -138,6 +142,45 @@ export const useSearchStore = defineStore('search', {
       this.results = []
 
       await this.fetchFavorites(this.type)
+    },
+    sortSettings(sort) {
+      switch (sort) {
+        case 'Newest':
+          return { field: 'uploaded_at', order: 'desc' }
+        case 'Oldest':
+          return { field: 'uploaded_at', order: 'asc' }
+        case 'Title A-Z':
+          return { field: 'title', order: 'asc' }
+        case 'Title Z-A':
+          return { field: 'title', order: 'desc' }
+        default:
+          return { field: null, order: 'asc' }
+      }
+    },
+    sortResults(sort) {
+      console.log('Sorting searched documents by:', sort)
+      const { field, order } = this.sortSettings(sort)
+      if (!field) return
+
+      const getValue = (doc) => {
+        if (field === 'title') return (doc.metadata?.title || '').trim().toLowerCase()
+        if (field === 'uploaded_at') return new Date(doc.uploaded_at || 0)
+        return doc[field]
+      }
+
+      this.results.sort((a, b) => {
+        const valA = getValue(a)
+        const valB = getValue(b)
+
+        if (field === 'title')
+          return (
+            valA.localeCompare(valB, undefined, { sensitivity: 'base' }) *
+            (order === 'asc' ? 1 : -1)
+          )
+        if (field === 'uploaded_at') return (valA - valB) * (order === 'asc' ? 1 : -1)
+
+        return 0
+      })
     },
   },
 })
