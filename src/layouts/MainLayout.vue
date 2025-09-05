@@ -419,6 +419,8 @@ watch(
       newPath.includes('collection')
     ) {
       activeItem.value = 'home'
+    } else if (newPath.startsWith('/data-quality')) {
+      activeItem.value = 'data-quality'
     } else if (newPath.includes('appointment')) {
       activeItem.value = 'appointment'
     } else if (newPath.includes('artifacts')) {
