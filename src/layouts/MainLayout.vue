@@ -100,8 +100,8 @@
                 </q-item-section>
                 <q-item-section>
                   <span :class="{ 'text-hidden': miniState && $q.screen.gt.sm }" class="nav-text">{{
-                    item.label
-                  }}</span>
+                      item.label
+                    }}</span>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -140,31 +140,30 @@
             <div class="search-container">
               <!-- Dropdown positioned at the edge (outside) -->
               <div class="search-with-dropdown">
+                <q-select
+                  dense
+                  outlined
+                  v-model="searchType"
+                  :options="searchOptions"
+                  emit-value
+                  map-options
+                  style="width: 9rem"
+                  @update:model-value="performSearch"
+                  class="search-dropdown"
+                />
                 <q-input
                   dense
                   outlined
                   v-model="search"
                   placeholder="Search name, work, year, etc."
-                  class="q-mr-md search-input"
+                  class="search-input"
                   input-class="text-left"
                   clearable
                   clear-icon="close"
                   @keyup.enter="performSearch"
-                  style="width: 100%; max-width: 43rem"
                 >
-                  <!-- Prepend slot for dropdown  -->
                   <template v-slot:prepend>
-                    <q-select
-                      dense
-                      outlined
-                      borderless
-                      v-model="searchType"
-                      :options="searchOptions"
-                      emit-value
-                      map-options
-                      style="width: 8rem"
-                      @update:model-value="performSearch"
-                    />
+                    <q-icon name="search" @click="performSearch" class="cursor-pointer" />
                   </template>
                 </q-input>
               </div>
@@ -260,7 +259,6 @@ const notificationCount = computed(() => notifications.value.length)
 // Base navigation items
 const baseNavItems = [
   { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
-  { name: 'data-quality', label: 'Data Quality', icon: '\\icons\\data_quality.png' },
   { name: 'appointment', label: 'Appointment', icon: '\\icons\\appointment.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
   { name: 'documents', label: 'Documents', icon: '\\icons\\book.png' },
@@ -706,44 +704,37 @@ watch(
 
 .search-with-dropdown {
   display: flex;
-  gap: 0;
+  gap: 0; /* Remove gap between dropdown and search input */
   width: 100%;
   align-items: center;
 }
 
-/* Clean border radius removal for seamless connection */
-.search-dropdown,
-.search-dropdown .q-field__control {
+/* UPDATED: Zero border radius for seamless connection */
+.search-dropdown {
   flex-shrink: 0;
   background: rgba(255, 255, 255, 0.9) !important;
-  border-radius: 8px 0 0 8px !important;
+  border-radius: 8px 0 0 8px !important; /* Zero on right side (top-right and bottom-right) */
+  border-right: none;
+}
+
+.search-dropdown .q-field__control {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 8px 0 0 8px !important; /* Zero on right side (top-right and bottom-right) */
   border-right: none !important;
 }
 
-.search-input,
-.search-input .q-field__control {
+.search-input {
   background: rgba(255, 255, 255, 0.9) !important;
-  border-radius: 0 8px 8px 0 !important;
-  border-left: none !important;
+  border-radius: 0 8px 8px 0 !important; /* Zero on left side (top-left and bottom-left) */
   backdrop-filter: blur(10px);
   flex: 1;
 }
 
-/* Even more specific targeting */
-.search-with-dropdown .q-select .q-field__control,
-.search-with-dropdown .q-select .q-field__control-container,
-.search-with-dropdown .q-select .q-field__outlined {
-  border-radius: 8px 0 0 8px !important;
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-}
-
-.search-with-dropdown .q-input .q-field__control,
-.search-with-dropdown .q-input .q-field__control-container,
-.search-with-dropdown .q-input .q-field__outlined {
-  border-radius: 0 8px 8px 0 !important;
-  border-top-left-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
+.search-input .q-field__control {
+  border-left: none !important;
+  border-radius: 0 8px 8px 0 !important; /* Zero on left side (top-left and bottom-left) */
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px);
 }
 
 .search-input .q-field__native {
