@@ -1,73 +1,37 @@
 <template>
   <div class="q-pa-md main-page-bg">
     <q-layout view="lHh Lpr lFf">
-      <!-- Mobile Menu Button -->
-      <q-header elevated class="mobile-header" v-if="$q.screen.lt.md">
-        <q-toolbar>
-          <q-btn flat dense round icon="menu" aria-label="Menu" @click="drawer = !drawer" />
-          <q-toolbar-title class="mobile-logo">
-            <img src="\img\logo.png" alt="Logo" class="mobile-logo-img" />
-          </q-toolbar-title>
-          <!-- Mobile notifications -->
-          <q-btn flat round dense class="mobile-notif-btn">
-            <img src="/icons/notif-icon.png" alt="notifications" class="notif-image" />
-            <q-badge
-              floating
-              rounded
-              class="custom-badge"
-              style="background-color: #ff5722; color: white"
-              v-if="notificationCount > 0"
-            >
-              {{ notificationCount }}
-            </q-badge>
-          </q-btn>
-        </q-toolbar>
-      </q-header>
-
       <q-drawer
         v-model="drawer"
-        :show-if-above="$q.screen.gt.sm"
-        :mini="miniState && $q.screen.gt.sm"
-        :mini-to-overlay="$q.screen.gt.sm"
+        :show-if-above="true"
+        :mini="miniState"
+        :mini-to-overlay="true"
         :mini-width="120"
         @mouseenter="onDrawerMouseEnter"
         @mouseleave="onDrawerMouseLeave"
-        :width="$q.screen.lt.md ? '100%' : 280"
+        :width="280"
         :breakpoint="0"
-        :overlay="$q.screen.lt.md"
         bordered
         :class="'sidebar-drawer'"
         content-class="drawer-content"
       >
         <div class="sidebar-container">
-          <!-- Close button for mobile -->
-          <div class="mobile-close-btn" v-if="$q.screen.lt.md">
-            <q-btn
-              flat
-              round
-              dense
-              icon="close"
-              @click="drawer = false"
-              class="absolute-top-right q-ma-md"
-            />
-          </div>
-
           <!-- Logo Section -->
           <div class="logo-section">
             <!-- Expanded State -->
-            <div class="q-pa-md q-mb-md" v-show="!miniState || $q.screen.lt.md">
+            <div class="q-pa-md q-mb-md" v-show="!miniState">
               <div class="text-center q-py-lg">
                 <img
                   src="\img\logo.png"
-                  alt="Your Logo"
+                  alt="PRESERV3D"
                   class="logo-img q-mb-sm"
                   @click="setActiveItem('home')"
                 />
               </div>
             </div>
 
-            <!-- Mini State (desktop only) -->
-            <div class="q-pa-lg q-mb-sm text-center" v-show="miniState && $q.screen.gt.sm">
+            <!-- Mini State -->
+            <div class="q-pa-lg q-mb-sm text-center" v-show="miniState">
               <img
                 src="\img\logo.png"
                 alt="Logo"
@@ -78,7 +42,7 @@
 
           <!-- Navigation Section -->
           <div class="navigation-section">
-            <q-list padding :class="{ 'text-center': miniState && $q.screen.gt.sm }">
+            <q-list padding :class="{ 'text-center': miniState }">
               <q-item
                 v-for="item in navItems"
                 :key="item.name"
@@ -99,7 +63,7 @@
                   </div>
                 </q-item-section>
                 <q-item-section>
-                  <span :class="{ 'text-hidden': miniState && $q.screen.gt.sm }" class="nav-text">{{
+                  <span :class="{ 'text-hidden': miniState }" class="nav-text">{{
                       item.label
                     }}</span>
                 </q-item-section>
@@ -109,23 +73,20 @@
 
           <!-- Logout Section - Fixed at bottom -->
           <div class="logout-section">
-            <q-separator
-              class="q-mb-md"
-              v-show="(!miniState && $q.screen.gt.sm) || $q.screen.lt.md"
-            />
+            <q-separator class="q-mb-md" v-show="!miniState" />
             <q-item
               clickable
               v-ripple
               @click="handleLogout"
               class="logout-item"
-              :class="{ 'text-center': miniState && $q.screen.gt.sm }"
+              :class="{ 'text-center': miniState }"
             >
               <q-item-section avatar>
                 <div class="icon-wrapper">
                   <q-icon name="logout" size="20px" class="logout-icon" />
                 </div>
               </q-item-section>
-              <q-item-section v-show="(!miniState && $q.screen.gt.sm) || $q.screen.lt.md">
+              <q-item-section v-show="!miniState">
                 <span class="logout-text">Logout</span>
               </q-item-section>
             </q-item>
@@ -180,8 +141,8 @@
               </q-input>
             </div>
 
-            <!-- Desktop notifications and user profile -->
-            <div class="desktop-actions" v-if="$q.screen.gt.sm">
+            <!-- Notifications and user profile -->
+            <div class="toolbar-actions">
               <!-- Notifications Button -->
               <q-btn flat round dense class="notif-btn">
                 <img src="/icons/notif-icon.png" alt="notifications" class="notif-image" />
@@ -220,7 +181,7 @@
                   <img src="\img\UserIcon.jpg" />
                 </q-avatar>
                 <div class="q-ml-sm user-info">
-                <div class="username-bg">{{ userName }}</div>
+                  <div class="username-bg">{{ userName }}</div>
                   <div class="text-subtitle2 text-grey user-role">{{ userType }}</div>
                 </div>
               </q-btn>
@@ -237,18 +198,16 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
 
-const $q = useQuasar()
 const userStore = useUserStore()
 const searchStore = useSearchStore()
 const router = useRouter()
 const route = useRoute()
 const session = userStore.session
 
-const drawer = ref(false)
+const drawer = ref(true)
 const miniState = ref(true)
 const search = ref('')
 
@@ -303,13 +262,11 @@ const navItems = computed(() => {
 let hoverTimeout = null
 
 const onDrawerMouseEnter = () => {
-  if ($q.screen.lt.md) return // Don't change mini state on mobile
   if (hoverTimeout) clearTimeout(hoverTimeout)
   miniState.value = false
 }
 
 const onDrawerMouseLeave = () => {
-  if ($q.screen.lt.md) return // Don't change mini state on mobile
   if (hoverTimeout) clearTimeout(hoverTimeout)
   miniState.value = true
 }
@@ -319,11 +276,6 @@ const hasSearchBar = ref(false)
 
 const setActiveItem = (itemName) => {
   activeItem.value = itemName
-
-  // Close mobile drawer when navigating
-  if ($q.screen.lt.md) {
-    drawer.value = false
-  }
 
   if (itemName === 'home') {
     const role = session.user.user_metadata?.role
@@ -454,7 +406,6 @@ watch(
 </script>
 
 <style scoped>
-
 /* ========================
    GENERAL FIXES
 ======================== */
@@ -469,26 +420,6 @@ watch(
   padding-left: 0 !important;
 }
 
-
-/* ========================
-   MOBILE HEADER
-======================== */
-.mobile-header {
-  background: linear-gradient(135deg, #880000 0%, #660000 100%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.mobile-logo-img {
-  max-height: 40px;
-  max-width: 120px;
-  object-fit: contain;
-}
-
-.mobile-notif-btn {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 50%;
-}
-
 /* ========================
    LOGO
 ======================== */
@@ -497,12 +428,6 @@ watch(
   max-height: 80px;
   object-fit: contain;
   cursor: pointer;
-}
-@media (max-width: 599px) {
-  .logo-img {
-    max-width: 150px;
-    max-height: 60px;
-  }
 }
 
 /* ========================
@@ -519,14 +444,6 @@ watch(
   min-height: 0;
   padding: 0 8px;
   overflow-y: visible;
-}
-.q-drawer--mini .navigation-section,
-@media (max-width: 1023px) {
-  .navigation-section,
-  .drawer-content {
-    overflow-y: auto;
-    height: 100vh;
-  }
 }
 
 .logout-section {
@@ -659,17 +576,17 @@ watch(
 /* Large desktops (1920px and above) */
 @media (min-width: 1920px) {
   .search-container {
-    max-width: 1060px; /* expand search bar a little */
+    max-width: 1060px;
   }
   .user-profile-btn {
-    width: 380px; /* wider profile section */
+    width: 380px;
   }
 }
 
 /* Medium desktops (1440px to 1919px) */
 @media (min-width: 1440px) and (max-width: 1919px) {
   .search-container {
-    max-width: 800px;
+    max-width: 730px;
   }
   .user-profile-btn {
     width: 280px;
@@ -679,7 +596,7 @@ watch(
 /* Small desktops (1280px to 1439px) */
 @media (min-width: 1280px) and (max-width: 1439px) {
   .search-container {
-    max-width: 600px;
+    max-width: 650px;
   }
   .user-profile-btn {
     width: 250px;
@@ -689,7 +606,7 @@ watch(
 /* ========================
    NOTIFICATIONS
 ======================== */
-.desktop-actions {
+.toolbar-actions {
   display: flex;
   align-items: center;
   gap: 65px;
@@ -744,4 +661,3 @@ watch(
   margin-top: 2px;
 }
 </style>
-
