@@ -219,8 +219,8 @@
                 <q-avatar size="32px">
                   <img src="\img\UserIcon.jpg" />
                 </q-avatar>
-                <div class="q-ml-sm user-info" v-if="$q.screen.gt.md">
-                  <div class="username-bg">{{ userName }}</div>
+                <div class="q-ml-sm user-info">
+                <div class="username-bg">{{ userName }}</div>
                   <div class="text-subtitle2 text-grey user-role">{{ userType }}</div>
                 </div>
               </q-btn>
@@ -650,30 +650,38 @@ watch(
   min-width: 200px;
   max-width: 830px;
 }
-@media (max-width: 1439px) {
-  .search-container { max-width: 400px; }
-}
-@media (max-width: 1199px) {
-  .search-container { max-width: 300px; }
-}
-@media (max-width: 1023px) {
-  .search-toolbar { padding: 12px 16px !important; }
-  .responsive-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-    min-height: auto;
+
+/* ========================
+   RESPONSIVENESS
+======================== */
+/* Large desktops (1920px and above) */
+@media (min-width: 1920px) {
+  .search-container {
+    max-width: 1000px; /* expand search bar a little */
   }
-  .search-container { max-width: 100%; }
-  .desktop-actions { justify-content: center; width: 100%; }
-  .user-profile-btn { justify-content: center; min-width: 140px; }
+  .user-profile-btn {
+    width: 320px; /* wider profile section */
+  }
 }
-@media (max-width: 599px) {
-  .search-toolbar { padding: 8px 12px !important; }
-  .responsive-toolbar { gap: 8px; }
-  .user-profile-btn { min-width: 120px; padding: 6px 8px !important; }
-  .username-bg { font-size: 13px; max-width: 80px; }
-  .user-role { font-size: 11px !important; }
+
+/* Medium desktops (1440px to 1919px) */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .search-container {
+    max-width: 800px;
+  }
+  .user-profile-btn {
+    width: 280px;
+  }
+}
+
+/* Small desktops (1280px to 1439px) */
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .search-container {
+    max-width: 600px;
+  }
+  .user-profile-btn {
+    width: 250px;
+  }
 }
 
 /* ========================
