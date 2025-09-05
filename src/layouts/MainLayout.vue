@@ -453,6 +453,9 @@ watch(
 
 <style scoped>
 
+/* ========================
+   GENERAL FIXES
+======================== */
 
 .no-gap :deep(.q-field__prepend) {
   margin-left: 0 !important;
@@ -465,7 +468,9 @@ watch(
 }
 
 
-/* Mobile Header */
+/* ========================
+   MOBILE HEADER
+======================== */
 .mobile-header {
   background: linear-gradient(135deg, #880000 0%, #660000 100%);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -482,19 +487,15 @@ watch(
   border-radius: 50%;
 }
 
-.mobile-close-btn {
-  position: relative;
-  height: 60px;
-}
-
-/* Logo responsive sizing */
+/* ========================
+   LOGO
+======================== */
 .logo-img {
   max-width: 200px;
   max-height: 80px;
   object-fit: contain;
   cursor: pointer;
 }
-
 @media (max-width: 599px) {
   .logo-img {
     max-width: 150px;
@@ -502,35 +503,27 @@ watch(
   }
 }
 
-/* SIDEBAR LAYOUT FIX */
+/* ========================
+   SIDEBAR
+======================== */
 .sidebar-container {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  position: relative;
-}
-
-.logo-section {
-  flex-shrink: 0;
 }
 
 .navigation-section {
   flex: 1;
   min-height: 0;
   padding: 0 8px;
-  /* Only enable scrolling when in mini state or on mobile */
   overflow-y: visible;
 }
-
-/* Enable scrolling only in mini state on desktop */
-.q-drawer--mini .navigation-section {
-  overflow-y: auto;
-}
-
-/* Enable scrolling on mobile */
+.q-drawer--mini .navigation-section,
 @media (max-width: 1023px) {
-  .navigation-section {
+  .navigation-section,
+  .drawer-content {
     overflow-y: auto;
+    height: 100vh;
   }
 }
 
@@ -538,53 +531,24 @@ watch(
   flex-shrink: 0;
   padding: 10px;
   margin-top: auto;
-  background: inherit;
 }
 
-/* SIDEBAR STYLES */
 .sidebar-drawer.q-drawer {
   overflow: hidden;
 }
 
-.text-hidden {
-  opacity: 0 !important;
-  transform: translateX(-10px) !important;
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease !important;
-  overflow: hidden !important;
-}
-
-.nav-text,
-.logout-text {
-  opacity: 1;
-  transform: translateX(0) !important;
-  transition:
-    opacity 0.25s ease 0.1s,
-    transform 0.25s ease 0.1s !important;
-}
-
-/* Navigation and logout items */
-.nav-item {
-  border-radius: 12px;
-  border-radius: 12px;
-  transition:
-    background-color 0.2s ease,
-    transform 0.2s ease;
-}
-
+/* ========================
+   NAVIGATION ITEMS
+======================== */
+.nav-item,
 .logout-item {
-  margin-bottom: 16px !important;
   border-radius: 12px;
-  transition:
-    background-color 0.2s ease,
-    transform 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .nav-item:hover {
   background-color: rgba(136, 0, 0, 0.08);
 }
-
 .logout-item:hover {
   background-color: rgba(220, 53, 69, 0.08);
 }
@@ -596,8 +560,8 @@ watch(
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.2s ease;
   border: 2px solid transparent;
+  transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
@@ -609,21 +573,13 @@ watch(
   align-items: center !important;
 }
 
-/* Mini state specific styles */
+/* Mini state (centered icons only) */
 .text-center .nav-item,
 .text-center .logout-item {
   justify-content: center !important;
-  padding: 8px !important; /* Reduced padding for mini state */
-  margin-bottom: 16px !important; /* Consistent margin for mini state */
+  padding: 8px !important;
+  margin-bottom: 16px !important;
 }
-
-.text-center .nav-item .q-item__section--avatar,
-.text-center .logout-item .q-item__section--avatar {
-  min-width: 60px !important;
-  justify-content: center !important;
-  padding-right: 0 !important;
-}
-
 .text-center .q-item__section--main {
   display: none !important;
 }
@@ -634,17 +590,17 @@ watch(
   box-shadow: 0 4px 12px rgba(136, 0, 0, 0.3);
   transform: scale(1.05);
 }
-
 .nav-item.q-item--active .nav-icon {
   filter: brightness(0) invert(1);
 }
-
 .nav-item.q-item--active .nav-text {
   color: #880000;
   font-weight: 600;
 }
 
-/* Text styling */
+/* ========================
+   TEXT STYLING
+======================== */
 .nav-text,
 .logout-text {
   font-weight: 500;
@@ -652,23 +608,19 @@ watch(
   letter-spacing: 0.5px;
   transition: all 0.3s ease;
 }
-
 .nav-text {
   color: #2c3e50;
   text-transform: capitalize;
 }
-
 .logout-text,
 .logout-icon {
   color: #7c7c7c;
 }
-
 .logout-item:hover .logout-text,
 .logout-item:hover .logout-icon {
   color: #c82333;
   font-weight: 600;
 }
-
 .logout-item:hover .logout-icon {
   transform: scale(1.1);
 }
@@ -678,13 +630,14 @@ watch(
   height: 1px;
 }
 
-/* Updated Search Styles - Single input with internal dropdown */
+/* ========================
+   SEARCH BAR
+======================== */
 .search-toolbar {
   background: transparent !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   padding: 8px 16px !important;
 }
-
 .responsive-toolbar {
   display: flex;
   align-items: center;
@@ -692,63 +645,54 @@ watch(
   width: 100%;
   min-height: 56px;
 }
-
 .search-container {
   flex: 1;
   min-width: 200px;
   max-width: 830px;
 }
-
-/* Single search input with internal dropdown */
-.search-input-with-dropdown {
-  background: rgba(255, 255, 255, 0.9) !important;
-  border-radius: 8px !important;
-  backdrop-filter: blur(10px);
-  width: 100%;
+@media (max-width: 1439px) {
+  .search-container { max-width: 400px; }
+}
+@media (max-width: 1199px) {
+  .search-container { max-width: 300px; }
+}
+@media (max-width: 1023px) {
+  .search-toolbar { padding: 12px 16px !important; }
+  .responsive-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    min-height: auto;
+  }
+  .search-container { max-width: 100%; }
+  .desktop-actions { justify-content: center; width: 100%; }
+  .user-profile-btn { justify-content: center; min-width: 140px; }
+}
+@media (max-width: 599px) {
+  .search-toolbar { padding: 8px 12px !important; }
+  .responsive-toolbar { gap: 8px; }
+  .user-profile-btn { min-width: 120px; padding: 6px 8px !important; }
+  .username-bg { font-size: 13px; max-width: 80px; }
+  .user-role { font-size: 11px !important; }
 }
 
-.search-input-with-dropdown .q-field__control {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-radius: 8px !important;
-  backdrop-filter: blur(10px);
-}
-
-.search-input-with-dropdown .q-field__native {
-  color: #333 !important;
-}
-
-.search-input-with-dropdown .q-placeholder {
-  color: #666 !important;
-}
-
-
-
+/* ========================
+   NOTIFICATIONS
+======================== */
 .desktop-actions {
   display: flex;
   align-items: center;
   gap: 65px;
   flex-shrink: 0;
 }
-
-/* Notification button styling */
 .notif-btn {
   background-color: #f8f8ff !important;
   width: 40px;
   height: 40px;
   backdrop-filter: blur(10px);
-  flex-shrink: 0;
 }
-
-.notif-btn:hover {
-  background-color: #e0e0e0 !important;
-}
-
-.notif-image {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-}
-
+.notif-btn:hover { background-color: #e0e0e0 !important; }
+.notif-image { width: 20px; height: 20px; object-fit: contain; }
 .custom-badge {
   font-size: 11px !important;
   font-weight: bold !important;
@@ -757,7 +701,9 @@ watch(
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* User profile button responsive */
+/* ========================
+   USER PROFILE
+======================== */
 .user-profile-btn {
   background-color: #f8f9fa !important;
   border-radius: 10px;
@@ -766,11 +712,7 @@ watch(
   display: flex;
   align-items: center;
 }
-
-.user-profile-btn:hover {
-  background-color: #e9ecef !important;
-}
-
+.user-profile-btn:hover { background-color: #e9ecef !important; }
 .user-info {
   display: flex;
   flex-direction: column;
@@ -778,7 +720,6 @@ watch(
   min-width: 0;
   line-height: 1.2;
 }
-
 .username-bg {
   font-weight: 500;
   font-size: 14px;
@@ -787,88 +728,10 @@ watch(
   text-overflow: ellipsis;
   max-width: 120px;
 }
-
 .user-role {
   font-size: 12px !important;
   line-height: 1 !important;
   margin-top: 2px;
 }
-
-/* Mobile-specific responsive styles */
-@media (max-width: 1439px) {
-  .search-container {
-    max-width: 400px;
-  }
-
-  .username-bg {
-    max-width: 100px;
-  }
-}
-
-@media (max-width: 1199px) {
-  .search-container {
-    max-width: 300px;
-  }
-}
-
-@media (max-width: 1023px) {
-  .search-toolbar {
-    padding: 12px 16px !important;
-  }
-
-  .responsive-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-    min-height: auto;
-  }
-
-  .search-container {
-    max-width: none;
-    width: 100%;
-  }
-
-  .desktop-actions {
-    justify-content: center;
-    width: 100%;
-  }
-
-  .user-profile-btn {
-    justify-content: center;
-    min-width: 140px;
-  }
-}
-
-@media (max-width: 599px) {
-  .search-toolbar {
-    padding: 8px 12px !important;
-  }
-
-  .responsive-toolbar {
-    gap: 8px;
-  }
-
-  .user-profile-btn {
-    min-width: 120px;
-    padding: 6px 8px !important;
-  }
-
-  .username-bg {
-    font-size: 13px;
-    max-width: 80px;
-  }
-
-  .user-role {
-    font-size: 11px !important;
-  }
-
-}
-
-/* Ensure drawer content is scrollable on mobile */
-@media (max-width: 1023px) {
-  .drawer-content {
-    height: 100vh;
-    overflow-y: auto;
-  }
-}
 </style>
+
