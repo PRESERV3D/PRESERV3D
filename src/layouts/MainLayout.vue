@@ -659,10 +659,10 @@ watch(
 /* Large desktops (1920px and above) */
 @media (min-width: 1920px) {
   .search-container {
-    max-width: 1000px; /* expand search bar a little */
+    max-width: 1060px; /* expand search bar a little */
   }
   .user-profile-btn {
-    width: 320px; /* wider profile section */
+    width: 380px; /* wider profile section */
   }
 }
 
