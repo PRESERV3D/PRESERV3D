@@ -19,7 +19,7 @@
           <!-- Logo Section -->
           <div class="logo-section">
             <!-- Expanded State -->
-            <div class="q-pa-md q-mb-md" v-show="!miniState">
+            <div class="q-pa-md q-mb-md" v-show="!miniState || isHovered">
               <div class="text-center q-py-lg">
                 <img
                   src="\img\logo.png"
@@ -31,7 +31,7 @@
             </div>
 
             <!-- Mini State -->
-            <div class="q-pa-lg q-mb-sm text-center" v-show="miniState">
+            <div class="q-pa-lg q-mb-sm text-center" v-show="miniState && !isHovered">
               <img
                 src="\img\logo.png"
                 alt="Logo"
@@ -42,7 +42,7 @@
 
           <!-- Navigation Section -->
           <div class="navigation-section">
-            <q-list padding :class="{ 'text-center': miniState }">
+            <q-list padding :class="{ 'text-center': miniState && !isHovered }">
               <q-item
                 v-for="item in navItems"
                 :key="item.name"
@@ -63,7 +63,7 @@
                   </div>
                 </q-item-section>
                 <q-item-section>
-                  <span :class="{ 'text-hidden': miniState }" class="nav-text">{{
+                  <span :class="{ 'text-hidden': miniState && !isHovered }" class="nav-text">{{
                       item.label
                     }}</span>
                 </q-item-section>
@@ -73,20 +73,20 @@
 
           <!-- Logout Section - Fixed at bottom -->
           <div class="logout-section">
-            <q-separator class="q-mb-md" v-show="!miniState" />
+            <q-separator class="q-mb-md" v-show="!miniState || isHovered" />
             <q-item
               clickable
               v-ripple
               @click="handleLogout"
               class="logout-item"
-              :class="{ 'text-center': miniState }"
+              :class="{ 'text-center': miniState && !isHovered }"
             >
               <q-item-section avatar>
                 <div class="icon-wrapper">
                   <q-icon name="logout" size="20px" class="logout-icon" />
                 </div>
               </q-item-section>
-              <q-item-section v-show="!miniState">
+              <q-item-section v-show="!miniState || isHovered">
                 <span class="logout-text">Logout</span>
               </q-item-section>
             </q-item>
@@ -210,10 +210,11 @@ const session = userStore.session
 
 const drawer = ref(true)
 const miniState = ref(true)
+const isHovered = ref(false) // Add this reactive variable
 const search = ref('')
 
 // Search dropdown options
-const searchType = ref('artifacts') // default selection
+const searchType = ref('artifacts')
 const searchOptions = [
   { label: 'Artifacts', value: 'artifacts' },
   { label: 'Documents', value: 'documents' },
@@ -250,26 +251,33 @@ const isUser = computed(() => userRole.value === 'user')
 // Filtered navigation items based on user role
 const navItems = computed(() => {
   return baseNavItems.filter((item) => {
-    // Show collections only for users with 'user' role
     if (item.name === 'collections') {
       return isUser.value
     }
-    // Show all other items for everyone
     return true
   })
 })
 
-// Add a timeout to prevent rapid state changes
+// Improved hover handling with debouncing
 let hoverTimeout = null
 
 const onDrawerMouseEnter = () => {
   if (hoverTimeout) clearTimeout(hoverTimeout)
-  miniState.value = false
+  isHovered.value = true
+  // Only expand if currently in mini state
+  if (miniState.value) {
+    miniState.value = false
+  }
 }
 
 const onDrawerMouseLeave = () => {
   if (hoverTimeout) clearTimeout(hoverTimeout)
-  miniState.value = true
+
+  // Add a small delay to prevent flickering
+  hoverTimeout = setTimeout(() => {
+    isHovered.value = false
+    miniState.value = true
+  }, 100) // 100ms delay
 }
 
 const activeItem = ref('home')
@@ -292,7 +300,6 @@ const setActiveItem = (itemName) => {
     }
     return
   } else {
-    // Navigate to the corresponding route
     const targetRoute = `/${itemName}`
     router.push(targetRoute)
   }
@@ -306,7 +313,6 @@ const performSearch = async () => {
     return
   }
 
-  // Redirect based on dropdown selection
   let targetRoute = ''
   if (searchType.value === 'artifacts') {
     targetRoute = '/artifacts'
@@ -315,10 +321,9 @@ const performSearch = async () => {
   }
 
   if (route.path !== targetRoute) {
-    await router.push(targetRoute) // Wait for navigation to complete
+    await router.push(targetRoute)
   }
 
-  // Set store search type based on dropdown selection
   await searchStore.search(query, searchType.value)
   console.log('Search performed:', query, searchType.value)
 
@@ -337,7 +342,6 @@ const handleLogout = async () => {
 }
 
 onMounted(() => {
-  // Set search type based on current route
   if (searchType.value) {
     if (route.name === 'documents') {
       searchType.value = 'documents'
@@ -346,13 +350,11 @@ onMounted(() => {
     }
   }
 
-  // Perform search if there's existing search value
   if (search.value || searchType.value) {
     performSearch()
   }
 })
 
-// Watch search bar input and run query
 watch(search, async (query) => {
   if (query === null || query === undefined) {
     searchStore.clear()
@@ -455,6 +457,129 @@ watch(
 
 .sidebar-drawer.q-drawer {
   overflow: hidden;
+  transition: width 0.3s ease !important; /* Smooth width transition */
+}
+
+/* ========================
+   TEXT VISIBILITY IMPROVEMENTS
+======================== */
+.nav-text, .logout-text {
+  opacity: 1;
+  transition: opacity 0.2s ease, width 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.text-hidden {
+  opacity: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Force text to show when hovered */
+.sidebar-drawer:hover .text-hidden {
+  opacity: 1 !important;
+  width: auto !important;
+}
+
+/* ========================
+   PREVENT HORIZONTAL SCROLL
+======================== */
+
+.main-page-bg {
+  overflow-x: hidden !important;
+  max-width: 100vw;
+}
+
+.q-layout {
+  overflow-x: hidden !important;
+}
+
+.q-page-container {
+  overflow-x: hidden !important;
+}
+
+/* ========================
+   SIDEBAR RESPONSIVE FIXES
+======================== */
+
+@media (max-width: 768px) {
+  .q-drawer {
+    display: none !important;
+  }
+
+  .q-page-container {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .q-drawer {
+    width: 120px !important;
+  }
+
+  .sidebar-drawer .q-drawer__content {
+    width: 120px !important;
+  }
+
+  .navigation-section {
+    text-align: center;
+  }
+
+  .nav-item .q-item__section--main,
+  .logout-item .q-item__section--main {
+    display: none !important;
+  }
+}
+
+/* ========================
+   RESPONSIVE TOOLBAR FIXES
+======================== */
+
+@media (max-width: 768px) {
+  .search-toolbar {
+    padding: 4px 8px !important;
+  }
+
+  .responsive-toolbar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .search-container {
+    width: 100% !important;
+    max-width: calc(100vw - 32px) !important;
+    order: 2;
+  }
+
+  .toolbar-actions {
+    order: 1;
+    width: 100%;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .user-profile-btn {
+    width: auto !important;
+    min-width: 150px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .search-container {
+    width: 450px !important;
+    max-width: 450px !important;
+  }
+
+  .user-profile-btn {
+    width: 160px !important;
+  }
+
+  .toolbar-actions {
+    gap: 16px;
+  }
 }
 
 /* ========================
@@ -572,17 +697,19 @@ watch(
   max-width: 795px !important;
 }
 
-
 .toolbar-actions {
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
   width: auto;
+  min-width: fit-content !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 65px;
 }
 
 /* ========================
    RESPONSIVENESS
 ======================== */
 
-/* Small screens */
 @media (max-width: 1439px) {
   .search-container {
     width: 640px !important;
@@ -595,7 +722,6 @@ watch(
   }
 }
 
-/* Medium screens */
 @media (min-width: 1440px) and (max-width: 1535px), (min-width: 1537px) and (max-width: 1919px) {
   .search-container {
     width: 735px !important;
@@ -605,7 +731,6 @@ watch(
   }
 }
 
-/* Large screens */
 @media (min-width: 1920px) {
   .search-container {
     width: 1060px !important;
@@ -614,8 +739,6 @@ watch(
     width: 100px !important;
   }
 }
-
-
 
 /* ========================
    NOTIFICATIONS
@@ -674,6 +797,4 @@ watch(
   line-height: 1 !important;
   margin-top: 2px;
 }
-
-
 </style>
