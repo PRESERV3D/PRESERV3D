@@ -108,6 +108,7 @@
                 clear-icon="close"
                 @keyup.enter="performSearch"
                 class="search-input no-gap"
+                style="width: 100%;"
               >
                 <!-- dropdown select on the far left -->
                 <template v-slot:prepend>
@@ -557,51 +558,64 @@ watch(
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   padding: 8px 16px !important;
 }
+
 .responsive-toolbar {
   display: flex;
   align-items: center;
-  gap: 16px;
   width: 100%;
-  min-height: 56px;
+  gap: 16px;
 }
+
 .search-container {
-  flex: 1;
-  min-width: 200px;
-  max-width: 830px;
+  flex: 0 0 auto !important;
+  width: 795px !important;
+  max-width: 795px !important;
+}
+
+
+.toolbar-actions {
+  flex-shrink: 0;
+  width: auto;
 }
 
 /* ========================
    RESPONSIVENESS
 ======================== */
-/* Large desktops (1920px and above) */
+
+/* Small screens */
+@media (max-width: 1439px) {
+  .search-container {
+    width: 640px !important;
+    min-width: 640px !important;
+    max-width: 640px !important;
+    flex: none !important;
+  }
+  .user-profile-btn {
+    width: 180px !important;
+  }
+}
+
+/* Medium screens */
+@media (min-width: 1440px) and (max-width: 1535px), (min-width: 1537px) and (max-width: 1919px) {
+  .search-container {
+    width: 735px !important;
+  }
+  .user-profile-btn {
+    width: 210px !important;
+  }
+}
+
+/* Large screens */
 @media (min-width: 1920px) {
   .search-container {
-    max-width: 1060px;
+    width: 1060px !important;
   }
   .user-profile-btn {
-    width: 380px;
+    width: 100px !important;
   }
 }
 
-/* Medium desktops (1440px to 1919px) */
-@media (min-width: 1440px) and (max-width: 1919px) {
-  .search-container {
-    max-width: 730px;
-  }
-  .user-profile-btn {
-    width: 280px;
-  }
-}
 
-/* Small desktops (1280px to 1439px) */
-@media (min-width: 1280px) and (max-width: 1439px) {
-  .search-container {
-    max-width: 650px;
-  }
-  .user-profile-btn {
-    width: 250px;
-  }
-}
 
 /* ========================
    NOTIFICATIONS
@@ -660,4 +674,6 @@ watch(
   line-height: 1 !important;
   margin-top: 2px;
 }
+
+
 </style>
