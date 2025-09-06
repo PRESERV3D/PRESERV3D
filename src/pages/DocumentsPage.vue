@@ -384,7 +384,7 @@
                     clickable
                     v-close-popup
                     class="collection-sort-menu"
-                    @click="((sortOption = option), applySort(option))"
+                    @click="applySort(option)"
                   >
                     <q-item-section>{{ option }}</q-item-section>
                     <q-item-section side v-if="sortOption === option">
@@ -400,7 +400,7 @@
           <div class="row q-gutter-lg q-ma-md justify-between">
             <div
               v-for="(doc, i) in searchStore.query
-                ? searchStore.results
+                ? searchStore.searchedDocuments
                 : documentsStore.filteredDocuments"
               :key="i"
               class="card-wrapper-2"
@@ -833,47 +833,6 @@ const fetchAllDocuments = async () => {
 //   },
 //   { immediate: true },
 // )
-
-watch(
-  () => documentsStore.documents,
-  (docs) => {
-    const authors = new Map()
-    const years = new Set()
-    const categories = new Map([['all', 'All']])
-
-    docs.forEach((doc) => {
-      const meta = doc.metadata || {}
-
-      if (meta.author) {
-        meta.author.split(',').forEach((a) => {
-          const standardized = a.trim().toLowerCase()
-          if (!authors.has(standardized)) {
-            authors.set(standardized, a.trim())
-          }
-        })
-      }
-
-      if (meta.date) {
-        const year = meta.date.slice(0, 4)
-        years.add(year)
-      }
-
-      if (Array.isArray(meta.categories)) {
-        meta.categories.forEach((cat) => {
-          const standardized = cat.trim().toLowerCase()
-          if (!categories.has(standardized)) {
-            categories.set(standardized, cat.trim())
-          }
-        })
-      }
-    })
-
-    authorOptions.value = [...authors.values()].sort()
-    categoryOptions.value = [...categories.values()].sort()
-    dateOptions.value = [...years].sort((a, b) => b - a)
-  },
-  { immediate: true },
-)
 
 const selectedFile = ref(null)
 // const fileInput = ref(null)
@@ -1610,6 +1569,48 @@ const toggleFavorite = async (doc, itemType = 'document') => {
   }
 }
 
+// Filter and sort options
+watch(
+  () => documentsStore.documents,
+  (docs) => {
+    const authors = new Map()
+    const years = new Set()
+    const categories = new Map([['all', 'All']])
+
+    docs.forEach((doc) => {
+      const meta = doc.metadata || {}
+
+      if (meta.author) {
+        meta.author.split(',').forEach((a) => {
+          const standardized = a.trim().toLowerCase()
+          if (!authors.has(standardized)) {
+            authors.set(standardized, a.trim())
+          }
+        })
+      }
+
+      if (meta.date) {
+        const year = meta.date.slice(0, 4)
+        years.add(year)
+      }
+
+      if (Array.isArray(meta.categories)) {
+        meta.categories.forEach((cat) => {
+          const standardized = cat.trim().toLowerCase()
+          if (!categories.has(standardized)) {
+            categories.set(standardized, cat.trim())
+          }
+        })
+      }
+    })
+
+    authorOptions.value = [...authors.values()].sort()
+    categoryOptions.value = [...categories.values()].sort()
+    dateOptions.value = [...years].sort((a, b) => b - a)
+  },
+  { immediate: true },
+)
+
 function applyFilters() {
   searchStore.clear()
 
@@ -1702,7 +1703,7 @@ function clearCategories() {
 function applySort(option) {
   sortOption.value = option
   if (searchStore.query) {
-    searchStore.sortResults(option)
+    searchStore.sortResults(option, searchStore.searchedDocuments)
   } else {
     documentsStore.sortByField(option)
   }
