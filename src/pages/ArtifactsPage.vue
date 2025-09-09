@@ -305,12 +305,11 @@
             <model-viewer
               :src="model.file_url"
               loading="lazy"
-              auto-rotate
-              auto-rotate-delay="1500"
-              rotation-per-second="10deg"
               shadow-intensity="1"
               class="artifacts"
               style="width: 100%; height: 400px"
+              @pointerenter="startRotate"
+              @pointerleave="stopRotate"
             />
           </div>
 
@@ -508,6 +507,19 @@ if (userStore.profile.role === undefined) {
 
 const userRole = userStore.profile.role
 const isAdmin = computed(() => userRole === 'admin')
+
+function startRotate(e) {
+  const el = e.target
+  el.autoRotate = true
+  el.rotationPerSecond = '10deg'
+  el.autoRotateDelay = 0
+}
+
+function stopRotate(e) {
+  const el = e.target
+  el.autoRotate = false
+  el.cameraOrbit = '0deg 75deg 105%' // Reset back to original orientation
+}
 
 const sortedModels = computed(() => {
   const models = [...filteredModels.value]
@@ -1514,5 +1526,10 @@ function applySort(option) {
 
 .view-icon:hover {
   background-color: rgba(136, 0, 0, 0.1);
+}
+
+.my-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 </style>
