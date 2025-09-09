@@ -329,6 +329,7 @@ const activeItem = ref('home')
 const hasSearchBar = ref(false)
 
 const setActiveItem = (itemName) => {
+  console.log('Setting active item to:', itemName)
   activeItem.value = itemName
 
   // Close mobile drawer when navigating
@@ -351,6 +352,7 @@ const setActiveItem = (itemName) => {
     return
   } else {
     // Navigate to the corresponding route
+    activeItem.value = itemName
     const targetRoute = `/${itemName}`
     router.push(targetRoute)
   }
@@ -427,11 +429,7 @@ watch(
   (newPath) => {
     if (newPath === '/') {
       activeItem.value = 'home'
-    } else if (
-      newPath.includes('home') ||
-      newPath.includes('admindash') ||
-      newPath.includes('collection')
-    ) {
+    } else if (newPath.includes('home') || newPath.includes('admindash')) {
       activeItem.value = 'home'
     } else if (newPath.includes('appointment')) {
       activeItem.value = 'appointment'
@@ -445,6 +443,8 @@ watch(
       activeItem.value = 'collections'
     } else if (newPath.includes('gallery')) {
       activeItem.value = 'gallery'
+    } else if (newPath.includes('data-quality')) {
+      activeItem.value = 'data-quality'
     } else {
       activeItem.value = ''
     }
