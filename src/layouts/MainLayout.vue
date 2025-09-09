@@ -100,8 +100,8 @@
                 </q-item-section>
                 <q-item-section>
                   <span :class="{ 'text-hidden': miniState && $q.screen.gt.sm }" class="nav-text">{{
-                      item.label
-                    }}</span>
+                    item.label
+                  }}</span>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -159,11 +159,11 @@
                     emit-value
                     map-options
                     @update:model-value="performSearch"
-                    style="width: 140px; text-align: center;"
+                    style="width: 140px; text-align: center"
                     popup-content-style="text-align: center; text-transform: capitalize;"
                   >
                     <template v-slot:selected>
-                      <div style="width: 100%; text-align: center; text-transform: capitalize;">
+                      <div style="width: 100%; text-align: center; text-transform: capitalize">
                         {{ searchType }}
                       </div>
                     </template>
@@ -174,7 +174,7 @@
                     name="search"
                     @click="performSearch"
                     class="cursor-pointer"
-                    style="margin: 0 8px;"
+                    style="margin: 0 8px"
                   />
                 </template>
               </q-input>
@@ -241,8 +241,8 @@ import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
 import { useDocumentsStore } from 'src/stores/documentsStore'
-import { useFiltering } from 'src/utils/useFiltering'
-const { clearFilters } = useFiltering()
+import { useDocumentsFilter } from 'src/utils/useFiltering'
+const { clearFilters } = useDocumentsFilter()
 
 const $q = useQuasar()
 const userStore = useUserStore()
@@ -288,17 +288,24 @@ const userName = computed(() => userProfile.value.first_name || 'User')
 const userRole = computed(() => userProfile.value.role || 'Unknown')
 const userType = computed(() => userProfile.value.user_type || 'Unknown')
 
-// Add computed property to check if user role is 'user'
+// Add computed property to check roles
 const isUser = computed(() => userRole.value === 'user')
+const isAdmin = computed(() => userRole.value === 'admin')
 
 // Filtered navigation items based on user role
 const navItems = computed(() => {
   return baseNavItems.filter((item) => {
-    // Show collections only for users with 'user' role
+    // Show collections only for users
     if (item.name === 'collections') {
       return isUser.value
     }
-    // Show all other items for everyone
+
+    // Hide data-quality if the user is not admin
+    if (item.name === 'data-quality') {
+      return isAdmin.value
+    }
+
+    // Show all other items
     return true
   })
 })
@@ -459,8 +466,6 @@ watch(
 </script>
 
 <style scoped>
-
-
 .no-gap :deep(.q-field__prepend) {
   margin-left: 0 !important;
   padding-left: 0 !important;
@@ -470,7 +475,6 @@ watch(
 .no-gap :deep(.q-field__control) {
   padding-left: 0 !important;
 }
-
 
 /* Mobile Header */
 .mobile-header {
@@ -728,8 +732,6 @@ watch(
   color: #666 !important;
 }
 
-
-
 .desktop-actions {
   display: flex;
   align-items: center;
@@ -868,7 +870,6 @@ watch(
   .user-role {
     font-size: 11px !important;
   }
-
 }
 
 /* Ensure drawer content is scrollable on mobile */
