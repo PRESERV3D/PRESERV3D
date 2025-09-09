@@ -30,110 +30,168 @@
             </q-list>
           </q-btn-dropdown>
 
+          <!-- Filter Section -->
           <q-btn-dropdown
             outline
             color="black"
             label="Filter"
             icon="filter_list"
             size="sm"
-            class="q-ml-sm artifact-btn-style"
+            class="artifact-btn-style"
           >
-            <q-list class="filter-dropdown">
-              <q-item>
-                <q-item-section>
-                  <q-select
-                    v-model="categoryFilter"
-                    :options="categoryOptions"
-                    outlined
-                    label="Select Category"
+            <q-list style="width: 40rem">
+              <div class="row q-pa-md">
+                <!-- Authors Column (Left) -->
+                <div class="col q-pr-sm">
+                  <div class="sub-font-3 q-mb-sm">Author</div>
+                  <q-scroll-area style="height: 12rem; width: 12rem">
+                    <q-list dense>
+                      <q-item
+                        v-for="authorOption in authorOptions"
+                        :key="authorOption"
+                        clickable
+                        class="sub-font-2"
+                        style="color: #000000"
+                        @click="toggleAuthor(authorOption)"
+                      >
+                        <q-item-section avatar>
+                          <q-checkbox
+                            :model-value="selectedAuthors.has(authorOption)"
+                            @update:model-value="toggleAuthor(authorOption)"
+                          />
+                        </q-item-section>
+                        <q-item-section>{{ authorOption }}</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-scroll-area>
+                  <!-- Clear Authors -->
+                  <q-btn
+                    v-if="selectedAuthors.size > 0"
+                    flat
                     dense
-                    clearable
-                    @update:model-value="applyFilters"
+                    color="primary"
+                    label="Clear Author"
+                    @click="clearAuthor"
+                    class="q-mt-xs sub-font-3 full-width"
                   />
-                </q-item-section>
-              </q-item>
-              <q-item>
-                <q-item-section>
-                  <q-select
-                    v-model="authorFilter"
-                    :options="authorOptions"
-                    outlined
-                    label="Select Author"
+                </div>
+                <!-- Years Column (Right) -->
+                <div class="col">
+                  <div class="sub-font-3 q-mb-sm">Year</div>
+                  <q-scroll-area style="height: 12rem; width: 12rem">
+                    <q-list dense>
+                      <q-item
+                        v-for="dateOption in dateOptions"
+                        :key="dateOption"
+                        clickable
+                        class="sub-font-2"
+                        style="color: #000000"
+                        @click="toggleDate(dateOption)"
+                      >
+                        <q-item-section avatar>
+                          <q-checkbox
+                            :model-value="selectedDates.has(dateOption)"
+                            @update:model-value="toggleDate(dateOption)"
+                          />
+                        </q-item-section>
+                        <q-item-section>{{ dateOption }}</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-scroll-area>
+                  <!-- Clear Years -->
+                  <q-btn
+                    v-if="selectedDates.size > 0"
+                    flat
                     dense
-                    clearable
-                    @update:model-value="applyFilters"
+                    color="primary"
+                    label="Clear Year"
+                    @click="clearDate"
+                    class="q-mt-xs sub-font-3 full-width"
                   />
-                </q-item-section>
-              </q-item>
-              <q-item>
-                <q-item-section>
-                  <q-select
-                    v-model="dateFilter"
-                    :options="dateOptions"
-                    outlined
-                    label="Select Year"
+                </div>
+                <!-- Categories Column -->
+                <div class="col">
+                  <div class="sub-font-3 q-mb-sm">Category</div>
+                  <q-scroll-area style="height: 12rem; width: 12rem">
+                    <q-list dense>
+                      <q-item
+                        v-for="categoryOption in categoryOptions"
+                        :key="categoryOption"
+                        clickable
+                        class="sub-font-2"
+                        style="color: #000000"
+                        @click="toggleCategory(categoryOption)"
+                      >
+                        <q-item-section avatar>
+                          <q-checkbox
+                            :model-value="selectedCategories.has(categoryOption)"
+                            @update:model-value="toggleCategory(categoryOption)"
+                          />
+                        </q-item-section>
+                        <q-item-section>{{ categoryOption }}</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-scroll-area>
+                  <!-- Clear Categories -->
+                  <q-btn
+                    v-if="
+                      selectedCategories.size > 0 &&
+                      !(selectedCategories.size === 1 && selectedCategories.has('All'))
+                    "
+                    flat
                     dense
-                    clearable
-                    @update:model-value="applyFilters"
+                    color="primary"
+                    label="Clear Category"
+                    @click="clearCategories"
+                    class="q-mt-xs sub-font-3 full-width"
                   />
-                </q-item-section>
-              </q-item>
+                </div>
+              </div>
               <q-separator />
+              <!-- <q-item clickable v-close-popup @click="applyFilters">
+                    <q-item-section class="flex items-center">
+                      <div class="sub-font-3" style="color: #008000; font-weight: 500">
+                        APPLY FILTERS
+                      </div>
+                    </q-item-section>
+                  </q-item> -->
               <q-item clickable v-close-popup @click="clearFilters">
-                <q-item-section>
-                  <q-item-label>Clear All Filters</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-icon name="clear" />
+                <q-item-section class="flex items-center">
+                  <div class="sub-font-3" style="color: #880000; font-weight: 500">
+                    CLEAR ALL FILTERS
+                  </div>
                 </q-item-section>
               </q-item>
             </q-list>
           </q-btn-dropdown>
 
+          <!-- Sort Section -->
           <q-btn-dropdown
             outline
             color="black"
-            label="Sort"
+            :label="`Sort by: ${sortOption}`"
             icon="sort"
             size="sm"
-            class="q-ml-xs artifact-btn-style"
+            class="q-ml-md artifact-btn-style"
+            dense
           >
             <q-list>
-              <q-item-label header>Sort by</q-item-label>
-              <q-item clickable v-close-popup @click="setSortOption('Newest')">
-                <q-item-section>
-                  <q-item-label>Newest</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-icon v-if="sortOption === 'Newest'" name="check" color="primary" />
-                </q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="setSortOption('Oldest')">
-                <q-item-section>
-                  <q-item-label>Oldest</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-icon v-if="sortOption === 'Oldest'" name="check" color="primary" />
-                </q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="setSortOption('Title A-Z')">
-                <q-item-section>
-                  <q-item-label>Title A-Z</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-icon v-if="sortOption === 'Title A-Z'" name="check" color="primary" />
-                </q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="setSortOption('Title Z-A')">
-                <q-item-section>
-                  <q-item-label>Title Z-A</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-icon v-if="sortOption === 'Title Z-A'" name="check" color="primary" />
+              <q-item
+                v-for="option in sortOptions"
+                :key="option"
+                clickable
+                v-close-popup
+                class="collection-sort-menu"
+                @click="((sortOption = option), applySort(option))"
+              >
+                <q-item-section>{{ option }}</q-item-section>
+                <q-item-section side v-if="sortOption === option">
+                  <q-icon name="check" color="primary" />
                 </q-item-section>
               </q-item>
             </q-list>
           </q-btn-dropdown>
+
           <q-btn
             v-if="isAdmin"
             @click="showDialog = true"
@@ -238,7 +296,7 @@
     <!-- Three Artifacts per Row Grid -->
     <div class="artifacts-grid">
       <div
-        v-for="(model, i) in searchStore.query ? searchStore.results : modelStore.models"
+        v-for="(model, i) in searchStore.query ? searchStore.searchedModels : modelStore.models"
         :key="i"
         class="artifact-card-wrapper"
       >
@@ -399,17 +457,21 @@ const searchStore = useSearchStore()
 const userStore = useUserStore()
 
 // Reactive data
-const searchQuery = ref('')
-const categoryFilter = ref(null)
-const authorFilter = ref(null)
-const dateFilter = ref(null)
+// const searchQuery = ref('')
+// const categoryFilter = ref(null)
+// const authorFilter = ref(null)
+// const dateFilter = ref(null)
 const sortOption = ref('Newest')
+const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
 const itemsToShow = ref('all')
 
 // Filter options - will be populated from data
 const categoryOptions = ref([])
 const authorOptions = ref([])
 const dateOptions = ref([])
+const selectedCategories = ref(new Set(['All']))
+const selectedAuthors = ref(new Set())
+const selectedDates = ref(new Set())
 
 // Dialog for upload pop up
 const showDialog = ref(false)
@@ -436,7 +498,7 @@ const notifyDialogMessage = ref('')
 
 // Computed properties
 const filteredModels = computed(() => {
-  return searchStore.query ? searchStore.results : modelStore.filteredModels
+  return searchStore.query ? searchStore.searchedModels : modelStore.filteredModels
 })
 
 if (userStore.profile.role === undefined) {
@@ -502,44 +564,6 @@ const hasMoreItems = computed(() => {
 // Methods
 const setItemsToShow = (value) => {
   itemsToShow.value = value
-}
-
-const setSortOption = (value) => {
-  sortOption.value = value
-  onSort()
-}
-
-const onSort = () => {
-  switch (sortOption.value) {
-    case 'Newest':
-      modelStore.sortBy('uploaded_at', 'desc')
-      break
-    case 'Oldest':
-      modelStore.sortBy('uploaded_at', 'asc')
-      break
-    case 'Title A-Z':
-      modelStore.sortBy('title', 'asc')
-      break
-    case 'Title Z-A':
-      modelStore.sortBy('title', 'desc')
-      break
-  }
-}
-
-const applyFilters = () => {
-  modelStore.filterBy({
-    category: categoryFilter.value,
-    author: authorFilter.value,
-    date: dateFilter.value,
-  })
-}
-
-const clearFilters = () => {
-  searchQuery.value = ''
-  categoryFilter.value = null
-  authorFilter.value = null
-  dateFilter.value = null
-  applyFilters()
 }
 
 // ADDED: Toggle favorite icon
@@ -628,7 +652,7 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
       .eq('id', model.id)
       .single()
 
-    // FIXED: Star count
+    // Star count
     if (!metaError && metaCheck) {
       const { data: starData } = await supabase
         .from('artifacts_star_count')
@@ -727,7 +751,6 @@ const saveToSelectedCollections = async () => {
         item_type: selectedItemType.value,
       })
 
-      // ADDED: Mark model as bookmarked if added to a collection
       model.bookmarked = true
 
       if (insertError) {
@@ -930,44 +953,44 @@ const fetchAllArtifacts = async () => {
   }
 }
 
-// Watch for filter changes
-watch(
-  () => modelStore.filteredModels,
-  (mods) => {
-    const authors = new Set()
-    const years = new Set()
-    const categories = new Set()
+// // Watch for filter changes
+// watch(
+//   () => modelStore.filteredModels,
+//   (mods) => {
+//     const authors = new Set()
+//     const years = new Set()
+//     const categories = new Set()
 
-    mods.forEach((mod) => {
-      const meta = mod.metadata || {}
+//     mods.forEach((mod) => {
+//       const meta = mod.metadata || {}
 
-      if (meta.author) {
-        meta.author.split(',').forEach((a) => authors.add(a.trim()))
-      }
+//       if (meta.author) {
+//         meta.author.split(',').forEach((a) => authors.add(a.trim()))
+//       }
 
-      if (meta.date) {
-        const year = meta.date.slice(0, 4)
-        years.add(year)
-      }
+//       if (meta.date) {
+//         const year = meta.date.slice(0, 4)
+//         years.add(year)
+//       }
 
-      if (Array.isArray(meta.categories)) {
-        meta.categories.forEach((cat) => categories.add(cat))
-      }
-    })
+//       if (Array.isArray(meta.categories)) {
+//         meta.categories.forEach((cat) => categories.add(cat))
+//       }
+//     })
 
-    authorOptions.value = [...authors].sort()
-    categoryOptions.value = [...categories].sort()
-    dateOptions.value = [...years].sort((a, b) => b - a)
-  },
-  { immediate: true },
-)
+//     authorOptions.value = [...authors].sort()
+//     categoryOptions.value = [...categories].sort()
+//     dateOptions.value = [...years].sort((a, b) => b - a)
+//   },
+//   { immediate: true },
+// )
 
-// Watch for filter changes and reset items to show
-watch([categoryFilter, authorFilter, dateFilter], () => {
-  if (itemsToShow.value !== 'all') {
-    itemsToShow.value = 'all'
-  }
-})
+// // Watch for filter changes and reset items to show
+// watch([categoryFilter, authorFilter, dateFilter], () => {
+//   if (itemsToShow.value !== 'all') {
+//     itemsToShow.value = 'all'
+//   }
+// })
 
 // Initialize
 onMounted(async () => {
@@ -1369,6 +1392,129 @@ async function handleCancelMetadata(cancelledData) {
 function handleCancel() {
   selectedFile.value = null
   showDialog.value = false
+}
+
+// Filter and sort options
+watch(
+  () => modelStore.models,
+  (docs) => {
+    const authors = new Map()
+    const years = new Set()
+    const categories = new Map([['all', 'All']])
+
+    docs.forEach((mod) => {
+      const meta = mod.metadata || {}
+
+      if (meta.author) {
+        meta.author.split(',').forEach((a) => {
+          const standardized = a.trim().toLowerCase()
+          if (!authors.has(standardized)) {
+            authors.set(standardized, a.trim())
+          }
+        })
+      }
+
+      if (meta.date) {
+        const year = meta.date.slice(0, 4)
+        years.add(year)
+      }
+
+      if (Array.isArray(meta.categories)) {
+        meta.categories.forEach((cat) => {
+          const standardized = cat.trim().toLowerCase()
+          if (!categories.has(standardized)) {
+            categories.set(standardized, cat.trim())
+          }
+        })
+      }
+    })
+
+    authorOptions.value = [...authors.values()].sort()
+    categoryOptions.value = [...categories.values()].sort()
+    dateOptions.value = [...years].sort((a, b) => b - a)
+  },
+  { immediate: true },
+)
+
+function applyFilters() {
+  searchStore.clear()
+
+  const filterData = {
+    categories: Array.from(selectedCategories.value),
+    authors: Array.from(selectedAuthors.value),
+    dates: Array.from(selectedDates.value),
+  }
+  console.log('Applying filters:', filterData)
+
+  modelStore.filterBy(filterData, sortOption.value)
+}
+
+const clearFilters = () => {
+  selectedAuthors.value = new Set()
+  selectedDates.value = new Set()
+  selectedCategories.value = new Set(['All'])
+  applyFilters()
+}
+
+function toggleCategory(categoryOption) {
+  if (categoryOption === 'All') {
+    selectedCategories.value = new Set(['All'])
+  } else {
+    selectedCategories.value.delete('All')
+    if (selectedCategories.value.has(categoryOption)) {
+      selectedCategories.value.delete(categoryOption)
+    } else {
+      selectedCategories.value.add(categoryOption)
+    }
+  }
+
+  // selectedCategories.value = new Set(selectedCategories.value)
+  applyFilters()
+}
+
+function toggleAuthor(authorOption) {
+  if (selectedAuthors.value.has(authorOption)) {
+    selectedAuthors.value.delete(authorOption)
+  } else {
+    selectedAuthors.value.add(authorOption)
+  }
+
+  // selectedAuthors.value = new Set(selectedAuthors.value)
+  applyFilters()
+}
+
+function toggleDate(dateOption) {
+  if (selectedDates.value.has(dateOption)) {
+    selectedDates.value.delete(dateOption)
+  } else {
+    selectedDates.value.add(dateOption)
+  }
+  // selectedDates.value = new Set(selectedDates.value)
+  applyFilters()
+}
+
+function clearAuthor() {
+  selectedAuthors.value = new Set()
+  applyFilters()
+}
+
+function clearDate() {
+  selectedDates.value = new Set()
+  applyFilters()
+}
+
+function clearCategories() {
+  selectedCategories.value = new Set(['All'])
+  applyFilters()
+}
+
+function applySort(option) {
+  sortOption.value = option
+  if (searchStore.query) {
+    searchStore.sortResults(option, searchStore.searchedModels)
+  } else {
+    modelStore.sortByField(option)
+  }
 }
 </script>
 
