@@ -22,9 +22,10 @@
           <!-- Main row -->
           <q-tr :props="props">
             <q-td v-for="col in props.cols" :key="col.name" :props="props" align="center">
-              <!-- Actions column -->
-              <template v-if="col.name === 'actions'">
-                <q-btn flat size="sm" icon="expand_more" @click="props.expand = !props.expand" />
+              <template v-if="col.name === 'issues'">
+                <span>
+                  {{ props.row.issues.map((issue) => issue.field).join(', ') }}
+                </span>
               </template>
 
               <!-- Resolution column -->
@@ -34,18 +35,6 @@
                     <q-icon name="priority_high" color="red" size="18px" />
                     <q-tooltip>Document Updated</q-tooltip>
                   </template>
-
-                  <!-- Always show "View Document" -->
-                  <q-btn
-                    flat
-                    dense
-                    round
-                    color="primary"
-                    icon="visibility"
-                    @click="viewDocument(props.row)"
-                  >
-                    <q-tooltip>View Document</q-tooltip>
-                  </q-btn>
 
                   <template v-if="!props.row.resolution">
                     <q-btn
@@ -69,6 +58,18 @@
                       <q-tooltip>Mark as False Positive</q-tooltip>
                     </q-btn>
                   </template>
+
+                  <template v-else>
+                    <span
+                      class="status-text"
+                      :class="{
+                        'text-orange': props.row.resolution === 'Confirmed Issue',
+                        'text-green': props.row.resolution === 'False Positive',
+                      }"
+                    >
+                      {{ props.row.resolution }}
+                    </span>
+                  </template>
                 </div>
               </template>
 
@@ -84,10 +85,19 @@
                 </span>
               </template>
 
-              <template v-else-if="col.name === 'issues'">
-                <span>
-                  {{ props.row.issues.map((issue) => issue.field).join(', ') }}
-                </span>
+              <!-- Actions column -->
+              <template v-else-if="col.name === 'actions'">
+                <q-btn
+                  flat
+                  dense
+                  round
+                  color="primary"
+                  icon="visibility"
+                  @click="viewDocument(props.row)"
+                >
+                  <q-tooltip>View Document</q-tooltip>
+                </q-btn>
+                <q-btn flat size="sm" icon="expand_more" @click="props.expand = !props.expand" />
               </template>
 
               <template v-else>
@@ -109,7 +119,6 @@
                     <i>- {{ issue.suggestion }}</i>
                   </li>
                 </ul>
-                <p><strong>Resolution:</strong> {{ props.row.resolution || 'Unassigned' }}</p>
                 <p><strong>Reviewed by:</strong> {{ props.row.reviewed_by || 'Unassigned' }}</p>
                 <p>
                   <strong>Reviewed at:</strong>
