@@ -30,7 +30,7 @@
               <!-- Resolution column -->
               <template v-else-if="col.name === 'resolution'">
                 <div class="flex items-center justify-center gap-2">
-                  <template v-if="props.row.status === 'Resolved'">
+                  <template v-if="props.row.status === 'Resolved' && !props.row.reviewed_at">
                     <q-icon name="priority_high" color="red" size="18px" />
                     <q-tooltip>Document Updated</q-tooltip>
                   </template>
@@ -69,18 +69,6 @@
                       <q-tooltip>Mark as False Positive</q-tooltip>
                     </q-btn>
                   </template>
-
-                  <template v-else>
-                    <span
-                      class="status-text"
-                      :class="{
-                        'text-orange': props.row.resolution === 'Confirmed Issue',
-                        'text-green': props.row.resolution === 'False Positive',
-                      }"
-                    >
-                      {{ props.row.resolution }}
-                    </span>
-                  </template>
                 </div>
               </template>
 
@@ -117,12 +105,19 @@
                 <p><strong>Issues:</strong></p>
                 <ul>
                   <li v-for="(issue, i) in props.row.issues" :key="i">
-                    <strong>{{ issue.field }}:</strong> {{ issue.issue }}
+                    <strong>{{ issue.field }}:</strong> {{ issue.issue }} <br />
+                    <i>- {{ issue.suggestion }}</i>
                   </li>
                 </ul>
+                <p><strong>Resolution:</strong> {{ props.row.resolution || 'Unassigned' }}</p>
                 <p><strong>Reviewed by:</strong> {{ props.row.reviewed_by || 'Unassigned' }}</p>
                 <p>
-                  <strong>Reviewed at:</strong> {{ props.row.reviewed_at || 'Not yet reviewed' }}
+                  <strong>Reviewed at:</strong>
+                  {{
+                    props.row.reviewed_at
+                      ? new Date(props.row.reviewed_at).toLocaleString()
+                      : 'Not yet reviewed'
+                  }}
                 </p>
 
                 <!-- Admin remarks input stays the same -->
@@ -185,7 +180,9 @@ import { ref, onMounted } from 'vue'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 
+const $q = useQuasar()
 const router = useRouter()
 const props = defineProps({
   documentId: { type: String, required: false },
@@ -197,7 +194,6 @@ const pagination = ref({ rowsPerPage: 10 })
 const columns = [
   { name: 'title', label: 'Title', field: 'title', align: 'center' },
   { name: 'issues', label: 'Issues', field: 'issues', align: 'center' },
-  { name: 'suggestion', label: 'Suggested Fix', field: 'suggestion', align: 'center' },
   { name: 'resolution', label: 'Resolution', field: 'resolution', align: 'center' },
   { name: 'status', label: 'Status', field: 'status', align: 'center' },
   { name: 'actions', label: 'Actions', field: 'actions', align: 'center' },
@@ -205,7 +201,7 @@ const columns = [
 
 const userStore = useUserStore()
 const confirmDialog = ref({ show: false, action: '', row: null })
-const user = userStore.user
+const user = `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
 
 // Load inconsistencies from Supabase
 const loadInconsistencies = async () => {
@@ -220,8 +216,23 @@ const loadInconsistencies = async () => {
   if (error) {
     console.error('Error fetching inconsistencies:', error)
   } else {
-    inconsistencies.value = data
+    inconsistencies.value = sortInconsistencies(data)
   }
+}
+
+const sortInconsistencies = (data) => {
+  return data.sort((a, b) => {
+    const aPriority = getRowPriority(a)
+    const bPriority = getRowPriority(b)
+    return aPriority - bPriority
+  })
+}
+
+const getRowPriority = (row) => {
+  if (row.status === 'Resolved' && !row.reviewed_at) return 0
+  if (row.status === 'Open') return 1
+  if (row.status === 'Resolved' && row.reviewed_at) return 2
+  return 3 // fallback
 }
 
 const openConfirmDialog = (row, action) => {
@@ -236,7 +247,8 @@ const confirmAction = async () => {
     .from('inconsistencies')
     .update({
       resolution: action,
-      reviewed_by: user.value.name,
+      status: 'Resolved',
+      reviewed_by: user,
       reviewed_at: new Date().toISOString(),
     })
     .eq('id', row.id)
@@ -245,8 +257,9 @@ const confirmAction = async () => {
     console.error('Error updating resolution:', error)
   } else {
     row.resolution = action
-    row.reviewed_by = user.value.name
+    row.reviewed_by = user
     row.reviewed_at = new Date().toISOString()
+    inconsistencies.value = sortInconsistencies(inconsistencies.value)
   }
 
   confirmDialog.value.show = false
@@ -258,7 +271,7 @@ const saveRemarks = async (row) => {
     .from('inconsistencies')
     .update({
       admin_remarks: row.admin_remarks,
-      reviewed_by: user.value.name,
+      reviewed_by: user,
       reviewed_at: new Date().toISOString(),
     })
     .eq('id', row.id)
@@ -278,10 +291,11 @@ const manualRescan = async () => {
 
     const result = await response.json()
     if (result.success) {
-      console.log('Rescan completed')
+      $q.notify({ type: 'positive', message: 'Rescan Successful!' })
       await loadInconsistencies()
     } else {
-      console.error('Rescan failed:', result.error)
+      console.log('Rescan failed: ' + result.error)
+      $q.notify({ type: 'negative', message: 'Rescan failed: ' + result.error })
     }
   } catch (err) {
     console.error('Error during manual rescan:', err)
