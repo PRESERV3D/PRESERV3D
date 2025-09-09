@@ -354,7 +354,7 @@
           </q-card-actions>
         </q-card>
       </q-dialog>
-      <div>
+      <!-- <div>
         <div class="q-mt-lg">
           <q-table
             class="incomplete-box"
@@ -365,7 +365,7 @@
             :columns="incompleteColumns"
             row-key="id"
           >
-            <!-- clickable link cell -->
+
             <template v-slot:body-cell-materialLink="props">
               <q-td :props="props">
                 <a :href="props.row.materialLink" target="_blank">
@@ -386,7 +386,7 @@
             </template>
           </q-table>
         </div>
-      </div>
+      </div> -->
     </div>
   </q-page>
 </template>
@@ -818,66 +818,66 @@ function generateTempPassword(length = 12) {
 }
 
 //Sample backend for Incomplete metadata
-const incompleteColumns = [
-  {
-    name: 'materialNo',
-    label: 'Archival Material No.',
-    align: 'center',
-    field: 'materialNo',
-  },
-  {
-    name: 'materialType',
-    label: 'Archival Material Type',
-    align: 'center',
-    field: 'materialType',
-  },
-  {
-    name: 'materialName',
-    label: 'Archival Material Name',
-    align: 'center',
-    field: 'materialName',
-  },
-  {
-    name: 'materialIncompleteData',
-    label: 'Incomplete Data',
-    align: 'center',
-    field: 'materialIncompleteData',
-  },
+// const incompleteColumns = [
+//   {
+//     name: 'materialNo',
+//     label: 'Archival Material No.',
+//     align: 'center',
+//     field: 'materialNo',
+//   },
+//   {
+//     name: 'materialType',
+//     label: 'Archival Material Type',
+//     align: 'center',
+//     field: 'materialType',
+//   },
+//   {
+//     name: 'materialName',
+//     label: 'Archival Material Name',
+//     align: 'center',
+//     field: 'materialName',
+//   },
+//   {
+//     name: 'materialIncompleteData',
+//     label: 'Incomplete Data',
+//     align: 'center',
+//     field: 'materialIncompleteData',
+//   },
 
-  {
-    name: 'materialLink',
-    label: 'Archival Material Link',
-    align: 'center',
-    field: 'materialLink',
-  },
-]
+//   {
+//     name: 'materialLink',
+//     label: 'Archival Material Link',
+//     align: 'center',
+//     field: 'materialLink',
+//   },
+// ]
 
-const incompleteRows = ref([
-  {
-    id: 1,
-    materialNo: 'AM-001',
-    materialType: 'Document',
-    materialName: 'Annual Report',
-    materialIncompleteData: 'Author, Date',
-    materialLink: 'http://example.com/notes',
-  },
-  {
-    id: 2,
-    materialNo: 'AM-002',
-    materialType: 'Artifact',
-    materialName: 'Cat Toy',
-    materialIncompleteData: 'Description',
-    materialLink: 'http://example.com/cattoy',
-  },
-  {
-    id: 3,
-    materialNo: 'AM-003',
-    materialType: 'Artifact',
-    materialName: 'Campus Plaque',
-    materialIncompleteData: 'Author',
-    materialLink: 'http://example.com/campus',
-  },
-])
+// const incompleteRows = ref([
+//   {
+//     id: 1,
+//     materialNo: 'AM-001',
+//     materialType: 'Document',
+//     materialName: 'Annual Report',
+//     materialIncompleteData: 'Author, Date',
+//     materialLink: 'http://example.com/notes',
+//   },
+//   {
+//     id: 2,
+//     materialNo: 'AM-002',
+//     materialType: 'Artifact',
+//     materialName: 'Cat Toy',
+//     materialIncompleteData: 'Description',
+//     materialLink: 'http://example.com/cattoy',
+//   },
+//   {
+//     id: 3,
+//     materialNo: 'AM-003',
+//     materialType: 'Artifact',
+//     materialName: 'Campus Plaque',
+//     materialIncompleteData: 'Author',
+//     materialLink: 'http://example.com/campus',
+//   },
+// ])
 </script>
 
 <style scoped>
@@ -1065,12 +1065,12 @@ const incompleteRows = ref([
   width: 25rem;
 }
 
-.incomplete-see-all {
+/* .incomplete-see-all {
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
   font-size: 14px;
   color: #880000;
   height: 2rem;
   width: 6rem;
-}
+} */
 </style>
