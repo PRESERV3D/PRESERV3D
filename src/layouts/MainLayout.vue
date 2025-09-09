@@ -241,8 +241,8 @@ import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
 import { useDocumentsStore } from 'src/stores/documentsStore'
-import { useDocumentsFilter } from 'src/utils/useFiltering'
-const { clearFilters } = useDocumentsFilter()
+import { useFiltering } from 'src/utils/useFiltering'
+const { clearFilters } = useFiltering()
 
 const $q = useQuasar()
 const userStore = useUserStore()
