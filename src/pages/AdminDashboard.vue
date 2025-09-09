@@ -409,6 +409,7 @@ import {
 } from 'chart.js'
 
 let chartInstance = null
+let usersChartInstance = null
 const activeFilter = ref('all')
 const uploadedArchives = ref(null)
 const usersPerMonth = ref(null)
@@ -475,11 +476,15 @@ const generateReport = async () => {
 }
 
 onMounted(async () => {
-  const chartData = await prepareChartData()
-  const usersData = await prepareUsersData()
+  if (usersPerMonth.value) {
+    const usersData = await prepareUsersData()
+    initUsersPerMonthChart(usersData)
+  }
 
-  initChart(chartData)
-  initUsersPerMonthChart(usersData)
+  if (uploadedArchives.value) {
+    const chartData = await prepareChartData()
+    initChart(chartData)
+  }
 
   const { data: topArts } = await supabase.from('artifacts_view').select('*').limit(3)
   const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
@@ -577,6 +582,8 @@ async function prepareChartData() {
 function updateChart(allData) {
   let datasets = []
 
+  if (!uploadedArchives.value) return
+
   if (activeFilter.value === 'all' || activeFilter.value === 'artifacts') {
     datasets.push({
       label: 'Artifacts',
@@ -609,8 +616,6 @@ watch(activeFilter, async () => {
 })
 
 // Users Per Month Chart
-let usersChartInstance = null
-
 function initUsersPerMonthChart(data) {
   usersChartInstance = new Chart(usersPerMonth.value, {
     type: 'line',
@@ -667,6 +672,8 @@ async function prepareUsersData() {
 }
 
 function updateUsersChart(data) {
+  if (!usersPerMonth.value) return
+
   const datasets = [
     {
       label: 'Students',
