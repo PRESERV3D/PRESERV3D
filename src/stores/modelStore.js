@@ -49,41 +49,93 @@ export const useModelStore = defineStore('modelStore', {
         return acc
       }, {})
     },
-    sortBy(field, order = 'asc') {
-      const getValue = (mod) => {
-        if (field === 'title') return mod.metadata.title.toLowerCase() || ''
-        if (field === 'uploaded_at') return new Date(mod.uploaded_at)
-        return mod[field]
-      }
+    // sortBy(field, order = 'asc') {
+    //   const getValue = (mod) => {
+    //     if (field === 'title') return mod.metadata.title.toLowerCase() || ''
+    //     if (field === 'uploaded_at') return new Date(mod.uploaded_at)
+    //     return mod[field]
+    //   }
 
-      this.filteredModels = [...this.filteredModels].sort((a, b) => {
-        const valA = getValue(a)
-        const valB = getValue(b)
+    //   this.filteredModels = [...this.filteredModels].sort((a, b) => {
+    //     const valA = getValue(a)
+    //     const valB = getValue(b)
 
-        if (valA < valB) return order === 'asc' ? -1 : 1
-        if (valA > valB) return order === 'asc' ? 1 : -1
-        return 0
-      })
-    },
+    //     if (valA < valB) return order === 'asc' ? -1 : 1
+    //     if (valA > valB) return order === 'asc' ? 1 : -1
+    //     return 0
+    //   })
+    // },
 
-    filterBy({ category, author, date }) {
+    filterBy({ categories, authors, dates }, currentSort) {
       this.filteredModels = this.models.filter((mod) => {
         const meta = mod.metadata || {}
 
         const matchesCategory =
-          !category ||
+          !categories.length ||
+          categories.includes('All') ||
           (Array.isArray(meta.categories) &&
-            meta.categories.some((c) => c.toLowerCase() === category.toLowerCase()))
+            meta.categories.some((c) =>
+              categories.map((cat) => cat.toLowerCase()).includes(c.toLowerCase()),
+            ))
 
         const matchesAuthor =
-          !author || (meta.author && meta.author.toLowerCase().includes(author.toLowerCase()))
+          !authors.length ||
+          (meta.author &&
+            meta.author
+              .split(',')
+              .some((a) => authors.map((au) => au.toLowerCase()).includes(a.trim().toLowerCase())))
 
-        const matchesDate = !date || (meta.date && meta.date.startsWith(date)) // year-only match
+        const matchesDate =
+          !dates.length || (meta.date && dates.some((d) => meta.date.startsWith(d)))
 
         return matchesCategory && matchesAuthor && matchesDate
       })
-    },
 
+      if (currentSort) {
+        this.sortByField(currentSort)
+      }
+    },
+    sortSettings(sort) {
+      switch (sort) {
+        case 'Newest':
+          return { field: 'uploaded_at', order: 'desc' }
+        case 'Oldest':
+          return { field: 'uploaded_at', order: 'asc' }
+        case 'Title A-Z':
+          return { field: 'title', order: 'asc' }
+        case 'Title Z-A':
+          return { field: 'title', order: 'desc' }
+        default:
+          return { field: null, order: 'asc' }
+      }
+    },
+    sortByField(sort) {
+      console.log('Sorting artifacts by:', sort)
+      const { field, order } = this.sortSettings(sort)
+      if (!field) return
+
+      this.sortBy(field, order)
+    },
+    sortBy(field, order) {
+      const getValue = (mod) => {
+        if (field === 'title') return (mod.metadata?.title || '').trim().toLowerCase()
+        if (field === 'uploaded_at') return new Date(mod.uploaded_at || 0)
+        return mod[field]
+      }
+
+      this.filteredModels.sort((a, b) => {
+        const valA = getValue(a)
+        const valB = getValue(b)
+
+        if (field === 'title')
+          return (
+            valA.localeCompare(valB, undefined, { sensitivity: 'base' }) *
+            (order === 'asc' ? 1 : -1)
+          )
+        if (field === 'uploaded_at') return (valA - valB) * (order === 'asc' ? 1 : -1)
+        return 0
+      })
+    },
     resetFilters() {
       this.filteredModels = this.models
     },
