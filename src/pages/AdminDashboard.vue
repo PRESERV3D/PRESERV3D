@@ -477,20 +477,34 @@ const generateReport = async () => {
 onMounted(async () => {
   const chartData = await prepareChartData()
   const usersData = await prepareUsersData()
+
+  initChart(chartData)
+  initUsersPerMonthChart(usersData)
+
   const { data: topArts } = await supabase.from('artifacts_view').select('*').limit(3)
   const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
+  const { count: artifactsCount } = await supabase
+    .from('artifacts_metadata')
+    .select('*', { count: 'exact', head: true })
+
+  const { count: documentsCount } = await supabase
+    .from('documents_metadata')
+    .select('*', { count: 'exact', head: true })
+
+  const { count: userCount } = await supabase
+    .from('all_users')
+    .select('*', { count: 'exact', head: true })
+    .neq('user_type', 'admin')
+
   await recentStore.fetchRecentUploads()
 
   topArtifacts.value = topArts
   topDocuments.value = topDocus
 
   // Update counts from chartData and usersData
-  artifacts.value = chartData.artifactsCounts.reduce((sum, val) => sum + val, 0)
-  documents.value = chartData.documentsCounts.reduce((sum, val) => sum + val, 0)
-  users.value = usersData.usersCounts.reduce((sum, val) => sum + val, 0)
-
-  initChart(chartData)
-  initUsersPerMonthChart(usersData)
+  artifacts.value = artifactsCount
+  documents.value = documentsCount
+  users.value = userCount
 
   await fetchVisitors()
 })
@@ -595,19 +609,14 @@ watch(activeFilter, async () => {
 })
 
 // Users Per Month Chart
+let usersChartInstance = null
+
 function initUsersPerMonthChart(data) {
-  new Chart(usersPerMonth.value, {
+  usersChartInstance = new Chart(usersPerMonth.value, {
     type: 'line',
     data: {
       labels: monthLabels,
-      datasets: [
-        {
-          label: 'Users per Month',
-          data: data.usersCounts,
-          borderColor: '#880000',
-          fill: false,
-        },
-      ],
+      datasets: [], // will be filled by updateUsersChart
     },
     options: {
       responsive: true,
@@ -625,25 +634,65 @@ function initUsersPerMonthChart(data) {
       },
     },
   })
+
+  updateUsersChart(data)
 }
 
 async function prepareUsersData() {
-  const { data: users } = await supabase.from('registered_users').select('created_at')
+  const { data: users } = await supabase.from('all_users').select('created_at, user_type')
 
-  // Process the user data to get counts per month
-  const usersCounts = Array(12).fill(0)
-  function incrementCount(data, counter) {
-    data.forEach((item) => {
-      const date = new Date(item.created_at)
-      const monthIndex = date.getMonth()
-      counter[monthIndex]++
-    })
-  }
+  // Initialize counters for each user type
+  const studentCounts = Array(12).fill(0)
+  const facultyCounts = Array(12).fill(0)
+  const visitorCounts = Array(12).fill(0)
 
-  incrementCount(users, usersCounts)
+  users.forEach((user) => {
+    const date = new Date(user.created_at)
+    const monthIndex = date.getMonth()
+
+    if (user.user_type === 'student') {
+      studentCounts[monthIndex]++
+    } else if (user.user_type === 'faculty') {
+      facultyCounts[monthIndex]++
+    } else if (user.user_type === 'visitor') {
+      visitorCounts[monthIndex]++
+    }
+  })
 
   return {
-    usersCounts,
+    studentCounts,
+    facultyCounts,
+    visitorCounts,
+  }
+}
+
+function updateUsersChart(data) {
+  const datasets = [
+    {
+      label: 'Students',
+      data: data.studentCounts,
+      borderColor: '#880000',
+      fill: false,
+    },
+    {
+      label: 'Faculty',
+      data: data.facultyCounts,
+      borderColor: '#efaf00',
+      fill: false,
+    },
+    {
+      label: 'Visitors',
+      data: data.visitorCounts,
+      borderColor: '#3d86ff',
+      fill: false,
+    },
+  ]
+
+  if (usersChartInstance) {
+    usersChartInstance.data.datasets = datasets
+    usersChartInstance.update()
+  } else {
+    initUsersPerMonthChart(data)
   }
 }
 
