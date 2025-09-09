@@ -247,12 +247,11 @@
             <model-viewer
               :src="model.file_url"
               loading="lazy"
-              auto-rotate
-              auto-rotate-delay="1500"
-              rotation-per-second="10deg"
               shadow-intensity="1"
               class="artifacts"
               style="width: 100%; height: 400px"
+              @pointerenter="startRotate"
+              @pointerleave="stopRotate"
             />
           </div>
 
@@ -446,6 +445,19 @@ if (userStore.profile.role === undefined) {
 
 const userRole = userStore.profile.role
 const isAdmin = computed(() => userRole === 'admin')
+
+function startRotate(e) {
+  const el = e.target
+  el.autoRotate = true
+  el.rotationPerSecond = '10deg'
+  el.autoRotateDelay = 0
+}
+
+function stopRotate(e) {
+  const el = e.target
+  el.autoRotate = false
+  el.cameraOrbit = '0deg 75deg 105%' // Reset back to original orientation
+}
 
 const sortedModels = computed(() => {
   const models = [...filteredModels.value]
