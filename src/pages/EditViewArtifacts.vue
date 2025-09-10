@@ -480,11 +480,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -612,8 +612,8 @@ const deleteErrorMessage = ref('')
 // }
 
 // Fetch categories from Supabase when dialog opens or on mount
-async function loadCategories() {
-  const artifactCategories = editableCategories.value || []
+async function loadCategories(artifacts) {
+  const artifactCategories = artifacts?.metadata?.categories || []
   const { data, error } = await supabase.from('categories').select('id, type, category')
 
   if (error) {
@@ -994,9 +994,7 @@ onMounted(async () => {
   }
 
   loading.value = false
-  if (model.value) {
-    await loadCategories()
-  }
+  loadCategories(data)
 })
 
 // Related Links
