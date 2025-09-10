@@ -525,7 +525,7 @@ const showNotifyDialog = (title, message) => {
   notifyDialogOpen.value = true
 }
 
-// FIXED: Load collections from Supabase
+// Load collections from Supabase
 async function loadCollections(userId) {
   isLoading.value = true
   try {
@@ -552,7 +552,7 @@ async function loadCollections(userId) {
   isLoading.value = false
 }
 
-// FIXED: Load recent views with proper database fields and error handling
+// Load recent views with proper database fields and error handling
 async function loadRecentViews(userId) {
   try {
     const { data, error } = await supabase
@@ -584,7 +584,7 @@ async function loadRecentViews(userId) {
           .in('id', documentIds)
       : { data: [] }
 
-    // ADDED: Fetch user favorites and bookmarks
+    // Fetch user favorites and bookmarks
     const { data: favoritesCollection, error: favError } = await supabase
       .from('collections')
       .select('collection_id')
@@ -630,12 +630,11 @@ async function loadRecentViews(userId) {
       })
       .filter(Boolean)
   } catch (err) {
-    // ADDED: Better error handling
     console.error('Error loading recent views:', err)
   }
 }
 
-// FIXED: Load models with proper database structure and error handling
+// Load models with proper database structure and error handling
 async function loadModels() {
   isLoadingModels.value = true
   try {
@@ -709,7 +708,6 @@ async function loadModels() {
       }
     }
 
-    // Add some mock data for demonstration compatibility
     const enhancedModels = data.map((model) => ({
       ...model,
       bookmarked: bookmarkedIds.includes(model.id),
@@ -1060,7 +1058,7 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
       showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
     }
 
-    // FIXED: Get star count
+    // Get star count
     const { data: metaCheck, error: metaError } = await supabase
       .from('artifacts_metadata')
       .select('id')
@@ -1088,7 +1086,7 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
   }
 }
 
-// ADDED: Toggle favorites - recently viewed items
+// Toggle favorites - recently viewed items
 const toggleFavoriteRecents = async (item, itemType) => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id

@@ -769,7 +769,7 @@ async function removeItem() {
   await fetchCollectionItems()
 }
 
-// FIXED: Toggle favorite
+// Toggle favorite icon
 const toggleFavorite = async (itemId, itemType) => {
   const model =
     itemType === 'artifact'
@@ -845,7 +845,7 @@ const toggleFavorite = async (itemId, itemType) => {
       model.starred = false
       showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
 
-      // FIXED: Remove from displayed list if unstarred
+      // Remove from displayed list if unstarred
       if (collection.value?.collection_name === 'Favorites') {
         if (itemType === 'document') {
           documents.value = documents.value.filter((doc) => doc.id !== itemId)
