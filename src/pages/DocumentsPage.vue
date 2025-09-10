@@ -611,8 +611,8 @@ onMounted(async () => {
     const enhancedTopDocs =
       topDocus?.map((doc) => ({
         ...doc,
-        starred: favoriteIds.includes(doc.id), // Make sure to use the correct ID field
-        bookmarked: false, // Add this too for consistency
+        starred: favoriteIds.includes(doc.id),
+        bookmarked: false,
       })) || []
 
     topDocuments.value = enhancedTopDocs
@@ -705,7 +705,7 @@ const fetchAllDocuments = async () => {
       return
     }
 
-    // ADDED: Fetch Favorites collection items
+    // Fetch Favorites collection items
     const { data: authData } = await supabase.auth.getUser()
 
     const userId = authData?.user?.id
@@ -763,7 +763,6 @@ const fetchAllDocuments = async () => {
       }
     }
 
-    // Add some mock data for demonstration compatibility
     const enhancedDocs = data.map((docs) => ({
       ...docs,
       bookmarked: bookmarkedIds.includes(docs.id),

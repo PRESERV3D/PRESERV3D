@@ -34,7 +34,6 @@ export const useModelStore = defineStore('modelStore', {
       }, {})
     },
     async fetchStarCounts() {
-      // ADDED: Fetch star counts
       const { data, error } = await supabase
         .from('artifacts_star_count')
         .select('item_id, star_count')

@@ -567,7 +567,7 @@ const setItemsToShow = (value) => {
   itemsToShow.value = value
 }
 
-// ADDED: Toggle favorite icon
+// Toggle favorite icon
 const toggleFavorite = async (model, itemType = 'artifact') => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
