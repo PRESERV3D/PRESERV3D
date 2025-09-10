@@ -318,7 +318,7 @@
               <router-link
                 :to="{ name: 'view-artifact', params: { id: model.id } }"
                 class="artifact-title-link"
-                @click="logClick(model.id, 'artifact')"
+                @click="logClick(model.id, 'artifact', 'view_artifact')"
               >
                 <div class="text-subtitle2 artifact-title">
                   {{ model.metadata?.title || model.file_name }}
@@ -507,6 +507,7 @@ if (userStore.profile.role === undefined) {
 
 const userRole = userStore.profile.role
 const isAdmin = computed(() => userRole === 'admin')
+const userType = computed(() => userStore.profile.user_type || 'Unknown')
 
 function startRotate(e) {
   const el = e.target
@@ -816,7 +817,7 @@ const showNotifyDialog = (title, message) => {
   notifyDialogOpen.value = true
 }
 
-async function logClick(itemId, itemType) {
+async function logClick(itemId, itemType, action) {
   if (!isAdmin.value) {
     const { data: authData, error: authError } = await supabase.auth.getUser()
     const userId = authData?.user?.id
@@ -833,17 +834,15 @@ async function logClick(itemId, itemType) {
         item_id: itemId,
         title: model.title || 'Untitled',
         item_type: itemType,
+        user_type: userType.value,
+        action: action,
         clicked_at: new Date().toISOString(),
       })
 
       if (error) {
         throw error
-      }
-
-      if (error) {
-        console.error('Error logging click:', error)
       } else {
-        console.log('Click Logged')
+        console.log(`Click logged by ${userType.value} for ${action} action`)
       }
     } catch (err) {
       console.error('Error logging click:', err)
