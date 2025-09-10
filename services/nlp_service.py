@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer, util
+from deepdiff import DeepDiff
 
 app = FastAPI()
 
@@ -84,7 +85,7 @@ async def process_pdf(
                 summary = "Summary not available"
 
             # Check for inconsistencies
-            issues = detect_inconsistencies(metadata)
+            issues = detect_inconsistencies(metadata, source_type="document")
             log_inconsistencies(metadata.get("file_name"), issues)
 
             return {
@@ -513,7 +514,7 @@ def generate_summary(text, title=None, author=None, date=None, keywords=None, ca
 
 @app.post("/generate-summary/{doc_id}")
 def generate_summary_endpoint(doc_id: str):
-    # 1. Fetch metadata
+    # Fetch metadata
     doc = supabase.table("documents_metadata").select("*").eq("id", doc_id).single().execute()
     if not doc.data:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -522,7 +523,7 @@ def generate_summary_endpoint(doc_id: str):
     extracted_text = metadata.get("extracted_text")
     file_url = doc.data.get("file_url")
 
-    # 2. Re-extract text if missing
+    # Re-extract text if missing
     if not extracted_text or extracted_text.strip() == "":
         try:
             file_bytes = download_file(file_url)
@@ -541,7 +542,7 @@ def generate_summary_endpoint(doc_id: str):
 
         extracted_text = extracted_result
 
-    # 3. Generate summary
+    # Generate summary
     summary = generate_summary(
         text=extracted_text,
         title=metadata.get("title"),
@@ -551,7 +552,7 @@ def generate_summary_endpoint(doc_id: str):
         categories=metadata.get("categories", [])
     )
 
-    # 4. Return summary without saving
+    # Return summary without saving
     return {"id": doc_id, "summary": summary}
 
 def download_file(file_url: str) -> bytes:
@@ -572,7 +573,7 @@ def download_file(file_url: str) -> bytes:
     else:
         raise ValueError(f"Unknown file storage provider for {file_url}")
 
-def detect_inconsistencies(metadata):
+def detect_inconsistencies(metadata, source_type="document"):
     issues = []
 
     # Title
@@ -580,7 +581,7 @@ def detect_inconsistencies(metadata):
         issues.append({
             "field": "title",
             "issue": "Missing or unknown title",
-            "suggestion": "Add a clear, descriptive title summarizing the document."
+            "suggestion": "Add a clear, descriptive title summarizing the item."
         })
 
     # Author
@@ -597,9 +598,9 @@ def detect_inconsistencies(metadata):
         issues.append({
             "field": "date",
             "issue": "Missing or unknown date",
-            "suggestion": "Add the publication or creation date in YYYY-MM-DD format."
+            "suggestion": "Add the creation or publication date."
         })
-    else:
+    elif source_type == "document":  # only documents get validity checks
         try:
             parsed = date_parse(date_val)
             if parsed.year > 2025:
@@ -623,16 +624,90 @@ def detect_inconsistencies(metadata):
             "suggestion": "Assign at least one relevant category."
         })
 
-    # Summary relevance
-    summary_issue = check_summary_relevance(metadata.get("title", ""), metadata.get("summary", ""))
-    if summary_issue:
-        issues.append(summary_issue)
+    # Summary relevance → only for documents
+    if source_type == "document":
+        summary_issue = check_summary_relevance(
+            metadata.get("title", ""),
+            metadata.get("summary", "")
+        )
+        if summary_issue:
+            issues.append(summary_issue)
 
     return issues
 
-
 # Load sentence transformer model once
 model = SentenceTransformer('all-MiniLM-L6-v2')
+
+def save_inconsistencies(
+    record_id,
+    metadata,
+    supabase,
+    source_type,
+    **extra_fields  # catch optional stuff like file_name, file_url, etc.
+):
+    # Detect issues
+    issues_raw = detect_inconsistencies(metadata, source_type=source_type)
+    merged_issues = [
+        {
+            "field": issue.get("field"),
+            "issue": issue.get("issue"),
+            "suggestion": issue.get("suggestion")
+        }
+        for issue in issues_raw
+    ]
+
+    # Check if inconsistencies already exist for this record
+    existing = supabase.table("inconsistencies") \
+        .select("*") \
+        .eq("record_id", record_id) \
+        .eq("source_type", source_type) \
+        .execute()
+
+    if merged_issues:
+        row_data = {
+            "record_id": record_id,
+            "source_type": source_type,
+            "title": metadata.get("title"),
+            "issues": merged_issues,
+            "last_scanned_at": datetime.utcnow().isoformat(),
+            **extra_fields  # adds file_name, file_url, etc.
+        }
+
+        if existing.data:
+            existing_row = existing.data[0]
+            if existing_row["issues"] != merged_issues:
+                # Re-open if new issues appear or existing ones changed
+                supabase.table("inconsistencies").update({
+                    "issues": merged_issues,
+                    "status": "Open",
+                    "updated_at": datetime.utcnow().isoformat(),
+                    "resolved_at": None,  # clear resolved_at if re-opened
+                }).eq("record_id", record_id) \
+                  .eq("source_type", source_type) \
+                  .execute()
+            else:
+                # Just refresh scan timestamp
+                supabase.table("inconsistencies").update({
+                    "last_scanned_at": datetime.utcnow().isoformat()
+                }).eq("record_id", record_id) \
+                  .eq("source_type", source_type) \
+                  .execute()
+        else:
+            # Insert new row
+            supabase.table("inconsistencies").insert({
+                **row_data,
+                "status": "Open",
+                "created_at": datetime.utcnow().isoformat()
+            }).execute()
+    else:
+        # No issues → resolve if not already
+        if existing.data and existing.data[0]["status"] != "Resolved":
+            supabase.table("inconsistencies").update({
+                "status": "Resolved",
+                "resolved_at": datetime.utcnow().isoformat()
+            }).eq("record_id", record_id) \
+              .eq("source_type", source_type) \
+              .execute()
 
 def check_summary_relevance(title, summary, keywords=None, categories=None, author=None, date=None):
     metadata = {
@@ -698,87 +773,91 @@ url = os.getenv("VITE_SUPABASE_URL")
 key = os.getenv("VITE_SUPABASE_ANON_KEY")
 supabase: Client = create_client(url, key)
 
-def log_inconsistencies(file_name, issues):
+def log_inconsistencies(record_id, source_type, file_name, issues):
     if not issues:
         return
-    
-    for issue in issues:
-        supabase.table("inconsistencies").insert({
+
+    merged_issues = [
+        {
+            "field": issue.get("field"),
+            "issue": issue.get("issue"),
+            "suggestion": issue.get("suggestion")
+        }
+        for issue in issues
+    ]
+
+    existing = supabase.table("inconsistencies") \
+        .select("*") \
+        .eq("record_id", record_id) \
+        .eq("source_type", source_type) \
+        .execute()
+
+    if merged_issues:
+        row_data = {
+            "record_id": record_id,
+            "source_type": source_type,
             "file_name": file_name,
-            "issue": issue
-        }).execute()
+            "issues": merged_issues,
+            "last_scanned_at": datetime.utcnow().isoformat()
+        }
 
-@app.post("/rescan-documents")
-async def rescan_documents():
-    try:
-        docs = supabase.table("documents_metadata").select("*").execute()
-        if not docs.data:
-            return {"success": True, "message": "No documents to scan."}
-
-        for doc in docs.data:
-            metadata_json = doc.get("metadata") or {}
-
-            title = metadata_json.get("title")
-            author = metadata_json.get("author")
-            date = metadata_json.get("date")
-            summary = metadata_json.get("summary")
-            keywords = metadata_json.get("keywords", [])
-            categories = metadata_json.get("categories", [])
-
-            issues_raw = detect_inconsistencies({
-                "title": title,
-                "author": author,
-                "date": date,
-                "summary": summary,
-                "keywords": keywords,
-                "categories": categories
-            })
-
-            merged_issues = [
-                {
-                    "field": issue.get("field"),
-                    "issue": issue.get("issue"),
-                    "suggestion": issue.get("suggestion")
-                }
-                for issue in issues_raw
-            ]
-
-            existing = supabase.table("inconsistencies").select("*").eq("document_id", doc["id"]).execute()
-
-            if merged_issues:
-                row_data = {
-                    "document_id": doc["id"],
-                    "file_name": doc.get("file_name"),
-                    "file_url": doc.get("file_url"),
-                    "title": title,
+        if existing.data:
+            if existing.data[0]["issues"] != merged_issues:
+                supabase.table("inconsistencies").update({
                     "issues": merged_issues,
-                    "last_scanned_at": datetime.utcnow().isoformat()
-                }
-
-                if existing.data:
-                    if existing.data[0]["issues"] != merged_issues:
-                        supabase.table("inconsistencies").update({
-                            "issues": merged_issues,
-                            "status": "Open",
-                            "updated_at": datetime.utcnow().isoformat()
-                        }).eq("document_id", doc["id"]).execute()
-                    else:
-                        supabase.table("inconsistencies").update({
-                            "last_scanned_at": datetime.utcnow().isoformat()
-                        }).eq("document_id", doc["id"]).execute()
-                else:
-                    # Insert new record
-                    supabase.table("inconsistencies").insert({
-                        **row_data,
-                        "status": "Open",
-                        "created_at": datetime.utcnow().isoformat()
-                    }).execute()
+                    "status": "Open",
+                    "updated_at": datetime.utcnow().isoformat()
+                }).eq("record_id", record_id).eq("source_type", source_type).execute()
             else:
-                if existing.data and existing.data[0]["status"] != "Resolved":
-                    supabase.table("inconsistencies").update({
-                        "status": "Resolved",
-                        "resolved_at": datetime.utcnow().isoformat()
-                    }).eq("document_id", doc["id"]).execute()
+                supabase.table("inconsistencies").update({
+                    "last_scanned_at": datetime.utcnow().isoformat()
+                }).eq("record_id", record_id).eq("source_type", source_type).execute()
+        else:
+            supabase.table("inconsistencies").insert({
+                **row_data,
+                "status": "Open",
+                "created_at": datetime.utcnow().isoformat()
+            }).execute()
+    else:
+        if existing.data and existing.data[0]["status"] != "Resolved":
+            supabase.table("inconsistencies").update({
+                "status": "Resolved",
+                "resolved_at": datetime.utcnow().isoformat()
+            }).eq("record_id", record_id).eq("source_type", source_type).execute()
+
+@app.post("/rescan-metadata")
+async def rescan_metadata():
+    try:
+        # Scan both tables
+        sources = [
+            {"table": "documents_metadata", "type": "document"},
+            {"table": "artifacts_metadata", "type": "artifact"}
+        ]
+
+        for source in sources:
+            rows = supabase.table(source["table"]).select("*").execute()
+            if not rows.data:
+                continue
+
+            for row in rows.data:
+                metadata_json = row.get("metadata") or {}
+
+                # Reuse the save function
+                save_inconsistencies(
+                    record_id=row["id"],
+                    metadata={
+                        "title": metadata_json.get("title"),
+                        "author": metadata_json.get("author"),
+                        "date": metadata_json.get("date"),
+                        "summary": metadata_json.get("summary"),
+                        "keywords": metadata_json.get("keywords", []),
+                        "categories": metadata_json.get("categories", [])
+                    },
+                    supabase=supabase,
+                    source_type=source["type"],  # tells if document or artifact
+                    file_name=row.get("file_name"),
+                    file_url=row.get("file_url"),
+                )
 
         return {"success": True, "error": None}
 
