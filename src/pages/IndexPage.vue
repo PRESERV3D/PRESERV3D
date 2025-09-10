@@ -54,12 +54,13 @@
                   class="view-icon"
                   @click="
                     () => {
-                      logClick(item.id, item.item_type)
+                      const action =
+                        item.item_type === 'artifact' ? 'view_artifact' : 'view_document'
+                      logClick(item.id, item.item_type, action)
                       viewItem(item)
                     }
                   "
                 />
-                <!-- FIXED: Added item_type parameter to star toggle -->
                 <q-btn
                   flat
                   round
@@ -109,7 +110,7 @@
                   <router-link
                     :to="{ name: 'view-artifact', params: { id: model.id } }"
                     class="artifact-title-link"
-                    @click="logClick(model.id, 'artifact')"
+                    @click="logClick(model.id, 'artifact', 'view_artifact')"
                   >
                     <div class="text-subtitle2 artifact-title">
                       {{ model.metadata?.title || model.file_name }}
@@ -473,6 +474,8 @@ const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
+const userType = computed(() => userStore.profile?.user_type || 'Unknown')
+
 // Initialize page
 onMounted(async () => {
   try {
@@ -746,7 +749,7 @@ function timeAgo(dateString) {
 }
 
 // Log click activity
-async function logClick(itemId, itemType) {
+async function logClick(itemId, itemType, action) {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
 
@@ -774,20 +777,22 @@ async function logClick(itemId, itemType) {
       item_id: itemId,
       title: itemData.title || itemData.metadata?.title || 'Untitled',
       item_type: itemType,
+      user_type: userType.value,
+      action: action,
       clicked_at: new Date().toISOString(),
     })
 
     if (error) {
-      console.error('Error logging click:', error)
+      throw error
     } else {
-      console.log('Click Logged')
+      console.log(`Click logged by ${userType.value} for ${action} action`)
     }
   } catch (err) {
     console.error('Error logging click:', err)
   }
 }
 
-// FIXED: View item with proper error handling from INDEX page
+// View item with proper error handling from INDEX page
 async function viewItem(item) {
   try {
     if (item.item_type === 'artifact') {
