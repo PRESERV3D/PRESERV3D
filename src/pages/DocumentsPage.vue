@@ -204,7 +204,7 @@
                 <div class="q-mt-xs q-mb-xs flex justify-evenly">
                   <router-link
                     :to="{ name: 'view-document', params: { id: doc.id } }"
-                    @click="logClick(doc.id, 'document')"
+                    @click="logClick(doc.id, 'document', 'view_document')"
                   >
                     <q-btn label="Read Now" class="now-read-btn" unelevated no-caps />
                   </router-link>
@@ -409,7 +409,7 @@
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
-                  @click="logClick(doc.id, 'document')"
+                  @click="logClick(doc.id, 'document', 'view_document')"
                 >
                   <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
                 </router-link>
@@ -575,8 +575,10 @@ if (userStore.profile.role === undefined) {
 
 const userRole = userStore.profile.role
 const isAdmin = computed(() => userRole === 'admin')
+const userType = computed(() => userStore.profile.user_type || 'Unknown') // from userstore because some users dont have usertype on auth
 
 // Initial load
+
 onMounted(async () => {
   const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
 
@@ -657,7 +659,7 @@ function showNotifyDialog(title, message) {
   notifyDialogOpen.value = true
 }
 
-async function logClick(itemId, itemType) {
+async function logClick(itemId, itemType, action) {
   if (!isAdmin.value) {
     const { data: authData, error: authError } = await supabase.auth.getUser()
     const userId = authData?.user?.id
@@ -674,17 +676,15 @@ async function logClick(itemId, itemType) {
         item_id: itemId,
         title: docu.title || 'Untitled',
         item_type: itemType,
+        user_type: userType.value,
+        action: action,
         clicked_at: new Date().toISOString(),
       })
 
       if (error) {
         throw error
-      }
-
-      if (error) {
-        console.error('Error logging click:', error)
       } else {
-        console.log('Click Logged')
+        console.log(`Click logged by ${userType.value} for ${action} action`)
       }
     } catch (err) {
       console.error('Error logging click:', err)
