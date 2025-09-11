@@ -309,9 +309,10 @@ const datePickerOptions = (date) => {
 
 function formatTimeTo12Hour(timeString) {
   if (!timeString) return ''
+
   const [hour, minute] = timeString.split(':').map(Number)
   const ampm = hour >= 12 ? 'PM' : 'AM'
-  const formattedHour = hour % 12 || 12 // 0 -> 12
+  const formattedHour = hour % 12 || 12
   return `${formattedHour}:${minute.toString().padStart(2, '0')} ${ampm}`
 }
 
@@ -359,6 +360,25 @@ async function submitBooking() {
       alert('Failed to save appointment booking.')
       console.error('Insert error:', error)
       return
+    }
+
+    const notifMessage = `${name} booked an appointment for ${date} at ${time}.`
+
+    const { error: notifError } = await supabase.from('notifications').insert([
+      {
+        user_id: null,
+        type: 'appointment_booking',
+        message: notifMessage,
+        read: false,
+        role: 'admin',
+        created_at: new Date().toISOString(),
+      },
+    ])
+
+    if (notifError) {
+      console.log('Error sending notification to admin:', notifError)
+    } else {
+      console.log('Notification sent to admin.')
     }
 
     console.log('Appointment booking successfully saved.')

@@ -210,11 +210,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
+import { supabase } from 'boot/supabase'
 
 const $q = useQuasar()
 const userStore = useUserStore()
@@ -228,12 +229,9 @@ const miniState = ref(true)
 const search = ref('')
 
 // User and notifications data
-const notifications = ref([
-  { id: 1, message: 'New message from Mrs. Beth', time: '5m ago' },
-  { id: 2, message: '⚠️ Notice: The file you uploaded appears incomplete.', time: '1h ago' },
-])
-
-const notificationCount = computed(() => notifications.value.length)
+const notifications = ref([])
+const notificationCount = ref(0)
+let channel = null
 
 // Base navigation items
 const baseNavItems = [
@@ -383,6 +381,93 @@ watch(
       hasSearchBar.value = true
     } else {
       hasSearchBar.value = false
+    }
+  },
+  { immediate: true },
+)
+
+async function fetchNotifications() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return
+
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .or(`user_id.eq.${user.id},role.eq.admin`)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching notifications:', error)
+    return
+  }
+
+  notifications.value = data.map((notif) => ({
+    ...notif,
+    time: new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    message: notif.message,
+  }))
+
+  notificationCount.value = data.filter((notif) => !notif.read).length
+}
+
+async function setupRealtimeNotifications() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return
+
+  channel = supabase
+    .channel('notifications-realtime')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'notifications' },
+      (payload) => {
+        const notif = payload.new
+        console.log('Incoming notification:', notif)
+
+        if (
+          notif.user_id === user.id ||
+          (notif.role?.trim().toLowerCase() === 'admin' && userRole.value.toLowerCase() === 'admin')
+        ) {
+          console.log('Admin notification matched:', notif)
+          notifications.value.unshift({
+            ...notif,
+            time: new Date(notif.created_at).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+          })
+          notificationCount.value++
+        } else {
+          console.log('Notification skipped:', notif, 'for role:', userRole.value) // show skipped for users
+        }
+      },
+    )
+    .subscribe((status) => {
+      console.log('Real-time subscription status:', status)
+    })
+}
+
+onMounted(() => {
+  console.log('User role:', userRole.value)
+
+  fetchNotifications()
+})
+
+onBeforeUnmount(() => {
+  if (channel) {
+    supabase.removeChannel(channel)
+  }
+})
+
+watch(
+  () => userProfile.value?.role,
+  (role) => {
+    if (role) {
+      console.log('Setting up real-time notifications for role:', role)
+      setupRealtimeNotifications()
     }
   },
   { immediate: true },
