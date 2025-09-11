@@ -207,22 +207,40 @@ async function confirmAction() {
       admin_remarks: row.admin_remarks || '',
     }
 
-    // Update registration_visitors status
-    const updateResponse = await supabase
+    // Update appointment booking table
+    const { data: updateResponse, error: updateError } = await supabase
       .from('appointment_booking')
       .update(updateData)
       .eq('appointment_id', row.appointment_id)
-      .select('*')
+      .select('user_id, appointment_id, status')
+      .single()
 
-    console.log('Update response data:', updateResponse.data)
-    console.log('Update response error:', updateResponse.error)
+    if (updateError) {
+      console.log('Update error:', updateError)
+      throw updateError
+    }
 
-    if (updateResponse.error) {
-      throw updateResponse.error
+    console.log('Appointment updated: ', updateResponse)
+
+    const notifMessage = `Your appointment on ${row.appointmentDate} at ${row.time} has been ${action}.`
+
+    const { error: notifError } = await supabase.from('notifications').insert([
+      {
+        user_id: updateResponse.user_id,
+        message: notifMessage,
+        read: false,
+        type: 'appointment_status',
+        created_at: new Date().toISOString(),
+      },
+    ])
+
+    if (notifError) {
+      console.log('Error sending notification to user:', notifError)
+    } else {
+      console.log('Notification sent to user:', updateResponse.user_id)
     }
 
     confirmDialog.value.show = false
-
     fetchAppointments()
   } catch (err) {
     console.error('Error updating status:', err)

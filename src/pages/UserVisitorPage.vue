@@ -350,32 +350,8 @@ const checkEmailUnique = async (val) => {
 
 // Register user
 async function registerUser() {
-  const {
-    first_name,
-    last_name,
-    email,
-    contact,
-    institution,
-    purpose,
-    start_date,
-    end_date,
-    // letter_url,
-    // password,
-    // confirmPassword,
-  } = form.value
-
-  // const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/
-  // if (!passwordRegex.test(password)) {
-  //   alert(
-  //     'Password must be at least 8 characters long and contain an uppercase letter, a number, and a special character.',
-  //   )
-  //   return
-  // }
-
-  // if (password !== confirmPassword) {
-  //   alert('Passwords do not match!')
-  //   return
-  // }
+  const { first_name, last_name, email, contact, institution, purpose, start_date, end_date } =
+    form.value
 
   if (!institution || !purpose) {
     alert('Please fill out all required fields.')
@@ -427,8 +403,27 @@ async function registerUser() {
       return
     }
 
-    console.log('Registration successfully saved.')
+    const name = `${first_name} ${last_name}`
+    const notifMessage = `${name} has submitted a visitor account registration request.`
 
+    const { error: notifError } = await supabase.from('notifications').insert([
+      {
+        user_id: null,
+        type: 'visitor_registration',
+        message: notifMessage,
+        read: false,
+        role: 'admin',
+        created_at: new Date().toISOString(),
+      },
+    ])
+
+    if (notifError) {
+      console.log('Error sending notification to admin:', notifError)
+    } else {
+      console.log('Notification sent to admin.')
+    }
+
+    console.log('Registration successfully submitted.')
     step.value = 3
   } catch (err) {
     console.log('Error during registration:', err)
