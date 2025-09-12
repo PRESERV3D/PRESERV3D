@@ -485,6 +485,27 @@ watch(
 
 .q-page-container {
   overflow-x: hidden !important;
+  margin-left: 0 !important;
+  transition: none !important;
+}
+
+/* ========================
+   SIDEBAR OVERLAY BEHAVIOR
+======================== */
+.sidebar-drawer.q-drawer {
+  overflow: hidden;
+  transition: width 0.3s ease !important;
+  z-index: 2000 !important; /* Ensure sidebar is above content */
+}
+
+/* Mini sidebar should not affect content positioning */
+.q-drawer--mini {
+  z-index: 2000 !important;
+}
+
+/* When expanded (on hover), sidebar overlays content */
+.sidebar-drawer:hover {
+  z-index: 2001 !important; /* Higher z-index when expanded */
 }
 
 /* ========================
@@ -519,11 +540,6 @@ watch(
   margin-top: auto;
 }
 
-.sidebar-drawer.q-drawer {
-  overflow: hidden;
-  transition: width 0.3s ease !important;
-}
-
 /* ========================
    TEXT VISIBILITY IMPROVEMENTS
 ======================== */
@@ -547,15 +563,18 @@ watch(
 }
 
 /* ========================
-   RESPONSIVE TOOLBAR - UPDATED TO MATCH ORIGINAL
+   RESPONSIVE TOOLBAR - NORMAL POSITIONING
 ======================== */
 .search-toolbar {
   background: transparent !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   padding: 8px 16px !important;
-  width: 100%;
+  width: 100% !important;
   box-sizing: border-box;
+  position: relative !important;
+  z-index: 1000 !important;
 }
+
 
 .responsive-toolbar-container {
   display: flex;
@@ -708,10 +727,45 @@ watch(
   }
 }
 
-/* Mobile screens */
+/* Hide sidebar on tablets - sidebar still overlays */
+@media (min-width: 600px) and (max-width: 1024px) {
+  .q-drawer {
+    width: 120px !important;
+    z-index: 2000 !important;
+  }
+
+  .sidebar-drawer .q-drawer__content {
+    width: 120px !important;
+  }
+
+  .navigation-section {
+    text-align: center;
+  }
+
+  .nav-item .q-item__section--main,
+  .logout-item .q-item__section--main {
+    display: none !important;
+  }
+
+  /* Content stays in normal position */
+  .q-page-container {
+    margin-left: 0 !important;
+  }
+
+  .search-toolbar {
+    width: 100% !important;
+  }
+}
+
+/* Mobile screens - content needs space for sidebar */
 @media (max-width: 599px) {
   .search-toolbar {
     padding: 12px 16px !important;
+    width: calc(100% - 120px) !important; /* Account for mini sidebar */
+    margin-left: 0 !important; /* Remove extra margin */
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
   }
 
   .responsive-toolbar-container {
@@ -731,7 +785,6 @@ watch(
 
   .toolbar-spacer {
     display: none;
-
   }
 
   .toolbar-actions {
@@ -747,20 +800,10 @@ watch(
     max-width: 48px !important;
   }
 
-  .q-drawer {
-    display: none !important;
-  }
-
-  .q-page-container {
-    margin-left: 0 !important;
-    padding-left: 0 !important;
-  }
-}
-
-/* Hide sidebar on tablets */
-@media (min-width: 600px) and (max-width: 1024px) {
+  /* Keep sidebar visible on mobile but in mini state */
   .q-drawer {
     width: 120px !important;
+    z-index: 2000 !important;
   }
 
   .sidebar-drawer .q-drawer__content {
@@ -774,6 +817,12 @@ watch(
   .nav-item .q-item__section--main,
   .logout-item .q-item__section--main {
     display: none !important;
+  }
+
+  /* Keep the margin for sidebar */
+  .q-page-container {
+    margin-left: 120px !important;
+    padding-left: 0 !important;
   }
 }
 
