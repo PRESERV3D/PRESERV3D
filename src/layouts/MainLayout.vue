@@ -225,7 +225,7 @@ const search = ref('')
 
 // Responsive state
 const windowWidth = ref(window.innerWidth)
-const isCompactMode = computed(() => windowWidth.value < 1200)
+const isCompactMode = computed(() => windowWidth.value < 1030)
 
 // Search dropdown options
 const searchType = ref('artifacts') // default selection
@@ -585,7 +585,7 @@ watch(
 }
 
 .search-container {
-  width: 735px;
+  width: 705px;
   max-width: 100%;
   margin-right: 2px;    /* spacing before notifications */
 }
@@ -656,12 +656,12 @@ watch(
 /* Medium-large screens */
 @media (min-width: 1300px) and (max-width: 1439px) {
   .search-container {
-    width: 652px !important; /* Increased to compensate */
-    min-width: 652px !important;
-    max-width: 652px !important;
+    width: 710px !important;
+    min-width: 610px !important;
+    max-width: 710px !important;
   }
   .toolbar-actions {
-    gap: 100px;
+    gap: 110px;
   }
   .user-profile-btn:not(.compact) {
     width: 180px !important;
@@ -671,19 +671,36 @@ watch(
 }
 
 /* my screen size */
-@media (min-width: 1200px) and (max-width: 1299px) {
+@media (min-width: 1200px) and (max-width: 1300px) {
   .search-container {
-    width: 790px !important; 
-    min-width: 790px !important;
-    max-width: 790px !important;
+    width: 650px !important;
+    min-width: 550px !important;
+    max-width: 650px !important;
     flex: none !important;
   }
 
   .toolbar-actions {
-    gap: 120px;
+    gap: 60px;
     width: auto;
   }
 
+  .user-profile-btn:not(.compact) {
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
+  }
+}
+
+/* Compact screens  */
+@media (min-width: 1050px) and (max-width: 1199px) {
+  .search-container {
+    width: 590px !important;
+    min-width: 490px !important;
+    max-width: 590px !important;
+  }
+  .toolbar-actions {
+    gap: 45px;
+  }
   .user-profile-btn:not(.compact) {
     width: 210px !important;
     min-width: 210px !important;
@@ -691,34 +708,15 @@ watch(
   }
 }
 
-/* Compact screens  */
-@media (min-width: 900px) and (max-width: 1199px) {
-  .search-container {
-    width: 400px !important;
-    min-width: 400px !important;
-    max-width: 400px !important;
-  }
-  .toolbar-actions {
-    gap: 32px;
-  }
-  .user-profile-btn.compact {
-    width: 48px !important;
-    min-width: 48px !important;
-    max-width: 48px !important;
-    padding: 8px !important;
-    justify-content: center !important;
-  }
-}
-
 /* Small screens */
-@media (min-width: 600px) and (max-width: 899px) {
+@media (min-width: 600px) and (max-width: 1049px) {
   .search-container {
-    width: 300px !important;
+    width: 550px !important;
     min-width: 300px !important;
-    max-width: 300px !important;
+    max-width: 550px !important;
   }
   .toolbar-actions {
-    gap: 16px;
+    gap: 30px;
   }
   .user-profile-btn.compact {
     width: 48px !important;
