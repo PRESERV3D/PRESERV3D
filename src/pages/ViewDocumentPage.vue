@@ -59,7 +59,14 @@
       <div class="preview-container">
         <div class="box-view">
           <div class="row-1 items-center justify-between">
-            <q-btn :href="doc.file_url" target="_blank" class="start-reading-btn" no-caps>
+            <!-- <q-btn
+              :href="doc.file_url"
+              target="_blank"
+              class="start-reading-btn"
+              no-caps
+              @click="logClick(doc.id, 'document', 'read')"
+            > -->
+            <q-btn class="start-reading-btn" no-caps @click="handleClickRead(doc)">
               Start Reading
               <img src="/img/arrow-tilt.png" alt="Start Reading" class="q-ml-sm btn-arrow-tilt" />
             </q-btn>
@@ -238,6 +245,7 @@ const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 
 const userRole = userStore.profile.role
 const isAdmin = computed(() => userRole === 'admin')
+const userType = computed(() => userStore.profile.user_type || 'Unknown')
 
 const dialogOpen = ref(false)
 const selectedItemType = ref('document')
@@ -623,6 +631,51 @@ onMounted(async () => {
 
 function openLink(url) {
   window.open(url, '_blank')
+}
+
+async function handleClickRead(doc) {
+  if (doc && doc.file_url) {
+    try {
+      await logClick(doc.id, 'document', 'read_document')
+    } catch (err) {
+      console.error('Error logging view click:', err)
+    } finally {
+      window.open(doc.file_url, '_blank')
+    }
+  }
+}
+
+async function logClick(itemId, itemType, action) {
+  if (!isAdmin.value) {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    const userId = authData?.user?.id
+    const docu = await documentsStore.getDocById(itemId)
+
+    if (authError || !userId) {
+      console.error('Auth error logging click:', authError)
+      return
+    }
+
+    try {
+      const { error } = await supabase.from('user_activity_log').insert({
+        user_id: userId,
+        item_id: itemId,
+        title: docu.title || 'Untitled',
+        item_type: itemType,
+        user_type: userType.value,
+        action: action,
+        clicked_at: new Date().toISOString(),
+      })
+
+      if (error) {
+        throw error
+      } else {
+        console.log(`Click logged by ${userType.value} for ${action} action`)
+      }
+    } catch (err) {
+      console.error('Error logging click:', err)
+    }
+  }
 }
 </script>
 

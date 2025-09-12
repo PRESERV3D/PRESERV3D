@@ -204,7 +204,7 @@
                 <div class="q-mt-xs q-mb-xs flex justify-evenly">
                   <router-link
                     :to="{ name: 'view-document', params: { id: doc.id } }"
-                    @click="logClick(doc.id, 'document')"
+                    @click="logClick(doc.id, 'document', 'view_document')"
                   >
                     <q-btn label="Read Now" class="now-read-btn" unelevated no-caps />
                   </router-link>
@@ -223,13 +223,13 @@
             <!-- Category Section -->
             <div class="row q-gutter-sm col-auto">
               <q-btn
-                v-for="cat in categoryOptions"
-                :key="cat"
-                :label="cat"
+                v-for="categoryOption in categoryOptions"
+                :key="categoryOption"
+                :label="categoryOption"
                 class="btn-1"
-                :class="{ active: selectedCategories.has(cat) }"
+                :class="{ active: selectedCategories.has(categoryOption) }"
                 unelevated
-                @click="toggleCategory(cat)"
+                @click="toggleCategory(categoryOption)"
               />
             </div>
             <div class="row q-gutter-sm col-auto">
@@ -259,7 +259,7 @@
                           >
                             <q-item-section avatar>
                               <q-checkbox
-                                :model-value="author === authorOption"
+                                :model-value="selectedAuthors.has(authorOption)"
                                 @update:model-value="toggleAuthor(authorOption)"
                               />
                             </q-item-section>
@@ -269,7 +269,7 @@
                       </q-scroll-area>
                       <!-- Clear Authors -->
                       <q-btn
-                        v-if="author"
+                        v-if="selectedAuthors.size > 0"
                         flat
                         dense
                         color="primary"
@@ -293,7 +293,7 @@
                           >
                             <q-item-section avatar>
                               <q-checkbox
-                                :model-value="date === dateOption"
+                                :model-value="selectedDates.has(dateOption)"
                                 @update:model-value="toggleDate(dateOption)"
                               />
                             </q-item-section>
@@ -303,7 +303,7 @@
                       </q-scroll-area>
                       <!-- Clear Years -->
                       <q-btn
-                        v-if="date"
+                        v-if="selectedDates.size > 0"
                         flat
                         dense
                         color="primary"
@@ -318,26 +318,29 @@
                       <q-scroll-area style="height: 12rem; width: 12rem">
                         <q-list dense>
                           <q-item
-                            v-for="categoryOptions in categoryOptions"
-                            :key="categoryOptions"
+                            v-for="categoryOption in categoryOptions"
+                            :key="categoryOption"
                             clickable
                             class="sub-font-2"
                             style="color: #000000"
-                            @click="toggleCategories(categoryOptions)"
+                            @click="toggleCategory(categoryOption)"
                           >
                             <q-item-section avatar>
                               <q-checkbox
-                                :model-value="category === categoryOptions"
-                                @update:model-value="toggleCategories(categoryOptions)"
+                                :model-value="selectedCategories.has(categoryOption)"
+                                @update:model-value="toggleCategory(categoryOption)"
                               />
                             </q-item-section>
-                            <q-item-section>{{ categoryOptions }}</q-item-section>
+                            <q-item-section>{{ categoryOption }}</q-item-section>
                           </q-item>
                         </q-list>
                       </q-scroll-area>
                       <!-- Clear Categories -->
                       <q-btn
-                        v-if="category"
+                        v-if="
+                          selectedCategories.size > 0 &&
+                          !(selectedCategories.size === 1 && selectedCategories.has('All'))
+                        "
                         flat
                         dense
                         color="primary"
@@ -348,6 +351,13 @@
                     </div>
                   </div>
                   <q-separator />
+                  <!-- <q-item clickable v-close-popup @click="applyFilters">
+                    <q-item-section class="flex items-center">
+                      <div class="sub-font-3" style="color: #008000; font-weight: 500">
+                        APPLY FILTERS
+                      </div>
+                    </q-item-section>
+                  </q-item> -->
                   <q-item clickable v-close-popup @click="clearFilters">
                     <q-item-section class="flex items-center">
                       <div class="sub-font-3" style="color: #880000; font-weight: 500">
@@ -374,7 +384,7 @@
                     clickable
                     v-close-popup
                     class="collection-sort-menu"
-                    @click="((sortOption = option), onSort(option))"
+                    @click="applySort(option)"
                   >
                     <q-item-section>{{ option }}</q-item-section>
                     <q-item-section side v-if="sortOption === option">
@@ -390,7 +400,7 @@
           <div class="row q-gutter-lg q-ma-md justify-between">
             <div
               v-for="(doc, i) in searchStore.query
-                ? searchStore.results
+                ? searchStore.searchedDocuments
                 : documentsStore.filteredDocuments"
               :key="i"
               class="card-wrapper-2"
@@ -399,7 +409,7 @@
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
-                  @click="logClick(doc.id, 'document')"
+                  @click="logClick(doc.id, 'document', 'view_document')"
                 >
                   <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
                 </router-link>
@@ -535,15 +545,17 @@ const userStore = useUserStore()
 
 const scannedFile = ref(null)
 const topDocuments = ref([])
-const author = ref('')
-const date = ref('')
-const category = ref('') //added
+// const author = ref('')
+// const date = ref('')
+// const category = ref('') //added
 const sortOption = ref('Newest')
 const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
-const selectedCategories = ref(new Set(['All']))
 const categoryOptions = ref([])
 const authorOptions = ref([])
 const dateOptions = ref([])
+const selectedCategories = ref(new Set(['All']))
+const selectedAuthors = ref(new Set())
+const selectedDates = ref(new Set())
 
 const showDialog = ref(false)
 const dialogOpen = ref(false)
@@ -563,8 +575,10 @@ if (userStore.profile.role === undefined) {
 
 const userRole = userStore.profile.role
 const isAdmin = computed(() => userRole === 'admin')
+const userType = computed(() => userStore.profile.user_type || 'Unknown') // from userstore because some users dont have usertype on auth
 
 // Initial load
+
 onMounted(async () => {
   const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
 
@@ -597,8 +611,8 @@ onMounted(async () => {
     const enhancedTopDocs =
       topDocus?.map((doc) => ({
         ...doc,
-        starred: favoriteIds.includes(doc.id), // Make sure to use the correct ID field
-        bookmarked: false, // Add this too for consistency
+        starred: favoriteIds.includes(doc.id),
+        bookmarked: false,
       })) || []
 
     topDocuments.value = enhancedTopDocs
@@ -631,6 +645,8 @@ onMounted(async () => {
 
   await documentsStore.fetchViewCounts()
   await documentsStore.fetchStarCounts()
+
+  console.log('Sorting by: ', sortOption.value)
 })
 
 onUnmounted(() => {
@@ -643,60 +659,7 @@ function showNotifyDialog(title, message) {
   notifyDialogOpen.value = true
 }
 
-function onSort() {
-  switch (sortOption.value) {
-    case 'Newest':
-      documentsStore.sortBy('uploaded_at', 'desc')
-      break
-    case 'Oldest':
-      documentsStore.sortBy('uploaded_at', 'asc')
-      break
-    case 'Title A-Z':
-      documentsStore.sortBy('title', 'desc')
-      break
-    case 'Title Z-A':
-      documentsStore.sortBy('title', 'asc')
-      break
-  }
-}
-
-function applyFilters() {
-  documentsStore.filterBy({
-    categories: Array.from(selectedCategories.value),
-    author: author.value,
-    date: date.value,
-  })
-}
-
-//Clear All Filters Function
-const clearFilters = () => {
-  author.value = null
-  date.value = null
-  applyFilters()
-}
-//
-
-function toggleCategory(cat) {
-  if (cat === 'All') {
-    // If "All" is clicked, reset all categories
-    selectedCategories.value = new Set(['All'])
-    return
-  }
-
-  if (selectedCategories.value.has(cat)) {
-    selectedCategories.value.delete(cat)
-  } else {
-    selectedCategories.value.add(cat)
-    selectedCategories.value.delete('All') // Remove "All" if any specific category is selected
-  }
-
-  // Reassign to trigger reactivity
-  selectedCategories.value = new Set(selectedCategories.value)
-
-  applyFilters()
-}
-
-async function logClick(itemId, itemType) {
+async function logClick(itemId, itemType, action) {
   if (!isAdmin.value) {
     const { data: authData, error: authError } = await supabase.auth.getUser()
     const userId = authData?.user?.id
@@ -713,17 +676,15 @@ async function logClick(itemId, itemType) {
         item_id: itemId,
         title: docu.title || 'Untitled',
         item_type: itemType,
+        user_type: userType.value,
+        action: action,
         clicked_at: new Date().toISOString(),
       })
 
       if (error) {
         throw error
-      }
-
-      if (error) {
-        console.error('Error logging click:', error)
       } else {
-        console.log('Click Logged')
+        console.log(`Click logged by ${userType.value} for ${action} action`)
       }
     } catch (err) {
       console.error('Error logging click:', err)
@@ -744,7 +705,7 @@ const fetchAllDocuments = async () => {
       return
     }
 
-    // ADDED: Fetch Favorites collection items
+    // Fetch Favorites collection items
     const { data: authData } = await supabase.auth.getUser()
 
     const userId = authData?.user?.id
@@ -802,7 +763,6 @@ const fetchAllDocuments = async () => {
       }
     }
 
-    // Add some mock data for demonstration compatibility
     const enhancedDocs = data.map((docs) => ({
       ...docs,
       bookmarked: bookmarkedIds.includes(docs.id),
@@ -839,39 +799,39 @@ const fetchAllDocuments = async () => {
 }
 
 // for populating filter options
-watch(
-  () => documentsStore.filteredDocuments,
-  (docs) => {
-    const authors = new Set()
-    const years = new Set()
-    const categories = new Set(['All'])
+// watch(
+//   () => documentsStore.documents,
+//   (docs) => {
+//     const authors = new Set()
+//     const years = new Set()
+//     const categories = new Set(['All'])
 
-    docs.forEach((doc) => {
-      const meta = doc.metadata || {}
+//     docs.forEach((doc) => {
+//       const meta = doc.metadata || {}
 
-      // Author
-      if (meta.author) {
-        meta.author.split(',').forEach((a) => authors.add(a.trim()))
-      }
+//       // Author
+//       if (meta.author) {
+//         meta.author.split(',').forEach((a) => authors.add(a.trim()))
+//       }
 
-      // Date
-      if (meta.date) {
-        const year = meta.date.slice(0, 4)
-        years.add(year)
-      }
+//       // Date
+//       if (meta.date) {
+//         const year = meta.date.slice(0, 4)
+//         years.add(year)
+//       }
 
-      // Categories
-      if (Array.isArray(meta.categories)) {
-        meta.categories.forEach((cat) => categories.add(cat))
-      }
-    })
+//       // Categories
+//       if (Array.isArray(meta.categories)) {
+//         meta.categories.forEach((cat) => categories.add(cat))
+//       }
+//     })
 
-    authorOptions.value = [...authors].sort()
-    categoryOptions.value = [...categories].sort()
-    dateOptions.value = [...years].sort((a, b) => b - a) // descending
-  },
-  { immediate: true },
-)
+//     authorOptions.value = [...authors].sort()
+//     categoryOptions.value = [...categories].sort()
+//     dateOptions.value = [...years].sort((a, b) => b - a) // descending
+//   },
+//   { immediate: true },
+// )
 
 const selectedFile = ref(null)
 // const fileInput = ref(null)
@@ -1327,7 +1287,7 @@ const handleUpload = async () => {
   }
 }
 
-// ADDED: Compress pdf on upload
+// Compress pdf on upload
 import { PDFDocument } from 'pdf-lib'
 
 async function compressPdf(file) {
@@ -1404,7 +1364,6 @@ async function loadUserCollections() {
     .eq('user_id', userId)
 
   if (!error) {
-    // ADDED: Exclude "Favorites" from the list
     userCollections.value = data.filter((c) => c.collection_name !== 'Favorites')
   } else {
     console.error('Failed to load collections:', error)
@@ -1436,7 +1395,6 @@ async function saveToSelectedCollections() {
         item_type: selectedItemType.value,
       })
 
-      // ADDED: Mark document as bookmarked if added to a collection
       doc.bookmarked = true
 
       if (insertError) {
@@ -1509,7 +1467,7 @@ function resetForm() {
   existingCollectionIds.value = []
 }
 
-// ADDED: Toggle favorite icon
+// Toggle favorite icon
 const toggleFavorite = async (doc, itemType = 'document') => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
@@ -1520,7 +1478,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
   }
 
   try {
-    // Find or create Favorites collection
     let { data: favoritesCollection } = await supabase
       .from('collections')
       .select('*')
@@ -1557,7 +1514,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
     const collectionId = favoritesCollection.collection_id
     const itemName = doc.metadata?.title || doc.file_name
 
-    // Check if item already exists
     const { data: existing } = await supabase
       .from('collection_items')
       .select('*')
@@ -1566,7 +1522,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
       .eq('item_type', itemType)
 
     if (existing.length > 0) {
-      // Remove from favorites
       await supabase
         .from('collection_items')
         .delete()
@@ -1577,7 +1532,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
       doc.starred = false
       showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
     } else {
-      // Add to favorites
       await supabase.from('collection_items').insert({
         collection_id: collectionId,
         item_id: doc.id,
@@ -1588,7 +1542,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
       showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
     }
 
-    // Get star count
     const { data: metaCheck, error: metaError } = await supabase
       .from('documents_metadata')
       .select('id')
@@ -1605,7 +1558,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
       if (starData && starData.star_count !== undefined) {
         documentsStore.updateStarCount(doc.id, starData.star_count)
       } else {
-        // If no row exists, star count is 0
         documentsStore.updateStarCount(doc.id, 0)
       }
     } else {
@@ -1616,35 +1568,144 @@ const toggleFavorite = async (doc, itemType = 'document') => {
   }
 }
 
-// additional for filter
+// Filter and sort options
+watch(
+  () => documentsStore.documents,
+  (docs) => {
+    const authors = new Map()
+    const years = new Set()
+    const categories = new Map([['all', 'All']])
+
+    docs.forEach((doc) => {
+      const meta = doc.metadata || {}
+
+      if (meta.author) {
+        meta.author.split(',').forEach((a) => {
+          const standardized = a.trim().toLowerCase()
+          if (!authors.has(standardized)) {
+            authors.set(standardized, a.trim())
+          }
+        })
+      }
+
+      if (meta.date) {
+        const year = meta.date.slice(0, 4)
+        years.add(year)
+      }
+
+      if (Array.isArray(meta.categories)) {
+        meta.categories.forEach((cat) => {
+          const standardized = cat.trim().toLowerCase()
+          if (!categories.has(standardized)) {
+            categories.set(standardized, cat.trim())
+          }
+        })
+      }
+    })
+
+    authorOptions.value = [...authors.values()].sort()
+    categoryOptions.value = [...categories.values()].sort()
+    dateOptions.value = [...years].sort((a, b) => b - a)
+  },
+  { immediate: true },
+)
+
+function applyFilters() {
+  searchStore.clear()
+
+  const filterData = {
+    categories: Array.from(selectedCategories.value),
+    authors: Array.from(selectedAuthors.value),
+    dates: Array.from(selectedDates.value),
+  }
+  console.log('Applying filters:', filterData)
+
+  documentsStore.filterBy(filterData, sortOption.value)
+}
+
+const clearFilters = () => {
+  selectedAuthors.value = new Set()
+  selectedDates.value = new Set()
+  selectedCategories.value = new Set(['All'])
+  applyFilters()
+}
+
+function toggleCategory(categoryOption) {
+  if (categoryOption === 'All') {
+    selectedCategories.value = new Set(['All'])
+  } else {
+    selectedCategories.value.delete('All')
+    if (selectedCategories.value.has(categoryOption)) {
+      selectedCategories.value.delete(categoryOption)
+    } else {
+      selectedCategories.value.add(categoryOption)
+    }
+  }
+
+  // selectedCategories.value = new Set(selectedCategories.value)
+  applyFilters()
+}
+
 function toggleAuthor(authorOption) {
-  author.value = authorOption
+  if (selectedAuthors.value.has(authorOption)) {
+    selectedAuthors.value.delete(authorOption)
+  } else {
+    selectedAuthors.value.add(authorOption)
+  }
+
+  // selectedAuthors.value = new Set(selectedAuthors.value)
   applyFilters()
 }
 
 function toggleDate(dateOption) {
-  date.value = dateOption
-  applyFilters()
-}
-
-function toggleCategories(categoryOptions) {
-  category.value = categoryOptions
+  if (selectedDates.value.has(dateOption)) {
+    selectedDates.value.delete(dateOption)
+  } else {
+    selectedDates.value.add(dateOption)
+  }
+  // selectedDates.value = new Set(selectedDates.value)
   applyFilters()
 }
 
 function clearAuthor() {
-  author.value = ''
+  selectedAuthors.value = new Set()
   applyFilters()
 }
 
 function clearDate() {
-  date.value = ''
+  selectedDates.value = new Set()
   applyFilters()
 }
 
 function clearCategories() {
-  category.value = ''
+  selectedCategories.value = new Set(['All'])
   applyFilters()
+}
+
+// function applySort() {
+//   switch (sortOption.value) {
+//     case 'Newest':
+//       documentsStore.sortBy('uploaded_at', 'desc')
+//       break
+//     case 'Oldest':
+//       documentsStore.sortBy('uploaded_at', 'asc')
+//       break
+//     case 'Title A-Z':
+//       documentsStore.sortBy('title', 'desc')
+//       break
+//     case 'Title Z-A':
+//       documentsStore.sortBy('title', 'asc')
+//       break
+//   }
+// }
+
+function applySort(option) {
+  sortOption.value = option
+  if (searchStore.query) {
+    searchStore.sortResults(option, searchStore.searchedDocuments)
+  } else {
+    documentsStore.sortByField(option)
+  }
 }
 </script>
 
