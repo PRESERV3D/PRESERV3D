@@ -235,22 +235,15 @@
 </template>
 
 <script setup>
-<<<<<<< HEAD
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-=======
-import { ref, computed, watch, onMounted } from 'vue'
->>>>>>> features
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
-<<<<<<< HEAD
 import { supabase } from 'boot/supabase'
-=======
 import { useDocumentsStore } from 'src/stores/documentsStore'
 import { useFiltering } from 'src/utils/useFiltering'
 const { clearFilters } = useFiltering()
->>>>>>> features
 
 const $q = useQuasar()
 const userStore = useUserStore()
