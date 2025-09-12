@@ -95,8 +95,8 @@
       </q-drawer>
 
       <q-page-container>
-        <div v-if="hasSearchBar" class="search-toolbar q-py-md q-px-md">
-          <q-toolbar class="bg-transparent responsive-toolbar">
+        <div v-if="hasSearchBar" class="search-toolbar">
+          <div class="responsive-toolbar-container">
             <!-- Search Bar Container with Internal Dropdown -->
             <div class="search-container">
               <q-input
@@ -142,6 +142,9 @@
               </q-input>
             </div>
 
+            <!-- Spacer to push actions to the right -->
+            <div class="toolbar-spacer"></div>
+
             <!-- Notifications and user profile -->
             <div class="toolbar-actions">
               <!-- Notifications Button -->
@@ -174,20 +177,21 @@
                 </q-menu>
               </q-btn>
 
-              <q-space />
-
               <!-- User Profile Button -->
-              <q-btn flat dense class="user-profile-btn">
+              <q-btn flat dense class="user-profile-btn" :class="{ 'compact': isCompactMode }">
                 <q-avatar size="32px">
                   <img src="\img\UserIcon.jpg" />
                 </q-avatar>
-                <div class="q-ml-sm user-info">
+                <div class="user-info" v-show="!isCompactMode">
                   <div class="username-bg">{{ userName }}</div>
                   <div class="text-subtitle2 text-grey user-role">{{ userType }}</div>
                 </div>
+                <q-tooltip v-if="isCompactMode" anchor="bottom middle" self="top middle">
+                  {{ userName }} ({{ userType }})
+                </q-tooltip>
               </q-btn>
             </div>
-          </q-toolbar>
+          </div>
         </div>
 
         <router-view />
@@ -197,7 +201,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
@@ -210,8 +214,12 @@ const session = userStore.session
 
 const drawer = ref(true)
 const miniState = ref(true)
-const isHovered = ref(false) // Add this reactive variable
+const isHovered = ref(false)
 const search = ref('')
+
+// Responsive state
+const windowWidth = ref(window.innerWidth)
+const isCompactMode = computed(() => windowWidth.value < 1200)
 
 // Search dropdown options
 const searchType = ref('artifacts')
@@ -257,6 +265,11 @@ const navItems = computed(() => {
     return true
   })
 })
+
+// Window resize handler
+const handleResize = () => {
+  windowWidth.value = window.innerWidth
+}
 
 // Improved hover handling with debouncing
 let hoverTimeout = null
@@ -342,6 +355,8 @@ const handleLogout = async () => {
 }
 
 onMounted(() => {
+  window.addEventListener('resize', handleResize)
+
   if (searchType.value) {
     if (route.name === 'documents') {
       searchType.value = 'documents'
@@ -353,6 +368,11 @@ onMounted(() => {
   if (search.value || searchType.value) {
     performSearch()
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  if (hoverTimeout) clearTimeout(hoverTimeout)
 })
 
 watch(search, async (query) => {
@@ -408,6 +428,8 @@ watch(
 )
 </script>
 
+
+
 <style scoped>
 /* ========================
    GENERAL FIXES
@@ -421,6 +443,22 @@ watch(
 
 .no-gap :deep(.q-field__control) {
   padding-left: 0 !important;
+}
+
+/* ========================
+   MAIN LAYOUT FIXES
+======================== */
+.main-page-bg {
+  overflow-x: hidden !important;
+  max-width: 100vw;
+}
+
+.q-layout {
+  overflow-x: hidden !important;
+}
+
+.q-page-container {
+  overflow-x: hidden !important;
 }
 
 /* ========================
@@ -457,7 +495,7 @@ watch(
 
 .sidebar-drawer.q-drawer {
   overflow: hidden;
-  transition: width 0.3s ease !important; /* Smooth width transition */
+  transition: width 0.3s ease !important;
 }
 
 /* ========================
@@ -477,34 +515,212 @@ watch(
   padding: 0 !important;
 }
 
-/* Force text to show when hovered */
 .sidebar-drawer:hover .text-hidden {
   opacity: 1 !important;
   width: auto !important;
 }
 
 /* ========================
-   PREVENT HORIZONTAL SCROLL
+   RESPONSIVE TOOLBAR - UPDATED TO MATCH ORIGINAL
 ======================== */
-
-.main-page-bg {
-  overflow-x: hidden !important;
-  max-width: 100vw;
+.search-toolbar {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 8px 16px !important;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.q-layout {
-  overflow-x: hidden !important;
+.responsive-toolbar-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+  min-height: 44px;
 }
 
-.q-page-container {
-  overflow-x: hidden !important;
+.search-container {
+  width: 735px;
+  max-width: 100%;
+  margin-right: 2px;    /* spacing before notifications */
+}
+
+.toolbar-spacer {
+  flex: 0 0 30px;
+  width: 30px;
+}
+
+.toolbar-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 100px;
+  min-width: fit-content;
+  width: auto;
 }
 
 /* ========================
-   SIDEBAR RESPONSIVE FIXES
+   SEARCH INPUT
+======================== */
+.search-input {
+  width: 100%;
+}
+
+.search-input :deep(.q-field__control) {
+  min-height: 40px;
+}
+
+/* ========================
+   RESPONSIVE BREAKPOINTS
 ======================== */
 
-@media (max-width: 768px) {
+/* Ultra-wide screens */
+@media (min-width: 1920px) {
+  .search-container {
+    width: 1060px !important;
+    min-width: 1060px !important;
+    max-width: 1060px !important;
+  }
+  .toolbar-actions {
+    gap: 100px;
+  }
+  .user-profile-btn:not(.compact) {
+    width: 282px !important;
+    min-width: 282px !important;
+    max-width: 282px !important;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .search-container {
+    width: 735px !important;
+    min-width: 735px !important;
+    max-width: 735px !important;
+  }
+  .toolbar-actions {
+    gap: 100px;
+  }
+  .user-profile-btn:not(.compact) {
+    width: 210px !important;
+    min-width: 210px !important;
+    max-width: 210px !important;
+  }
+}
+
+/* Medium-large screens */
+@media (min-width: 1300px) and (max-width: 1439px) {
+  .search-container {
+    width: 640px !important;
+    min-width: 640px !important;
+    max-width: 640px !important;
+  }
+  .toolbar-actions {
+    gap: 100px;
+  }
+  .user-profile-btn:not(.compact) {
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
+  }
+}
+
+/*my screen size range (1200-1300px) */
+@media (min-width: 1200px) and (max-width: 1300px) {
+  .search-container {
+    width: 640px !important;
+    min-width: 640px !important;
+    max-width: 640px !important;
+    flex: none !important;
+  }
+
+  .toolbar-actions {
+    gap: 100px;
+    width: auto;
+  }
+
+  .user-profile-btn:not(.compact) {
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
+  }
+}
+
+/* Compact screens  */
+@media (min-width: 900px) and (max-width: 1199px) {
+  .search-container {
+    width: 400px !important;
+    min-width: 400px !important;
+    max-width: 400px !important;
+  }
+  .toolbar-actions {
+    gap: 32px;
+  }
+  .user-profile-btn.compact {
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+    padding: 8px !important;
+    justify-content: center !important;
+  }
+}
+
+/* Small screens */
+@media (min-width: 600px) and (max-width: 899px) {
+  .search-container {
+    width: 300px !important;
+    min-width: 300px !important;
+    max-width: 300px !important;
+  }
+  .toolbar-actions {
+    gap: 16px;
+  }
+  .user-profile-btn.compact {
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+  }
+}
+
+/* Mobile screens */
+@media (max-width: 599px) {
+  .search-toolbar {
+    padding: 12px 16px !important;
+  }
+
+  .responsive-toolbar-container {
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .search-container {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 180px !important;
+    max-width: calc(100% - 120px) !important;
+    order: 1;
+  }
+
+  .toolbar-spacer {
+    display: none;
+
+  }
+
+  .toolbar-actions {
+    flex: 0 0 auto;
+    order: 2;
+    gap: 8px;
+    min-width: 100px;
+  }
+
+  .user-profile-btn.compact {
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+  }
+
   .q-drawer {
     display: none !important;
   }
@@ -515,7 +731,8 @@ watch(
   }
 }
 
-@media (min-width: 769px) and (max-width: 1024px) {
+/* Hide sidebar on tablets */
+@media (min-width: 600px) and (max-width: 1024px) {
   .q-drawer {
     width: 120px !important;
   }
@@ -531,54 +748,6 @@ watch(
   .nav-item .q-item__section--main,
   .logout-item .q-item__section--main {
     display: none !important;
-  }
-}
-
-/* ========================
-   RESPONSIVE TOOLBAR FIXES
-======================== */
-
-@media (max-width: 768px) {
-  .search-toolbar {
-    padding: 4px 8px !important;
-  }
-
-  .responsive-toolbar {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .search-container {
-    width: 100% !important;
-    max-width: calc(100vw - 32px) !important;
-    order: 2;
-  }
-
-  .toolbar-actions {
-    order: 1;
-    width: 100%;
-    justify-content: space-between;
-    gap: 16px;
-  }
-
-  .user-profile-btn {
-    width: auto !important;
-    min-width: 150px;
-  }
-}
-
-@media (min-width: 769px) and (max-width: 1024px) {
-  .search-container {
-    width: 450px !important;
-    max-width: 450px !important;
-  }
-
-  .user-profile-btn {
-    width: 160px !important;
-  }
-
-  .toolbar-actions {
-    gap: 16px;
   }
 }
 
@@ -618,7 +787,6 @@ watch(
   align-items: center !important;
 }
 
-/* Mini state (centered icons only) */
 .text-center .nav-item,
 .text-center .logout-item {
   justify-content: center !important;
@@ -629,7 +797,6 @@ watch(
   display: none !important;
 }
 
-/* Active states */
 .nav-item.q-item--active .icon-wrapper {
   background-color: #880000;
   box-shadow: 0 4px 12px rgba(136, 0, 0, 0.3);
@@ -676,87 +843,23 @@ watch(
 }
 
 /* ========================
-   SEARCH BAR
-======================== */
-.search-toolbar {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 8px 16px !important;
-}
-
-.responsive-toolbar {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  gap: 16px;
-}
-
-.search-container {
-  flex: 0 0 auto !important;
-  width: 795px !important;
-  max-width: 795px !important;
-}
-
-.toolbar-actions {
-  flex-shrink: 0 !important;
-  width: auto;
-  min-width: fit-content !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 65px;
-}
-
-/* ========================
-   RESPONSIVENESS
-======================== */
-
-@media (max-width: 1439px) {
-  .search-container {
-    width: 640px !important;
-    min-width: 640px !important;
-    max-width: 640px !important;
-    flex: none !important;
-  }
-  .user-profile-btn {
-    width: 180px !important;
-  }
-}
-
-@media (min-width: 1440px) and (max-width: 1535px), (min-width: 1537px) and (max-width: 1919px) {
-  .search-container {
-    width: 735px !important;
-  }
-  .user-profile-btn {
-    width: 210px !important;
-  }
-}
-
-@media (min-width: 1920px) {
-  .search-container {
-    width: 1060px !important;
-  }
-  .user-profile-btn {
-    width: 100px !important;
-  }
-}
-
-/* ========================
    NOTIFICATIONS
 ======================== */
-.toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 65px;
-  flex-shrink: 0;
-}
 .notif-btn {
   background-color: #f8f8ff !important;
   width: 40px;
   height: 40px;
   backdrop-filter: blur(10px);
+  flex-shrink: 0;
 }
-.notif-btn:hover { background-color: #e0e0e0 !important; }
-.notif-image { width: 20px; height: 20px; object-fit: contain; }
+.notif-btn:hover {
+  background-color: #e0e0e0 !important;
+}
+.notif-image {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
 .custom-badge {
   font-size: 11px !important;
   font-weight: bold !important;
@@ -772,18 +875,43 @@ watch(
   background-color: #f8f9fa !important;
   border-radius: 10px;
   min-height: 44px;
-  width: 282px;
   display: flex;
   align-items: center;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  padding: 4px 12px 4px 8px;
 }
-.user-profile-btn:hover { background-color: #e9ecef !important; }
+
+/* Full profile display
+.user-profile-btn:not(.compact) {
+  width: 180px;
+  min-width: 180px;
+  max-width: 180px;
+}
+
+/* Compact profile (avatar only) */
+.user-profile-btn.compact {
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  padding: 8px;
+  justify-content: center;
+}
+
+.user-profile-btn:hover {
+  background-color: #e9ecef !important;
+}
+
 .user-info {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   min-width: 0;
   line-height: 1.2;
+  margin-left: 8px;
+  flex: 1;
 }
+
 .username-bg {
   font-weight: 500;
   font-size: 14px;
@@ -791,10 +919,29 @@ watch(
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 120px;
+  width: 100%;
 }
+
 .user-role {
   font-size: 12px !important;
   line-height: 1 !important;
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+  width: 100%;
+}
+
+/* Avatar adjustments */
+.user-profile-btn .q-avatar {
+  flex-shrink: 0;
+}
+
+/* Tooltip styling */
+.q-tooltip {
+  background-color: rgba(0, 0, 0, 0.87) !important;
+  font-size: 12px !important;
+  padding: 4px 8px !important;
 }
 </style>
