@@ -5,11 +5,17 @@ import os
 import base64
 import json
 import subprocess
-from fastapi import FastAPI, UploadFile, File, Form
+import requests
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from transformers import pipeline
 from keybert import KeyBERT
 from dateutil.parser import parse as date_parse
+from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
+from supabase import create_client, Client
+from dotenv import load_dotenv
+from sentence_transformers import SentenceTransformer, util
+from deepdiff import DeepDiff
 
 app = FastAPI()
 
@@ -27,7 +33,11 @@ kw_model = KeyBERT('all-MiniLM-L6-v2')
 nlp = spacy.load("en_core_web_sm")
 
 @app.post("/process-text")
-async def process_pdf(file: UploadFile = File(None), filename: str = Form(None), raw_text: str = Form(None)):
+async def process_pdf(
+    file: UploadFile = File(None),
+    filename: str = Form(None),
+    raw_text: str = Form(None)
+):
     try:
         print("Received file:", filename)
 
@@ -38,7 +48,7 @@ async def process_pdf(file: UploadFile = File(None), filename: str = Form(None),
             pdf_bytes = await file.read()
             result = extract_text(pdf_bytes, file.filename)
 
-            # If OCR fallback required, just return that response immediately
+            # If OCR fallback required, return OCR response immediately
             if isinstance(result, dict) and result.get("status") == "ocr_required":
                 result["filename"] = filename or file.filename
                 return result
@@ -51,38 +61,51 @@ async def process_pdf(file: UploadFile = File(None), filename: str = Form(None),
         if text and len(text.strip()) >= 100:
             cleaned_text = clean_text_for_nlp(text)
 
-            try:
-                summary = summarizer(cleaned_text[:4000])[0]['summary_text']
-            except Exception as e:
-                print("Summarizer error:", e)
-                summary = "Summary not available"
+            metadata = extract_metadata(cleaned_text, filename or (file.filename if file else None))
 
+            # Generate keywords
             try:
                 keywords = kw_model.extract_keywords(cleaned_text, top_n=10)
             except Exception as e:
                 print("Keyword extraction error:", e)
                 keywords = []
 
-            metadata = extract_metadata(cleaned_text, filename)
+            # Generate summary
+            try:
+                summary = generate_summary(
+                    text=cleaned_text,
+                    title=metadata.get("title"),
+                    author=metadata.get("author"),
+                    date=metadata.get("date"),
+                    keywords=[kw for kw, _ in keywords],
+                    categories=metadata.get("categories"),
+                )
+            except Exception as e:
+                print("Summarizer error:", e)
+                summary = "Summary not available"
+
+            # Check for inconsistencies
+            issues = detect_inconsistencies(metadata, source_type="document")
+            log_inconsistencies(metadata.get("file_name"), issues)
 
             return {
-                "file_name": filename or file.filename,
+                "file_name": filename or (file.filename if file else None),
                 "title": metadata.get("title"),
                 "author": metadata.get("author"),
                 "date": metadata.get("date"),
-                "document_type": metadata.get("document_type"),
+                "categories": metadata.get("categories"),
                 "organization": metadata.get("organization"),
                 "summary": summary,
-                "keywords": [kw for kw, _ in keywords]
+                "keywords": [kw for kw, _ in keywords],
+                "extracted_text": cleaned_text,
             }
         else:
-            # No searchable text found 
             return {"error": "No searchable text extracted to process"}
 
     except Exception as e:
         print("NLP error:", str(e))
         return {"error": str(e)}
-    
+
 def clean_text_for_nlp(text):
     cleaned = re.sub(r'[\x00-\x1F\x7F-\x9F]', ' ', text)
     cleaned = re.sub(r'[^A-Za-z0-9\s.,;:!?()\[\]{}\-_"\'@#$%^&*+=<>/\\|`~°€£¥§\n]+', ' ', cleaned)
@@ -128,7 +151,7 @@ def extract_text(pdf_bytes, filename=None):
     print("Extracted combined text:", full_text[:1000])
     return full_text.strip()
 
-def detect_document_type(text, filename=None):
+def detect_categories(text, filename=None):
     """Detect the type of document based on content and filename patterns"""
     
     text_lower = text.lower()
@@ -262,7 +285,7 @@ def extract_institutional_metadata(text, filename=None):
             entities[ent.label_].append(ent.text.strip())
     
     # Detect document type
-    document_type = detect_document_type(text, filename)
+    categories = detect_categories(text, filename)
     
     # Extract organization info
     organizations = extract_organization_info(text)
@@ -363,7 +386,7 @@ def extract_institutional_metadata(text, filename=None):
         if base:
             title = base.replace('_', ' ').replace('-', ' ').title()
         else:
-            title = f"{document_type} Document"
+            title = f"{categories} Document"
     
     if not title:
         title = "Unknown Document"
@@ -438,12 +461,408 @@ def extract_institutional_metadata(text, filename=None):
         "title": title,
         "author": contributor_str,
         "date": date,
-        "document_type": document_type,
+        "categories": categories,
         "organization": ', '.join(organizations) if organizations else "Unknown",
     }
 
 def extract_metadata(text, filename=None):
     return extract_institutional_metadata(text, filename)
+
+def generate_summary(text, title=None, author=None, date=None, keywords=None, categories=None, max_attempts=3):
+    print("Generating summary...")
+    cleaned_text = clean_text_for_nlp(text)
+    input_text = cleaned_text[:2000]
+
+    # Build subtle context instruction
+    context_parts = []
+    if title and title not in ["Unknown", ""]:
+        context_parts.append(f"Title: {title}")
+    if author and author not in ["Unknown", ""]:
+        context_parts.append(f"Author: {author}")
+    if date and date not in ["Unknown", ""]:
+        context_parts.append(f"Date: {date}")
+    if categories:
+        context_parts.append(f"Related topics: {', '.join(categories)}")
+    if keywords:
+        context_parts.append(f"Important topics: {', '.join(keywords[:8])}")
+
+    instruction = "Summarize the following document, reflecting the main ideas and key topics. Include author and date if relevant. Avoid explicitly mentioning metadata fields as much as possible but include one or more keywords."
+    if context_parts:
+        instruction += " Context: " + ". ".join(context_parts)
+
+    model_input = f"{instruction}\n\n{input_text}"
+
+    try:
+        base_summary = summarizer(model_input[:4000])[0]['summary_text']
+    except Exception as e:
+        print("Summarizer error:", e)
+        base_summary = "Summary not available."
+
+    # Check relevance
+    relevance_issue = check_summary_relevance(title, base_summary, keywords, categories, author, date)
+    if relevance_issue:
+        # Retry once with stronger guidance
+        retry_instruction = instruction + " Rewrite the summary to better reflect main topics and keywords."
+        retry_input = f"{retry_instruction}\n\n{input_text}"
+        try:
+            base_summary = summarizer(retry_input[:4000])[0]['summary_text']
+        except Exception as e:
+            print("Retry summarizer error:", e)
+            base_summary = base_summary  # fallback to original
+
+    return base_summary.strip()
+
+@app.post("/generate-summary/{doc_id}")
+def generate_summary_endpoint(doc_id: str):
+    # Fetch metadata
+    doc = supabase.table("documents_metadata").select("*").eq("id", doc_id).single().execute()
+    if not doc.data:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    metadata = doc.data.get("metadata") or {}
+    extracted_text = metadata.get("extracted_text")
+    file_url = doc.data.get("file_url")
+
+    # Re-extract text if missing
+    if not extracted_text or extracted_text.strip() == "":
+        try:
+            file_bytes = download_file(file_url)
+            extracted_result = extract_text(file_bytes, filename=file_url.split("/")[-1])
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to download or extract file: {e}")
+
+        if isinstance(extracted_result, dict) and extracted_result.get("status") == "ocr_required":
+            return {
+                "id": doc_id,
+                "summary": None,
+                "ocr_required": True,
+                "pages": extracted_result["pages"],
+                "filename": extracted_result["filename"]
+            }
+
+        extracted_text = extracted_result
+
+    # Generate summary
+    summary = generate_summary(
+        text=extracted_text,
+        title=metadata.get("title"),
+        author=metadata.get("author"),
+        date=metadata.get("date"),
+        keywords=metadata.get("keywords", []),
+        categories=metadata.get("categories", [])
+    )
+
+    # Return summary without saving
+    return {"id": doc_id, "summary": summary}
+
+def download_file(file_url: str) -> bytes:
+    if "supabase.co" in file_url:
+        # Direct HTTP download from Supabase public bucket
+        res = requests.get(file_url)
+        if res.status_code != 200:
+            raise Exception(f"Failed to download from Supabase: {res.status_code}")
+        return res.content
+
+    elif "r2.dev" in file_url:
+        # Direct HTTP download from R2 public bucket
+        res = requests.get(file_url)
+        if res.status_code != 200:
+            raise Exception(f"Failed to download from R2: {res.status_code}")
+        return res.content
+
+    else:
+        raise ValueError(f"Unknown file storage provider for {file_url}")
+
+def detect_inconsistencies(metadata, source_type="document"):
+    issues = []
+
+    # Title
+    if not metadata.get("title") or metadata["title"] in ["Unknown", ""]:
+        issues.append({
+            "field": "title",
+            "issue": "Missing or unknown title",
+            "suggestion": "Add a clear, descriptive title summarizing the item."
+        })
+
+    # Author
+    if not metadata.get("author") or metadata["author"] in ["Unknown", ""]:
+        issues.append({
+            "field": "author",
+            "issue": "Missing or unknown author",
+            "suggestion": "Specify the full author or responsible organization."
+        })
+
+    # Date
+    date_val = metadata.get("date")
+    if not date_val or date_val in ["Unknown", ""]:
+        issues.append({
+            "field": "date",
+            "issue": "Missing or unknown date",
+            "suggestion": "Add the creation or publication date."
+        })
+    elif source_type == "document":  # only documents get validity checks
+        try:
+            parsed = date_parse(date_val)
+            if parsed.year > 2025:
+                issues.append({
+                    "field": "date",
+                    "issue": f"Future date detected: {date_val}",
+                    "suggestion": "Correct the date to the actual publication date."
+                })
+        except:
+            issues.append({
+                "field": "date",
+                "issue": f"Invalid date format: {date_val}",
+                "suggestion": "Use the standard format YYYY-MM-DD."
+            })
+
+    # Categories
+    if not metadata.get("categories"):
+        issues.append({
+            "field": "categories",
+            "issue": "No categories provided",
+            "suggestion": "Assign at least one relevant category."
+        })
+
+    # Summary relevance → only for documents
+    if source_type == "document":
+        summary_issue = check_summary_relevance(
+            metadata.get("title", ""),
+            metadata.get("summary", "")
+        )
+        if summary_issue:
+            issues.append(summary_issue)
+
+    return issues
+
+# Load sentence transformer model once
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+def save_inconsistencies(
+    record_id,
+    metadata,
+    supabase,
+    source_type,
+    **extra_fields  # catch optional stuff like file_name, file_url, etc.
+):
+    # Detect issues
+    issues_raw = detect_inconsistencies(metadata, source_type=source_type)
+    merged_issues = [
+        {
+            "field": issue.get("field"),
+            "issue": issue.get("issue"),
+            "suggestion": issue.get("suggestion")
+        }
+        for issue in issues_raw
+    ]
+
+    # Check if inconsistencies already exist for this record
+    existing = supabase.table("inconsistencies") \
+        .select("*") \
+        .eq("record_id", record_id) \
+        .eq("source_type", source_type) \
+        .execute()
+
+    if merged_issues:
+        row_data = {
+            "record_id": record_id,
+            "source_type": source_type,
+            "title": metadata.get("title"),
+            "issues": merged_issues,
+            "last_scanned_at": datetime.utcnow().isoformat(),
+            **extra_fields  # adds file_name, file_url, etc.
+        }
+
+        if existing.data:
+            existing_row = existing.data[0]
+            if existing_row["issues"] != merged_issues:
+                # Re-open if new issues appear or existing ones changed
+                supabase.table("inconsistencies").update({
+                    "issues": merged_issues,
+                    "status": "Open",
+                    "updated_at": datetime.utcnow().isoformat(),
+                    "resolved_at": None,  # clear resolved_at if re-opened
+                }).eq("record_id", record_id) \
+                  .eq("source_type", source_type) \
+                  .execute()
+            else:
+                # Just refresh scan timestamp
+                supabase.table("inconsistencies").update({
+                    "last_scanned_at": datetime.utcnow().isoformat()
+                }).eq("record_id", record_id) \
+                  .eq("source_type", source_type) \
+                  .execute()
+        else:
+            # Insert new row
+            supabase.table("inconsistencies").insert({
+                **row_data,
+                "status": "Open",
+                "created_at": datetime.utcnow().isoformat()
+            }).execute()
+    else:
+        # No issues → resolve if not already
+        if existing.data and existing.data[0]["status"] != "Resolved":
+            supabase.table("inconsistencies").update({
+                "status": "Resolved",
+                "resolved_at": datetime.utcnow().isoformat()
+            }).eq("record_id", record_id) \
+              .eq("source_type", source_type) \
+              .execute()
+
+def check_summary_relevance(title, summary, keywords=None, categories=None, author=None, date=None):
+    metadata = {
+        "title": title,
+        "summary": summary,
+        "keywords": keywords or [],
+        "categories": categories or [],
+        "author": author or "",
+        "date": date or ""
+    }
+
+    if not summary.strip():
+        return {
+            "field": "summary",
+            "issue": "Missing summary",
+            "suggestion": "Generate a concise summary based on the document content."
+        }
+
+    # Build context text from metadata
+    context_parts = [title]
+    if keywords:
+        context_parts.append(" ".join(keywords))
+    if categories:
+        context_parts.append(" ".join(categories))
+    if author:
+        context_parts.append(f"Author: {author}")
+    if date:
+        context_parts.append(f"Date: {date}")
+    context_text = " ".join(context_parts)
+
+    try:
+        embeddings = model.encode([context_text, summary], convert_to_tensor=True)
+        similarity = util.pytorch_cos_sim(embeddings[0], embeddings[1]).item()
+    except Exception as e:
+        print("Embedding similarity check failed:", e)
+        similarity = 1.0  # skip similarity check if embedding fails
+
+    # Check similarity
+    if similarity < 0.55:
+        return {
+            "field": "summary",
+            "issue": "Summary may not align well with document content or metadata context",
+            "suggestion": "Rewrite the summary to better reflect the main topics and key points of the document."
+        }
+
+    # Check keywords presence or any similar words 
+    if keywords:
+        keyword_embeddings = model.encode(keywords, convert_to_tensor=True)
+        summary_embedding = model.encode(summary, convert_to_tensor=True)
+        keyword_sims = util.pytorch_cos_sim(summary_embedding, keyword_embeddings)[0]
+        if all(score < 0.5 for score in keyword_sims):
+            return {
+                "field": "summary",
+                "issue": "Summary may not reflect main topics from keywords",
+                "suggestion": "Regenerate the summary ensuring it covers the main topics implied by the keywords"
+            }
+
+    return {}
+
+# Initialize Supabase
+load_dotenv()
+url = os.getenv("VITE_SUPABASE_URL")
+key = os.getenv("VITE_SUPABASE_ANON_KEY")
+supabase: Client = create_client(url, key)
+
+def log_inconsistencies(record_id, source_type, file_name, issues):
+    if not issues:
+        return
+
+    merged_issues = [
+        {
+            "field": issue.get("field"),
+            "issue": issue.get("issue"),
+            "suggestion": issue.get("suggestion")
+        }
+        for issue in issues
+    ]
+
+    existing = supabase.table("inconsistencies") \
+        .select("*") \
+        .eq("record_id", record_id) \
+        .eq("source_type", source_type) \
+        .execute()
+
+    if merged_issues:
+        row_data = {
+            "record_id": record_id,
+            "source_type": source_type,
+            "file_name": file_name,
+            "issues": merged_issues,
+            "last_scanned_at": datetime.utcnow().isoformat()
+        }
+
+        if existing.data:
+            if existing.data[0]["issues"] != merged_issues:
+                supabase.table("inconsistencies").update({
+                    "issues": merged_issues,
+                    "status": "Open",
+                    "updated_at": datetime.utcnow().isoformat()
+                }).eq("record_id", record_id).eq("source_type", source_type).execute()
+            else:
+                supabase.table("inconsistencies").update({
+                    "last_scanned_at": datetime.utcnow().isoformat()
+                }).eq("record_id", record_id).eq("source_type", source_type).execute()
+        else:
+            supabase.table("inconsistencies").insert({
+                **row_data,
+                "status": "Open",
+                "created_at": datetime.utcnow().isoformat()
+            }).execute()
+    else:
+        if existing.data and existing.data[0]["status"] != "Resolved":
+            supabase.table("inconsistencies").update({
+                "status": "Resolved",
+                "resolved_at": datetime.utcnow().isoformat()
+            }).eq("record_id", record_id).eq("source_type", source_type).execute()
+
+@app.post("/rescan-metadata")
+async def rescan_metadata():
+    try:
+        # Scan both tables
+        sources = [
+            {"table": "documents_metadata", "type": "document"},
+            {"table": "artifacts_metadata", "type": "artifact"}
+        ]
+
+        for source in sources:
+            rows = supabase.table(source["table"]).select("*").execute()
+            if not rows.data:
+                continue
+
+            for row in rows.data:
+                metadata_json = row.get("metadata") or {}
+
+                # Reuse the save function
+                save_inconsistencies(
+                    record_id=row["id"],
+                    metadata={
+                        "title": metadata_json.get("title"),
+                        "author": metadata_json.get("author"),
+                        "date": metadata_json.get("date"),
+                        "summary": metadata_json.get("summary"),
+                        "keywords": metadata_json.get("keywords", []),
+                        "categories": metadata_json.get("categories", [])
+                    },
+                    supabase=supabase,
+                    source_type=source["type"],  # tells if document or artifact
+                    file_name=row.get("file_name"),
+                    file_url=row.get("file_url"),
+                )
+
+        return {"success": True, "error": None}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 @app.get("/related-links")
 async def related_links(title: str, author: str = "", categories: str = ""):
@@ -459,3 +878,5 @@ async def related_links(title: str, author: str = "", categories: str = ""):
         return {"error": e.stderr or "Puppeteer script failed"}
     except json.JSONDecodeError:
         return {"error": "Invalid JSON from Puppeteer"}
+
+

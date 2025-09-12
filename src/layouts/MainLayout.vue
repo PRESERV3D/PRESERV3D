@@ -136,21 +136,46 @@
       <q-page-container>
         <div v-if="hasSearchBar" class="search-toolbar q-py-md q-px-md">
           <q-toolbar class="bg-transparent responsive-toolbar">
-            <!-- Search Bar Container -->
+            <!-- Search Bar Container with Internal Dropdown -->
             <div class="search-container">
               <q-input
                 dense
                 outlined
                 v-model="search"
                 placeholder="Search name, work, year, etc."
-                class="search-input"
-                input-class="text-left"
                 clearable
                 clear-icon="close"
                 @keyup.enter="performSearch"
+                class="search-input no-gap"
               >
+                <!-- dropdown select on the far left -->
                 <template v-slot:prepend>
-                  <q-icon name="search" @click="performSearch" class="cursor-pointer" />
+                  <q-select
+                    dense
+                    borderless
+                    flat
+                    v-model="searchType"
+                    :options="searchOptions"
+                    emit-value
+                    map-options
+                    @update:model-value="performSearch"
+                    style="width: 140px; text-align: center"
+                    popup-content-style="text-align: center; text-transform: capitalize;"
+                  >
+                    <template v-slot:selected>
+                      <div style="width: 100%; text-align: center; text-transform: capitalize">
+                        {{ searchType }}
+                      </div>
+                    </template>
+                  </q-select>
+
+                  <!-- search icon appears right after dropdown -->
+                  <q-icon
+                    name="search"
+                    @click="performSearch"
+                    class="cursor-pointer"
+                    style="margin: 0 8px"
+                  />
                 </template>
               </q-input>
             </div>
@@ -210,16 +235,27 @@
 </template>
 
 <script setup>
+<<<<<<< HEAD
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+=======
+import { ref, computed, watch, onMounted } from 'vue'
+>>>>>>> features
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
+<<<<<<< HEAD
 import { supabase } from 'boot/supabase'
+=======
+import { useDocumentsStore } from 'src/stores/documentsStore'
+import { useFiltering } from 'src/utils/useFiltering'
+const { clearFilters } = useFiltering()
+>>>>>>> features
 
 const $q = useQuasar()
 const userStore = useUserStore()
 const searchStore = useSearchStore()
+const documentsStore = useDocumentsStore()
 const router = useRouter()
 const route = useRoute()
 const session = userStore.session
@@ -227,6 +263,13 @@ const session = userStore.session
 const drawer = ref(false)
 const miniState = ref(true)
 const search = ref('')
+
+// Search dropdown options
+const searchType = ref('artifacts') // default selection
+const searchOptions = [
+  { label: 'Artifacts', value: 'artifacts' },
+  { label: 'Documents', value: 'documents' },
+]
 
 // User and notifications data
 const notifications = ref([])
@@ -236,6 +279,7 @@ let channel = null
 // Base navigation items
 const baseNavItems = [
   { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
+  { name: 'data-quality', label: 'Data Quality', icon: '\\icons\\data_quality.png' },
   { name: 'appointment', label: 'Appointment', icon: '\\icons\\appointment.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
   { name: 'documents', label: 'Documents', icon: '\\icons\\book.png' },
@@ -249,17 +293,24 @@ const userName = computed(() => userProfile.value.first_name || 'User')
 const userRole = computed(() => userProfile.value.role || 'Unknown')
 const userType = computed(() => userProfile.value.user_type || 'Unknown')
 
-// Add computed property to check if user role is 'user'
+// Add computed property to check roles
 const isUser = computed(() => userRole.value === 'user')
+const isAdmin = computed(() => userRole.value === 'admin')
 
 // Filtered navigation items based on user role
 const navItems = computed(() => {
   return baseNavItems.filter((item) => {
-    // Show collections only for users with 'user' role
+    // Show collections only for users
     if (item.name === 'collections') {
       return isUser.value
     }
-    // Show all other items for everyone
+
+    // Hide data-quality if the user is not admin
+    if (item.name === 'data-quality') {
+      return isAdmin.value
+    }
+
+    // Show all other items
     return true
   })
 })
@@ -283,6 +334,7 @@ const activeItem = ref('home')
 const hasSearchBar = ref(false)
 
 const setActiveItem = (itemName) => {
+  console.log('Setting active item to:', itemName)
   activeItem.value = itemName
 
   // Close mobile drawer when navigating
@@ -305,6 +357,7 @@ const setActiveItem = (itemName) => {
     return
   } else {
     // Navigate to the corresponding route
+    activeItem.value = itemName
     const targetRoute = `/${itemName}`
     router.push(targetRoute)
   }
@@ -312,18 +365,32 @@ const setActiveItem = (itemName) => {
 
 // Search functionality
 const performSearch = async () => {
+  documentsStore.resetFilters()
+  clearFilters()
+
   const query = search.value
-  const currentPath = route.path
-  const isDocumentsPage = currentPath.includes('/documents')
-
-  const type = isDocumentsPage ? 'documents' : 'artifacts'
-
   if (!query.trim()) {
     searchStore.clear()
-  } else {
-    await searchStore.search(query, type)
-    console.log('Search performed:', search.value, type)
+    return
   }
+
+  // Redirect based on dropdown selection
+  let targetRoute = ''
+  if (searchType.value === 'artifacts') {
+    targetRoute = '/artifacts'
+  } else if (searchType.value === 'documents') {
+    targetRoute = '/documents'
+  }
+
+  if (route.path !== targetRoute) {
+    await router.push(targetRoute) // Wait for navigation to complete
+  }
+
+  // Set store search type based on dropdown selection
+  await searchStore.search(query, searchType.value)
+  console.log('Search performed:', query, searchType.value)
+
+  search.value = ''
 }
 
 const handleLogout = async () => {
@@ -336,6 +403,22 @@ const handleLogout = async () => {
     console.error('Error signing out:', error)
   }
 }
+
+onMounted(() => {
+  // Set search type based on current route
+  if (searchType.value) {
+    if (route.name === 'documents') {
+      searchType.value = 'documents'
+    } else if (route.name === 'artifacts') {
+      searchType.value = 'artifacts'
+    }
+  }
+
+  // Perform search if there's existing search value
+  if (search.value || searchType.value) {
+    performSearch()
+  }
+})
 
 // Watch search bar input and run query
 watch(search, async (query) => {
@@ -351,22 +434,22 @@ watch(
   (newPath) => {
     if (newPath === '/') {
       activeItem.value = 'home'
-    } else if (
-      newPath.includes('home') ||
-      newPath.includes('admindash') ||
-      newPath.includes('collection')
-    ) {
+    } else if (newPath.includes('home') || newPath.includes('admindash')) {
       activeItem.value = 'home'
     } else if (newPath.includes('appointment')) {
       activeItem.value = 'appointment'
     } else if (newPath.includes('artifacts')) {
       activeItem.value = 'artifacts'
+      searchType.value = 'artifacts'
     } else if (newPath.includes('documents') || newPath.includes('document-scanner')) {
       activeItem.value = 'documents'
+      searchType.value = 'documents'
     } else if (newPath.includes('collections')) {
       activeItem.value = 'collections'
     } else if (newPath.includes('gallery')) {
       activeItem.value = 'gallery'
+    } else if (newPath.includes('data-quality')) {
+      activeItem.value = 'data-quality'
     } else {
       activeItem.value = ''
     }
@@ -473,6 +556,16 @@ watch(
 </script>
 
 <style scoped>
+.no-gap :deep(.q-field__prepend) {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  min-width: 0 !important;
+}
+
+.no-gap :deep(.q-field__control) {
+  padding-left: 0 !important;
+}
+
 /* Mobile Header */
 .mobile-header {
   background: linear-gradient(135deg, #880000 0%, #660000 100%);
@@ -686,7 +779,7 @@ watch(
   height: 1px;
 }
 
-/* Search toolbar completely responsive */
+/* Updated Search Styles - Single input with internal dropdown */
 .search-toolbar {
   background: transparent !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
@@ -707,24 +800,25 @@ watch(
   max-width: 830px;
 }
 
-.search-input {
+/* Single search input with internal dropdown */
+.search-input-with-dropdown {
   background: rgba(255, 255, 255, 0.9) !important;
-  border-radius: 8px;
+  border-radius: 8px !important;
   backdrop-filter: blur(10px);
   width: 100%;
 }
 
-.search-input .q-field__control {
+.search-input-with-dropdown .q-field__control {
   background: rgba(255, 255, 255, 0.95) !important;
-  border-radius: 8px;
+  border-radius: 8px !important;
   backdrop-filter: blur(10px);
 }
 
-.search-input .q-field__native {
+.search-input-with-dropdown .q-field__native {
   color: #333 !important;
 }
 
-.search-input .q-placeholder {
+.search-input-with-dropdown .q-placeholder {
   color: #666 !important;
 }
 
@@ -766,11 +860,9 @@ watch(
 .user-profile-btn {
   background-color: #f8f9fa !important;
   border-radius: 10px;
-
   min-height: 44px;
   width: 282px;
   display: flex;
-
   align-items: center;
 }
 

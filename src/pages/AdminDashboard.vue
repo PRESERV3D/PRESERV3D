@@ -354,7 +354,7 @@
           </q-card-actions>
         </q-card>
       </q-dialog>
-      <div>
+      <!-- <div>
         <div class="q-mt-lg">
           <q-table
             class="incomplete-box"
@@ -365,7 +365,7 @@
             :columns="incompleteColumns"
             row-key="id"
           >
-            <!-- clickable link cell -->
+
             <template v-slot:body-cell-materialLink="props">
               <q-td :props="props">
                 <a :href="props.row.materialLink" target="_blank">
@@ -386,7 +386,7 @@
             </template>
           </q-table>
         </div>
-      </div>
+      </div> -->
     </div>
   </q-page>
 </template>
@@ -409,6 +409,7 @@ import {
 } from 'chart.js'
 
 let chartInstance = null
+let usersChartInstance = null
 const activeFilter = ref('all')
 const uploadedArchives = ref(null)
 const usersPerMonth = ref(null)
@@ -475,22 +476,40 @@ const generateReport = async () => {
 }
 
 onMounted(async () => {
-  const chartData = await prepareChartData()
-  const usersData = await prepareUsersData()
+  if (usersPerMonth.value) {
+    const usersData = await prepareUsersData()
+    initUsersPerMonthChart(usersData)
+  }
+
+  if (uploadedArchives.value) {
+    const chartData = await prepareChartData()
+    initChart(chartData)
+  }
+
   const { data: topArts } = await supabase.from('artifacts_view').select('*').limit(3)
   const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
+  const { count: artifactsCount } = await supabase
+    .from('artifacts_metadata')
+    .select('*', { count: 'exact', head: true })
+
+  const { count: documentsCount } = await supabase
+    .from('documents_metadata')
+    .select('*', { count: 'exact', head: true })
+
+  const { count: userCount } = await supabase
+    .from('all_users')
+    .select('*', { count: 'exact', head: true })
+    .neq('user_type', 'admin')
+
   await recentStore.fetchRecentUploads()
 
   topArtifacts.value = topArts
   topDocuments.value = topDocus
 
   // Update counts from chartData and usersData
-  artifacts.value = chartData.artifactsCounts.reduce((sum, val) => sum + val, 0)
-  documents.value = chartData.documentsCounts.reduce((sum, val) => sum + val, 0)
-  users.value = usersData.usersCounts.reduce((sum, val) => sum + val, 0)
-
-  initChart(chartData)
-  initUsersPerMonthChart(usersData)
+  artifacts.value = artifactsCount
+  documents.value = documentsCount
+  users.value = userCount
 
   await fetchVisitors()
 })
@@ -563,6 +582,8 @@ async function prepareChartData() {
 function updateChart(allData) {
   let datasets = []
 
+  if (!uploadedArchives.value) return
+
   if (activeFilter.value === 'all' || activeFilter.value === 'artifacts') {
     datasets.push({
       label: 'Artifacts',
@@ -596,18 +617,11 @@ watch(activeFilter, async () => {
 
 // Users Per Month Chart
 function initUsersPerMonthChart(data) {
-  new Chart(usersPerMonth.value, {
+  usersChartInstance = new Chart(usersPerMonth.value, {
     type: 'line',
     data: {
       labels: monthLabels,
-      datasets: [
-        {
-          label: 'Users per Month',
-          data: data.usersCounts,
-          borderColor: '#880000',
-          fill: false,
-        },
-      ],
+      datasets: [], // will be filled by updateUsersChart
     },
     options: {
       responsive: true,
@@ -625,25 +639,67 @@ function initUsersPerMonthChart(data) {
       },
     },
   })
+
+  updateUsersChart(data)
 }
 
 async function prepareUsersData() {
-  const { data: users } = await supabase.from('registered_users').select('created_at')
+  const { data: users } = await supabase.from('all_users').select('created_at, user_type')
 
-  // Process the user data to get counts per month
-  const usersCounts = Array(12).fill(0)
-  function incrementCount(data, counter) {
-    data.forEach((item) => {
-      const date = new Date(item.created_at)
-      const monthIndex = date.getMonth()
-      counter[monthIndex]++
-    })
-  }
+  // Initialize counters for each user type
+  const studentCounts = Array(12).fill(0)
+  const facultyCounts = Array(12).fill(0)
+  const visitorCounts = Array(12).fill(0)
 
-  incrementCount(users, usersCounts)
+  users.forEach((user) => {
+    const date = new Date(user.created_at)
+    const monthIndex = date.getMonth()
+
+    if (user.user_type === 'student') {
+      studentCounts[monthIndex]++
+    } else if (user.user_type === 'faculty') {
+      facultyCounts[monthIndex]++
+    } else if (user.user_type === 'visitor') {
+      visitorCounts[monthIndex]++
+    }
+  })
 
   return {
-    usersCounts,
+    studentCounts,
+    facultyCounts,
+    visitorCounts,
+  }
+}
+
+function updateUsersChart(data) {
+  if (!usersPerMonth.value) return
+
+  const datasets = [
+    {
+      label: 'Students',
+      data: data.studentCounts,
+      borderColor: '#880000',
+      fill: false,
+    },
+    {
+      label: 'Faculty',
+      data: data.facultyCounts,
+      borderColor: '#efaf00',
+      fill: false,
+    },
+    {
+      label: 'Visitors',
+      data: data.visitorCounts,
+      borderColor: '#3d86ff',
+      fill: false,
+    },
+  ]
+
+  if (usersChartInstance) {
+    usersChartInstance.data.datasets = datasets
+    usersChartInstance.update()
+  } else {
+    initUsersPerMonthChart(data)
   }
 }
 
@@ -818,66 +874,66 @@ function generateTempPassword(length = 12) {
 }
 
 //Sample backend for Incomplete metadata
-const incompleteColumns = [
-  {
-    name: 'materialNo',
-    label: 'Archival Material No.',
-    align: 'center',
-    field: 'materialNo',
-  },
-  {
-    name: 'materialType',
-    label: 'Archival Material Type',
-    align: 'center',
-    field: 'materialType',
-  },
-  {
-    name: 'materialName',
-    label: 'Archival Material Name',
-    align: 'center',
-    field: 'materialName',
-  },
-  {
-    name: 'materialIncompleteData',
-    label: 'Incomplete Data',
-    align: 'center',
-    field: 'materialIncompleteData',
-  },
+// const incompleteColumns = [
+//   {
+//     name: 'materialNo',
+//     label: 'Archival Material No.',
+//     align: 'center',
+//     field: 'materialNo',
+//   },
+//   {
+//     name: 'materialType',
+//     label: 'Archival Material Type',
+//     align: 'center',
+//     field: 'materialType',
+//   },
+//   {
+//     name: 'materialName',
+//     label: 'Archival Material Name',
+//     align: 'center',
+//     field: 'materialName',
+//   },
+//   {
+//     name: 'materialIncompleteData',
+//     label: 'Incomplete Data',
+//     align: 'center',
+//     field: 'materialIncompleteData',
+//   },
 
-  {
-    name: 'materialLink',
-    label: 'Archival Material Link',
-    align: 'center',
-    field: 'materialLink',
-  },
-]
+//   {
+//     name: 'materialLink',
+//     label: 'Archival Material Link',
+//     align: 'center',
+//     field: 'materialLink',
+//   },
+// ]
 
-const incompleteRows = ref([
-  {
-    id: 1,
-    materialNo: 'AM-001',
-    materialType: 'Document',
-    materialName: 'Annual Report',
-    materialIncompleteData: 'Author, Date',
-    materialLink: 'http://example.com/notes',
-  },
-  {
-    id: 2,
-    materialNo: 'AM-002',
-    materialType: 'Artifact',
-    materialName: 'Cat Toy',
-    materialIncompleteData: 'Description',
-    materialLink: 'http://example.com/cattoy',
-  },
-  {
-    id: 3,
-    materialNo: 'AM-003',
-    materialType: 'Artifact',
-    materialName: 'Campus Plaque',
-    materialIncompleteData: 'Author',
-    materialLink: 'http://example.com/campus',
-  },
-])
+// const incompleteRows = ref([
+//   {
+//     id: 1,
+//     materialNo: 'AM-001',
+//     materialType: 'Document',
+//     materialName: 'Annual Report',
+//     materialIncompleteData: 'Author, Date',
+//     materialLink: 'http://example.com/notes',
+//   },
+//   {
+//     id: 2,
+//     materialNo: 'AM-002',
+//     materialType: 'Artifact',
+//     materialName: 'Cat Toy',
+//     materialIncompleteData: 'Description',
+//     materialLink: 'http://example.com/cattoy',
+//   },
+//   {
+//     id: 3,
+//     materialNo: 'AM-003',
+//     materialType: 'Artifact',
+//     materialName: 'Campus Plaque',
+//     materialIncompleteData: 'Author',
+//     materialLink: 'http://example.com/campus',
+//   },
+// ])
 </script>
 
 <style scoped>
@@ -1065,12 +1121,12 @@ const incompleteRows = ref([
   width: 25rem;
 }
 
-.incomplete-see-all {
+/* .incomplete-see-all {
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
   font-size: 14px;
   color: #880000;
   height: 2rem;
   width: 6rem;
-}
+} */
 </style>

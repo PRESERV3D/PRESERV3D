@@ -275,6 +275,8 @@ const fetchAppointments = async () => {
     .from('appointment_booking')
     .select('*')
     .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+
 
   if (!error && data) {
     appointments.value = data.map((a) => ({
