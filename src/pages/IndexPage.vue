@@ -20,8 +20,8 @@
           </div>
           <!-- Small Button Layout -->
           <div class="q-ml-sm q-gutter-sm column xs">
-            <q-btn to="/artifacts" label="Explore Artifacts" class="btn-explore full-width" no-caps />
-            <q-btn to="/documents" label="Browse Documents" class="btn-document full-width" no-caps />
+            <q-btn to="/artifacts" label="Artifacts" class="btn-explore full-width" no-caps />
+            <q-btn to="/documents" label="Documents" class="btn-document full-width" no-caps />
           </div>
         </div>
         <!-- Image - Hidden on small view -->
