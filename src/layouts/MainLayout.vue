@@ -256,6 +256,7 @@ const drawer = ref(false)
 const miniState = ref(true)
 const search = ref('')
 
+
 // Search dropdown options
 const searchType = ref('artifacts') // default selection
 const searchOptions = [
