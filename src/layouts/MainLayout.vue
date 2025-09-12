@@ -485,7 +485,7 @@ watch(
 
 .q-page-container {
   overflow-x: hidden !important;
-  margin-left: 0 !important;
+  margin-left: 0 !important; /* No margin - content stays in place */
   transition: none !important;
 }
 
@@ -569,18 +569,18 @@ watch(
   background: transparent !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   padding: 8px 16px !important;
-  width: 100% !important;
+  width: 100% !important; /* Full width - no sidebar offset */
   box-sizing: border-box;
-  position: relative !important;
+  position: relative !important; /* Normal positioning */
   z-index: 1000 !important;
 }
 
+/* No special toolbar positioning for sidebar states */
 
 .responsive-toolbar-container {
   display: flex;
   align-items: center;
   width: 100%;
-  gap: 16px;
   min-height: 44px;
 }
 
@@ -636,15 +636,15 @@ watch(
   }
 }
 
-/* Large screens */
+/* Large screens  */
 @media (min-width: 1440px) and (max-width: 1919px) {
   .search-container {
-    width: 735px !important;
-    min-width: 735px !important;
-    max-width: 735px !important;
+    width: 790px !important;
+    min-width: 790px !important;
+    max-width: 790px !important;
   }
   .toolbar-actions {
-    gap: 100px;
+    gap: 120px;
   }
   .user-profile-btn:not(.compact) {
     width: 210px !important;
@@ -656,9 +656,9 @@ watch(
 /* Medium-large screens */
 @media (min-width: 1300px) and (max-width: 1439px) {
   .search-container {
-    width: 640px !important;
-    min-width: 640px !important;
-    max-width: 640px !important;
+    width: 652px !important; /* Increased to compensate */
+    min-width: 652px !important;
+    max-width: 652px !important;
   }
   .toolbar-actions {
     gap: 100px;
@@ -670,24 +670,24 @@ watch(
   }
 }
 
-/*my screen size range (1200-1300px) */
-@media (min-width: 1200px) and (max-width: 1300px) {
+/* my screen size */
+@media (min-width: 1200px) and (max-width: 1299px) {
   .search-container {
-    width: 640px !important;
-    min-width: 640px !important;
-    max-width: 640px !important;
+    width: 790px !important; 
+    min-width: 790px !important;
+    max-width: 790px !important;
     flex: none !important;
   }
 
   .toolbar-actions {
-    gap: 100px;
+    gap: 120px;
     width: auto;
   }
 
   .user-profile-btn:not(.compact) {
-    width: 180px !important;
-    min-width: 180px !important;
-    max-width: 180px !important;
+    width: 210px !important;
+    min-width: 210px !important;
+    max-width: 210px !important;
   }
 }
 
