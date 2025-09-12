@@ -220,7 +220,74 @@
                   class="q-ml-md summary-input"
                   :input-style="{ minHeight: '60px' }"
                 />
+
+                <!-- Generate Summary Button -->
+                <q-btn
+                  flat
+                  no-caps
+                  dense
+                  label="Generate"
+                  class="q-ml-md find-more-info-btn"
+                  style="margin-top: 1rem"
+                  @click="generateSummary"
+                />
               </div>
+
+              <q-dialog v-model="showSummaryDialog" persistent>
+                <q-card style="min-width: 400px; max-width: 600px; position: relative">
+                  <q-card-section>
+                    <div v-if="summaryLoading" style="text-align: center">
+                      <div style="font-weight: bold; margin-bottom: 5px">Simon Says</div>
+                      <div
+                        style="display: flex; justify-content: center; gap: 5px; flex-wrap: wrap"
+                      >
+                        <div
+                          v-for="color in colors"
+                          :key="color"
+                          :style="{
+                            background: color,
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '10px',
+                            opacity: activeColor === color ? 1 : 0.5,
+                            cursor: 'pointer',
+                          }"
+                          @click="handleColorClick(color)"
+                        ></div>
+                      </div>
+                      <div style="margin-top: 10px">Score: {{ simonScore }}</div>
+                      <div style="margin-top: 5px">Generating summary...</div>
+                    </div>
+
+                    <div v-else>
+                      <q-input
+                        v-model="summary"
+                        type="textarea"
+                        outlined
+                        dense
+                        style="min-height: 120px"
+                      />
+                    </div>
+                  </q-card-section>
+
+                  <q-card-actions align="right">
+                    <q-btn
+                      flat
+                      label="Cancel"
+                      color="negative"
+                      @click="showSummaryDialog = false"
+                    />
+                    <q-btn
+                      flat
+                      label="Save"
+                      color="primary"
+                      @click="saveSummary"
+                      :disable="summaryLoading"
+                    />
+                  </q-card-actions>
+                </q-card>
+              </q-dialog>
+
               <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
               <!-- q-dialog for related links -->
               <q-dialog v-model="showRelatedDialog" persistent>
@@ -425,17 +492,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 import { useDocumentsStore } from 'stores/documentsStore'
+import { useQuasar } from 'quasar'
 import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
 const doc = ref(null)
 const loading = ref(true)
+const summaryLoading = ref(false)
 
 // const dialog = ref(false)
 // const metadata = ref(null)
@@ -452,7 +521,19 @@ const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
-//new add
+// Generate Summary
+const $q = useQuasar()
+const summary = ref('')
+const showSummaryDialog = ref(false)
+const docId = route.params.id
+
+// Loading Mini Game
+const colors = ['red', 'green', 'blue', 'yellow']
+const simonSequence = ref([])
+const userSequence = ref([])
+const activeColor = ref(null)
+const simonScore = ref(0)
+
 // Editing logic from doc page
 async function saveChanges() {
   try {
@@ -721,7 +802,88 @@ onMounted(async () => {
   loadCategories(data)
 })
 
-//
+// Generate Summary
+const generateSummary = async () => {
+  showSummaryDialog.value = true
+  summaryLoading.value = true
+
+  try {
+    const { data } = await axios.post(`http://localhost:8000/generate-summary/${docId}`)
+    summary.value = data.summary
+  } catch (err) {
+    console.error(err)
+    $q.notify({ type: 'negative', message: 'Failed to generate summary' })
+  } finally {
+    summaryLoading.value = false
+  }
+}
+
+const saveSummary = () => {
+  summaryLoading.value = true
+  try {
+    if (doc.value && doc.value.metadata) {
+      doc.value.metadata.summary = summary.value
+    }
+
+    $q.notify({ type: 'positive', message: 'Summary updated locally' })
+    showSummaryDialog.value = false
+  } catch (err) {
+    console.error(err)
+    $q.notify({ type: 'negative', message: 'Failed to update summary' })
+  } finally {
+    summaryLoading.value = false
+  }
+}
+
+// Loading Mini Game
+const nextSimonStep = () => {
+  const nextColor = colors[Math.floor(Math.random() * colors.length)]
+  simonSequence.value.push(nextColor)
+  playSequence()
+}
+
+const playSequence = async () => {
+  for (let c of simonSequence.value) {
+    activeColor.value = c
+    await new Promise((r) => setTimeout(r, 500))
+    activeColor.value = null
+    await new Promise((r) => setTimeout(r, 200))
+  }
+  userSequence.value = []
+}
+
+const handleColorClick = (color) => {
+  userSequence.value.push(color)
+  const currentIndex = userSequence.value.length - 1
+  if (userSequence.value[currentIndex] !== simonSequence.value[currentIndex]) {
+    // Game over
+    simonSequence.value = []
+    userSequence.value = []
+    simonScore.value = 0
+    nextSimonStep()
+  } else if (userSequence.value.length === simonSequence.value.length) {
+    simonScore.value += 1
+    nextSimonStep()
+  }
+}
+
+watch(
+  () => summaryLoading,
+  async (val) => {
+    if (val) {
+      simonSequence.value = []
+      userSequence.value = []
+      simonScore.value = 0
+      await nextTick()
+      nextSimonStep()
+    } else {
+      simonSequence.value = []
+      userSequence.value = []
+      simonScore.value = 0
+    }
+  },
+)
+// Related Links
 const showRelatedDialog = ref(false)
 const newLink = ref('')
 const links = ref([]) // starts empty

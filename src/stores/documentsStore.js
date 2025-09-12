@@ -34,7 +34,6 @@ export const useDocumentsStore = defineStore('documentsStore', {
       }, {})
     },
     async fetchStarCounts() {
-      // ADDED: Fetch star counts
       const { data, error } = await supabase
         .from('documents_star_count')
         .select('item_id, star_count')
@@ -49,16 +48,87 @@ export const useDocumentsStore = defineStore('documentsStore', {
         return acc
       }, {})
     },
-    sortBy(field, order) {
-      this.filteredDocuments = [...this.documents]
+    // sortBy(field, order) {
+    //   this.filteredDocuments = [...this.filteredDocuments]
 
+    //   const getValue = (doc) => {
+    //     if (field === 'title') {
+    //       return (doc.metadata?.title || '').trim().toLowerCase()
+    //     }
+    //     if (field === 'uploaded_at') {
+    //       return new Date(doc.uploaded_at || 0)
+    //     }
+    //     return doc[field]
+    //   }
+
+    //   this.filteredDocuments.sort((a, b) => {
+    //     const valA = getValue(a)
+    //     const valB = getValue(b)
+
+    //     if (field === 'title') {
+    //       return (
+    //         valA.localeCompare(valB, undefined, { sensitivity: 'base' }) *
+    //         (order === 'asc' ? 1 : -1)
+    //       )
+    //     } else if (field === 'uploaded_at') {
+    //       return (valA - valB) * (order === 'desc' ? 1 : -1)
+    //     }
+    //   })
+    // },
+    filterBy({ categories, authors, dates }, currentSort) {
+      this.filteredDocuments = this.documents.filter((doc) => {
+        const meta = doc.metadata || {}
+
+        const matchesCategory =
+          !categories.length ||
+          categories.includes('All') ||
+          (Array.isArray(meta.categories) &&
+            meta.categories.some((c) =>
+              categories.map((cat) => cat.toLowerCase()).includes(c.toLowerCase()),
+            ))
+
+        const matchesAuthor =
+          !authors.length ||
+          (meta.author &&
+            meta.author
+              .split(',')
+              .some((a) => authors.map((au) => au.toLowerCase()).includes(a.trim().toLowerCase())))
+
+        const matchesDate =
+          !dates.length || (meta.date && dates.some((d) => meta.date.startsWith(d)))
+
+        return matchesCategory && matchesAuthor && matchesDate
+      })
+
+      if (currentSort) {
+        this.sortByField(currentSort)
+      }
+    },
+    sortSettings(sort) {
+      switch (sort) {
+        case 'Newest':
+          return { field: 'uploaded_at', order: 'desc' }
+        case 'Oldest':
+          return { field: 'uploaded_at', order: 'asc' }
+        case 'Title A-Z':
+          return { field: 'title', order: 'asc' }
+        case 'Title Z-A':
+          return { field: 'title', order: 'desc' }
+        default:
+          return { field: null, order: 'asc' }
+      }
+    },
+    sortByField(sort) {
+      console.log('Sorting documents by:', sort)
+      const { field, order } = this.sortSettings(sort)
+      if (!field) return
+
+      this.sortBy(field, order)
+    },
+    sortBy(field, order) {
       const getValue = (doc) => {
-        if (field === 'title') {
-          return (doc.metadata?.title || '').trim().toLowerCase()
-        }
-        if (field === 'uploaded_at') {
-          return new Date(doc.uploaded_at || 0)
-        }
+        if (field === 'title') return (doc.metadata?.title || '').trim().toLowerCase()
+        if (field === 'uploaded_at') return new Date(doc.uploaded_at || 0)
         return doc[field]
       }
 
@@ -66,31 +136,13 @@ export const useDocumentsStore = defineStore('documentsStore', {
         const valA = getValue(a)
         const valB = getValue(b)
 
-        if (field === 'title') {
+        if (field === 'title')
           return (
             valA.localeCompare(valB, undefined, { sensitivity: 'base' }) *
-            (order === 'desc' ? 1 : -1)
+            (order === 'asc' ? 1 : -1)
           )
-        } else if (field === 'uploaded_at') {
-          return (valA - valB) * (order === 'asc' ? 1 : -1)
-        }
-      })
-    },
-    filterBy({ category, author, date }) {
-      this.filteredDocuments = this.documents.filter((doc) => {
-        const meta = doc.metadata || {}
-
-        const matchesCategory =
-          !category ||
-          (Array.isArray(meta.categories) &&
-            meta.categories.some((c) => c.toLowerCase() === category.toLowerCase()))
-
-        const matchesAuthor =
-          !author || (meta.author && meta.author.toLowerCase().includes(author.toLowerCase()))
-
-        const matchesDate = !date || (meta.date && meta.date.startsWith(date)) // year-only match
-
-        return matchesCategory && matchesAuthor && matchesDate
+        if (field === 'uploaded_at') return (valA - valB) * (order === 'asc' ? 1 : -1)
+        return 0
       })
     },
     resetFilters() {

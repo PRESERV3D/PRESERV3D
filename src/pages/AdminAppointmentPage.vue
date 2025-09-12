@@ -231,7 +231,10 @@ async function confirmAction() {
 
 // Fetch appointments from DB
 async function fetchAppointments() {
-  const { data, error } = await supabase.from('appointment_booking').select('*')
+  const { data, error } = await supabase
+  .from('appointment_booking')
+  .select('*')
+  .order('created_at', { ascending: false })
 
   if (error) {
     console.error('Error fetching appointments:', error.message)

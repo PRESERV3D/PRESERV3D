@@ -148,7 +148,9 @@ createQuasarApp(createApp, quasarUserOptions)
       
       import('boot/supabase'),
       
-      import('boot/r2')
+      import('boot/r2'),
+      
+      import('boot/model-viewer')
       
     ]).then(bootFiles => {
       const boot = mapFn(bootFiles).filter(entry => typeof entry === 'function')
