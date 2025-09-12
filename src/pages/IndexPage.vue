@@ -54,12 +54,13 @@
                   class="view-icon"
                   @click="
                     () => {
-                      logClick(item.id, item.item_type)
+                      const action =
+                        item.item_type === 'artifact' ? 'view_artifact' : 'view_document'
+                      logClick(item.id, item.item_type, action)
                       viewItem(item)
                     }
                   "
                 />
-                <!-- FIXED: Added item_type parameter to star toggle -->
                 <q-btn
                   flat
                   round
@@ -97,12 +98,11 @@
                 <model-viewer
                   :src="model.file_url"
                   loading="lazy"
-                  auto-rotate
-                  auto-rotate-delay="1500"
-                  rotation-per-second="10deg"
                   shadow-intensity="1"
                   class="artifacts"
                   style="width: 100%; height: 400px"
+                  @pointerenter="startRotate"
+                  @pointerleave="stopRotate"
                 />
               </div>
               <q-card-section class="q-pa-sm artifact-card-section">
@@ -110,7 +110,7 @@
                   <router-link
                     :to="{ name: 'view-artifact', params: { id: model.id } }"
                     class="artifact-title-link"
-                    @click="logClick(model.id, 'artifact')"
+                    @click="logClick(model.id, 'artifact', 'view_artifact')"
                   >
                     <div class="text-subtitle2 artifact-title">
                       {{ model.metadata?.title || model.file_name }}
@@ -474,6 +474,8 @@ const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
+const userType = computed(() => userStore.profile?.user_type || 'Unknown')
+
 // Initialize page
 onMounted(async () => {
   try {
@@ -504,13 +506,26 @@ onMounted(async () => {
   }
 })
 
+function startRotate(e) {
+  const el = e.target
+  el.autoRotate = true
+  el.rotationPerSecond = '10deg'
+  el.autoRotateDelay = 0
+}
+
+function stopRotate(e) {
+  const el = e.target
+  el.autoRotate = false
+  el.cameraOrbit = '0deg 75deg 105%' // Reset back to original orientation
+}
+
 const showNotifyDialog = (title, message) => {
   notifyDialogTitle.value = title
   notifyDialogMessage.value = message
   notifyDialogOpen.value = true
 }
 
-// FIXED: Load collections from Supabase
+// Load collections from Supabase
 async function loadCollections(userId) {
   isLoading.value = true
   try {
@@ -537,7 +552,7 @@ async function loadCollections(userId) {
   isLoading.value = false
 }
 
-// FIXED: Load recent views with proper database fields and error handling
+// Load recent views with proper database fields and error handling
 async function loadRecentViews(userId) {
   try {
     const { data, error } = await supabase
@@ -569,7 +584,7 @@ async function loadRecentViews(userId) {
           .in('id', documentIds)
       : { data: [] }
 
-    // ADDED: Fetch user favorites and bookmarks
+    // Fetch user favorites and bookmarks
     const { data: favoritesCollection, error: favError } = await supabase
       .from('collections')
       .select('collection_id')
@@ -615,12 +630,11 @@ async function loadRecentViews(userId) {
       })
       .filter(Boolean)
   } catch (err) {
-    // ADDED: Better error handling
     console.error('Error loading recent views:', err)
   }
 }
 
-// FIXED: Load models with proper database structure and error handling
+// Load models with proper database structure and error handling
 async function loadModels() {
   isLoadingModels.value = true
   try {
@@ -694,7 +708,6 @@ async function loadModels() {
       }
     }
 
-    // Add some mock data for demonstration compatibility
     const enhancedModels = data.map((model) => ({
       ...model,
       bookmarked: bookmarkedIds.includes(model.id),
@@ -734,7 +747,7 @@ function timeAgo(dateString) {
 }
 
 // Log click activity
-async function logClick(itemId, itemType) {
+async function logClick(itemId, itemType, action) {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
 
@@ -762,20 +775,22 @@ async function logClick(itemId, itemType) {
       item_id: itemId,
       title: itemData.title || itemData.metadata?.title || 'Untitled',
       item_type: itemType,
+      user_type: userType.value,
+      action: action,
       clicked_at: new Date().toISOString(),
     })
 
     if (error) {
-      console.error('Error logging click:', error)
+      throw error
     } else {
-      console.log('Click Logged')
+      console.log(`Click logged by ${userType.value} for ${action} action`)
     }
   } catch (err) {
     console.error('Error logging click:', err)
   }
 }
 
-// FIXED: View item with proper error handling from INDEX page
+// View item with proper error handling from INDEX page
 async function viewItem(item) {
   try {
     if (item.item_type === 'artifact') {
@@ -1043,7 +1058,7 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
       showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
     }
 
-    // FIXED: Get star count
+    // Get star count
     const { data: metaCheck, error: metaError } = await supabase
       .from('artifacts_metadata')
       .select('id')
@@ -1071,7 +1086,7 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
   }
 }
 
-// ADDED: Toggle favorites - recently viewed items
+// Toggle favorites - recently viewed items
 const toggleFavoriteRecents = async (item, itemType) => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id

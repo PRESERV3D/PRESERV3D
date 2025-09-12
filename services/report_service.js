@@ -27,14 +27,14 @@ export async function generateMonthlyReport({ month, year }) {
   // Supabase Queries
   // Total registered users
   const { count: totalUsers } = await supabase
-    .from('all_approved_users')
+    .from('all_users')
     .select('*', { count: 'exact', head: true })
     .lte('created_at', endDate.toString())
     .neq('user_type', 'admin')
 
   // New users for that month
   const { count: newUsers, error } = await supabase
-    .from('all_approved_users')
+    .from('all_users')
     .select('*', { count: 'exact', head: true })
     .gte('created_at', startDate.toString())
     .lte('created_at', endDate.toString())
@@ -53,7 +53,7 @@ export async function generateMonthlyReport({ month, year }) {
 
   // Users by user type
   const { data: usersByTypeData } = await supabase
-    .from('all_approved_users')
+    .from('all_users')
     .select('user_type')
     .lte('created_at', endDate.toString())
     .neq('user_type', 'admin')

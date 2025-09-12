@@ -3,7 +3,7 @@
     <div class="page-header">
       <h2 class="q-mb-sm title">Highlights</h2>
       <p class="highlights-description">
-        Discover standout documents curated from our digital collection. Each item <br>
+        Discover standout documents curated from our digital collection. Each item <br />
         offers a glimpse into the university's rich history and knowledge.
       </p>
       <q-btn
@@ -27,19 +27,54 @@
     >
       <q-card-section>
         <!-- Show book info when hovering or selected -->
-        <div v-if="(hoveredBook !== null || selectedBook !== null) && topDocuments[hoveredBook !== null ? hoveredBook : selectedBook]" class="book-info-content">
-          <div class="book-info-name">{{ topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].metadata?.title || topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].file_name }}</div>
-          <div class="book-info-author text-grey-6">by {{ topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].metadata?.author || 'Unknown Author' }}</div>
+        <div
+          v-if="
+            (hoveredBook !== null || selectedBook !== null) &&
+            topDocuments[hoveredBook !== null ? hoveredBook : selectedBook]
+          "
+          class="book-info-content"
+        >
+          <div class="book-info-name">
+            {{
+              topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].metadata?.title ||
+              topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].file_name
+            }}
+          </div>
+          <div class="book-info-author text-grey-6">
+            by
+            {{
+              topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].metadata?.author ||
+              'Unknown Author'
+            }}
+          </div>
           <p class="book-info-description text-grey-7">
-            {{ topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].metadata?.description || 'A valuable document from our digital collection that offers insights into academic knowledge and research.' }}
+            {{
+              topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].metadata
+                ?.description ||
+              'A valuable document from our digital collection that offers insights into academic knowledge and research.'
+            }}
           </p>
           <div class="book-stats">
             <div class="stat-item">
               <q-icon name="visibility" size="sm" color="grey-6" />
-              <span>{{ documentsStore?.viewCounts[topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].id] || 0 }} views</span>
+              <span
+                >{{
+                  documentsStore?.viewCounts[
+                    topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].id
+                  ] || 0
+                }}
+                views</span
+              >
               <div class="stat-item q-ml-md">
                 <q-icon name="star" size="sm" color="grey-6" />
-                <span>{{ documentsStore?.starCounts[topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].id] || 0 }} stars</span>
+                <span
+                  >{{
+                    documentsStore?.starCounts[
+                      topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].id
+                    ] || 0
+                  }}
+                  stars</span
+                >
               </div>
             </div>
           </div>
@@ -76,7 +111,10 @@
           v-for="(doc, index) in topDocuments.slice(0, 4)"
           :key="doc.id || index"
           class="book-item"
-          :class="{ 'book-hovered': hoveredBook === index, 'book-selected': selectedBook === index }"
+          :class="{
+            'book-hovered': hoveredBook === index,
+            'book-selected': selectedBook === index,
+          }"
           @mouseenter="hoveredBook = index"
           @mouseleave="hoveredBook = null"
           @click.stop="selectBook(index)"
@@ -96,10 +134,11 @@
                     <div class="book-overlay-gradient"></div>
                     <!-- Only show text overlay on hover -->
                     <div v-if="hoveredBook === index" class="book-overlay-content">
-                      <div
+                      <!-- <div
                         class="book-title-overlay clickable-text"
                         @click.stop="navigateToDocument(doc.id)"
-                      >
+                      > -->
+                      <div class="book-title clickable-text" @click.stop="handleClickView(doc)">
                         {{ doc.metadata?.title || doc.file_name }}
                       </div>
                       <div
@@ -119,10 +158,11 @@
                       </div>
                       <!-- Only show text on hover -->
                       <div v-if="hoveredBook === index">
-                        <div
+                        <!-- <div
                           class="book-title clickable-text"
                           @click.stop="navigateToDocument(doc.id)"
-                        >
+                        > -->
+                        <div class="book-title clickable-text" @click.stop="handleClickView(doc)">
                           {{ doc.metadata?.title || 'POLYTECHNIC UNIVERSITY' }}
                         </div>
                         <div
@@ -161,11 +201,7 @@
               v-for="collection in userCollections"
               :key="collection.collection_id"
               class="q-py-sm flex items-center justify-between"
-              style="
-                font-family: 'Poppins', sans-serif;
-                font-size: 16px;
-                font-weight: 500;
-              "
+              style="font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 500"
             >
               <span>{{ collection.collection_name }}</span>
               <q-checkbox
@@ -192,8 +228,12 @@
     <!-- Message Dialog -->
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
-        <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{ notifyDialogTitle }}</q-card-section>
-        <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{ notifyDialogMessage }}</q-card-section>
+        <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
+          notifyDialogTitle
+        }}</q-card-section>
+        <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -203,7 +243,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDocumentsStore } from 'stores/documentsStore'
 import { useUserStore } from 'stores/user'
@@ -225,6 +265,10 @@ const hoveredBook = ref(null)
 const authorInfoSelected = ref(false)
 const selectedBook = ref(null)
 
+const userRole = userStore.profile.role
+const isAdmin = computed(() => userRole === 'admin')
+const userType = computed(() => userStore.profile.user_type || 'Unknown') // from userstore because some users dont have usertype on auth
+
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
@@ -233,7 +277,6 @@ const notifyDialogMessage = ref('')
 const goBack = () => {
   router.back()
 }
-
 
 const toggleAuthorInfo = () => {
   authorInfoSelected.value = !authorInfoSelected.value
@@ -254,6 +297,18 @@ const selectBook = (index) => {
   }
 }
 
+async function handleClickView(doc) {
+  if (doc) {
+    try {
+      await logClick(doc.id, 'document', 'view_document')
+    } catch (err) {
+      console.error('Error logging view click:', err)
+    } finally {
+      await navigateToDocument(doc.id)
+    }
+  }
+}
+
 const navigateToDocument = (documentId) => {
   // Navigate to document page
   router.push({ name: 'view-document', params: { id: documentId } })
@@ -263,6 +318,39 @@ const navigateToAuthor = (authorName) => {
   // Navigate to author page or search
   if (authorName && authorName !== 'Unknown Author' && authorName !== 'Document') {
     router.push({ name: 'search', query: { author: authorName } })
+  }
+}
+
+async function logClick(itemId, itemType, action) {
+  if (!isAdmin.value) {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    const userId = authData?.user?.id
+    const docu = await documentsStore.getDocById(itemId)
+
+    if (authError || !userId) {
+      console.error('Auth error logging click:', authError)
+      return
+    }
+
+    try {
+      const { error } = await supabase.from('user_activity_log').insert({
+        user_id: userId,
+        item_id: itemId,
+        title: docu.title || 'Untitled',
+        item_type: itemType,
+        user_type: userType.value,
+        action: action,
+        clicked_at: new Date().toISOString(),
+      })
+
+      if (error) {
+        throw error
+      } else {
+        console.log(`Click logged by ${userType.value} for ${action} action`)
+      }
+    } catch (err) {
+      console.error('Error logging click:', err)
+    }
   }
 }
 
@@ -482,7 +570,7 @@ onMounted(async () => {
 .highlights-title {
   font-size: 3rem;
   font-weight: 700;
-  color: #8B4513;
+  color: #8b4513;
   margin-bottom: 1.5rem;
   line-height: 1.2;
 }
@@ -533,34 +621,39 @@ onMounted(async () => {
   &.author-info-visible {
     opacity: 1;
     pointer-events: auto;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
   }
 
   &:hover {
-    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   }
 
-  .book-info-content, .default-author-content {
+  .book-info-content,
+  .default-author-content {
     padding: 0.5rem;
   }
 
-  .book-info-avatar, .author-avatar {
+  .book-info-avatar,
+  .author-avatar {
     margin-bottom: 1rem;
   }
 
-  .book-info-name, .author-name {
+  .book-info-name,
+  .author-name {
     font-weight: 600;
     margin-bottom: 0.25rem;
     color: #595959;
     font-size: 16px;
   }
 
-  .book-info-author, .author-title {
+  .book-info-author,
+  .author-title {
     font-size: 0.9rem;
     margin-bottom: 1rem;
   }
 
-  .book-info-description, .author-description {
+  .book-info-description,
+  .author-description {
     font-size: 12px;
     line-height: 1.6;
     margin-bottom: 1rem;
@@ -588,7 +681,7 @@ onMounted(async () => {
     font-size: 0.8rem;
     margin-top: 1rem;
     padding: 0.5rem;
-    background: rgba(0,0,0,0.05);
+    background: rgba(0, 0, 0, 0.05);
     border-radius: 8px;
   }
 
@@ -596,7 +689,7 @@ onMounted(async () => {
     border-radius: 20px !important;
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
-    background: #8B4513 !important;
+    background: #8b4513 !important;
     width: 100%;
   }
 }
@@ -621,7 +714,8 @@ onMounted(async () => {
   position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-  &.book-hovered, &.book-selected {
+  &.book-hovered,
+  &.book-selected {
     transform: scale(1.1);
     z-index: 20;
 
@@ -631,8 +725,8 @@ onMounted(async () => {
         0 20px 40px rgba(0, 0, 0, 0.5),
         inset 0 0 20px rgba(0, 0, 0, 0.1),
         0 0 0 3px rgba(139, 69, 19, 0.4),
-        25px 5px 50px -5px rgba(0, 0, 0, 0.6), /* Enhanced right shadow on hover */
-        30px 15px 60px -10px rgba(0, 0, 0, 0.4); /* Additional depth on hover */
+        25px 5px 50px -5px rgba(0, 0, 0, 0.6),
+        /* Enhanced right shadow on hover */ 30px 15px 60px -10px rgba(0, 0, 0, 0.4); /* Additional depth on hover */
     }
   }
 
@@ -641,8 +735,8 @@ onMounted(async () => {
       0 20px 40px rgba(0, 0, 0, 0.5),
       inset 0 0 20px rgba(0, 0, 0, 0.1),
       0 0 0 3px rgba(139, 69, 19, 0.8),
-      25px 5px 50px -5px rgba(0, 0, 0, 0.7), /* Enhanced right shadow on selection */
-      30px 15px 60px -10px rgba(0, 0, 0, 0.5); /* Additional depth on selection */
+      25px 5px 50px -5px rgba(0, 0, 0, 0.7),
+      /* Enhanced right shadow on selection */ 30px 15px 60px -10px rgba(0, 0, 0, 0.5); /* Additional depth on selection */
   }
 }
 
@@ -676,8 +770,8 @@ onMounted(async () => {
     0 8px 16px rgba(0, 0, 0, 0.3),
     inset 0 0 20px rgba(0, 0, 0, 0.1),
     0 0 0 2px rgba(8, 3, 0, 0.3),
-    15px 0 30px -5px rgba(0, 0, 0, 0.4), /* Right side shadow */
-    20px 8px 40px -8px rgba(0, 0, 0, 0.3); /* Additional right shadow depth */
+    15px 0 30px -5px rgba(0, 0, 0, 0.4),
+    /* Right side shadow */ 20px 8px 40px -8px rgba(0, 0, 0, 0.3); /* Additional right shadow depth */
   transform: rotateY(-5deg) rotateX(2deg);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -739,7 +833,7 @@ onMounted(async () => {
     left: 0;
     right: 0;
     height: 60%;
-    background: linear-gradient(transparent, rgba(0,0,0,0.8));
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
     z-index: 1;
     border-radius: 0 0 20px 0;
   }
@@ -755,16 +849,18 @@ onMounted(async () => {
   }
 }
 
-.book-title, .book-title-overlay {
+.book-title,
+.book-title-overlay {
   font-size: 1.1rem; /* Increased from 1rem for bigger books */
   font-weight: 600;
   text-align: center;
   margin-bottom: 0.5rem;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   line-height: 1.2;
 }
 
-.book-subtitle, .book-subtitle-overlay {
+.book-subtitle,
+.book-subtitle-overlay {
   font-size: 0.95rem; /* Increased from 0.85rem for bigger books */
   text-align: center;
   opacity: 0.9;
@@ -866,7 +962,7 @@ onMounted(async () => {
 }
 
 .btn-save {
-  background: #8B4513;
+  background: #8b4513;
   color: white;
 }
 
@@ -964,7 +1060,8 @@ onMounted(async () => {
 }
 
 @media (max-width: 600px) {
-  .book-item.book-hovered, .book-item.book-selected {
+  .book-item.book-hovered,
+  .book-item.book-selected {
     transform: scale(1.05);
   }
 
@@ -977,5 +1074,4 @@ onMounted(async () => {
     height: 300px;
   }
 }
-
 </style>

@@ -109,7 +109,7 @@
                       <router-link
                         :to="{ name: 'view-artifact', params: { id: artifact.id } }"
                         class="artifact-title-link"
-                        @click="logClick(artifact.id, 'artifact')"
+                        @click="logClick(artifact.id, 'artifact', 'view_artifact')"
                       >
                         <div class="text-subtitle2 artifact-title">
                           {{ artifact.metadata?.title || artifact.file_name }}
@@ -178,7 +178,7 @@
                   <router-link
                     :to="{ name: 'view-document', params: { id: document.id } }"
                     class="document-link"
-                    @click="logClick(document.id, 'document')"
+                    @click="logClick(document.id, 'document', 'view_document')"
                   >
                     <!-- Document Preview Image -->
                     <q-img
@@ -202,7 +202,7 @@
                       <router-link
                         :to="{ name: 'view-document', params: { id: document.id } }"
                         class="artifact-title-link"
-                        @click="logClick(document.id, 'document')"
+                        @click="logClick(document.id, 'document', 'view_document')"
                       >
                         <div class="text-subtitle2 artifact-title q-mr-sm">
                           {{
@@ -391,6 +391,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useModelStore } from 'stores/modelStore'
 import { useDocumentsStore } from 'stores/documentsStore'
+import { useUserStore } from 'stores/user'
 import { uploadFileToR2 } from 'boot/r2'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
@@ -403,6 +404,9 @@ const route = useRoute()
 const router = useRouter()
 const modelStore = useModelStore()
 const documentsStore = useDocumentsStore()
+const userStore = useUserStore()
+
+const userType = computed(() => userStore.profile?.user_type || 'Unknown')
 
 // Get collection ID from route params
 const collectionId = route.params.id
@@ -551,8 +555,8 @@ async function fetchCollectionItems() {
   }
 }
 
-// Log user clicks for analytics
-async function logClick(itemId, itemType) {
+// Log user activity
+async function logClick(itemId, itemType, action) {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
 
@@ -561,16 +565,34 @@ async function logClick(itemId, itemType) {
     return
   }
 
+  // Get model or document based on itemType
+  let itemData
+  if (itemType === 'artifact') {
+    itemData = await modelStore.getModelById(itemId)
+  } else if (itemType === 'document') {
+    itemData = await documentsStore.getDocById(itemId)
+  }
+
+  if (!itemData) {
+    console.error(`Item with ID ${itemId} not found in ${itemType} store.`)
+    return
+  }
+
   try {
     const { error } = await supabase.from('user_activity_log').insert({
       user_id: userId,
       item_id: itemId,
+      title: itemData.title || itemData.metadata?.title || 'Untitled',
       item_type: itemType,
+      user_type: userType.value,
+      action: action,
       clicked_at: new Date().toISOString(),
     })
 
     if (error) {
-      console.error('Error logging click:', error)
+      throw error
+    } else {
+      console.log(`Click logged by ${userType.value} for ${action} action`)
     }
   } catch (err) {
     console.error('Error logging click:', err)
@@ -747,7 +769,7 @@ async function removeItem() {
   await fetchCollectionItems()
 }
 
-// FIXED: Toggle favorite
+// Toggle favorite icon
 const toggleFavorite = async (itemId, itemType) => {
   const model =
     itemType === 'artifact'
@@ -823,7 +845,7 @@ const toggleFavorite = async (itemId, itemType) => {
       model.starred = false
       showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
 
-      // FIXED: Remove from displayed list if unstarred
+      // Remove from displayed list if unstarred
       if (collection.value?.collection_name === 'Favorites') {
         if (itemType === 'document') {
           documents.value = documents.value.filter((doc) => doc.id !== itemId)

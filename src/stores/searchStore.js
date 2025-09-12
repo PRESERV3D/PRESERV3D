@@ -5,8 +5,10 @@ export const useSearchStore = defineStore('search', {
   state: () => ({
     query: '',
     type: '',
-    results: [],
+    searchedDocuments: [],
+    searchedModels: [],
     favoriteIds: [],
+    sortOption: 'Newest',
   }),
   actions: {
     async search(query, type) {
@@ -85,18 +87,29 @@ export const useSearchStore = defineStore('search', {
 
       if (error) {
         console.error(`Search error in ${this.type}:`, error)
-        this.results = []
-        return
+        if (type === 'documents') {
+          this.searchedDocuments = []
+        } else {
+          this.searchedModels = []
+        }
       }
 
       // Fetch favorites
       const favoriteIds = await this.fetchFavorites(type)
 
       // Attach starred flag
-      this.results = data.map((item) => ({
+      const searched = data.map((item) => ({
         ...item,
         starred: favoriteIds.includes(item.id),
       }))
+
+      if (type === 'documents') {
+        this.searchedDocuments = searched
+        if (this.sortOption) this.sortResults(this.sortOption, this.searchedDocuments)
+      } else {
+        this.searchedModels = searched
+        if (this.sortOption) this.sortResults(this.sortOption, this.searchedModels)
+      }
     },
 
     async fetchFavorites(type) {
@@ -135,9 +148,51 @@ export const useSearchStore = defineStore('search', {
 
     async clear() {
       this.query = ''
-      this.results = []
+      this.searchedModels = []
+      this.searchedDocuments = []
 
       await this.fetchFavorites(this.type)
+    },
+    sortSettings(sort) {
+      switch (sort) {
+        case 'Newest':
+          return { field: 'uploaded_at', order: 'desc' }
+        case 'Oldest':
+          return { field: 'uploaded_at', order: 'asc' }
+        case 'Title A-Z':
+          return { field: 'title', order: 'asc' }
+        case 'Title Z-A':
+          return { field: 'title', order: 'desc' }
+        default:
+          return { field: null, order: 'asc' }
+      }
+    },
+    sortResults(sort, resultArray) {
+      this.sortOption = sort
+      console.log('Sorting search results by:', sort)
+
+      const { field, order } = this.sortSettings(sort)
+      if (!field) return
+
+      const getValue = (item) => {
+        if (field === 'title') return (item.metadata?.title || '').trim().toLowerCase()
+        if (field === 'uploaded_at') return new Date(item.uploaded_at || 0)
+        return item[field]
+      }
+
+      resultArray.sort((a, b) => {
+        const valA = getValue(a)
+        const valB = getValue(b)
+
+        if (field === 'title')
+          return (
+            valA.localeCompare(valB, undefined, { sensitivity: 'base' }) *
+            (order === 'asc' ? 1 : -1)
+          )
+        if (field === 'uploaded_at') return (valA - valB) * (order === 'asc' ? 1 : -1)
+
+        return 0
+      })
     },
   },
 })

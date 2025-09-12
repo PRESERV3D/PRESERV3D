@@ -2,17 +2,62 @@
   <q-page class="q-pa-md">
     <div class="q-mt-xs title">Data Quality</div>
     <div class="q-mt-md">
-      <div class="q-mt-md flex justify-end">
-        <q-btn dense flat round color="primary" icon="refresh" @click="manualRescan">
-          <q-tooltip>Rescan all uploaded documents</q-tooltip>
-        </q-btn>
+      <div class="row items-center justify-between q-ml-sm q-mb-md">
+        <!-- Filter buttons -->
+        <div class="row q-gutter-md">
+          <q-btn
+            label="All"
+            no-caps
+            class="btn-1"
+            :class="{ active: activeFilter === 'all' }"
+            @click="activeFilter = 'all'"
+          />
+          <q-btn
+            label="Artifacts"
+            no-caps
+            class="btn-1"
+            :class="{ active: activeFilter === 'artifacts' }"
+            @click="activeFilter = 'artifacts'"
+          />
+          <q-btn
+            label="Documents"
+            no-caps
+            class="btn-1"
+            :class="{ active: activeFilter === 'documents' }"
+            @click="activeFilter = 'documents'"
+          />
+          <q-btn
+            label="Open"
+            no-caps
+            class="btn-1"
+            :class="{ active: activeFilter === 'open' }"
+            @click="activeFilter = 'open'"
+          />
+          <q-btn
+            label="Resolved"
+            no-caps
+            class="btn-1"
+            :class="{ active: activeFilter === 'resolved' }"
+            @click="activeFilter = 'resolved'"
+          />
+        </div>
+
+        <!-- Rescan button -->
+        <div v-if="!loading">
+          <q-btn icon="refresh" no-caps class="btn-1 active q-mr-md" @click="manualRescan">
+            <q-tooltip>Rescan all archives</q-tooltip>
+          </q-btn>
+        </div>
+        <div v-else class="q-mr-md">
+          <q-spinner color="primary" />
+        </div>
       </div>
 
       <q-table
         class="my-sticky-header-table"
         flat
         bordered
-        :rows="inconsistencies"
+        :rows="filteredInconsistencies"
         :columns="columns"
         row-key="id"
         :pagination="pagination"
@@ -22,30 +67,19 @@
           <!-- Main row -->
           <q-tr :props="props">
             <q-td v-for="col in props.cols" :key="col.name" :props="props" align="center">
-              <!-- Actions column -->
-              <template v-if="col.name === 'actions'">
-                <q-btn flat size="sm" icon="expand_more" @click="props.expand = !props.expand" />
+              <template v-if="col.name === 'issues'">
+                <span :class="{ 'resolved-issue': props.row.status === 'Resolved' }">
+                  {{ props.row.issues.map((issue) => issue.field).join(', ') }}
+                </span>
               </template>
 
               <!-- Resolution column -->
               <template v-else-if="col.name === 'resolution'">
                 <div class="flex items-center justify-center gap-2">
-                  <template v-if="props.row.status === 'Resolved'">
+                  <template v-if="props.row.status === 'Resolved' && !props.row.reviewed_at">
                     <q-icon name="priority_high" color="red" size="18px" />
                     <q-tooltip>Document Updated</q-tooltip>
                   </template>
-
-                  <!-- Always show "View Document" -->
-                  <q-btn
-                    flat
-                    dense
-                    round
-                    color="primary"
-                    icon="visibility"
-                    @click="viewDocument(props.row)"
-                  >
-                    <q-tooltip>View Document</q-tooltip>
-                  </q-btn>
 
                   <template v-if="!props.row.resolution">
                     <q-btn
@@ -96,10 +130,45 @@
                 </span>
               </template>
 
-              <template v-else-if="col.name === 'issues'">
-                <span>
-                  {{ props.row.issues.map((issue) => issue.field).join(', ') }}
-                </span>
+              <!-- Actions column -->
+              <template v-else-if="col.name === 'actions'">
+                <q-btn
+                  flat
+                  dense
+                  round
+                  color="primary"
+                  icon="visibility"
+                  @click="viewItem(props.row)"
+                >
+                  <q-tooltip>View Item</q-tooltip>
+                </q-btn>
+
+                <q-btn
+                  v-if="props.row.status === 'Resolved'"
+                  flat
+                  dense
+                  round
+                  color="orange"
+                  icon="undo"
+                  @click="undoResolution(props.row)"
+                >
+                  <q-tooltip>Undo Resolution</q-tooltip>
+                </q-btn>
+
+                <!-- Delete button -->
+                <q-btn
+                  v-if="props.row.status === 'Resolved'"
+                  flat
+                  dense
+                  round
+                  color="negative"
+                  icon="delete"
+                  @click="openConfirmDialog(props.row, 'delete')"
+                >
+                  <q-tooltip>Delete</q-tooltip>
+                </q-btn>
+
+                <q-btn flat size="sm" icon="expand_more" @click="props.expand = !props.expand" />
               </template>
 
               <template v-else>
@@ -116,13 +185,25 @@
                 <p><strong>File:</strong> {{ props.row.file_name }}</p>
                 <p><strong>Issues:</strong></p>
                 <ul>
-                  <li v-for="(issue, i) in props.row.issues" :key="i">
-                    <strong>{{ issue.field }}:</strong> {{ issue.issue }}
+                  <li
+                    v-for="(issue, i) in props.row.issues"
+                    :key="i"
+                    :class="{ 'resolved-issue': props.row.status === 'Resolved' }"
+                  >
+                    <strong>{{ issue.field }}: </strong>
+                    <span>{{ issue.issue }}</span> <br />
+                    <i>- {{ issue.suggestion }}</i>
                   </li>
                 </ul>
+
                 <p><strong>Reviewed by:</strong> {{ props.row.reviewed_by || 'Unassigned' }}</p>
                 <p>
-                  <strong>Reviewed at:</strong> {{ props.row.reviewed_at || 'Not yet reviewed' }}
+                  <strong>Reviewed at:</strong>
+                  {{
+                    props.row.reviewed_at
+                      ? new Date(props.row.reviewed_at).toLocaleString()
+                      : 'Not yet reviewed'
+                  }}
                 </p>
 
                 <!-- Admin remarks input stays the same -->
@@ -160,8 +241,8 @@
       <!-- Confirmation Dialog -->
       <q-dialog v-model="confirmDialog.show">
         <q-card class="conf-box">
-          <q-card-section class="sub-font" style="color: black">
-            Are you sure you want to mark this issue as "{{ confirmDialog.action }}"?
+          <q-card-section class="sub-font text-center" style="color: black">
+            {{ dialogMessage }}
           </q-card-section>
           <q-card-actions align="center">
             <q-btn flat label="Yes" class="btn-save" @click="confirmAction" />
@@ -181,23 +262,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 
+const $q = useQuasar()
 const router = useRouter()
 const props = defineProps({
-  documentId: { type: String, required: false },
+  recordId: { type: String, required: false },
 })
 
+const activeFilter = ref('all')
 const inconsistencies = ref([])
 const pagination = ref({ rowsPerPage: 10 })
+const loading = ref(false)
 
 const columns = [
   { name: 'title', label: 'Title', field: 'title', align: 'center' },
   { name: 'issues', label: 'Issues', field: 'issues', align: 'center' },
-  { name: 'suggestion', label: 'Suggested Fix', field: 'suggestion', align: 'center' },
   { name: 'resolution', label: 'Resolution', field: 'resolution', align: 'center' },
   { name: 'status', label: 'Status', field: 'status', align: 'center' },
   { name: 'actions', label: 'Actions', field: 'actions', align: 'center' },
@@ -205,14 +289,39 @@ const columns = [
 
 const userStore = useUserStore()
 const confirmDialog = ref({ show: false, action: '', row: null })
-const user = userStore.user
+const user = `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+const dialogMessage = computed(() => {
+  if (confirmDialog.value.action === 'delete') {
+    return `Are you sure you want to delete "${confirmDialog.value.row.title}"? This action cannot be undone.`
+  }
+  return `Are you sure you want to mark this issue as "${confirmDialog.value.action}"?`
+})
+
+const filteredInconsistencies = computed(() => {
+  if (activeFilter.value === 'all') {
+    return inconsistencies.value
+  }
+  if (activeFilter.value === 'artifacts') {
+    return inconsistencies.value.filter((i) => i.source_type === 'artifact')
+  }
+  if (activeFilter.value === 'documents') {
+    return inconsistencies.value.filter((i) => i.source_type === 'document')
+  }
+  if (activeFilter.value === 'open') {
+    return inconsistencies.value.filter((i) => i.status === 'Open')
+  }
+  if (activeFilter.value === 'resolved') {
+    return inconsistencies.value.filter((i) => i.status === 'Resolved')
+  }
+  return inconsistencies.value
+})
 
 // Load inconsistencies from Supabase
 const loadInconsistencies = async () => {
   let query = supabase.from('inconsistencies').select('*').order('created_at', { ascending: false })
 
-  if (props.documentId) {
-    query = query.eq('document_id', props.documentId)
+  if (props.recordId) {
+    query = query.eq('record_id', props.recordId)
   }
 
   const { data, error } = await query
@@ -220,8 +329,23 @@ const loadInconsistencies = async () => {
   if (error) {
     console.error('Error fetching inconsistencies:', error)
   } else {
-    inconsistencies.value = data
+    inconsistencies.value = sortInconsistencies(data)
   }
+}
+
+const sortInconsistencies = (data) => {
+  return data.sort((a, b) => {
+    const aPriority = getRowPriority(a)
+    const bPriority = getRowPriority(b)
+    return aPriority - bPriority
+  })
+}
+
+const getRowPriority = (row) => {
+  if (row.status === 'Resolved' && !row.reviewed_at) return 0
+  if (row.status === 'Open') return 1
+  if (row.status === 'Resolved' && row.reviewed_at) return 2
+  return 3 // fallback
 }
 
 const openConfirmDialog = (row, action) => {
@@ -232,24 +356,32 @@ const confirmAction = async () => {
   const row = confirmDialog.value.row
   const action = confirmDialog.value.action
 
+  if (action === 'delete') {
+    await deleteInconsistency(row)
+    confirmDialog.value.show = false
+    return
+  }
+
   const { error } = await supabase
     .from('inconsistencies')
     .update({
       resolution: action,
-      reviewed_by: user.value.name,
+      status: 'Resolved',
+      reviewed_by: user,
       reviewed_at: new Date().toISOString(),
     })
     .eq('id', row.id)
 
   if (error) {
     console.error('Error updating resolution:', error)
+    $q.notify({ type: 'negative', message: 'Failed to update resolution' })
   } else {
-    row.resolution = action
-    row.reviewed_by = user.value.name
-    row.reviewed_at = new Date().toISOString()
+    await loadInconsistencies()
+    $q.notify({ type: 'positive', message: 'Resolution updated successfully' })
   }
 
   confirmDialog.value.show = false
+  await loadInconsistencies()
 }
 
 // Save admin remarks
@@ -258,7 +390,7 @@ const saveRemarks = async (row) => {
     .from('inconsistencies')
     .update({
       admin_remarks: row.admin_remarks,
-      reviewed_by: user.value.name,
+      reviewed_by: user,
       reviewed_at: new Date().toISOString(),
     })
     .eq('id', row.id)
@@ -272,32 +404,84 @@ const saveRemarks = async (row) => {
 
 const manualRescan = async () => {
   try {
-    const response = await fetch('http://localhost:8000/rescan-documents', {
+    loading.value = true
+    const response = await fetch('http://localhost:8000/rescan-metadata', {
       method: 'POST',
     })
 
     const result = await response.json()
     if (result.success) {
-      console.log('Rescan completed')
+      $q.notify({ type: 'positive', message: 'Rescan Successful!' })
       await loadInconsistencies()
     } else {
-      console.error('Rescan failed:', result.error)
+      console.log('Rescan failed: ' + result.error)
+      $q.notify({ type: 'negative', message: 'Rescan failed: ' + result.error })
     }
   } catch (err) {
     console.error('Error during manual rescan:', err)
+  } finally {
+    loading.value = false
   }
 }
 
-const viewDocument = (row) => {
-  router.push(`/documents/${row.document_id}`)
+const viewItem = (row) => {
+  if (row.source_type === 'artifact') router.push(`/artifacts/${row.record_id}`)
+  else if (row.source_type === 'document') router.push(`/documents/${row.record_id}`)
+}
+
+const undoResolution = async (row) => {
+  const { error } = await supabase
+    .from('inconsistencies')
+    .update({
+      resolution: null,
+      status: 'Open',
+      reviewed_by: null,
+      reviewed_at: null,
+    })
+    .eq('id', row.id)
+
+  if (error) {
+    console.error('Error undoing resolution:', error)
+    $q.notify({ type: 'negative', message: 'Failed to undo resolution' })
+  } else {
+    await loadInconsistencies()
+    $q.notify({ type: 'positive', message: 'Resolution undone' })
+  }
+}
+
+const deleteInconsistency = async (row) => {
+  try {
+    const { error } = await supabase.from('inconsistencies').delete().eq('id', row.id)
+
+    if (error) throw error
+
+    await loadInconsistencies()
+
+    $q.notify({
+      type: 'positive',
+      message: 'Inconsistency deleted successfully',
+    })
+  } catch (err) {
+    console.error(err)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to delete inconsistency',
+    })
+  }
 }
 
 onMounted(() => {
+  manualRescan()
   loadInconsistencies()
 })
 </script>
 
 <style scoped>
+.resolved-issue {
+  color: gray;
+  text-decoration: line-through;
+}
+
 /* Color bottom toolbars inside table */
 ::v-deep(.my-sticky-header-table .q-table__bottom) {
   font-size: 14px;
