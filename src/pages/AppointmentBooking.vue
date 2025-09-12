@@ -362,24 +362,9 @@ async function submitBooking() {
       return
     }
 
+    // Send notification to all admins of new booking
     const notifMessage = `${name} booked an appointment for ${date} at ${time}.`
-
-    const { error: notifError } = await supabase.from('notifications').insert([
-      {
-        user_id: null,
-        type: 'appointment_booking',
-        message: notifMessage,
-        read: false,
-        role: 'admin',
-        created_at: new Date().toISOString(),
-      },
-    ])
-
-    if (notifError) {
-      console.log('Error sending notification to admin:', notifError)
-    } else {
-      console.log('Notification sent to admin.')
-    }
+    await adminNotification(notifMessage)
 
     console.log('Appointment booking successfully saved.')
     showSuccessModal.value = true
@@ -387,6 +372,45 @@ async function submitBooking() {
   } catch (err) {
     console.log('Error during appointment booking:', err)
     alert('An error occurred during booking. Please try again later.')
+  }
+}
+
+// Notify admin of new booking
+async function adminNotification(notifMessage) {
+  try {
+    const { data: admins, error: adminError } = await supabase
+      .from('registered_admins')
+      .select('id')
+    // console.log('Admins:', admins, 'Error:', adminError)
+
+    if (adminError) {
+      console.error('Error fetching admins:', adminError)
+      return
+    }
+
+    if (!admins || admins.length === 0) {
+      console.log('No existing admins to notify.')
+      return
+    }
+
+    const notifications = admins.map((admin) => ({
+      receiver_id: admin.id,
+      message: notifMessage,
+      type: 'appointment_booking',
+      receiver_role: 'admin',
+      read: false,
+      created_at: new Date().toISOString(),
+    }))
+
+    const { error: notifError } = await supabase.from('notifications').insert(notifications)
+
+    if (notifError) {
+      console.log('Error sending notification to all admins:', notifError)
+    } else {
+      console.log('Notification sent to all admins.')
+    }
+  } catch (err) {
+    console.error('Error in notifying admins:', err)
   }
 }
 

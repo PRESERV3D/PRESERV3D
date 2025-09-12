@@ -403,31 +403,53 @@ async function registerUser() {
       return
     }
 
+    // Notify all admins of new visitor registration
     const name = `${first_name} ${last_name}`
-    const notifMessage = `${name} has submitted a visitor account registration request.`
-
-    const { error: notifError } = await supabase.from('notifications').insert([
-      {
-        user_id: null,
-        type: 'visitor_registration',
-        message: notifMessage,
-        read: false,
-        role: 'admin',
-        created_at: new Date().toISOString(),
-      },
-    ])
-
-    if (notifError) {
-      console.log('Error sending notification to admin:', notifError)
-    } else {
-      console.log('Notification sent to admin.')
-    }
+    const notifMessage = `${name} submitted a visitor account request.`
+    await adminNotifications(notifMessage)
 
     console.log('Registration successfully submitted.')
     step.value = 3
   } catch (err) {
     console.log('Error during registration:', err)
     alert('An error occurred during registration. Please try again later.')
+  }
+}
+
+async function adminNotifications(notifMessage) {
+  try {
+    const { data: admins, error: adminError } = await supabase
+      .from('registered_admins')
+      .select('id')
+
+    if (adminError) {
+      console.error('Error fetching admins:', adminError)
+      return
+    }
+
+    if (!admins || admins.length === 0) {
+      console.warn('No existing admins to notify.')
+      return
+    }
+
+    const notifications = admins.map((admin) => ({
+      receiver_id: admin.id,
+      message: notifMessage,
+      type: 'visitor_registration',
+      receiver_role: 'admin',
+      read: false,
+      created_at: new Date().toISOString(),
+    }))
+
+    const { error: notifError } = await supabase.from('notifications').insert(notifications)
+
+    if (notifError) {
+      console.log('Error sending notification to all admins:', notifError)
+    } else {
+      console.log('Notification sent to all admins.')
+    }
+  } catch (err) {
+    console.log('Error in notifying admins:', err)
   }
 }
 

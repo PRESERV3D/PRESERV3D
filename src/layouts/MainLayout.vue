@@ -395,7 +395,7 @@ async function fetchNotifications() {
   const { data, error } = await supabase
     .from('notifications')
     .select('*')
-    .or(`user_id.eq.${user.id},role.eq.admin`)
+    .eq('receiver_id', user.id)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -441,7 +441,7 @@ async function setupRealtimeNotifications() {
           })
           notificationCount.value++
         } else {
-          console.log('Notification skipped:', notif, 'for role:', userRole.value) // show skipped for users
+          console.log('Notification skipped:', notif, 'for role:', userRole.value) // show skipped for non-receivers of the notifs
         }
       },
     )
@@ -451,8 +451,6 @@ async function setupRealtimeNotifications() {
 }
 
 onMounted(() => {
-  console.log('User role:', userRole.value)
-
   fetchNotifications()
 })
 
