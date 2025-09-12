@@ -203,11 +203,17 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
+import { useDocumentsStore } from 'src/stores/documentsStore'
+import { useDocumentsFilter } from 'src/utils/useFiltering'
+const { clearFilters } = useDocumentsFilter()
 
+const $q = useQuasar()
 const userStore = useUserStore()
 const searchStore = useSearchStore()
+const documentsStore = useDocumentsStore()
 const router = useRouter()
 const route = useRoute()
 const session = userStore.session
@@ -222,7 +228,7 @@ const windowWidth = ref(window.innerWidth)
 const isCompactMode = computed(() => windowWidth.value < 1200)
 
 // Search dropdown options
-const searchType = ref('artifacts')
+const searchType = ref('artifacts') // default selection
 const searchOptions = [
   { label: 'Artifacts', value: 'artifacts' },
   { label: 'Documents', value: 'documents' },
@@ -253,15 +259,24 @@ const userName = computed(() => userProfile.value.first_name || 'User')
 const userRole = computed(() => userProfile.value.role || 'Unknown')
 const userType = computed(() => userProfile.value.user_type || 'Unknown')
 
-// Add computed property to check if user role is 'user'
+// Add computed property to check roles
 const isUser = computed(() => userRole.value === 'user')
+const isAdmin = computed(() => userRole.value === 'admin')
 
 // Filtered navigation items based on user role
 const navItems = computed(() => {
   return baseNavItems.filter((item) => {
+    // Show collections only for users
     if (item.name === 'collections') {
       return isUser.value
     }
+
+    // Hide data-quality if the user is not admin
+    if (item.name === 'data-quality') {
+      return isAdmin.value
+    }
+
+    // Show all other items
     return true
   })
 })
@@ -271,7 +286,7 @@ const handleResize = () => {
   windowWidth.value = window.innerWidth
 }
 
-// Improved hover handling with debouncing
+// Add a timeout to prevent rapid state changes
 let hoverTimeout = null
 
 const onDrawerMouseEnter = () => {
@@ -297,7 +312,13 @@ const activeItem = ref('home')
 const hasSearchBar = ref(false)
 
 const setActiveItem = (itemName) => {
+  console.log('Setting active item to:', itemName)
   activeItem.value = itemName
+
+  // Close mobile drawer when navigating
+  if ($q.screen.lt.md) {
+    drawer.value = false
+  }
 
   if (itemName === 'home') {
     const role = session.user.user_metadata?.role
@@ -313,6 +334,8 @@ const setActiveItem = (itemName) => {
     }
     return
   } else {
+    // Navigate to the corresponding route
+
     const targetRoute = `/${itemName}`
     router.push(targetRoute)
   }
@@ -320,12 +343,16 @@ const setActiveItem = (itemName) => {
 
 // Search functionality
 const performSearch = async () => {
+  documentsStore.resetFilters()
+  clearFilters()
+
   const query = search.value
   if (!query.trim()) {
     searchStore.clear()
     return
   }
 
+  // Redirect based on dropdown selection
   let targetRoute = ''
   if (searchType.value === 'artifacts') {
     targetRoute = '/artifacts'
@@ -334,9 +361,10 @@ const performSearch = async () => {
   }
 
   if (route.path !== targetRoute) {
-    await router.push(targetRoute)
+    await router.push(targetRoute) // Wait for navigation to complete
   }
 
+  // Set store search type based on dropdown selection
   await searchStore.search(query, searchType.value)
   console.log('Search performed:', query, searchType.value)
 
@@ -365,6 +393,7 @@ onMounted(() => {
     }
   }
 
+  // Perform search if there's existing search value
   if (search.value || searchType.value) {
     performSearch()
   }
@@ -375,6 +404,7 @@ onUnmounted(() => {
   if (hoverTimeout) clearTimeout(hoverTimeout)
 })
 
+// Watch search bar input and run query
 watch(search, async (query) => {
   if (query === null || query === undefined) {
     searchStore.clear()
@@ -394,8 +424,6 @@ watch(
       newPath.includes('collection')
     ) {
       activeItem.value = 'home'
-    } else if (newPath.startsWith('/data-quality')) {
-      activeItem.value = 'data-quality'
     } else if (newPath.includes('appointment')) {
       activeItem.value = 'appointment'
     } else if (newPath.includes('artifacts')) {
@@ -427,8 +455,6 @@ watch(
   { immediate: true },
 )
 </script>
-
-
 
 <style scoped>
 /* ========================
