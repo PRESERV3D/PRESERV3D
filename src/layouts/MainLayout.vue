@@ -472,7 +472,12 @@ async function fetchNotifications() {
 
   notifications.value = data.map((notif) => ({
     ...notif,
-    time: new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    time: new Date(notif.created_at).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Manila',
+    }),
     message: notif.message,
   }))
 
