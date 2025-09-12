@@ -1,73 +1,37 @@
 <template>
   <div class="q-pa-md main-page-bg">
     <q-layout view="lHh Lpr lFf">
-      <!-- Mobile Menu Button -->
-      <q-header elevated class="mobile-header" v-if="$q.screen.lt.md">
-        <q-toolbar>
-          <q-btn flat dense round icon="menu" aria-label="Menu" @click="drawer = !drawer" />
-          <q-toolbar-title class="mobile-logo">
-            <img src="\img\logo.png" alt="Logo" class="mobile-logo-img" />
-          </q-toolbar-title>
-          <!-- Mobile notifications -->
-          <q-btn flat round dense class="mobile-notif-btn">
-            <img src="/icons/notif-icon.png" alt="notifications" class="notif-image" />
-            <q-badge
-              floating
-              rounded
-              class="custom-badge"
-              style="background-color: #ff5722; color: white"
-              v-if="notificationCount > 0"
-            >
-              {{ notificationCount }}
-            </q-badge>
-          </q-btn>
-        </q-toolbar>
-      </q-header>
-
       <q-drawer
         v-model="drawer"
-        :show-if-above="$q.screen.gt.sm"
-        :mini="miniState && $q.screen.gt.sm"
-        :mini-to-overlay="$q.screen.gt.sm"
+        :show-if-above="true"
+        :mini="miniState"
+        :mini-to-overlay="true"
         :mini-width="120"
         @mouseenter="onDrawerMouseEnter"
         @mouseleave="onDrawerMouseLeave"
-        :width="$q.screen.lt.md ? '100%' : 280"
+        :width="280"
         :breakpoint="0"
-        :overlay="$q.screen.lt.md"
         bordered
         :class="'sidebar-drawer'"
         content-class="drawer-content"
       >
         <div class="sidebar-container">
-          <!-- Close button for mobile -->
-          <div class="mobile-close-btn" v-if="$q.screen.lt.md">
-            <q-btn
-              flat
-              round
-              dense
-              icon="close"
-              @click="drawer = false"
-              class="absolute-top-right q-ma-md"
-            />
-          </div>
-
           <!-- Logo Section -->
           <div class="logo-section">
             <!-- Expanded State -->
-            <div class="q-pa-md q-mb-md" v-show="!miniState || $q.screen.lt.md">
+            <div class="q-pa-md q-mb-md" v-show="!miniState || isHovered">
               <div class="text-center q-py-lg">
                 <img
                   src="\img\logo.png"
-                  alt="Your Logo"
+                  alt="PRESERV3D"
                   class="logo-img q-mb-sm"
                   @click="setActiveItem('home')"
                 />
               </div>
             </div>
 
-            <!-- Mini State (desktop only) -->
-            <div class="q-pa-lg q-mb-sm text-center" v-show="miniState && $q.screen.gt.sm">
+            <!-- Mini State -->
+            <div class="q-pa-lg q-mb-sm text-center" v-show="miniState && !isHovered">
               <img
                 src="\img\logo.png"
                 alt="Logo"
@@ -78,7 +42,7 @@
 
           <!-- Navigation Section -->
           <div class="navigation-section">
-            <q-list padding :class="{ 'text-center': miniState && $q.screen.gt.sm }">
+            <q-list padding :class="{ 'text-center': miniState && !isHovered }">
               <q-item
                 v-for="item in navItems"
                 :key="item.name"
@@ -99,7 +63,7 @@
                   </div>
                 </q-item-section>
                 <q-item-section>
-                  <span :class="{ 'text-hidden': miniState && $q.screen.gt.sm }" class="nav-text">{{
+                  <span :class="{ 'text-hidden': miniState && !isHovered }" class="nav-text">{{
                     item.label
                   }}</span>
                 </q-item-section>
@@ -109,23 +73,20 @@
 
           <!-- Logout Section - Fixed at bottom -->
           <div class="logout-section">
-            <q-separator
-              class="q-mb-md"
-              v-show="(!miniState && $q.screen.gt.sm) || $q.screen.lt.md"
-            />
+            <q-separator class="q-mb-md" v-show="!miniState || isHovered" />
             <q-item
               clickable
               v-ripple
               @click="handleLogout"
               class="logout-item"
-              :class="{ 'text-center': miniState && $q.screen.gt.sm }"
+              :class="{ 'text-center': miniState && !isHovered }"
             >
               <q-item-section avatar>
                 <div class="icon-wrapper">
                   <q-icon name="logout" size="20px" class="logout-icon" />
                 </div>
               </q-item-section>
-              <q-item-section v-show="(!miniState && $q.screen.gt.sm) || $q.screen.lt.md">
+              <q-item-section v-show="!miniState || isHovered">
                 <span class="logout-text">Logout</span>
               </q-item-section>
             </q-item>
@@ -134,8 +95,8 @@
       </q-drawer>
 
       <q-page-container>
-        <div v-if="hasSearchBar" class="search-toolbar q-py-md q-px-md">
-          <q-toolbar class="bg-transparent responsive-toolbar">
+        <div v-if="hasSearchBar" class="search-toolbar">
+          <div class="responsive-toolbar-container">
             <!-- Search Bar Container with Internal Dropdown -->
             <div class="search-container">
               <q-input
@@ -147,6 +108,7 @@
                 clear-icon="close"
                 @keyup.enter="performSearch"
                 class="search-input no-gap"
+                style="width: 100%"
               >
                 <!-- dropdown select on the far left -->
                 <template v-slot:prepend>
@@ -180,8 +142,11 @@
               </q-input>
             </div>
 
-            <!-- Desktop notifications and user profile -->
-            <div class="desktop-actions" v-if="$q.screen.gt.sm">
+            <!-- Spacer to push actions to the right -->
+            <div class="toolbar-spacer"></div>
+
+            <!-- Notifications and user profile -->
+            <div class="toolbar-actions">
               <!-- Notifications Button -->
               <q-btn flat round dense class="notif-btn">
                 <img src="/icons/notif-icon.png" alt="notifications" class="notif-image" />
@@ -212,20 +177,21 @@
                 </q-menu>
               </q-btn>
 
-              <q-space />
-
               <!-- User Profile Button -->
-              <q-btn flat dense class="user-profile-btn">
+              <q-btn flat dense class="user-profile-btn" :class="{ compact: isCompactMode }">
                 <q-avatar size="32px">
                   <img src="\img\UserIcon.jpg" />
                 </q-avatar>
-                <div class="q-ml-sm user-info" v-if="$q.screen.gt.md">
+                <div class="user-info" v-show="!isCompactMode">
                   <div class="username-bg">{{ userName }}</div>
                   <div class="text-subtitle2 text-grey user-role">{{ userType }}</div>
                 </div>
+                <q-tooltip v-if="isCompactMode" anchor="bottom middle" self="top middle">
+                  {{ userName }} ({{ userType }})
+                </q-tooltip>
               </q-btn>
             </div>
-          </q-toolbar>
+          </div>
         </div>
 
         <router-view />
@@ -235,15 +201,15 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
 import { supabase } from 'boot/supabase'
 import { useDocumentsStore } from 'src/stores/documentsStore'
-import { useFiltering } from 'src/utils/useFiltering'
-const { clearFilters } = useFiltering()
+import { useDocumentsFilter } from 'src/utils/useFiltering'
+const { clearFilters } = useDocumentsFilter()
 
 const $q = useQuasar()
 const userStore = useUserStore()
@@ -253,9 +219,14 @@ const router = useRouter()
 const route = useRoute()
 const session = userStore.session
 
-const drawer = ref(false)
+const drawer = ref(true)
 const miniState = ref(true)
+const isHovered = ref(false)
 const search = ref('')
+
+// Responsive state
+const windowWidth = ref(window.innerWidth)
+const isCompactMode = computed(() => windowWidth.value < 1200)
 
 // Search dropdown options
 const searchType = ref('artifacts') // default selection
@@ -308,19 +279,31 @@ const navItems = computed(() => {
   })
 })
 
+// Window resize handler
+const handleResize = () => {
+  windowWidth.value = window.innerWidth
+}
+
 // Add a timeout to prevent rapid state changes
 let hoverTimeout = null
 
 const onDrawerMouseEnter = () => {
-  if ($q.screen.lt.md) return // Don't change mini state on mobile
   if (hoverTimeout) clearTimeout(hoverTimeout)
-  miniState.value = false
+  isHovered.value = true
+  // Only expand if currently in mini state
+  if (miniState.value) {
+    miniState.value = false
+  }
 }
 
 const onDrawerMouseLeave = () => {
-  if ($q.screen.lt.md) return // Don't change mini state on mobile
   if (hoverTimeout) clearTimeout(hoverTimeout)
-  miniState.value = true
+
+  // Add a small delay to prevent flickering
+  hoverTimeout = setTimeout(() => {
+    isHovered.value = false
+    miniState.value = true
+  }, 100) // 100ms delay
 }
 
 const activeItem = ref('home')
@@ -350,7 +333,7 @@ const setActiveItem = (itemName) => {
     return
   } else {
     // Navigate to the corresponding route
-    activeItem.value = itemName
+
     const targetRoute = `/${itemName}`
     router.push(targetRoute)
   }
@@ -398,7 +381,8 @@ const handleLogout = async () => {
 }
 
 onMounted(() => {
-  // Set search type based on current route
+  window.addEventListener('resize', handleResize)
+
   if (searchType.value) {
     if (route.name === 'documents') {
       searchType.value = 'documents'
@@ -411,6 +395,11 @@ onMounted(() => {
   if (search.value || searchType.value) {
     performSearch()
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  if (hoverTimeout) clearTimeout(hoverTimeout)
 })
 
 // Watch search bar input and run query
@@ -427,7 +416,11 @@ watch(
   (newPath) => {
     if (newPath === '/') {
       activeItem.value = 'home'
-    } else if (newPath.includes('home') || newPath.includes('admindash')) {
+    } else if (
+      newPath.includes('home') ||
+      newPath.includes('admindash') ||
+      newPath.includes('collection')
+    ) {
       activeItem.value = 'home'
     } else if (newPath.includes('appointment')) {
       activeItem.value = 'appointment'
@@ -441,8 +434,6 @@ watch(
       activeItem.value = 'collections'
     } else if (newPath.includes('gallery')) {
       activeItem.value = 'gallery'
-    } else if (newPath.includes('data-quality')) {
-      activeItem.value = 'data-quality'
     } else {
       activeItem.value = ''
     }
@@ -549,6 +540,10 @@ watch(
 </script>
 
 <style scoped>
+/* ========================
+   GENERAL FIXES
+======================== */
+
 .no-gap :deep(.q-field__prepend) {
   margin-left: 0 !important;
   padding-left: 0 !important;
@@ -559,29 +554,25 @@ watch(
   padding-left: 0 !important;
 }
 
-/* Mobile Header */
-.mobile-header {
-  background: linear-gradient(135deg, #880000 0%, #660000 100%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+/* ========================
+   MAIN LAYOUT FIXES
+======================== */
+.main-page-bg {
+  overflow-x: hidden !important;
+  max-width: 100vw;
 }
 
-.mobile-logo-img {
-  max-height: 40px;
-  max-width: 120px;
-  object-fit: contain;
+.q-layout {
+  overflow-x: hidden !important;
 }
 
-.mobile-notif-btn {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 50%;
+.q-page-container {
+  overflow-x: hidden !important;
 }
 
-.mobile-close-btn {
-  position: relative;
-  height: 60px;
-}
-
-/* Logo responsive sizing */
+/* ========================
+   LOGO
+======================== */
 .logo-img {
   max-width: 200px;
   max-height: 80px;
@@ -589,86 +580,293 @@ watch(
   cursor: pointer;
 }
 
-@media (max-width: 599px) {
-  .logo-img {
-    max-width: 150px;
-    max-height: 60px;
-  }
-}
-
-/* SIDEBAR LAYOUT FIX */
+/* ========================
+   SIDEBAR
+======================== */
 .sidebar-container {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  position: relative;
-}
-
-.logo-section {
-  flex-shrink: 0;
 }
 
 .navigation-section {
   flex: 1;
   min-height: 0;
   padding: 0 8px;
-  /* Only enable scrolling when in mini state or on mobile */
   overflow-y: visible;
-}
-
-/* Enable scrolling only in mini state on desktop */
-.q-drawer--mini .navigation-section {
-  overflow-y: auto;
-}
-
-/* Enable scrolling on mobile */
-@media (max-width: 1023px) {
-  .navigation-section {
-    overflow-y: auto;
-  }
 }
 
 .logout-section {
   flex-shrink: 0;
   padding: 10px;
   margin-top: auto;
-  background: inherit;
 }
 
-/* SIDEBAR STYLES */
 .sidebar-drawer.q-drawer {
+  overflow: hidden;
+  transition: width 0.3s ease !important;
+}
+
+/* ========================
+   TEXT VISIBILITY IMPROVEMENTS
+======================== */
+.nav-text,
+.logout-text {
+  opacity: 1;
+  transition:
+    opacity 0.2s ease,
+    width 0.2s ease;
+  white-space: nowrap;
   overflow: hidden;
 }
 
 .text-hidden {
   opacity: 0 !important;
-  transform: translateX(-10px) !important;
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease !important;
-  overflow: hidden !important;
+  width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-.nav-text,
-.logout-text {
-  opacity: 1;
-  transform: translateX(0) !important;
-  transition:
-    opacity 0.25s ease 0.1s,
-    transform 0.25s ease 0.1s !important;
+.sidebar-drawer:hover .text-hidden {
+  opacity: 1 !important;
+  width: auto !important;
 }
 
-/* Navigation and logout items */
-.nav-item {
-  border-radius: 12px;
-  border-radius: 12px;
-  transition:
-    background-color 0.2s ease,
-    transform 0.2s ease;
+/* ========================
+   RESPONSIVE TOOLBAR - UPDATED TO MATCH ORIGINAL
+======================== */
+.search-toolbar {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 8px 16px !important;
+  width: 100%;
+  box-sizing: border-box;
 }
 
+.responsive-toolbar-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+  min-height: 44px;
+}
+
+.search-container {
+  width: 735px;
+  max-width: 100%;
+  margin-right: 2px; /* spacing before notifications */
+}
+
+.toolbar-spacer {
+  flex: 0 0 30px;
+  width: 30px;
+}
+
+.toolbar-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 100px;
+  min-width: fit-content;
+  width: auto;
+}
+
+/* ========================
+   SEARCH INPUT
+======================== */
+.search-input {
+  width: 100%;
+}
+
+.search-input :deep(.q-field__control) {
+  min-height: 40px;
+}
+
+/* ========================
+   RESPONSIVE BREAKPOINTS
+======================== */
+
+/* Ultra-wide screens */
+@media (min-width: 1920px) {
+  .search-container {
+    width: 1060px !important;
+    min-width: 1060px !important;
+    max-width: 1060px !important;
+  }
+  .toolbar-actions {
+    gap: 100px;
+  }
+  .user-profile-btn:not(.compact) {
+    width: 282px !important;
+    min-width: 282px !important;
+    max-width: 282px !important;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .search-container {
+    width: 735px !important;
+    min-width: 735px !important;
+    max-width: 735px !important;
+  }
+  .toolbar-actions {
+    gap: 100px;
+  }
+  .user-profile-btn:not(.compact) {
+    width: 210px !important;
+    min-width: 210px !important;
+    max-width: 210px !important;
+  }
+}
+
+/* Medium-large screens */
+@media (min-width: 1300px) and (max-width: 1439px) {
+  .search-container {
+    width: 640px !important;
+    min-width: 640px !important;
+    max-width: 640px !important;
+  }
+  .toolbar-actions {
+    gap: 100px;
+  }
+  .user-profile-btn:not(.compact) {
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
+  }
+}
+
+/*my screen size range (1200-1300px) */
+@media (min-width: 1200px) and (max-width: 1300px) {
+  .search-container {
+    width: 640px !important;
+    min-width: 640px !important;
+    max-width: 640px !important;
+    flex: none !important;
+  }
+
+  .toolbar-actions {
+    gap: 100px;
+    width: auto;
+  }
+
+  .user-profile-btn:not(.compact) {
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
+  }
+}
+
+/* Compact screens  */
+@media (min-width: 900px) and (max-width: 1199px) {
+  .search-container {
+    width: 400px !important;
+    min-width: 400px !important;
+    max-width: 400px !important;
+  }
+  .toolbar-actions {
+    gap: 32px;
+  }
+  .user-profile-btn.compact {
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+    padding: 8px !important;
+    justify-content: center !important;
+  }
+}
+
+/* Small screens */
+@media (min-width: 600px) and (max-width: 899px) {
+  .search-container {
+    width: 300px !important;
+    min-width: 300px !important;
+    max-width: 300px !important;
+  }
+  .toolbar-actions {
+    gap: 16px;
+  }
+  .user-profile-btn.compact {
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+  }
+}
+
+/* Mobile screens */
+@media (max-width: 599px) {
+  .search-toolbar {
+    padding: 12px 16px !important;
+  }
+
+  .responsive-toolbar-container {
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .search-container {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 180px !important;
+    max-width: calc(100% - 120px) !important;
+    order: 1;
+  }
+
+  .toolbar-spacer {
+    display: none;
+  }
+
+  .toolbar-actions {
+    flex: 0 0 auto;
+    order: 2;
+    gap: 8px;
+    min-width: 100px;
+  }
+
+  .user-profile-btn.compact {
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+  }
+
+  .q-drawer {
+    display: none !important;
+  }
+
+  .q-page-container {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+}
+
+/* Hide sidebar on tablets */
+@media (min-width: 600px) and (max-width: 1024px) {
+  .q-drawer {
+    width: 120px !important;
+  }
+
+  .sidebar-drawer .q-drawer__content {
+    width: 120px !important;
+  }
+
+  .navigation-section {
+    text-align: center;
+  }
+
+  .nav-item .q-item__section--main,
+  .logout-item .q-item__section--main {
+    display: none !important;
+  }
+}
+
+/* ========================
+   NAVIGATION ITEMS
+======================== */
+.nav-item,
 .logout-item {
-  margin-bottom: 16px !important;
   border-radius: 12px;
   transition:
     background-color 0.2s ease,
@@ -678,7 +876,6 @@ watch(
 .nav-item:hover {
   background-color: rgba(136, 0, 0, 0.08);
 }
-
 .logout-item:hover {
   background-color: rgba(220, 53, 69, 0.08);
 }
@@ -690,8 +887,8 @@ watch(
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.2s ease;
   border: 2px solid transparent;
+  transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
@@ -703,42 +900,32 @@ watch(
   align-items: center !important;
 }
 
-/* Mini state specific styles */
 .text-center .nav-item,
 .text-center .logout-item {
   justify-content: center !important;
-  padding: 8px !important; /* Reduced padding for mini state */
-  margin-bottom: 16px !important; /* Consistent margin for mini state */
+  padding: 8px !important;
+  margin-bottom: 16px !important;
 }
-
-.text-center .nav-item .q-item__section--avatar,
-.text-center .logout-item .q-item__section--avatar {
-  min-width: 60px !important;
-  justify-content: center !important;
-  padding-right: 0 !important;
-}
-
 .text-center .q-item__section--main {
   display: none !important;
 }
 
-/* Active states */
 .nav-item.q-item--active .icon-wrapper {
   background-color: #880000;
   box-shadow: 0 4px 12px rgba(136, 0, 0, 0.3);
   transform: scale(1.05);
 }
-
 .nav-item.q-item--active .nav-icon {
   filter: brightness(0) invert(1);
 }
-
 .nav-item.q-item--active .nav-text {
   color: #880000;
   font-weight: 600;
 }
 
-/* Text styling */
+/* ========================
+   TEXT STYLING
+======================== */
 .nav-text,
 .logout-text {
   font-weight: 500;
@@ -746,23 +933,19 @@ watch(
   letter-spacing: 0.5px;
   transition: all 0.3s ease;
 }
-
 .nav-text {
   color: #2c3e50;
   text-transform: capitalize;
 }
-
 .logout-text,
 .logout-icon {
   color: #7c7c7c;
 }
-
 .logout-item:hover .logout-text,
 .logout-item:hover .logout-icon {
   color: #c82333;
   font-weight: 600;
 }
-
 .logout-item:hover .logout-icon {
   transform: scale(1.1);
 }
@@ -772,57 +955,9 @@ watch(
   height: 1px;
 }
 
-/* Updated Search Styles - Single input with internal dropdown */
-.search-toolbar {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 8px 16px !important;
-}
-
-.responsive-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  min-height: 56px;
-}
-
-.search-container {
-  flex: 1;
-  min-width: 200px;
-  max-width: 830px;
-}
-
-/* Single search input with internal dropdown */
-.search-input-with-dropdown {
-  background: rgba(255, 255, 255, 0.9) !important;
-  border-radius: 8px !important;
-  backdrop-filter: blur(10px);
-  width: 100%;
-}
-
-.search-input-with-dropdown .q-field__control {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border-radius: 8px !important;
-  backdrop-filter: blur(10px);
-}
-
-.search-input-with-dropdown .q-field__native {
-  color: #333 !important;
-}
-
-.search-input-with-dropdown .q-placeholder {
-  color: #666 !important;
-}
-
-.desktop-actions {
-  display: flex;
-  align-items: center;
-  gap: 65px;
-  flex-shrink: 0;
-}
-
-/* Notification button styling */
+/* ========================
+   NOTIFICATIONS
+======================== */
 .notif-btn {
   background-color: #f8f8ff !important;
   width: 40px;
@@ -830,17 +965,14 @@ watch(
   backdrop-filter: blur(10px);
   flex-shrink: 0;
 }
-
 .notif-btn:hover {
   background-color: #e0e0e0 !important;
 }
-
 .notif-image {
   width: 20px;
   height: 20px;
   object-fit: contain;
 }
-
 .custom-badge {
   font-size: 11px !important;
   font-weight: bold !important;
@@ -849,14 +981,34 @@ watch(
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* User profile button responsive */
+/* ========================
+   USER PROFILE
+======================== */
 .user-profile-btn {
   background-color: #f8f9fa !important;
   border-radius: 10px;
   min-height: 44px;
-  width: 282px;
   display: flex;
   align-items: center;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  padding: 4px 12px 4px 8px;
+}
+
+/* Full profile display
+.user-profile-btn:not(.compact) {
+  width: 180px;
+  min-width: 180px;
+  max-width: 180px;
+}
+
+/* Compact profile (avatar only) */
+.user-profile-btn.compact {
+  width: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  padding: 8px;
+  justify-content: center;
 }
 
 .user-profile-btn:hover {
@@ -869,6 +1021,8 @@ watch(
   align-items: flex-start;
   min-width: 0;
   line-height: 1.2;
+  margin-left: 8px;
+  flex: 1;
 }
 
 .username-bg {
@@ -878,88 +1032,29 @@ watch(
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 120px;
+  width: 100%;
 }
 
 .user-role {
   font-size: 12px !important;
   line-height: 1 !important;
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+  width: 100%;
 }
 
-/* Mobile-specific responsive styles */
-@media (max-width: 1439px) {
-  .search-container {
-    max-width: 400px;
-  }
-
-  .username-bg {
-    max-width: 100px;
-  }
+/* Avatar adjustments */
+.user-profile-btn .q-avatar {
+  flex-shrink: 0;
 }
 
-@media (max-width: 1199px) {
-  .search-container {
-    max-width: 300px;
-  }
-}
-
-@media (max-width: 1023px) {
-  .search-toolbar {
-    padding: 12px 16px !important;
-  }
-
-  .responsive-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-    min-height: auto;
-  }
-
-  .search-container {
-    max-width: none;
-    width: 100%;
-  }
-
-  .desktop-actions {
-    justify-content: center;
-    width: 100%;
-  }
-
-  .user-profile-btn {
-    justify-content: center;
-    min-width: 140px;
-  }
-}
-
-@media (max-width: 599px) {
-  .search-toolbar {
-    padding: 8px 12px !important;
-  }
-
-  .responsive-toolbar {
-    gap: 8px;
-  }
-
-  .user-profile-btn {
-    min-width: 120px;
-    padding: 6px 8px !important;
-  }
-
-  .username-bg {
-    font-size: 13px;
-    max-width: 80px;
-  }
-
-  .user-role {
-    font-size: 11px !important;
-  }
-}
-
-/* Ensure drawer content is scrollable on mobile */
-@media (max-width: 1023px) {
-  .drawer-content {
-    height: 100vh;
-    overflow-y: auto;
-  }
+/* Tooltip styling */
+.q-tooltip {
+  background-color: rgba(0, 0, 0, 0.87) !important;
+  font-size: 12px !important;
+  padding: 4px 8px !important;
 }
 </style>
