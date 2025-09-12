@@ -241,8 +241,8 @@ import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
 import { useDocumentsStore } from 'src/stores/documentsStore'
-import { useFiltering } from 'src/utils/useFiltering'
-const { clearFilters } = useFiltering()
+import { useDocumentsFilter } from 'src/utils/useFiltering'
+const { clearFilters } = useDocumentsFilter()
 
 const $q = useQuasar()
 const userStore = useUserStore()
@@ -352,7 +352,7 @@ const setActiveItem = (itemName) => {
     return
   } else {
     // Navigate to the corresponding route
-    activeItem.value = itemName
+
     const targetRoute = `/${itemName}`
     router.push(targetRoute)
   }
@@ -429,7 +429,11 @@ watch(
   (newPath) => {
     if (newPath === '/') {
       activeItem.value = 'home'
-    } else if (newPath.includes('home') || newPath.includes('admindash')) {
+    } else if (
+      newPath.includes('home') ||
+      newPath.includes('admindash') ||
+      newPath.includes('collection')
+    ) {
       activeItem.value = 'home'
     } else if (newPath.includes('appointment')) {
       activeItem.value = 'appointment'
@@ -443,8 +447,6 @@ watch(
       activeItem.value = 'collections'
     } else if (newPath.includes('gallery')) {
       activeItem.value = 'gallery'
-    } else if (newPath.includes('data-quality')) {
-      activeItem.value = 'data-quality'
     } else {
       activeItem.value = ''
     }
