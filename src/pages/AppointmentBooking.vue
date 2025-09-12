@@ -186,6 +186,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useUserStore } from 'src/stores/user'
+import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { addBusinessDays, addMonths, isWithinInterval, isWeekend } from 'date-fns'
 
@@ -194,6 +195,7 @@ const loading = ref(false)
 const showSuccessModal = ref(false)
 
 const userStore = useUserStore()
+const router = useRouter()
 
 const form = ref({
   name: `${userStore.profile.first_name || ''} ${userStore.profile.last_name || ''}`.trim(),
@@ -276,7 +278,6 @@ const fetchAppointments = async () => {
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
-
 
   if (!error && data) {
     appointments.value = data.map((a) => ({
@@ -423,11 +424,23 @@ function resetForm() {
   form.value.user_remarks = ''
 }
 
-onMounted(fetchAppointments)
+// onMounted(fetchAppointments)
+
+onMounted(() => {
+  if (router.query?.tab === 'status') {
+    activeTab.value = 'status'
+    fetchAppointments()
+  } else {
+    activeTab.value = 'information'
+  }
+})
 
 watch(activeTab, (newTab) => {
   if (newTab === 'status') {
+    router.push({ path: '/appointment', query: { tab: 'status' } })
     fetchAppointments()
+  } else {
+    router.push({ path: '/appointment' })
   }
 })
 
