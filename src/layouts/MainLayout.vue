@@ -165,7 +165,14 @@
                     <q-item v-if="notifications.length === 0">
                       <q-item-section>No new notifications</q-item-section>
                     </q-item>
-                    <q-item v-for="notif in notifications" :key="notif.id" clickable v-ripple>
+                    <q-item
+                      v-for="notif in notifications"
+                      :key="notif.id"
+                      clickable
+                      v-ripple
+                      @click="openNotification(notif)"
+                      :class="notif.read ? 'bg-white' : 'bg-grey-3'"
+                    >
                       <q-item-section>{{ notif.message }}</q-item-section>
                       <q-item-section side>{{ notif.time }}</q-item-section>
                     </q-item>
@@ -520,6 +527,43 @@ async function setupRealtimeNotifications() {
     .subscribe((status) => {
       console.log('Real-time subscription status:', status)
     })
+}
+
+const notificationRoutes = {
+  appointment_booking: '/admin/appointments',
+  appointment_status: '/appointment?tab=status',
+  visitor_registration: '/admindash',
+}
+// Mark as read and navigate to corresponding page based on type
+async function openNotification(notif) {
+  await markAsRead(notif.id)
+
+  // console.log('Opening notification:', notif)
+
+  const type = notif.type ? notif.type.trim().toLowerCase() : ''
+  const targetRoute = notificationRoutes[type] || '/'
+
+  if (targetRoute) {
+    console.log('Navigating to ', targetRoute)
+    router.push(targetRoute)
+  } else {
+    console.warn('No route defined for notification type:', type)
+  }
+}
+
+async function markAsRead(notifId) {
+  const notif = notifications.value.find((n) => n.id === notifId)
+  if (!notif || notif.read) return // Not found or skip if already read
+
+  const { error } = await supabase.from('notifications').update({ read: true }).eq('id', notifId)
+
+  if (error) {
+    console.error('Error marking notification as read:', error)
+    return
+  }
+
+  notif.read = true
+  notificationCount.value = Math.max(0, notificationCount.value - 1)
 }
 
 onMounted(() => {
