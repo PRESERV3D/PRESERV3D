@@ -3,22 +3,32 @@
     <!-- Header Section with User Greeting -->
     <div class="layout-container">
       <div class="box-1 row items-center">
-        <div class="col-7 q-gutter-xs">
+        <!-- Text Content -->
+        <div class="col-12 col-md-7 q-gutter-xs">
           <p class="q-ml-xl dash-title">
             <span v-if="userStore.profile">Welcome Back, {{ userStore.profile.first_name }}!</span>
           </p>
           <p class="q-ml-xl dash-subtitle">
             <span v-if="userStore.profile?.role === 'admin'">(Admin Access) - </span>
-            Explore University artifacts, historic documents, and <br />
+            Explore University artifacts, historic documents, and <br class="gt-sm" />
             virtual museum exhibits.
           </p>
-          <div class="q-ml-md q-gutter-lg">
+          <!-- Responsive Button Layout -->
+          <div class="q-ml-md q-gutter-lg row no-wrap gt-xs">
             <q-btn to="/artifacts" label="Explore Artifacts" class="btn-explore" no-caps />
             <q-btn to="/documents" label="Browse Documents" class="btn-document" no-caps />
           </div>
+          <!-- Small Button Layout -->
+          <div class="q-ml-sm q-gutter-sm column xs">
+            <q-btn to="/artifacts" label="Explore Artifacts" class="btn-explore full-width" no-caps />
+            <q-btn to="/documents" label="Browse Documents" class="btn-document full-width" no-caps />
+          </div>
         </div>
-        <div class="col-5 q-gutter-xs">
-          <q-img src="/img/trophy-document.png" alt="Trophy and Document" class="trophies" />
+        <!-- Image - Hidden on small view -->
+        <div class="col-12 col-md-5 q-gutter-xs gt-sm">
+          <div class="row justify-center justify-md-end">
+            <q-img src="/img/trophy-document.png" alt="Trophy and Document" class="trophies" />
+          </div>
         </div>
       </div>
 
