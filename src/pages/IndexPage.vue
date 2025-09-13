@@ -1357,6 +1357,7 @@ async function addCollection() {
   transition:
     transform 0.2s,
     box-shadow 0.2s;
+  min-height: 300px;
 }
 
 .my-card:hover {
@@ -1366,6 +1367,7 @@ async function addCollection() {
 
 .artifact-card-section {
   flex-shrink: 0;
+  padding: 0.75rem;
 }
 
 /* STYLING
@@ -1420,6 +1422,11 @@ async function addCollection() {
   color: #560505;
   margin: 0;
   line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .view-info {
@@ -1455,6 +1462,22 @@ async function addCollection() {
   box-shadow: none;
 }
 
+.action-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.star-icon {
+  color: #7c7c7c;
+  font-size: 18px;
+}
+
+.star-icon:hover {
+  background-color: rgba(239, 175, 0, 0.1);
+}
+
 /* ========================
    RESPONSIVE BREAKPOINTS
 ======================== */
@@ -1469,6 +1492,49 @@ async function addCollection() {
     font-size: 18px;
   }
 
+  /* Recently Viewed Responsive */
+  .recently-viewed-item {
+    padding: 0.6rem 1rem;
+    min-height: 70px;
+  }
+
+  .circular-holder {
+    width: 55px;
+    height: 55px;
+  }
+
+  .circle-icon-center {
+    font-size: 30px;
+  }
+
+  .artifact-name {
+    font-size: 16px;
+  }
+
+  .view-info {
+    font-size: 14px;
+  }
+
+  .view-icon,
+  .star-icon {
+    font-size: 22px;
+  }
+
+  .action-icons {
+    gap: 0.4rem;
+  }
+
+  .item-details {
+    margin: 0 0.8rem;
+  }
+
+  .my-card {
+    min-height: 350px;
+  }
+
+  .artifact-card-section {
+    padding: 1rem;
+  }
 }
 
 /* Large screens (1440px - 1919px) */
@@ -1480,6 +1546,46 @@ async function addCollection() {
   .dash-subtitle {
     font-size: 16px;
   }
+
+  /* Recently Viewed Responsive */
+  .recently-viewed-item {
+    padding: 0.5rem 0.8rem;
+    min-height: 65px;
+  }
+
+  .circular-holder {
+    width: 50px;
+    height: 50px;
+  }
+
+  .circle-icon-center {
+    font-size: 28px;
+  }
+
+  .artifact-name {
+    font-size: 15px;
+  }
+
+  .view-info {
+    font-size: 13px;
+  }
+
+  .view-icon,
+  .star-icon {
+    font-size: 20px;
+  }
+
+  .action-icons {
+    gap: 0.3rem;
+  }
+
+  .item-details {
+    margin: 0 0.6rem;
+  }
+
+  .my-card {
+    min-height: 320px;
+  }
 }
 
 /* Medium-large screens (1300px - 1439px) */
@@ -1490,6 +1596,38 @@ async function addCollection() {
 
   .dash-subtitle {
     font-size: 14px;
+  }
+
+  /* Recently Viewed Responsive */
+  .recently-viewed-item {
+    padding: 0.4rem 0.6rem;
+    min-height: 60px;
+  }
+
+  .circular-holder {
+    width: 45px;
+    height: 45px;
+  }
+
+  .circle-icon-center {
+    font-size: 25px;
+  }
+
+  .artifact-name {
+    font-size: 14px;
+  }
+
+  .view-info {
+    font-size: 12px;
+  }
+
+  .view-icon,
+  .star-icon {
+    font-size: 18px;
+  }
+
+  .action-icons {
+    gap: 0.25rem;
   }
 }
 
@@ -1521,24 +1659,72 @@ async function addCollection() {
   .btn-document {
     font-size: 13px;
   }
+
+  /* Recently Viewed Responsive */
+  .recently-viewed-item {
+    padding: 0.7rem 0.5rem;
+    min-height: 55px;
+  }
+
+  .circular-holder {
+    width: 42px;
+    height: 42px;
+  }
+
+  .circle-icon-center {
+    font-size: 22px;
+  }
+
+  .artifact-name {
+    font-size: 13px;
+  }
+
+  .title-font-2 {
+    font-size: 18px;
+  }
+
+  .view-info {
+    font-size: 10px;
+  }
+
+  .view-icon,
+  .star-icon {
+    font-size: 15px;
+  }
+
+  .action-icons {
+    gap: 0.2rem;
+  }
+
+  .item-details {
+    margin: 0 0.4rem;
+  }
+
+  .my-card {
+    min-height: 300px;
+  }
+
+  .artifact-card-section {
+    padding: 0.6rem;
+  }
 }
 
 /* Different breakpoints */
-
 @media (min-width: 1211px) and (max-width: 1226px) {
   .btn-explore,
   .btn-document {
     font-size: 13px;
   }
 
-.dash-title {
-  font-size: 26px;
+  .dash-title {
+    font-size: 26px;
+  }
+
+  .dash-subtitle {
+    font-size: 12px;
+  }
 }
 
-.dash-subtitle {
-  font-size: 12px;
-}
-}
 /* Fix buttons wrapping at 1210px and below */
 @media (min-width: 1200px) and (max-width: 1210px) {
   .btn-explore,
@@ -1554,7 +1740,6 @@ async function addCollection() {
     font-size: 12px;
   }
 }
-
 
 /* Compact screens (1050px - 1199px) */
 @media (min-width: 1050px) and (max-width: 1199px) {
@@ -1574,6 +1759,48 @@ async function addCollection() {
   .trophies {
     max-width: 350px;
   }
+
+  /* Recently Viewed Responsive */
+  .recently-viewed-item {
+    padding: 0.9rem 0.4rem;
+    min-height: 50px;
+  }
+
+  .circular-holder {
+    width: 35px;
+    height: 35px;
+  }
+
+  .circle-icon-center {
+    font-size: 22px;
+  }
+
+  .title-font-2 {
+    font-size: 16px;
+  }
+
+  .artifact-name {
+    margin-top: 18px;
+    font-size: 12px;
+    line-height: 1.1;
+  }
+
+  .view-info {
+    font-size: 8px;
+  }
+
+  .view-icon,
+  .star-icon {
+    font-size: 12px;
+  }
+
+  .action-icons {
+    gap: 0.15rem;
+  }
+
+  .item-details {
+    margin: 0 0.3rem;
+  }
 }
 
 @media (min-width: 1050px) and (max-width: 1166px) {
@@ -1588,7 +1815,6 @@ async function addCollection() {
     font-size: 11px;
   }
 }
-
 
 @media (min-width: 1050px) and (max-width: 1121px) {
   .btn-explore,
@@ -1607,7 +1833,7 @@ async function addCollection() {
 }
 
 /* Small desktop/Large tablet (768px - 1049px) */
-@media (min-width: 768px) and (max-width: 1050px) {
+@media (min-width: 768px) and (max-width: 1049px) {
   .dash-title {
     font-size: 22px;
   }
@@ -1623,6 +1849,57 @@ async function addCollection() {
 
   .trophies {
     max-width: 300px;
+  }
+
+  /* Recently Viewed Responsive */
+  .recently-viewed-item {
+    padding: 0.8rem 0.4rem;
+    margin-bottom: 0.2rem;
+    min-height: 48px;
+  }
+
+  .circular-holder {
+    width: 38px;
+    height: 38px;
+  }
+
+  .circle-icon-center {
+    font-size: 22px;
+  }
+
+  .title-font-2 {
+    font-size: 16px;
+  }
+  .artifact-name {
+    margin-top: 20px;
+    font-size: 12px;
+    line-height: 1.1;
+  }
+
+  .view-info {
+    font-size: 9px;
+  }
+
+  /* Hide both view and star icons starting from this breakpoint */
+  .view-icon,
+  .star-icon {
+    display: none !important;
+  }
+
+  .action-icons {
+    display: none !important;
+  }
+
+  .item-details {
+    margin: 0 0.25rem;
+  }
+
+  .my-card {
+    min-height: 280px;
+  }
+
+  .artifact-card-section {
+    padding: 0.5rem;
   }
 }
 
@@ -1663,10 +1940,16 @@ async function addCollection() {
   .btn-document {
     font-size: 13px;
   }
+  .title-font-2 {
+    font-size: 14px;
+  }
+  .recently-viewed-item {
+    padding: 0.8rem 0.6rem;
+    min-height: 60px;
+  }
 }
 
 @media (min-width: 768px) and (max-width: 895px) {
-
   .dash-title {
     font-size: 24px;
   }
@@ -1687,9 +1970,9 @@ async function addCollection() {
     font-size: 11px;
   }
 }
-/* Tablet portrait (600px - 767px) */
-@media (min-width: 600px) and (max-width: 767.99px) {
 
+/* Tablet portrait (600px - 767px) */
+@media (min-width: 600px) and (max-width: 767px) {
   .gt-sm {
     display: none !important;
   }
@@ -1713,10 +1996,65 @@ async function addCollection() {
   .btn-document {
     font-size: 10px;
   }
+
+  /* Recently Viewed Title */
+  .recently-viewed-title {
+    font-size: 14px;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Recently Viewed Responsive */
+  .recently-viewed-item {
+    padding: 0.2rem 0.3rem;
+    margin-bottom: 0.1rem;
+    min-height: 40px;
+  }
+
+  .circular-holder {
+    width: 32px;
+    height: 32px;
+  }
+
+  .circle-icon-center {
+    font-size: 14px;
+  }
+
+  .artifact-name {
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  .view-info {
+    font-size: 8px;
+    margin-top: 1px;
+  }
+
+  /* Icons already hidden from previous breakpoint */
+  .view-icon,
+  .star-icon {
+    display: none !important;
+  }
+
+  .action-icons {
+    display: none !important;
+  }
+
+  .item-details {
+    margin: 0 0.2rem;
+  }
+
+  .my-card {
+    min-height: 180px; /* Reduced from 260px */
+    height: fit-content;
+  }
+
+  .artifact-card-section {
+    padding: 0.4rem;
+    padding-bottom: 0.5rem;
+  }
 }
 
 @media (min-width: 600px) and (max-width: 731px) {
-
   .dash-title {
     font-size: 24px;
   }
@@ -1729,47 +2067,268 @@ async function addCollection() {
   .btn-document {
     font-size: 8px;
   }
-
-}
-/* Mobile landscape (480px - 599px) */
-@media (min-width: 480px) and (max-width: 599px) {
-  .dash-title {
-    font-size: 1.4rem;
-  }
-
-  .dash-subtitle {
-    font-size: 0.85rem;
-  }
-
-  .dash-subtitle br {
-    display: none;
-  }
-
-  .btn-explore,
-  .btn-document {
-    font-size: 13px;
-  }
 }
 
-/* Mobile portrait (320px - 479px)
-@media (max-width: 479px) {
-  .dash-title {
-    font-size: 1.2rem;
+
+/*
+  ========================
+  MOBILE STYLES — TEMPORARILY DISABLED
+  ========================
+
+  Mobile landscape (480px - 599px)
+  @media (min-width: 480px) and (max-width: 599px) {
+    .dash-title {
+      font-size: 1.4rem;
+    }
+
+    .dash-subtitle {
+      font-size: 0.85rem;
+    }
+
+    .dash-subtitle br {
+      display: none;
+    }
+
+    .btn-explore,
+    .btn-document {
+      font-size: 13px;
+    }
+
+    .recently-viewed-item {
+      padding: 0.2rem 0.25rem;
+      margin-bottom: 0.1rem;
+      flex-wrap: nowrap;
+      min-height: 42px;
+    }
+
+    .circular-holder {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+    }
+
+    .circle-icon-center {
+      font-size: 14px;
+    }
+
+    .artifact-name {
+      font-size: 9px;
+      line-height: 1.0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      -webkit-line-clamp: 1;
+    }
+
+    .view-info {
+      font-size: 7px;
+      margin-top: 1px;
+    }
+
+    .view-icon,
+    .star-icon {
+      display: none !important;
+    }
+
+    .action-icons {
+      display: none !important;
+    }
+
+    .item-details {
+      min-width: 0;
+      flex: 1;
+      margin: 0 0.3rem;
+    }
+
+    .my-card {
+      min-height: 240px;
+    }
+
+    .artifact-card-section {
+      padding: 0.3rem;
+    }
+
+    .card-wrapper {
+      width: 100% !important;
+      max-width: none !important;
+    }
   }
 
-  .dash-subtitle {
-    font-size: 0.8rem;
+  Mobile portrait (320px - 479px)
+  @media (max-width: 479px) {
+    .dash-title {
+      font-size: 1.2rem;
+    }
+
+    .dash-subtitle {
+      font-size: 0.8rem;
+    }
+
+    .dash-subtitle br {
+      display: none;
+    }
+
+    .btn-explore,
+    .btn-document {
+      font-size: 12px;
+      min-height: 36px;
+    }
+
+    .recently-viewed-item {
+      padding: 0.15rem 0.2rem;
+      margin-bottom: 0.05rem;
+      align-items: center;
+      min-height: 38px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .recently-viewed-item:hover {
+      background-color: rgba(136, 0, 0, 0.08);
+      transform: translateX(2px);
+    }
+
+    .circular-holder {
+      width: 28px;
+      height: 28px;
+    }
+
+    .circle-icon-center {
+      font-size: 12px;
+    }
+
+    .artifact-name {
+      font-size: 8px;
+      line-height: 1.0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 120px;
+      -webkit-line-clamp: 1;
+    }
+
+    .view-info {
+      font-size: 6px;
+      margin-top: 0;
+    }
+
+    .view-icon,
+    .star-icon {
+      display: none !important;
+    }
+
+    .action-icons {
+      display: none !important;
+    }
+
+    .item-details {
+      margin: 0 0.2rem;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .recently-viewed-item {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .recently-viewed-item .row {
+      width: 100%;
+      align-items: center;
+    }
+
+    .my-card {
+      min-height: 240px;
+    }
+
+    .artifact-card-section {
+      padding: 0.3rem;
+    }
+
+    .card-wrapper {
+      width: 100% !important;
+      max-width: none !important;
+    }
   }
 
-  .dash-subtitle br {
-    display: none;
+  Extra small screens (below 320px)
+  @media (max-width: 319px) {
+    .recently-viewed-item {
+      padding: 0.1rem 0.15rem;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.15rem;
+      min-height: 35px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .recently-viewed-item:hover {
+      background-color: rgba(136, 0, 0, 0.08);
+      transform: translateX(2px);
+    }
+
+    .circular-holder {
+      width: 24px;
+      height: 24px;
+    }
+
+    .circle-icon-center {
+      font-size: 10px;
+    }
+
+    .artifact-name {
+      font-size: 7px;
+      max-width: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .view-info {
+      font-size: 5px;
+    }
+
+    .action-icons {
+      display: none !important;
+    }
+
+    .item-details {
+      margin: 0 0.1rem;
+      flex: 1;
+      min-width: 0;
+    }
   }
 
-  .btn-explore,
-  .btn-document {
-    font-size: 12px;
-    min-height: 36px;
+  UTILITY CLASSES FOR RESPONSIVE ICON HIDING
+  @media (max-width: 1025px) {
+    .hide-icons-tablet {
+      display: none !important;
+    }
   }
-}
+
+  @media (max-width: 599px) {
+    .hide-star-mobile {
+      display: none !important;
+    }
+  }
+
+  @media (max-width: 479px) {
+    .hide-icons-mobile {
+      display: none !important;
+    }
+
+    .mobile-clickable-item {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mobile-clickable-item:hover {
+      background-color: rgba(136, 0, 0, 0.08);
+      transform: translateX(2px);
+    }
+  }
 */
+
 </style>
