@@ -1454,4 +1454,322 @@ async function addCollection() {
   background: transparent;
   box-shadow: none;
 }
+
+/* ========================
+   RESPONSIVE BREAKPOINTS
+======================== */
+
+/* Ultra-wide screens (1920px and up) */
+@media (min-width: 1920px) {
+  .dash-title {
+    font-size: 34px;
+  }
+
+  .dash-subtitle {
+    font-size: 18px;
+  }
+
+}
+
+/* Large screens (1440px - 1919px) */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .dash-title {
+    font-size: 32px;
+  }
+
+  .dash-subtitle {
+    font-size: 16px;
+  }
+}
+
+/* Medium-large screens (1300px - 1439px) */
+@media (min-width: 1300px) and (max-width: 1439px) {
+  .dash-title {
+    font-size: 30px;
+  }
+
+  .dash-subtitle {
+    font-size: 14px;
+  }
+}
+
+/* Fix title wrapping at 1338px */
+@media (min-width: 1300px) and (max-width: 1338px) {
+  .dash-title {
+    font-size: 28px;
+  }
+}
+
+/* Fix subtitle wrapping at 1394px */
+@media (min-width: 1339px) and (max-width: 1394px) {
+  .dash-subtitle {
+    font-size: 13px;
+  }
+}
+
+/* Standard desktop (1200px - 1299px) */
+@media (min-width: 1200px) and (max-width: 1299px) {
+  .dash-title {
+    font-size: 28px;
+  }
+
+  .dash-subtitle {
+    font-size: 12px;
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 13px;
+  }
+}
+
+/* Different breakpoints */
+
+@media (min-width: 1211px) and (max-width: 1226px) {
+  .btn-explore,
+  .btn-document {
+    font-size: 13px;
+  }
+
+.dash-title {
+  font-size: 26px;
+}
+
+.dash-subtitle {
+  font-size: 12px;
+}
+}
+/* Fix buttons wrapping at 1210px and below */
+@media (min-width: 1200px) and (max-width: 1210px) {
+  .btn-explore,
+  .btn-document {
+    font-size: 13px;
+  }
+
+  .dash-title {
+    font-size: 24px;
+  }
+
+  .dash-subtitle {
+    font-size: 12px;
+  }
+}
+
+
+/* Compact screens (1050px - 1199px) */
+@media (min-width: 1050px) and (max-width: 1199px) {
+  .dash-title {
+    font-size: 26px;
+  }
+
+  .dash-subtitle {
+    font-size: 12px;
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 13px;
+  }
+
+  .trophies {
+    max-width: 350px;
+  }
+}
+
+@media (min-width: 1050px) and (max-width: 1166px) {
+  .btn-explore,
+  .btn-document {
+    font-size: 12px;
+  }
+  .dash-title {
+    font-size: 24px;
+  }
+  .dash-subtitle {
+    font-size: 11px;
+  }
+}
+
+
+@media (min-width: 1050px) and (max-width: 1121px) {
+  .btn-explore,
+  .btn-document {
+    font-size: 10px;
+  }
+}
+
+@media (min-width: 1050px) and (max-width: 1093px) {
+  .dash-title {
+    font-size: 22px;
+  }
+  .dash-subtitle {
+    font-size: 10px;
+  }
+}
+
+/* Small desktop/Large tablet (768px - 1049px) */
+@media (min-width: 768px) and (max-width: 1050px) {
+  .dash-title {
+    font-size: 22px;
+  }
+
+  .dash-subtitle {
+    font-size: 10px;
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 10px;
+  }
+
+  .trophies {
+    max-width: 300px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1032px) {
+  .dash-title {
+    font-size: 20px;
+  }
+  .btn-explore,
+  .btn-document {
+    font-size: 8px;
+  }
+
+  .trophies {
+    max-width: 200px;
+  }
+}
+
+/* no trophy view */
+@media (min-width: 768px) and (max-width: 1025px) {
+  .gt-sm {
+    display: none !important;
+  }
+  .col-md-7 {
+    width: 100% !important;
+  }
+  .dash-title {
+    font-size: 26px;
+  }
+
+  .col-md-7 .dash-subtitle {
+    width: 90%;
+  }
+  .dash-subtitle {
+    font-size: 12px;
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 13px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 895px) {
+
+  .dash-title {
+    font-size: 24px;
+  }
+
+  .col-md-7 .dash-subtitle {
+    width: 70%;
+  }
+
+  .col-md-7 .dash-title {
+    width: 80%;
+  }
+  .dash-subtitle {
+    font-size: 10px;
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 11px;
+  }
+}
+/* Tablet portrait (600px - 767px) */
+@media (min-width: 600px) and (max-width: 767.99px) {
+
+  .gt-sm {
+    display: none !important;
+  }
+  .col-md-7 .dash-subtitle {
+    width: 70%;
+  }
+
+  .col-md-7 .dash-title {
+    width: 80%;
+  }
+
+  .dash-title {
+    font-size: 24px;
+  }
+
+  .dash-subtitle {
+    font-size: 10px;
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 10px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 731px) {
+
+  .dash-title {
+    font-size: 24px;
+  }
+
+  .dash-subtitle {
+    font-size: 10px;
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 8px;
+  }
+
+}
+/* Mobile landscape (480px - 599px) */
+@media (min-width: 480px) and (max-width: 599px) {
+  .dash-title {
+    font-size: 1.4rem;
+  }
+
+  .dash-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .dash-subtitle br {
+    display: none;
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 13px;
+  }
+}
+
+/* Mobile portrait (320px - 479px)
+@media (max-width: 479px) {
+  .dash-title {
+    font-size: 1.2rem;
+  }
+
+  .dash-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .dash-subtitle br {
+    display: none;
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 12px;
+    min-height: 36px;
+  }
+}
+*/
 </style>
