@@ -1947,6 +1947,25 @@ async function addCollection() {
     padding: 0.8rem 0.6rem;
     min-height: 60px;
   }
+
+  .artifact-name {
+    margin-top: 20px;
+    font-size: 11px;
+    line-height: 1.1;
+  }
+
+  .view-info {
+    font-size: 8px;
+  }
+
+  .circular-holder {
+    width: 36px;
+    height: 36px;
+  }
+
+  .circle-icon-center {
+    font-size: 20px;
+  }
 }
 
 @media (min-width: 768px) and (max-width: 895px) {
