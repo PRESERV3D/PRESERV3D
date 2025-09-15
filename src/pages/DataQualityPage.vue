@@ -1,6 +1,9 @@
 <template>
   <q-page class="q-pa-md">
     <div class="q-mt-xs title">Data Quality</div>
+    <div class="q-mt-xs q-mb-lg subtitle">
+      Information about the accuracy and completeness of collected archival materials.
+    </div>
     <div class="q-mt-md">
       <div class="row items-center justify-between q-ml-sm q-mb-md">
         <!-- Filter buttons -->
