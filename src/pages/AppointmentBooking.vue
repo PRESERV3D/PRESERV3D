@@ -3,7 +3,7 @@
     <div class="page-header">
       <h2 class="q-mb-lg title">Appointments</h2>
       <div class="q-mt-xs q-mb-lg subtitle">
-        Appointmtent form and information of scheduled appointments booked by users.
+        Appointment form and information of scheduled appointments booked by users.
       </div>
     </div>
 
