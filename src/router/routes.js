@@ -109,6 +109,11 @@ const routes = [
         component: () => import('pages/DataQualityPage.vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
+      {
+        path: 'testing-artifacts',
+        name: 'testing-artifacts',
+        component: () => import('pages/Testing_ArtifactsPage.vue'),
+      },
     ],
   },
   {
