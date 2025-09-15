@@ -64,8 +64,8 @@
                 </q-item-section>
                 <q-item-section>
                   <span :class="{ 'text-hidden': miniState && !isHovered }" class="nav-text">{{
-                      item.label
-                    }}</span>
+                    item.label
+                  }}</span>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -108,7 +108,7 @@
                 clear-icon="close"
                 @keyup.enter="performSearch"
                 class="search-input no-gap"
-                style="width: 100%;"
+                style="width: 100%"
               >
                 <!-- dropdown select on the far left -->
                 <template v-slot:prepend>
@@ -121,11 +121,11 @@
                     emit-value
                     map-options
                     @update:model-value="performSearch"
-                    style="width: 140px; text-align: center;"
+                    style="width: 140px; text-align: center"
                     popup-content-style="text-align: center; text-transform: capitalize;"
                   >
                     <template v-slot:selected>
-                      <div style="width: 100%; text-align: center; text-transform: capitalize;">
+                      <div style="width: 100%; text-align: center; text-transform: capitalize">
                         {{ searchType }}
                       </div>
                     </template>
@@ -136,7 +136,7 @@
                     name="search"
                     @click="performSearch"
                     class="cursor-pointer"
-                    style="margin: 0 8px;"
+                    style="margin: 0 8px"
                   />
                 </template>
               </q-input>
@@ -165,7 +165,14 @@
                     <q-item v-if="notifications.length === 0">
                       <q-item-section>No new notifications</q-item-section>
                     </q-item>
-                    <q-item v-for="notif in notifications" :key="notif.id" clickable v-ripple>
+                    <q-item
+                      v-for="notif in notifications"
+                      :key="notif.id"
+                      clickable
+                      v-ripple
+                      @click="openNotification(notif)"
+                      :class="notif.read ? 'bg-white' : 'bg-grey-3'"
+                    >
                       <q-item-section>{{ notif.message }}</q-item-section>
                       <q-item-section side>{{ notif.time }}</q-item-section>
                     </q-item>
@@ -178,7 +185,7 @@
               </q-btn>
 
               <!-- User Profile Button -->
-              <q-btn flat dense class="user-profile-btn" :class="{ 'compact': isCompactMode }">
+              <q-btn flat dense class="user-profile-btn" :class="{ compact: isCompactMode }">
                 <q-avatar size="32px">
                   <img src="\img\UserIcon.jpg" />
                 </q-avatar>
@@ -201,11 +208,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
+import { supabase } from 'boot/supabase'
 import { useDocumentsStore } from 'src/stores/documentsStore'
 import { useDocumentsFilter } from 'src/utils/useFiltering'
 const { clearFilters } = useDocumentsFilter()
@@ -235,12 +243,9 @@ const searchOptions = [
 ]
 
 // User and notifications data
-const notifications = ref([
-  { id: 1, message: 'New message from Mrs. Beth', time: '5m ago' },
-  { id: 2, message: '⚠️ Notice: The file you uploaded appears incomplete.', time: '1h ago' },
-])
-
-const notificationCount = computed(() => notifications.value.length)
+const notifications = ref([])
+const notificationCount = ref(0)
+let channel = null
 
 // Base navigation items
 const baseNavItems = [
@@ -454,6 +459,133 @@ watch(
   },
   { immediate: true },
 )
+
+async function fetchNotifications() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return
+
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('receiver_id', user.id)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching notifications:', error)
+    return
+  }
+
+  notifications.value = data.map((notif) => ({
+    ...notif,
+    time: new Date(notif.created_at).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Manila',
+    }),
+    message: notif.message,
+  }))
+
+  notificationCount.value = data.filter((notif) => !notif.read).length
+}
+
+async function setupRealtimeNotifications() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return
+
+  channel = supabase
+    .channel('notifications-realtime')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'notifications' },
+      (payload) => {
+        const notif = payload.new
+        console.log('Incoming notification:', notif)
+
+        if (
+          notif.user_id === user.id ||
+          (notif.role?.trim().toLowerCase() === 'admin' && userRole.value.toLowerCase() === 'admin')
+        ) {
+          console.log('Admin notification matched:', notif)
+          notifications.value.unshift({
+            ...notif,
+            time: new Date(notif.created_at).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+          })
+          notificationCount.value++
+        } else {
+          console.log('Notification skipped:', notif, 'for role:', userRole.value) // show skipped for non-receivers of the notifs
+        }
+      },
+    )
+    .subscribe((status) => {
+      console.log('Real-time subscription status:', status)
+    })
+}
+
+const notificationRoutes = {
+  appointment_booking: '/admin/appointments',
+  appointment_status: '/appointment?tab=status',
+  visitor_registration: '/admindash',
+}
+// Mark as read and navigate to corresponding page based on type
+async function openNotification(notif) {
+  await markAsRead(notif.id)
+
+  // console.log('Opening notification:', notif)
+
+  const type = notif.type ? notif.type.trim().toLowerCase() : ''
+  const targetRoute = notificationRoutes[type] || '/'
+
+  if (targetRoute) {
+    console.log('Navigating to ', targetRoute)
+    router.push(targetRoute)
+  } else {
+    console.warn('No route defined for notification type:', type)
+  }
+}
+
+async function markAsRead(notifId) {
+  const notif = notifications.value.find((n) => n.id === notifId)
+  if (!notif || notif.read) return // Not found or skip if already read
+
+  const { error } = await supabase.from('notifications').update({ read: true }).eq('id', notifId)
+
+  if (error) {
+    console.error('Error marking notification as read:', error)
+    return
+  }
+
+  notif.read = true
+  notificationCount.value = Math.max(0, notificationCount.value - 1)
+}
+
+onMounted(() => {
+  fetchNotifications()
+})
+
+onBeforeUnmount(() => {
+  if (channel) {
+    supabase.removeChannel(channel)
+  }
+})
+
+watch(
+  () => userProfile.value?.role,
+  (role) => {
+    if (role) {
+      console.log('Setting up real-time notifications for role:', role)
+      setupRealtimeNotifications()
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped>
@@ -543,9 +675,12 @@ watch(
 /* ========================
    TEXT VISIBILITY IMPROVEMENTS
 ======================== */
-.nav-text, .logout-text {
+.nav-text,
+.logout-text {
   opacity: 1;
-  transition: opacity 0.2s ease, width 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    width 0.2s ease;
   white-space: nowrap;
   overflow: hidden;
 }
@@ -587,7 +722,7 @@ watch(
 .search-container {
   width: 705px;
   max-width: 100%;
-  margin-right: 2px;    /* spacing before notifications */
+  margin-right: 2px; /* spacing before notifications */
 }
 
 .toolbar-spacer {
@@ -830,7 +965,9 @@ watch(
 .nav-item,
 .logout-item {
   border-radius: 12px;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .nav-item:hover {
