@@ -95,10 +95,10 @@
       </q-drawer>
 
       <q-page-container>
-        <div v-if="hasSearchBar" class="search-toolbar">
-          <div class="responsive-toolbar-container">
+        <div class="search-toolbar">
+          <div v-if="noToolBar" class="responsive-toolbar-container">
             <!-- Search Bar Container with Internal Dropdown -->
-            <div class="search-container">
+            <div v-if="hasSearchBar" class="search-container">
               <q-input
                 dense
                 outlined
@@ -315,6 +315,7 @@ const onDrawerMouseLeave = () => {
 
 const activeItem = ref('home')
 const hasSearchBar = ref(false)
+const noToolBar = ref(false)
 
 const setActiveItem = (itemName) => {
   console.log('Setting active item to:', itemName)
@@ -455,6 +456,13 @@ watch(
       hasSearchBar.value = true
     } else {
       hasSearchBar.value = false
+    }
+
+    // Tool bar visibility
+    if (newPath.includes('gallery')) {
+      noToolBar.value = false
+    } else {
+      noToolBar.value = true
     }
   },
   { immediate: true },
