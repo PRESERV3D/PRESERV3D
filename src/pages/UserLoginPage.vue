@@ -77,8 +77,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
+import { useQuasar } from 'quasar'
 // import { useUserStore } from 'src/stores/user'
 
+const $q = useQuasar()
 const router = useRouter()
 
 const form = ref({
@@ -208,10 +210,10 @@ async function loginUser() {
 
     const role = user.user_metadata?.role
     if (role === 'admin') {
-      alert('Welcome, Admin!')
+      $q.notify({ type: 'positive', message: 'Welcome, Admin!' })
       await router.push('/admindash')
     } else if (role === 'user') {
-      alert('Welcome, User!')
+      $q.notify({ type: 'positive', message: 'Welcome, User!' })
       await router.push('/home')
     } else {
       alert('Access denied. Unknown role.')

@@ -218,20 +218,8 @@
       <!-- Box Category -->
       <div class="box-category">
         <div class="q-pa-lg">
-          <p class="title-font-2" style="font-size: 16px; margin-top: 0">Category</p>
-          <div class="row q-col-gutter-md q-mb-md justify-between items-center">
-            <!-- Category Section -->
-            <div class="row q-gutter-sm col-auto">
-              <q-btn
-                v-for="categoryOption in categoryOptions"
-                :key="categoryOption"
-                :label="categoryOption"
-                class="btn-1"
-                :class="{ active: selectedCategories.has(categoryOption) }"
-                unelevated
-                @click="toggleCategory(categoryOption)"
-              />
-            </div>
+          <div class="row q-col-gutter-md items-center justify-between">
+            <div class="title-font-2" style="font-size: 16px; margin-top: 0">Category</div>
             <div class="row q-gutter-sm col-auto">
               <!-- Filter Section -->
               <q-btn-dropdown
@@ -393,6 +381,20 @@
                   </q-item>
                 </q-list>
               </q-btn-dropdown>
+            </div>
+          </div>
+          <div>
+            <!-- Category Section -->
+            <div class="row q-mt-md q-gutter-sm">
+              <q-btn
+                v-for="categoryOption in categoryOptions"
+                :key="categoryOption"
+                :label="categoryOption"
+                class="btn-1"
+                :class="{ active: selectedCategories.has(categoryOption) }"
+                unelevated
+                @click="toggleCategory(categoryOption)"
+              />
             </div>
           </div>
 

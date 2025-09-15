@@ -350,32 +350,8 @@ const checkEmailUnique = async (val) => {
 
 // Register user
 async function registerUser() {
-  const {
-    first_name,
-    last_name,
-    email,
-    contact,
-    institution,
-    purpose,
-    start_date,
-    end_date,
-    // letter_url,
-    // password,
-    // confirmPassword,
-  } = form.value
-
-  // const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/
-  // if (!passwordRegex.test(password)) {
-  //   alert(
-  //     'Password must be at least 8 characters long and contain an uppercase letter, a number, and a special character.',
-  //   )
-  //   return
-  // }
-
-  // if (password !== confirmPassword) {
-  //   alert('Passwords do not match!')
-  //   return
-  // }
+  const { first_name, last_name, email, contact, institution, purpose, start_date, end_date } =
+    form.value
 
   if (!institution || !purpose) {
     alert('Please fill out all required fields.')
@@ -427,12 +403,53 @@ async function registerUser() {
       return
     }
 
-    console.log('Registration successfully saved.')
+    // Notify all admins of new visitor registration
+    const name = `${first_name} ${last_name}`
+    const notifMessage = `${name} submitted a visitor account request.`
+    await adminNotifications(notifMessage)
 
+    console.log('Registration successfully submitted.')
     step.value = 3
   } catch (err) {
     console.log('Error during registration:', err)
     alert('An error occurred during registration. Please try again later.')
+  }
+}
+
+async function adminNotifications(notifMessage) {
+  try {
+    const { data: admins, error: adminError } = await supabase
+      .from('registered_admins')
+      .select('id')
+
+    if (adminError) {
+      console.error('Error fetching admins:', adminError)
+      return
+    }
+
+    if (!admins || admins.length === 0) {
+      console.warn('No existing admins to notify.')
+      return
+    }
+
+    const notifications = admins.map((admin) => ({
+      receiver_id: admin.id,
+      message: notifMessage,
+      type: 'visitor_registration',
+      receiver_role: 'admin',
+      read: false,
+      created_at: new Date().toISOString(),
+    }))
+
+    const { error: notifError } = await supabase.from('notifications').insert(notifications)
+
+    if (notifError) {
+      console.log('Error sending notification to all admins:', notifError)
+    } else {
+      console.log('Notification sent to all admins.')
+    }
+  } catch (err) {
+    console.log('Error in notifying admins:', err)
   }
 }
 

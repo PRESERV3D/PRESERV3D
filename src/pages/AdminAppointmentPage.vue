@@ -207,25 +207,54 @@ async function confirmAction() {
       admin_remarks: row.admin_remarks || '',
     }
 
-    // Update registration_visitors status
-    const updateResponse = await supabase
+    // Update appointment booking table
+    const { data: updateResponse, error: updateError } = await supabase
       .from('appointment_booking')
       .update(updateData)
       .eq('appointment_id', row.appointment_id)
-      .select('*')
+      .select('user_id, appointment_id, status')
+      .single()
 
-    console.log('Update response data:', updateResponse.data)
-    console.log('Update response error:', updateResponse.error)
-
-    if (updateResponse.error) {
-      throw updateResponse.error
+    if (updateError) {
+      console.log('Update error:', updateError)
+      throw updateError
     }
 
-    confirmDialog.value.show = false
+    console.log('Appointment updated: ', updateResponse)
 
+    // Send notification to user about admin review
+    const formatAction = action === 'Approved' ? 'approved' : 'rejected'
+    const notifMessage = `Your appointment on ${row.appointmentDate} at ${row.time} has been ${formatAction}.`
+    await userNotification(updateResponse.user_id, notifMessage)
+
+    confirmDialog.value.show = false
     fetchAppointments()
   } catch (err) {
     console.error('Error updating status:', err)
+  }
+}
+
+// Notify user of appointment booking review
+async function userNotification(receiverId, notifMessage) {
+  try {
+    const { error: notifError } = await supabase.from('notifications').insert([
+      {
+        receiver_id: receiverId,
+        message: notifMessage,
+        type: 'appointment_status',
+        receiver_role: 'user',
+        read: false,
+        created_at: new Date().toISOString(),
+      },
+    ])
+
+    if (notifError) {
+      console.error('Error sending notification to user:', notifError)
+    } else {
+      console.log('Notification sent to user:', receiverId)
+    }
+  } catch (err) {
+    console.error('Error sending notification to user:', err)
   }
 }
 

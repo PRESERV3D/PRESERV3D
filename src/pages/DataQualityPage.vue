@@ -288,8 +288,8 @@ const columns = [
 ]
 
 const userStore = useUserStore()
-const confirmDialog = ref({ show: false, action: '', row: null })
 const user = `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+const confirmDialog = ref({ show: false, action: '', row: null })
 const dialogMessage = computed(() => {
   if (confirmDialog.value.action === 'delete') {
     return `Are you sure you want to delete "${confirmDialog.value.row.title}"? This action cannot be undone.`

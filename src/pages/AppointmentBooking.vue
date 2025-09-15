@@ -186,6 +186,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useUserStore } from 'src/stores/user'
+import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { addBusinessDays, addMonths, isWithinInterval, isWeekend } from 'date-fns'
 
@@ -194,6 +195,7 @@ const loading = ref(false)
 const showSuccessModal = ref(false)
 
 const userStore = useUserStore()
+const router = useRouter()
 
 const form = ref({
   name: `${userStore.profile.first_name || ''} ${userStore.profile.last_name || ''}`.trim(),
@@ -277,7 +279,6 @@ const fetchAppointments = async () => {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
-
   if (!error && data) {
     appointments.value = data.map((a) => ({
       appointment_id: a.appointment_id,
@@ -311,9 +312,10 @@ const datePickerOptions = (date) => {
 
 function formatTimeTo12Hour(timeString) {
   if (!timeString) return ''
+
   const [hour, minute] = timeString.split(':').map(Number)
   const ampm = hour >= 12 ? 'PM' : 'AM'
-  const formattedHour = hour % 12 || 12 // 0 -> 12
+  const formattedHour = hour % 12 || 12
   return `${formattedHour}:${minute.toString().padStart(2, '0')} ${ampm}`
 }
 
@@ -363,12 +365,55 @@ async function submitBooking() {
       return
     }
 
+    // Send notification to all admins of new booking
+    const notifMessage = `${name} booked an appointment for ${date} at ${time}.`
+    await adminNotification(notifMessage)
+
     console.log('Appointment booking successfully saved.')
     showSuccessModal.value = true
     resetForm()
   } catch (err) {
     console.log('Error during appointment booking:', err)
     alert('An error occurred during booking. Please try again later.')
+  }
+}
+
+// Notify admin of new booking
+async function adminNotification(notifMessage) {
+  try {
+    const { data: admins, error: adminError } = await supabase
+      .from('registered_admins')
+      .select('id')
+    // console.log('Admins:', admins, 'Error:', adminError)
+
+    if (adminError) {
+      console.error('Error fetching admins:', adminError)
+      return
+    }
+
+    if (!admins || admins.length === 0) {
+      console.log('No existing admins to notify.')
+      return
+    }
+
+    const notifications = admins.map((admin) => ({
+      receiver_id: admin.id,
+      message: notifMessage,
+      type: 'appointment_booking',
+      receiver_role: 'admin',
+      read: false,
+      created_at: new Date().toISOString(),
+    }))
+
+    const { error: notifError } = await supabase.from('notifications').insert(notifications)
+
+    if (notifError) {
+      console.log('Error sending notification to all admins:', notifError)
+    } else {
+      console.log('Notification sent to all admins.')
+    }
+  } catch (err) {
+    console.error('Error in notifying admins:', err)
   }
 }
 
@@ -379,11 +424,23 @@ function resetForm() {
   form.value.user_remarks = ''
 }
 
-onMounted(fetchAppointments)
+// onMounted(fetchAppointments)
+
+onMounted(() => {
+  if (router.query?.tab === 'status') {
+    activeTab.value = 'status'
+    fetchAppointments()
+  } else {
+    activeTab.value = 'information'
+  }
+})
 
 watch(activeTab, (newTab) => {
   if (newTab === 'status') {
+    router.push({ path: '/appointment', query: { tab: 'status' } })
     fetchAppointments()
+  } else {
+    router.push({ path: '/appointment' })
   }
 })
 
