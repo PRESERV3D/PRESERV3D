@@ -95,8 +95,8 @@
       </q-drawer>
 
       <q-page-container>
-        <div class="search-toolbar">
-          <div v-if="noToolBar" class="responsive-toolbar-container">
+        <div v-if="noToolBar" class="search-toolbar">
+          <div class="responsive-toolbar-container">
             <!-- Search Bar Container with Internal Dropdown -->
             <div v-if="hasSearchBar" class="search-container">
               <q-input
