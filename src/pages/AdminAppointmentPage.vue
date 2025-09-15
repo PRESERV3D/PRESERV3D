@@ -1,6 +1,9 @@
 <template>
   <q-page class="q-pa-md">
     <div class="q-mt-xs title">Appointments</div>
+    <div class="q-mt-xs q-mb-lg subtitle">
+      Information of scheduled appointments booked by users.
+    </div>
     <div class="q-mt-md">
       <q-table
         class="my-sticky-header-table"
@@ -261,9 +264,9 @@ async function userNotification(receiverId, notifMessage) {
 // Fetch appointments from DB
 async function fetchAppointments() {
   const { data, error } = await supabase
-  .from('appointment_booking')
-  .select('*')
-  .order('created_at', { ascending: false })
+    .from('appointment_booking')
+    .select('*')
+    .order('created_at', { ascending: false })
 
   if (error) {
     console.error('Error fetching appointments:', error.message)
