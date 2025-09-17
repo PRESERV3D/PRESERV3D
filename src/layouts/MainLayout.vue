@@ -95,10 +95,10 @@
       </q-drawer>
 
       <q-page-container>
-        <div v-if="hasSearchBar" class="search-toolbar">
+        <div v-if="noToolBar" class="search-toolbar">
           <div class="responsive-toolbar-container">
             <!-- Search Bar Container with Internal Dropdown -->
-            <div class="search-container">
+            <div v-if="hasSearchBar" class="search-container">
               <q-input
                 dense
                 outlined
@@ -233,7 +233,7 @@ const search = ref('')
 
 // Responsive state
 const windowWidth = ref(window.innerWidth)
-const isCompactMode = computed(() => windowWidth.value < 1200)
+const isCompactMode = computed(() => windowWidth.value < 1030)
 
 // Search dropdown options
 const searchType = ref('artifacts') // default selection
@@ -315,6 +315,7 @@ const onDrawerMouseLeave = () => {
 
 const activeItem = ref('home')
 const hasSearchBar = ref(false)
+const noToolBar = ref(false)
 
 const setActiveItem = (itemName) => {
   console.log('Setting active item to:', itemName)
@@ -455,6 +456,13 @@ watch(
       hasSearchBar.value = true
     } else {
       hasSearchBar.value = false
+    }
+
+    // Tool bar visibility
+    if (newPath.includes('gallery')) {
+      noToolBar.value = false
+    } else {
+      noToolBar.value = true
     }
   },
   { immediate: true },
@@ -617,6 +625,27 @@ watch(
 
 .q-page-container {
   overflow-x: hidden !important;
+  margin-left: 0 !important; /* No margin - content stays in place */
+  transition: none !important;
+}
+
+/* ========================
+   SIDEBAR OVERLAY BEHAVIOR
+======================== */
+.sidebar-drawer.q-drawer {
+  overflow: hidden;
+  transition: width 0.3s ease !important;
+  z-index: 2000 !important; /* Ensure sidebar is above content */
+}
+
+/* Mini sidebar should not affect content positioning */
+.q-drawer--mini {
+  z-index: 2000 !important;
+}
+
+/* When expanded (on hover), sidebar overlays content */
+.sidebar-drawer:hover {
+  z-index: 2001 !important; /* Higher z-index when expanded */
 }
 
 /* ========================
@@ -651,11 +680,6 @@ watch(
   margin-top: auto;
 }
 
-.sidebar-drawer.q-drawer {
-  overflow: hidden;
-  transition: width 0.3s ease !important;
-}
-
 /* ========================
    TEXT VISIBILITY IMPROVEMENTS
 ======================== */
@@ -682,26 +706,29 @@ watch(
 }
 
 /* ========================
-   RESPONSIVE TOOLBAR - UPDATED TO MATCH ORIGINAL
+   RESPONSIVE TOOLBAR - NORMAL POSITIONING
 ======================== */
 .search-toolbar {
   background: transparent !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   padding: 8px 16px !important;
-  width: 100%;
+  width: 100% !important; /* Full width - no sidebar offset */
   box-sizing: border-box;
+  position: relative !important; /* Normal positioning */
+  z-index: 1000 !important;
 }
+
+/* No special toolbar positioning for sidebar states */
 
 .responsive-toolbar-container {
   display: flex;
   align-items: center;
   width: 100%;
-  gap: 16px;
   min-height: 44px;
 }
 
 .search-container {
-  width: 735px;
+  width: 705px;
   max-width: 100%;
   margin-right: 2px; /* spacing before notifications */
 }
@@ -752,15 +779,15 @@ watch(
   }
 }
 
-/* Large screens */
+/* Large screens  */
 @media (min-width: 1440px) and (max-width: 1919px) {
   .search-container {
-    width: 735px !important;
-    min-width: 735px !important;
-    max-width: 735px !important;
+    width: 790px !important;
+    min-width: 790px !important;
+    max-width: 790px !important;
   }
   .toolbar-actions {
-    gap: 100px;
+    gap: 120px;
   }
   .user-profile-btn:not(.compact) {
     width: 210px !important;
@@ -772,12 +799,12 @@ watch(
 /* Medium-large screens */
 @media (min-width: 1300px) and (max-width: 1439px) {
   .search-container {
-    width: 640px !important;
-    min-width: 640px !important;
-    max-width: 640px !important;
+    width: 710px !important;
+    min-width: 610px !important;
+    max-width: 710px !important;
   }
   .toolbar-actions {
-    gap: 100px;
+    gap: 110px;
   }
   .user-profile-btn:not(.compact) {
     width: 180px !important;
@@ -786,17 +813,17 @@ watch(
   }
 }
 
-/*my screen size range (1200-1300px) */
+/* my screen size */
 @media (min-width: 1200px) and (max-width: 1300px) {
   .search-container {
-    width: 640px !important;
-    min-width: 640px !important;
-    max-width: 640px !important;
+    width: 650px !important;
+    min-width: 550px !important;
+    max-width: 650px !important;
     flex: none !important;
   }
 
   .toolbar-actions {
-    gap: 100px;
+    gap: 60px;
     width: auto;
   }
 
@@ -808,33 +835,31 @@ watch(
 }
 
 /* Compact screens  */
-@media (min-width: 900px) and (max-width: 1199px) {
+@media (min-width: 1050px) and (max-width: 1199px) {
   .search-container {
-    width: 400px !important;
-    min-width: 400px !important;
-    max-width: 400px !important;
+    width: 590px !important;
+    min-width: 490px !important;
+    max-width: 590px !important;
   }
   .toolbar-actions {
-    gap: 32px;
+    gap: 45px;
   }
-  .user-profile-btn.compact {
-    width: 48px !important;
-    min-width: 48px !important;
-    max-width: 48px !important;
-    padding: 8px !important;
-    justify-content: center !important;
+  .user-profile-btn:not(.compact) {
+    width: 210px !important;
+    min-width: 210px !important;
+    max-width: 210px !important;
   }
 }
 
 /* Small screens */
-@media (min-width: 600px) and (max-width: 899px) {
+@media (min-width: 600px) and (max-width: 1049px) {
   .search-container {
-    width: 300px !important;
+    width: 550px !important;
     min-width: 300px !important;
-    max-width: 300px !important;
+    max-width: 550px !important;
   }
   .toolbar-actions {
-    gap: 16px;
+    gap: 30px;
   }
   .user-profile-btn.compact {
     width: 48px !important;
@@ -843,10 +868,45 @@ watch(
   }
 }
 
-/* Mobile screens */
+/* Hide sidebar on tablets - sidebar still overlays */
+@media (min-width: 600px) and (max-width: 1024px) {
+  .q-drawer {
+    width: 120px !important;
+    z-index: 2000 !important;
+  }
+
+  .sidebar-drawer .q-drawer__content {
+    width: 120px !important;
+  }
+
+  .navigation-section {
+    text-align: center;
+  }
+
+  .nav-item .q-item__section--main,
+  .logout-item .q-item__section--main {
+    display: none !important;
+  }
+
+  /* Content stays in normal position */
+  .q-page-container {
+    margin-left: 0 !important;
+  }
+
+  .search-toolbar {
+    width: 100% !important;
+  }
+}
+
+/* Mobile screens - content needs space for sidebar */
 @media (max-width: 599px) {
   .search-toolbar {
     padding: 12px 16px !important;
+    width: calc(100% - 120px) !important; /* Account for mini sidebar */
+    margin-left: 0 !important; /* Remove extra margin */
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
   }
 
   .responsive-toolbar-container {
@@ -881,20 +941,10 @@ watch(
     max-width: 48px !important;
   }
 
-  .q-drawer {
-    display: none !important;
-  }
-
-  .q-page-container {
-    margin-left: 0 !important;
-    padding-left: 0 !important;
-  }
-}
-
-/* Hide sidebar on tablets */
-@media (min-width: 600px) and (max-width: 1024px) {
+  /* Keep sidebar visible on mobile but in mini state */
   .q-drawer {
     width: 120px !important;
+    z-index: 2000 !important;
   }
 
   .sidebar-drawer .q-drawer__content {
@@ -908,6 +958,12 @@ watch(
   .nav-item .q-item__section--main,
   .logout-item .q-item__section--main {
     display: none !important;
+  }
+
+  /* Keep the margin for sidebar */
+  .q-page-container {
+    margin-left: 120px !important;
+    padding-left: 0 !important;
   }
 }
 
