@@ -815,7 +815,7 @@ const saveChanges = async () => {
     await logItemHistory({
       itemId: model.value.id,
       itemType: 'artifact',
-      action: 'edit',
+      action: 'update-data',
       oldData,
       newData,
       changes,
