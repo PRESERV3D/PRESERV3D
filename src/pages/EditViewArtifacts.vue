@@ -774,6 +774,7 @@ const saveChanges = async () => {
       donated_by: model.value.donated_by,
       date_received: model.value.date_received,
       related_links: model.value.related_links,
+      updated_at: model.value.updated_at,
     }
 
     const newData = {
@@ -789,6 +790,7 @@ const saveChanges = async () => {
       donated_by: editableData.value.donatedBy,
       date_received: toUTC(editableData.value.dateReceived),
       related_links: [...links.value],
+      updated_at: new Date(),
     }
 
     const changes = getChanges(oldData, newData)
@@ -802,7 +804,7 @@ const saveChanges = async () => {
       .from('artifacts_metadata')
       .update({
         ...newData,
-        updated_at: new Date().toISOString(),
+        updated_at: new Date(),
       })
       .eq('id', model.value.id)
 
@@ -815,7 +817,7 @@ const saveChanges = async () => {
     await logItemHistory({
       itemId: model.value.id,
       itemType: 'artifact',
-      action: 'update-data',
+      action: 'update',
       oldData,
       newData,
       changes,
@@ -824,8 +826,9 @@ const saveChanges = async () => {
     model.value = {
       ...model.value,
       ...newData,
-      updated_at: new Date().toISOString(),
+      updated_at: new Date(),
     }
+
     const storeModel = modelStore.models.find((m) => m.id === model.value.id)
     if (storeModel) Object.assign(storeModel, model.value)
 
@@ -846,13 +849,13 @@ const cancelChanges = () => {
     }
 
     editableData.value = {
-      title: model.value.metadata?.title || 'Untitled Artifact',
-      summary: model.value.metadata?.summary || '',
-      author: model.value.metadata?.author || '[Author Name]',
-      date: model.value.metadata?.date || '',
-      dataSource: model.value.data_source || 'Artifacts Metadata',
-      donatedBy: model.value.donated_by || '[Donor/Lender Name]',
-      dateReceived: formatDateForInput(model.value.date_received || model.value.uploaded_at),
+      title: model.value.metadata?.title,
+      summary: model.value.metadata?.summary,
+      author: model.value.metadata?.author,
+      date: model.value.metadata?.date,
+      dataSource: model.value.data_source,
+      donatedBy: model.value.donated_by,
+      dateReceived: formatDateForInput(model.value.date_received),
     }
   }
   newCategory.value = ''
@@ -951,8 +954,8 @@ function normalizeDate(value) {
 }
 
 function diffLinks(oldLinks = [], newLinks = []) {
-  const oldMap = new Map(oldLinks.map((link) => [link.url, link]))
-  const newMap = new Map(newLinks.map((link) => [link.url, link]))
+  const oldMap = new Map((oldLinks || []).map((link) => [link.url, link]))
+  const newMap = new Map((newLinks || []).map((link) => [link.url, link]))
 
   const added = []
   const removed = []
@@ -1272,26 +1275,33 @@ function drop(index) {
   hasChanges.value = true
 }
 
-async function saveRelatedLinks() {
-  try {
-    // Save directly to Supabase
-    const { error } = await supabase
-      .from('artifacts_metadata')
-      .update({
-        related_links: links.value,
-      })
-      .eq('id', route.params.id)
+// async function saveRelatedLinks() {
+//   try {
+//     // Save directly to Supabase
+//     const { error } = await supabase
+//       .from('artifacts_metadata')
+//       .update({
+//         related_links: links.value,
+//       })
+//       .eq('id', route.params.id)
 
-    if (error) throw error
+//     if (error) throw error
 
-    console.log('Related links saved successfully:', links.value)
+//     console.log('Related links saved successfully:', links.value)
 
-    hasChanges.value = false
-    showRelatedDialog.value = false
-  } catch (err) {
-    console.error('Error fetching/saving related links:', err)
-    console.log('Error saving related links:', err)
-  }
+//     hasChanges.value = false
+//     showRelatedDialog.value = false
+//   } catch (err) {
+//     console.error('Error fetching/saving related links:', err)
+//     console.log('Error saving related links:', err)
+//   }
+// }
+
+function saveRelatedLinks() {
+  console.log('Links stored locally:', links.value)
+
+  hasChanges.value = true
+  showRelatedDialog.value = false
 }
 
 async function cancelRelatedLinks() {
