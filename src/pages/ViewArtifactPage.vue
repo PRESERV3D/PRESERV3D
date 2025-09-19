@@ -352,11 +352,11 @@
             <div class="detail-row q-mb-md">
               <div class="detail-label">
                 <div class="a-info-title2">Author</div>
-                <div class="a-info-subtitle">{{ model.metadata.author || '[Author Name]' }}</div>
+                <div class="a-info-subtitle">{{ model.metadata.author }}</div>
               </div>
               <div class="detail-value">
                 <div class="a-info-title2">Date</div>
-                <div class="a-info-subtitle">{{ model.metadata.date || '[Date]' }}</div>
+                <div class="a-info-subtitle">{{ model.metadata.date }}</div>
               </div>
             </div>
 
@@ -374,17 +374,17 @@
             <!-- Single Column Section -->
             <div class="detail-item q-mb-md">
               <div class="a-info-title2">Data Source</div>
-              <div class="a-info-subtitle">Artifacts Metadata</div>
+              <div class="a-info-subtitle">{{ model.data_source }}</div>
             </div>
 
             <!-- User Info with side-by-side layout -->
             <div class="side-by-side-details q-mb-lg">
-              <div v-if="hasValue" class="detail-row q-mb-md">
+              <div class="detail-row q-mb-md">
                 <div class="detail-label">
                   <div class="a-info-title2">Donated/Loaned By:</div>
                 </div>
                 <div class="detail-value">
-                  <div class="a-info-subtitle">{{ model.donated_by || '[Donor/Lender Name]' }}</div>
+                  <div class="a-info-subtitle">{{ model.donated_by }}</div>
                 </div>
               </div>
 
@@ -394,7 +394,11 @@
                 </div>
                 <div class="detail-value">
                   <div class="a-info-subtitle">
-                    {{ formatDate(model.date_received || model.uploaded_at) }}
+                    {{
+                      model.date_received && model.date_received.trim() !== ''
+                        ? formatDate(model.date_received)
+                        : ''
+                    }}
                   </div>
                 </div>
               </div>
@@ -529,12 +533,28 @@ const artifactCard = ref(null)
 
 const hasValue = ref(false)
 
+// function formatDate(dateStr) {
+//   const date = new Date(dateStr)
+//   return `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA', {
+//     hour: '2-digit',
+//     minute: '2-digit',
+//   })}`
+// }
+
 function formatDate(dateStr) {
+  if (!dateStr || dateStr.toString().trim() === '') {
+    return ''
+  }
+
   const date = new Date(dateStr)
-  return `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA', {
+
+  const formattedDate = date.toLocaleDateString('en-CA')
+  const formattedTime = date.toLocaleTimeString('en-PH', {
     hour: '2-digit',
     minute: '2-digit',
-  })}`
+  })
+
+  return `${formattedDate} ${formattedTime}`
 }
 
 const isSpeaking = ref(false)
@@ -1013,6 +1033,56 @@ function openLink(url) {
   window.open(url, '_blank')
 }
 
+// async function handleDelete() {
+//   try {
+//     console.log('Trying to soft-delete ID:', route.params.id)
+
+//     // Fetch the original record
+//     const { data: originalData, error: fetchError } = await supabase
+//       .from('artifacts_metadata')
+//       .select('*')
+//       .eq('id', route.params.id)
+//       .single()
+
+//     if (fetchError) {
+//       console.error('Error fetching original artifact:', fetchError)
+//       alert('Failed to fetch the artifact.')
+//       return
+//     }
+
+//     // Insert into deleted table
+//     const { error: deleteError } = await supabase.from('deleted_artifacts').insert({
+//       ...originalData,
+//       deleted_at: new Date().toISOString(), // Add timestamp
+//       deleted_by: user,
+//     })
+
+//     if (deleteError) {
+//       console.error('Error deleting artifact:', deleteError)
+//       alert('Failed to delete the artifact.')
+//       return
+//     }
+
+//     // Delete the original record
+//     const { error: delError } = await supabase
+//       .from('artifacts_metadata')
+//       .delete()
+//       .eq('id', route.params.id)
+
+//     if (delError) {
+//       console.error('Error deleting artifact:', delError)
+//       alert('Failed to delete the artifact.')
+//       return
+//     } else {
+//       console.log('Artifact soft-deleted successfully:', route.params.id)
+//       router.push('/artifacts')
+//     }
+//   } catch (err) {
+//     console.error('Unexpected error during soft delete:', err)
+//     alert('An unexpected error occurred.')
+//   }
+// }
+
 async function handleDelete() {
   try {
     console.log('Trying to soft-delete ID:', route.params.id)
@@ -1033,7 +1103,7 @@ async function handleDelete() {
     // Insert into deleted table
     const { error: deleteError } = await supabase.from('deleted_artifacts').insert({
       ...originalData,
-      deleted_at: new Date().toISOString(), // Add timestamp
+      deleted_at: new Date().toISOString(),
       deleted_by: user,
     })
 
@@ -1053,13 +1123,51 @@ async function handleDelete() {
       console.error('Error deleting artifact:', delError)
       alert('Failed to delete the artifact.')
       return
-    } else {
-      console.log('Artifact soft-deleted successfully:', route.params.id)
-      router.push('/artifacts')
     }
+
+    await logItemHistory({
+      itemId: route.params.id,
+      itemType: 'artifact',
+      action: 'delete',
+      oldData: originalData,
+      changes: { new: null, old: originalData },
+    })
+
+    console.log('Artifact soft-deleted successfully: ', route.params.id)
+    router.push('/artifacts')
   } catch (err) {
     console.error('Unexpected error during soft delete:', err)
     alert('An unexpected error occurred.')
+  }
+}
+
+async function logItemHistory({ itemId, itemType, action, oldData, changes }) {
+  try {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError || !authData?.user) {
+      console.error('Auth error:', authError)
+      return
+    }
+
+    const adminName =
+      `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+
+    const { error } = await supabase.from('item_history').insert({
+      item_id: itemId,
+      item_type: itemType,
+      action: action,
+      performed_by: adminName || 'Admin',
+      old_data: oldData,
+      changes: changes,
+    })
+
+    if (error) {
+      console.error('Error logging history:', error)
+    } else {
+      console.log('History logged successfully')
+    }
+  } catch (err) {
+    console.error('Unexpected error logging history:', err)
   }
 }
 </script>
