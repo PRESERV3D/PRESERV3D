@@ -803,7 +803,7 @@ const saveChanges = async () => {
     newData.updated_at = updatedAt
 
     changes = {
-      ...newData,
+      ...changes,
       updated_at: { old: normalizeDate(oldData.updated_at), new: normalizeDate(updatedAt) },
     }
 
