@@ -300,7 +300,7 @@ async function handleDelete() {
     // Insert into deleted table
     const { error: deleteError } = await supabase.from('deleted_documents').insert({
       ...originalData,
-      deleted_at: new Date().toISOString(), // Add timestamp
+      deleted_at: new Date().toISOString(),
       deleted_by: user,
     })
 
@@ -320,12 +320,51 @@ async function handleDelete() {
       console.error('Error deleting document:', delError)
       alert('Failed to delete the document.')
       return
-    } else {
-      router.push('/documents')
     }
+
+    await logItemHistory({
+      itemId: route.params.id,
+      itemType: 'document',
+      action: 'delete',
+      oldData: originalData,
+      changes: { new: null, old: originalData },
+    })
+
+    console.log('Document soft-deleted successfully: ', route.params.id)
+    router.push('/documents')
   } catch (err) {
     console.error('Unexpected error during soft delete:', err)
     alert('An unexpected error occurred.')
+  }
+}
+
+async function logItemHistory({ itemId, itemType, action, oldData, changes }) {
+  try {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError || !authData?.user) {
+      console.error('Auth error:', authError)
+      return
+    }
+
+    const adminName =
+      `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+
+    const { error } = await supabase.from('item_history').insert({
+      item_id: itemId,
+      item_type: itemType,
+      action: action,
+      performed_by: adminName || 'Admin',
+      old_data: oldData,
+      changes: changes,
+    })
+
+    if (error) {
+      console.error('Error logging history:', error)
+    } else {
+      console.log('History logged successfully')
+    }
+  } catch (err) {
+    console.error('Unexpected error logging history:', err)
   }
 }
 
