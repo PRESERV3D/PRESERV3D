@@ -790,22 +790,26 @@ const saveChanges = async () => {
       donated_by: editableData.value.donatedBy,
       date_received: toUTC(editableData.value.dateReceived),
       related_links: [...links.value],
-      updated_at: new Date(),
     }
 
-    const changes = getChanges(oldData, newData)
+    let changes = getChanges(oldData, newData)
 
     if (Object.keys(changes).length === 0) {
       showNotifyDialog('Info', 'No changes made.')
       return
     }
 
+    const updatedAt = new Date().toISOString()
+    newData.updated_at = updatedAt
+
+    changes = {
+      ...newData,
+      updated_at: { old: normalizeDate(oldData.updated_at), new: normalizeDate(updatedAt) },
+    }
+
     const { error } = await supabase
       .from('artifacts_metadata')
-      .update({
-        ...newData,
-        updated_at: new Date(),
-      })
+      .update(newData)
       .eq('id', model.value.id)
 
     if (error) {
@@ -826,7 +830,6 @@ const saveChanges = async () => {
     model.value = {
       ...model.value,
       ...newData,
-      updated_at: new Date(),
     }
 
     const storeModel = modelStore.models.find((m) => m.id === model.value.id)
@@ -995,7 +998,7 @@ function getChanges(oldData, newData) {
 
   // Compare top-level fields
   for (const field of Object.keys(newData)) {
-    if (field === 'metadata') continue
+    if (field === 'metadata' || field === 'updated_at') continue
 
     let oldValue = oldData[field]
     let newValue = newData[field]
