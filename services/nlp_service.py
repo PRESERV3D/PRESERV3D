@@ -31,7 +31,7 @@ app.add_middleware(
 
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 kw_model = KeyBERT('all-MiniLM-L6-v2')
-nlp = spacy.load("en_core_web_sm")
+nlp = spacy.load("nlp_training/ner_model")
 
 @app.post("/process-text")
 async def process_pdf(
@@ -56,7 +56,14 @@ async def process_pdf(
                 result["filename"] = filename or file.filename
                 return result
 
-            text = result
+            # Handle the case where extract_text returns a dict with success status
+            if isinstance(result, dict) and result.get("status") == "success":
+                text = result.get("text", "")
+            elif isinstance(result, str):
+                # Legacy case where extract_text returns string directly
+                text = result
+            else:
+                return {"error": "Failed to extract text from PDF"}
         else:
             return {"error": "No file or raw text provided"}
 
@@ -71,8 +78,11 @@ async def process_pdf(
                 kw_result = kw_model.extract_keywords(cleaned_text, top_n=10)
                 if kw_result:
                     keywords = [kw for kw, _ in kw_result]
+                else:
+                    keywords = []
             except Exception as e:
                 print("Keyword extraction error:", e)
+                keywords = []
 
             # Summarization
             try:
@@ -97,7 +107,7 @@ async def process_pdf(
                 "categories": metadata.get("categories"),
                 "organization": metadata.get("organization"),
                 "summary": summary,
-                "keywords": [kw for kw, _ in keywords],
+                "keywords": keywords,  # Fixed: was [kw for kw, _ in keywords] but keywords is already a list
                 "extracted_text": cleaned_text,
             }
         else:
@@ -309,7 +319,7 @@ def extract_organization_info(text):
     
     return list(organizations)[:3]  # Return top 3
 
-def extract_institutional_metadata(text, filename=None):    
+def extract_metadata(text, filename=None):    
     doc = nlp(text)
     entities = {"PERSON": [], "DATE": [], "ORG": []}
 
@@ -499,9 +509,6 @@ def extract_institutional_metadata(text, filename=None):
         "organization": ', '.join(organizations) if organizations else "Unknown",
     }
 
-def extract_metadata(text, filename=None):
-    return extract_institutional_metadata(text, filename)
-
 def generate_summary(text, title=None, author=None, date=None, keywords=None, categories=None, max_attempts=3):
     print("Generating summary...")
     cleaned_text = clean_text(text)
@@ -562,7 +569,7 @@ def generate_summary_endpoint(doc_id: str):
         print("No extracted text found, downloading and extracting from file_url...")
         try:
             file_bytes = download_file(file_url)
-            extracted_result = extract_text(file_bytes, filename=file_url.split("/")[-1])
+            extracted_result = extract_text(file_bytes, filename=file_url.split("/")[-1])            
             cleaned_text = clean_text(extracted_result)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to download or extract file: {e}")

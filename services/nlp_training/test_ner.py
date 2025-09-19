@@ -82,6 +82,14 @@ test_cases = [
             "analyzed the economic impact of renewable energy in 2021."
         )
     },
+    {
+        "name": "With noisy  text",
+        "text": (
+            ". \\ -T.- -m is ** m I * i v/parQ I I I I I < j SCHOLARSHIP & FIN. ASST. OFFICE VOL."
+            "N0.59 if: I I Years FOREWORD As PUP marks its centennial anniversary the whole"
+            "community proudly joins in commemorating the event. "
+        )
+    },
 ]
 
 # --- Helper to analyze text ---
