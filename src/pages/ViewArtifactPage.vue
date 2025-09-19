@@ -1100,18 +1100,10 @@ async function handleDelete() {
       return
     }
 
-    await logItemHistory({
-      itemId: route.params.id,
-      itemType: 'artifact',
-      action: 'delete',
-      oldData: originalData,
-      changes: { new: null, old: originalData },
-    })
-
     // Insert into deleted table
     const { error: deleteError } = await supabase.from('deleted_artifacts').insert({
       ...originalData,
-      deleted_at: new Date().toISOString(), // Add timestamp
+      deleted_at: new Date().toISOString(),
       deleted_by: user,
     })
 
@@ -1131,10 +1123,18 @@ async function handleDelete() {
       console.error('Error deleting artifact:', delError)
       alert('Failed to delete the artifact.')
       return
-    } else {
-      console.log('Artifact soft-deleted successfully:', route.params.id)
-      router.push('/artifacts')
     }
+
+    await logItemHistory({
+      itemId: route.params.id,
+      itemType: 'artifact',
+      action: 'delete',
+      oldData: originalData,
+      changes: { new: null, old: originalData },
+    })
+
+    console.log('Artifact soft-deleted successfully: ', route.params.id)
+    router.push('/artifacts')
   } catch (err) {
     console.error('Unexpected error during soft delete:', err)
     alert('An unexpected error occurred.')
