@@ -1570,14 +1570,28 @@ function getChanges(oldData = {}, newData = {}) {
 
 async function handleCancelMetadata(cancelledData) {
   try {
-    const fileName = cancelledData.file_name
+    const itemId = cancelledData.id
 
-    const { error } = await supabase.from('artifacts_metadata').delete().eq('file_name', fileName)
+    const { error: deleteItemError } = await supabase
+      .from('artifacts_metadata')
+      .delete()
+      .eq('id', itemId)
 
-    if (error) {
-      console.error('Error deleting cancelled metadata:', error)
+    if (deleteItemError) {
+      console.error('Error deleting cancelled metadata:', deleteItemError)
     } else {
       console.log('Cancelled metadata removed successfully.')
+    }
+
+    const { error: deleteLogError } = await supabase
+      .from('item_history')
+      .delete()
+      .eq('item_id', itemId)
+
+    if (deleteLogError) {
+      console.error('Error deleting history log for cancelled item', deleteLogError)
+    } else {
+      console.log('History log removed after cancellation')
     }
   } catch (err) {
     console.error('Failed to cancel and delete metadata:', err)
