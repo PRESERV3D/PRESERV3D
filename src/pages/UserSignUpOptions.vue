@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-md form-container">
-    <div class="column items-center q-mb-md">
+    <div class="column items-center">
       <label class="form-title">SIGN UP</label>
       <label class="subtitle-logsign">Choose Role</label>
       <div class="column q-gutter-lg q-mt-md">
@@ -14,12 +14,8 @@
           @click="goToVisitorRegister"
         />
       </div>
+      <router-link to="/user/login" class="login-back-font"> Back to Log In </router-link>
     </div>
-
-    <!-- Back to Log In link, now placed outside and anchored to bottom-right -->
-    <router-link to="/user/login" class="login-back-font fixed-bottom-right">
-      Back to Log In
-    </router-link>
   </div>
 </template>
 
@@ -58,11 +54,6 @@ function goToVisitorRegister() {
   font-size: 16px;
   color: #000000;
   text-decoration: none;
-}
-
-.fixed-bottom-right {
-  position: fixed;
-  bottom: 3rem;
-  right: 5rem;
+  margin-top: 4rem;
 }
 </style>
