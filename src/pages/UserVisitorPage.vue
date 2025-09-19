@@ -659,7 +659,7 @@ async function compressPdf(file) {
   }
 
   .choose-file {
-    width: 3rem;
+    min-width: 3rem;
     height: 2rem;
   }
 }
