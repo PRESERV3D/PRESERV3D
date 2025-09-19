@@ -37,3 +37,5 @@ yarn-error.log*
 .env.local*
 /.vs
 /.gitignore
+src/pages/TrainingData.vue
+src/pages/TextExtractionPage.vue
