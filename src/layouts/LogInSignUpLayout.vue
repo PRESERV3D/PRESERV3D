@@ -56,7 +56,7 @@
 
 /* Responsive adjustments */
 
-@media screen and (max-width: 1130px) and (max-height: 730px) {
+@media screen and (max-width: 1130px), screen and (max-height: 630px) {
   .bg-glow {
     display: none;
   }
