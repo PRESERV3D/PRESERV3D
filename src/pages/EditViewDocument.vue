@@ -20,7 +20,7 @@
         </div>
         <div class="q-mt-xl col">
           <q-input
-            v-model="doc.metadata.title"
+            v-model="editableData.title"
             class="document-title"
             style="font-size: 20px; font-weight: bold; margin-bottom: 2rem"
             dense
@@ -28,7 +28,7 @@
           />
           <div class="row items-center">
             <q-input
-              v-model="doc.metadata.author"
+              v-model="editableData.author"
               class="sub-font-3 q-mb-md"
               style="font-size: 16px; max-width: 25rem"
               dense
@@ -213,7 +213,7 @@
               </div>
               <div class="summary">
                 <q-input
-                  v-model="doc.metadata.summary"
+                  v-model="editableData.summary"
                   type="textarea"
                   outlined
                   dense
@@ -421,9 +421,9 @@
                 <p><strong>Updated At:</strong> {{ formatDate(doc.updated_at) }}</p>
                 <p>
                   <strong>Date:</strong>
-                  <q-btn outline dense :label="doc.metadata.date || 'Select Date'" class="q-ml-sm">
+                  <q-btn outline dense :label="editableData.date || 'Select Date'" class="q-ml-sm">
                     <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                      <q-date v-model="doc.metadata.date" mask="YYYY-MM-DD" />
+                      <q-date v-model="editableData.date" mask="YYYY-MM-DD" />
                     </q-popup-proxy>
                   </q-btn>
                 </p>
@@ -534,29 +534,200 @@ const userSequence = ref([])
 const activeColor = ref(null)
 const simonScore = ref(0)
 
-// Editing logic from doc page
+// Reactive reference for all editable data
+const editableData = ref({
+  date: '',
+  title: '',
+  author: '',
+  summary: '',
+  extracted_text: '',
+})
+
+const showNotifyDialog = (title, message) => {
+  notifyDialogTitle.value = title
+  notifyDialogMessage.value = message
+  notifyDialogOpen.value = true
+}
+
 async function saveChanges() {
+  if (!doc.value) return
+
   try {
-    if (!doc.value) return
+    const oldData = {
+      metadata: { ...doc.value.metadata },
+      related_links: doc.value.related_links,
+      updated_at: doc.value.updated_at,
+    }
+
+    const newData = {
+      metadata: {
+        ...doc.value.metadata,
+        title: editableData.value.title,
+        date: editableData.value.date,
+        author: editableData.value.author,
+        summary: editableData.value.summary,
+        categories: [...editableCategories.value],
+        // extracted_text: editableData.value.extracted_text,
+      },
+      related_links: [...links.value],
+    }
+
+    let changes = getChanges(oldData, newData)
+
+    if (Object.keys(changes).length === 0) {
+      showNotifyDialog('Info', 'No changes made.')
+      return
+    }
+
+    const updatedAt = new Date().toISOString()
+    newData.updated_at = updatedAt
+
+    changes = {
+      ...changes,
+      updated_at: { old: normalizeDate(oldData.updated_at), new: normalizeDate(updatedAt) },
+    }
 
     const { error } = await supabase
       .from('documents_metadata')
-      .update({
-        metadata: {
-          ...doc.value.metadata,
-          categories: editableCategories.value,
-        },
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', route.params.id)
+      .update(newData)
+      .eq('id', doc.value.id)
 
-    if (error) throw error
+    if (error) {
+      console.error('Error updating document: ', error)
+      showNotifyDialog('Error', 'Failed to save changes')
+      return
+    }
 
-    console.log('Document changes saved successfully')
-    router.push({ name: 'view-document', params: { id: route.params.id } })
+    await logItemHistory({
+      itemId: doc.value.id,
+      itemType: 'document',
+      action: 'update',
+      oldData,
+      newData,
+      changes,
+    })
+
+    doc.value = {
+      ...doc.value,
+      ...newData,
+    }
+
+    const storeDocument = documentsStore.documents.find((d) => d.id === doc.value.id)
+    if (storeDocument) Object.assign(storeDocument, doc.value)
+
+    console.log('Changes saved: ', doc.value)
+    // router.push({ name: 'view-document', params: { id: route.params.id } })
+    router.push(`/documents/${doc.value.id}`)
   } catch (err) {
     console.error('Error saving document changes:', err)
   }
+}
+
+async function logItemHistory({ itemId, itemType, action, oldData, newData, changes }) {
+  try {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError || !authData?.user) {
+      console.error('Auth error:', authError)
+      return
+    }
+
+    const adminName =
+      `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+
+    const { error } = await supabase.from('item_history').insert({
+      item_id: itemId,
+      item_type: itemType,
+      action: action,
+      performed_by: adminName || 'Admin',
+      old_data: oldData,
+      new_data: newData,
+      changes: changes,
+    })
+
+    if (error) {
+      console.error('Error logging history:', error)
+    } else {
+      console.log('History logged successfully')
+    }
+  } catch (err) {
+    console.error('Unexpected error logging history:', err)
+  }
+}
+
+function normalizeDate(value) {
+  if (!value) return value
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? value : d.toISOString()
+}
+
+function diffLinks(oldLinks = [], newLinks = []) {
+  const oldMap = new Map((oldLinks || []).map((link) => [link.url, link]))
+  const newMap = new Map((newLinks || []).map((link) => [link.url, link]))
+
+  const added = []
+  const removed = []
+
+  for (const [url, link] of newMap) {
+    if (!oldMap.has(url)) added.push(link)
+  }
+
+  for (const [url, link] of oldMap) {
+    if (!newMap.has(url)) removed.push(link)
+  }
+
+  return { added, removed }
+}
+
+function getChanges(oldData, newData) {
+  const changes = {}
+
+  // Compare metadata
+  const metadataChanges = {}
+  for (const field in newData.metadata) {
+    let oldValue = oldData.metadata?.[field]
+    let newValue = newData.metadata?.[field]
+
+    if (field.toLowerCase().includes('date')) {
+      oldValue = normalizeDate(oldValue)
+      newValue = normalizeDate(newValue)
+    }
+
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+      metadataChanges[field] = { old: oldValue, new: newValue }
+    }
+  }
+  if (Object.keys(metadataChanges).length > 0) {
+    changes.metadata = metadataChanges
+  }
+
+  // Compare top-level fields
+  for (const field of Object.keys(newData)) {
+    if (field === 'metadata' || field === 'updated_at') continue
+
+    let oldValue = oldData[field]
+    let newValue = newData[field]
+
+    if (field === 'related_links') {
+      const { added, removed } = diffLinks(oldValue, newValue)
+      if (added.length || removed.length) {
+        changes.related_links = {}
+        if (added.length) changes.related_links.added = added
+        if (removed.length) changes.related_links.removed = removed
+      }
+      continue
+    }
+
+    if (field.toLowerCase().includes('date')) {
+      oldValue = normalizeDate(oldValue)
+      newValue = normalizeDate(newValue)
+    }
+
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+      changes[field] = { old: oldValue, new: newValue }
+    }
+  }
+
+  return changes
 }
 
 const goBack = () => {
@@ -883,6 +1054,39 @@ watch(
     }
   },
 )
+
+watch(
+  doc,
+  (newDocument) => {
+    if (newDocument) {
+      // Initialize categories
+      if (newDocument.metadata?.categories) {
+        editableCategories.value = [...newDocument.metadata.categories]
+      } else {
+        editableCategories.value = []
+      }
+
+      // Initialize all editable data
+      editableData.value = {
+        date: newDocument.metadata?.date,
+        title: newDocument.metadata?.title,
+        author: newDocument.metadata?.author,
+        summary: newDocument.metadata?.summary,
+      }
+    } else {
+      editableCategories.value = []
+      editableData.value = {
+        date: '',
+        title: '',
+        author: '',
+        summary: '',
+        // extracted_text: '',
+      }
+    }
+  },
+  { immediate: true },
+)
+
 // Related Links
 const showRelatedDialog = ref(false)
 const newLink = ref('')
