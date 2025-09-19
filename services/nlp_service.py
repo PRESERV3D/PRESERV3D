@@ -1,3 +1,4 @@
+from fastapi.responses import JSONResponse
 import fitz
 import spacy
 import re
@@ -38,6 +39,8 @@ async def process_pdf(
     filename: str = Form(None),
     raw_text: str = Form(None)
 ):
+    keywords, summary = [], None
+
     try:
         print("Received file:", filename)
 
@@ -59,34 +62,32 @@ async def process_pdf(
 
         # Only proceed if we have some text extracted
         if text and len(text.strip()) >= 100:
-            cleaned_text = clean_text_for_nlp(text)
+            cleaned_text = clean_text(text)
 
             metadata = extract_metadata(cleaned_text, filename or (file.filename if file else None))
 
-            # Generate keywords
+            # Keyword Extraction
             try:
-                keywords = kw_model.extract_keywords(cleaned_text, top_n=10)
+                kw_result = kw_model.extract_keywords(cleaned_text, top_n=10)
+                if kw_result:
+                    keywords = [kw for kw, _ in kw_result]
             except Exception as e:
                 print("Keyword extraction error:", e)
-                keywords = []
 
-            # Generate summary
+            # Summarization
             try:
-                summary = generate_summary(
-                    text=cleaned_text,
-                    title=metadata.get("title"),
-                    author=metadata.get("author"),
-                    date=metadata.get("date"),
-                    keywords=[kw for kw, _ in keywords],
-                    categories=metadata.get("categories"),
+                result = summarizer(
+                    cleaned_text[:4000],
+                    max_length=200,
+                    min_length=50,
+                    do_sample=False
                 )
+                if result and isinstance(result, list) and len(result) > 0:
+                    summary = result[0].get('summary_text', '')
+                else:
+                    print("Summarizer returned no output")
             except Exception as e:
                 print("Summarizer error:", e)
-                summary = "Summary not available"
-
-            # Check for inconsistencies
-            issues = detect_inconsistencies(metadata, source_type="document")
-            log_inconsistencies(metadata.get("file_name"), issues)
 
             return {
                 "file_name": filename or (file.filename if file else None),
@@ -106,33 +107,65 @@ async def process_pdf(
         print("NLP error:", str(e))
         return {"error": str(e)}
 
-def clean_text_for_nlp(text):
+def clean_text(text):
     cleaned = re.sub(r'[\x00-\x1F\x7F-\x9F]', ' ', text)
     cleaned = re.sub(r'[^A-Za-z0-9\s.,;:!?()\[\]{}\-_"\'@#$%^&*+=<>/\\|`~°€£¥§\n]+', ' ', cleaned)
-    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    cleaned = re.sub(r'[ \t]+', ' ', cleaned)      
+    cleaned = re.sub(r'\n{2,}', '\n', cleaned)     
+    cleaned = cleaned.strip()
 
     return cleaned
 
-def extract_text(pdf_bytes, filename=None):
+def extract_text(pdf_bytes, filename=None, char_limit=5000):
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     pages_with_text = []
     pages_for_ocr = []
+    accumulated_text = ""
+    total_chars = 0
 
-    print("Checking first 8 pages for searchable text...")
+    print(f"Extracting text from PDF until {char_limit} characters are reached...")
 
-    # Check all first 8 pages for text
-    for page in doc[:8]:
+    # Process pages one by one until we reach the character limit
+    for page_num, page in enumerate(doc):
         text = page.get_text().strip()
+        
         if text:
-            pages_with_text.append((page.number + 1, text))
+            print(f"Analyzing page {page.number + 1}...")
+            
+            # Check if adding this page would exceed the limit
+            if total_chars + len(text) <= char_limit:
+                # Add the entire page
+                pages_with_text.append((page.number + 1, text))
+                accumulated_text += text + "\n"
+                total_chars += len(text)
+                print(f"Added page {page.number + 1} - Total characters: {total_chars}")
+            else:
+                # Add partial text from this page to reach exactly the limit
+                remaining_chars = char_limit - total_chars
+                if remaining_chars > 0:
+                    partial_text = text[:remaining_chars]
+                    pages_with_text.append((page.number + 1, partial_text))
+                    accumulated_text += partial_text
+                    total_chars = char_limit
+                    print(f"Added partial page {page.number + 1} - Reached limit: {total_chars} characters")
+                break
         else:
-            pages_for_ocr.append(page)
+            # Page has no text, might need OCR
+            if total_chars == 0:  # Only collect OCR pages if we haven't found any text yet
+                pages_for_ocr.append(page)
+        
+        # Stop if we've reached the character limit
+        if total_chars >= char_limit:
+            break
 
-    # If no text on any of the pages, return OCR images for those pages
+    # If no text found in any processed pages, return OCR images
     if len(pages_with_text) == 0 and pages_for_ocr:
         print("No searchable text found, converting pages to images for OCR...")
         ocr_pages = []
-        for page in pages_for_ocr:
+        # Limit OCR pages to avoid processing too many images
+        max_ocr_pages = min(5, len(pages_for_ocr))  # Limit to first 5 pages for OCR
+        
+        for page in pages_for_ocr[:max_ocr_pages]:
             pix = page.get_pixmap(dpi=300)
             img_bytes = pix.tobytes("png")
             encoded = base64.b64encode(img_bytes).decode("utf-8")
@@ -146,13 +179,18 @@ def extract_text(pdf_bytes, filename=None):
             "filename": filename
         }
 
-    # Otherwise, return combined searchable text from all pages that have it
-    full_text = "\n".join(text for _, text in pages_with_text)
-    print("Extracted combined text:", full_text[:1000])
-    return full_text.strip()
+    # Return the accumulated text
+    print(f"Extraction complete. Total characters: {len(accumulated_text.strip())}")
+    
+    return {
+        "status": "success",
+        "text": accumulated_text.strip(),
+        "pages_processed": len(pages_with_text),
+        "total_characters": len(accumulated_text.strip()),
+        "filename": filename
+    }
 
 def detect_categories(text, filename=None):
-    """Detect the type of document based on content and filename patterns"""
     
     text_lower = text.lower()
     filename_lower = (filename or "").lower()
@@ -241,8 +279,6 @@ def detect_categories(text, filename=None):
     return "Document"
 
 def extract_organization_info(text):
-    """Extract organization/institution information"""
-    
     # Common organizational patterns
     org_patterns = [
         r"([A-Z][a-zA-Z\s]+(?:University|College|Institute|School|Academy))",
@@ -273,9 +309,7 @@ def extract_organization_info(text):
     
     return list(organizations)[:3]  # Return top 3
 
-def extract_institutional_metadata(text, filename=None):
-    """Enhanced metadata extraction for institutional documents"""
-    
+def extract_institutional_metadata(text, filename=None):    
     doc = nlp(text)
     entities = {"PERSON": [], "DATE": [], "ORG": []}
 
@@ -470,7 +504,7 @@ def extract_metadata(text, filename=None):
 
 def generate_summary(text, title=None, author=None, date=None, keywords=None, categories=None, max_attempts=3):
     print("Generating summary...")
-    cleaned_text = clean_text_for_nlp(text)
+    cleaned_text = clean_text(text)
     input_text = cleaned_text[:2000]
 
     # Build subtle context instruction
@@ -525,9 +559,11 @@ def generate_summary_endpoint(doc_id: str):
 
     # Re-extract text if missing
     if not extracted_text or extracted_text.strip() == "":
+        print("No extracted text found, downloading and extracting from file_url...")
         try:
             file_bytes = download_file(file_url)
             extracted_result = extract_text(file_bytes, filename=file_url.split("/")[-1])
+            cleaned_text = clean_text(extracted_result)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to download or extract file: {e}")
 
@@ -540,7 +576,11 @@ def generate_summary_endpoint(doc_id: str):
                 "filename": extracted_result["filename"]
             }
 
-        extracted_text = extracted_result
+        supabase.table("documents_metadata").update({
+            "metadata": {**metadata, "extracted_text": cleaned_text}
+        }).eq("id", doc_id).execute()
+
+        extracted_text = cleaned_text
 
     # Generate summary
     summary = generate_summary(
@@ -635,7 +675,11 @@ def detect_inconsistencies(metadata, source_type="document"):
 
     return issues
 
-# Load sentence transformer model once
+# Initialize model and Supabase
+load_dotenv()
+url = os.getenv("VITE_SUPABASE_URL")
+key = os.getenv("VITE_SUPABASE_ANON_KEY")
+supabase: Client = create_client(url, key)
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 def save_inconsistencies(
@@ -767,64 +811,6 @@ def check_summary_relevance(title, summary, keywords=None, categories=None, auth
 
     return {}
 
-# Initialize Supabase
-load_dotenv()
-url = os.getenv("VITE_SUPABASE_URL")
-key = os.getenv("VITE_SUPABASE_ANON_KEY")
-supabase: Client = create_client(url, key)
-
-def log_inconsistencies(record_id, source_type, file_name, issues):
-    if not issues:
-        return
-
-    merged_issues = [
-        {
-            "field": issue.get("field"),
-            "issue": issue.get("issue"),
-            "suggestion": issue.get("suggestion")
-        }
-        for issue in issues
-    ]
-
-    existing = supabase.table("inconsistencies") \
-        .select("*") \
-        .eq("record_id", record_id) \
-        .eq("source_type", source_type) \
-        .execute()
-
-    if merged_issues:
-        row_data = {
-            "record_id": record_id,
-            "source_type": source_type,
-            "file_name": file_name,
-            "issues": merged_issues,
-            "last_scanned_at": datetime.utcnow().isoformat()
-        }
-
-        if existing.data:
-            if existing.data[0]["issues"] != merged_issues:
-                supabase.table("inconsistencies").update({
-                    "issues": merged_issues,
-                    "status": "Open",
-                    "updated_at": datetime.utcnow().isoformat()
-                }).eq("record_id", record_id).eq("source_type", source_type).execute()
-            else:
-                supabase.table("inconsistencies").update({
-                    "last_scanned_at": datetime.utcnow().isoformat()
-                }).eq("record_id", record_id).eq("source_type", source_type).execute()
-        else:
-            supabase.table("inconsistencies").insert({
-                **row_data,
-                "status": "Open",
-                "created_at": datetime.utcnow().isoformat()
-            }).execute()
-    else:
-        if existing.data and existing.data[0]["status"] != "Resolved":
-            supabase.table("inconsistencies").update({
-                "status": "Resolved",
-                "resolved_at": datetime.utcnow().isoformat()
-            }).eq("record_id", record_id).eq("source_type", source_type).execute()
-
 @app.post("/rescan-metadata")
 async def rescan_metadata():
     try:
@@ -879,4 +865,44 @@ async def related_links(title: str, author: str = "", categories: str = ""):
     except json.JSONDecodeError:
         return {"error": "Invalid JSON from Puppeteer"}
 
+@app.post("/extract-text")
+async def extract_text_from_pdf(
+    file: UploadFile = File(None),   
+    file_url: str = Form(None),      
+    file_name: str = Form(None)      
+):
+    try:
+        if file:
+            # Existing upload flow
+            pdf_bytes = await file.read()
+            filename = file.filename
+        elif file_url:
+            # Download PDF from URL using your existing function
+            pdf_bytes = download_file(file_url)
+            filename = file_name or file_url.split("/")[-1]
+        else:
+            return {"status": "error", "error": "No file or file URL provided"}
 
+        # Run existing extraction
+        result = extract_text(pdf_bytes, filename)
+
+        if result.get("status") == "ocr_required":
+            return {
+                "status": "ocr_required",
+                "pages": result.get("pages", []),
+                "filename": result.get("filename")
+            }
+
+        text = result.get("text", "")
+        cleaned_text = clean_text(text)
+
+        return {
+            "status": "success",
+            "extracted_text": cleaned_text,
+            "pages_processed": result.get("pages_processed"),
+            "total_characters": result.get("total_characters"),
+            "filename": result.get("filename")
+        }
+
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
