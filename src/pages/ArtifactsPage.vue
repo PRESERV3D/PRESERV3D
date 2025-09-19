@@ -1395,7 +1395,7 @@ const handleUpload = async () => {
     console.log('Upload success', item)
 
     const changes = {
-      id: { old: null, new: insertData.file_name },
+      id: { old: null, new: item.id },
       file_name: { old: null, new: insertData.file_name },
       file_url: { old: null, new: insertData.file_url },
       uploaded_at: { old: null, new: insertData.uploaded_at },
