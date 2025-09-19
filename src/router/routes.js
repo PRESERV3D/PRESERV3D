@@ -114,16 +114,6 @@ const routes = [
         name: 'testing-artifacts',
         component: () => import('pages/Testing_ArtifactsPage.vue'),
       },
-      {
-        path: 'text-extraction',
-        name: 'text-extraction',
-        component: () => import('pages/TextExtractionPage.vue'),
-      },
-      {
-        path: 'training-data',
-        name: 'training-data',
-        component: () => import('pages/TrainingData.vue'),
-      },
     ],
   },
   {
