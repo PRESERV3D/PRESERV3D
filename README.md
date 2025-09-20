@@ -22,14 +22,7 @@ npm install @quasar/cli
 quasar dev
 ```
 
-### Start the backend server (for display and upload)
-
-```bash
-cd model-uploader
-node server.js
-```
-
-### Start to rnu NLP (for summary and metadata generation)
+### Start to run NLP (for summary and metadata generation)
 
 ```bash
 cd services

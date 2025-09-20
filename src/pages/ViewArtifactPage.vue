@@ -609,29 +609,46 @@ const closeHelp = () => {
   showHelpOverlay.value = false
 }
 
-// ADDED: Reset model view function
+// Reset model view function
 let defaultOrbit = ''
 let defaultFOV = ''
+let defaultTarget = ''
 function resetModelView() {
   if (artifactViewer.value) {
     artifactViewer.value.setAttribute('camera-orbit', defaultOrbit)
     artifactViewer.value.setAttribute('field-of-view', defaultFOV)
+    artifactViewer.value.setAttribute('camera-target', defaultTarget)
   }
 }
 
-// ADDED: View full screen function
+// Full screen function
 function viewFullScreen() {
   const el = artifactCard.value
   if (!el) return
 
-  if (el.requestFullscreen) {
-    el.requestFullscreen()
-  } else if (el.webkitRequestFullscreen) {
-    // Safari
-    el.webkitRequestFullscreen()
-  } else if (el.msRequestFullscreen) {
-    // IE/Edge
-    el.msRequestFullscreen()
+  // Check if in full screen
+  if (
+    document.fullscreenElement || // Normal
+    document.webkitFullscreenElement || // Safari
+    document.msFullscreenElement // IE/Edge
+  ) {
+    // Exit fullscreen
+    if (document.exitFullscreen) {
+      document.exitFullscreen()
+    } else if (document.webkitExitFullscreen) {
+      el.webkitExitFullscreen()
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen()
+    }
+  } else {
+    // Enter fullscreen
+    if (el.requestFullscreen) {
+      el.requestFullscreen()
+    } else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen()
+    } else if (el.msRequestFullscreen) {
+      el.msRequestFullscreen()
+    }
   }
 }
 
@@ -1017,6 +1034,7 @@ onMounted(async () => {
       artifactViewer.value.addEventListener('load', () => {
         defaultOrbit = artifactViewer.value.getAttribute('camera-orbit') || '0deg 75deg auto'
         defaultFOV = artifactViewer.value.getAttribute('field-of-view') || 'auto'
+        defaultTarget = artifactViewer.value.getAttribute('camera-target') || 'auto'
       })
     }
   })
