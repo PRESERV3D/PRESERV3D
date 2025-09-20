@@ -951,7 +951,7 @@ async function logItemHistory({ itemId, itemType, action, oldData, newData, chan
 // }
 
 function normalizeDate(value) {
-  if (!value) return value
+  if (!value || (typeof value === 'string' && value.trim() === '')) return null
   const d = new Date(value)
   return isNaN(d.getTime()) ? value : d.toISOString()
 }
