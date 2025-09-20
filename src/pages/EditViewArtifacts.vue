@@ -762,6 +762,24 @@ const removeCategory = (index) => {
   const found = categories.value.find((c) => c.name === removed)
   if (found) found.selected = false
 }
+function normalizeValue(key, value) {
+  if (value === '') return null
+
+  if (Array.isArray(value)) {
+    return value
+  }
+
+  return value
+}
+
+function normalizeObject(obj) {
+  if (!obj || typeof obj !== 'object') return obj
+  const normalized = {}
+  for (const key in obj) {
+    normalized[key] = normalizeValue(key, obj[key])
+  }
+  return normalized
+}
 
 // Save and Cancel functions
 const saveChanges = async () => {
@@ -778,14 +796,14 @@ const saveChanges = async () => {
     }
 
     const newData = {
-      metadata: {
+      metadata: normalizeObject({
         ...model.value.metadata,
         title: editableData.value.title,
         categories: [...editableCategories.value],
         summary: editableData.value.summary,
         author: editableData.value.author,
         date: editableData.value.date,
-      },
+      }),
       data_source: editableData.value.dataSource,
       donated_by: editableData.value.donatedBy,
       date_received: toUTC(editableData.value.dateReceived),
@@ -807,13 +825,13 @@ const saveChanges = async () => {
       updated_at: { old: normalizeDate(oldData.updated_at), new: normalizeDate(updatedAt) },
     }
 
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from('artifacts_metadata')
       .update(newData)
       .eq('id', model.value.id)
 
-    if (error) {
-      console.error('Error updating artifact: ', error)
+    if (updateError) {
+      console.error('Failed to update artifact: ', updateError)
       showNotifyDialog('Error', 'Failed to save changes.')
       return
     }

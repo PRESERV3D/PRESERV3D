@@ -1531,7 +1531,7 @@ async function saveMetadata(updatedMetadata) {
 
     if (updateError) {
       console.error('Failed to update metadata:', updateError)
-      alert('Failed to update metadata.')
+      showNotifyDialog('Error', 'Failed to save changes.')
       return
     }
 
