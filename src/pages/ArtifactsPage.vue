@@ -1478,6 +1478,25 @@ async function fileExists(fileName) {
 //   }
 // }
 
+function normalizeValue(key, value) {
+  if (value === '') return null
+
+  if (Array.isArray(value)) {
+    return value
+  }
+
+  return value
+}
+
+function normalizeObject(obj) {
+  if (!obj || typeof obj !== 'object') return obj
+  const normalized = {}
+  for (const key in obj) {
+    normalized[key] = normalizeValue(key, obj[key])
+  }
+  return normalized
+}
+
 async function saveMetadata(updatedMetadata) {
   try {
     const oldData = {
@@ -1486,18 +1505,18 @@ async function saveMetadata(updatedMetadata) {
       updated_at: metadata.value.updated_at ?? null,
     }
 
-    const now = new Date().toISOString()
+    const now = new Date()
 
     const newData = {
       ...oldData,
-      metadata: {
+      metadata: normalizeObject({
         title: updatedMetadata.title,
         author: updatedMetadata.author,
         date: updatedMetadata.date,
         summary: updatedMetadata.summary,
         keywords: updatedMetadata.keywords,
         categories: updatedMetadata.categories,
-      },
+      }),
       updated_at: now,
     }
 
@@ -1531,7 +1550,7 @@ async function saveMetadata(updatedMetadata) {
 
     alert('Metadata saved successfully!')
     dialog.value = false
-    router.push({ name: 'admin-home' })
+    router.push('/artifacts')
   } catch (err) {
     console.error('Error saving metadata:', err)
     alert('Unexpected error occurred.')
