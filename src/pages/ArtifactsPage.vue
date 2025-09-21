@@ -1323,6 +1323,8 @@ function sanitizeFileName(name) {
 //   }
 // }
 
+let currentArtifactData = ref(null)
+
 const handleUpload = async () => {
   const file = selectedFile.value
   const fileName = sanitizeFileName(file.name)
@@ -1378,7 +1380,7 @@ const handleUpload = async () => {
       donated_by: null,
       updated_at: null,
       data_source: null,
-      search_text: '     ',
+      search_text: null,
       date_received: null,
       related_links: null,
     }
@@ -1397,6 +1399,9 @@ const handleUpload = async () => {
 
     const item = insertedData[0]
     console.log('Upload success', item)
+
+    currentArtifactData.value = { ...item }
+    metadata.value = { ...item }
 
     const changes = {
       id: { old: null, new: item.id },
@@ -1504,14 +1509,12 @@ function normalizeObject(obj) {
 async function saveMetadata(updatedMetadata) {
   try {
     const oldData = {
-      ...metadata.value,
-      metadata: metadata.value.metadata ?? null,
-      updated_at: metadata.value.updated_at ?? null,
+      ...currentArtifactData.value,
     }
 
     const now = new Date()
 
-    const newData = {
+    const updateData = {
       ...oldData,
       metadata: normalizeObject({
         title: updatedMetadata.title,
@@ -1524,14 +1527,12 @@ async function saveMetadata(updatedMetadata) {
       updated_at: now,
     }
 
-    // Update Supabase
-    const { error: updateError } = await supabase
+    const { data: updatedData, error: updateError } = await supabase
       .from('artifacts_metadata')
-      .update({
-        metadata: newData.metadata,
-        updated_at: now,
-      })
+      .update(updateData)
       .eq('id', metadata.value.id)
+      .select()
+      .single()
 
     if (updateError) {
       console.error('Failed to update metadata:', updateError)
@@ -1539,10 +1540,12 @@ async function saveMetadata(updatedMetadata) {
       return
     }
 
-    // Compute changes
+    const newData = {
+      ...updatedData,
+    }
+
     const changes = getChanges(oldData, newData)
 
-    // Log history
     await logItemHistory({
       itemId: metadata.value.id,
       itemType: 'artifact',
@@ -1552,7 +1555,8 @@ async function saveMetadata(updatedMetadata) {
       changes,
     })
 
-    alert('Metadata saved successfully!')
+    currentArtifactData.value = updatedData
+    showNotifyDialog('Notice', 'Metadata saved successfully!')
     dialog.value = false
     router.push('/artifacts')
   } catch (err) {
