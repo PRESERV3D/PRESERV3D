@@ -67,7 +67,7 @@
               @click="logClick(doc.id, 'document', 'read')"
             > -->
             <q-btn
-              v-if="$q.screen.width > 1445 || $q.screen.width < 1201"
+              v-if="$q.screen.width > 570"
               class="start-reading-btn"
               no-caps
               @click="handleClickRead(doc)"
@@ -89,22 +89,15 @@
             </q-btn>
 
             <!-- Action icons -->
-            <div class="row-1 items-center">
-              <q-icon
-                v-if="!isAdmin"
-                name="visibility"
-                color="grey"
-                size="xs"
-                class="action-icon"
-              />
+            <div class="row items-center q-gutter-sm">
+              <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
               <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
 
               <q-icon
-                v-if="!isAdmin"
                 :name="doc.starred ? 'star' : 'star_border'"
                 :class="{ starred: doc.starred }"
                 class="action-icon star-icon"
-                size="sm"
+                size="xs"
                 @click.stop="isAdmin ? null : toggleFavorite(doc, 'document')"
               />
               <span class="count-text">{{ documentsStore.starCounts[doc.id] || 0 }}</span>
@@ -114,7 +107,7 @@
                 :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
                 class="bookmark-icon q-ml-md q-mr-md"
                 :class="{ bookmarked: doc.bookmarked }"
-                size="sm"
+                size="xs"
                 @click.stop="openBookmarkDialog(doc, 'document')"
               />
             </div>
@@ -805,9 +798,8 @@ async function logClick(itemId, itemType, action) {
 .row-1 {
   margin-left: 30.5rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .start-reading-btn {
@@ -857,6 +849,13 @@ async function logClick(itemId, itemType, action) {
 
   .row-1 {
     margin-left: 0;
+  }
+}
+@media (max-width: 570px) {
+  .start-reading-btn {
+    width: 3rem;
+    height: 2rem;
+    margin-left: 0.5rem;
   }
 }
 </style>
