@@ -75,6 +75,10 @@
               color="primary"
               class="q-mt-md full-width"
             />
+            <!-- Show current process status -->
+            <div v-if="uploading && currentProcess" class="q-mt-sm text-caption text-grey">
+              {{ currentProcess }}
+            </div>
           </div>
 
           <input
@@ -114,6 +118,26 @@
         />
       </q-card-actions>
     </q-card>
+
+    <!-- Confirmation Dialog for Cancel -->
+    <q-dialog v-model="showCancelConfirmation" persistent>
+      <q-card class="confirmation-delete">
+        <q-card-section class="column items-center">
+          <q-img src="/img/conf-delete.png" alt="question icon" class="question-icon" />
+          <div class="q-mt-md sub-font" style="color: #000000">
+            Upload is in progress. Are you sure you want to cancel?
+            <div class="text-body2 text-grey q-mt-sm">
+              • File upload will be stopped
+              <span v-if="currentProcess"> <br />• {{ currentProcess }} will be terminated </span>
+            </div>
+          </div>
+        </q-card-section>
+        <q-card-actions align="center">
+          <q-btn label="Yes" class="btn-save" flat @click="confirmCancel" />
+          <q-btn flat label="No" class="sub-font-2" style="color: #000000" v-close-popup no-caps />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-dialog>
 </template>
 
@@ -128,7 +152,7 @@ const props = defineProps({
   },
   uploadType: {
     type: String,
-    required: true, // 'documents', 'artifacts', 'images'
+    required: true,
   },
   showCamera: {
     type: Boolean,
@@ -146,10 +170,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  // NEW: Add prop for pre-selected file
   preSelectedFile: {
     type: [File, null],
     default: null,
+  },
+  currentProcess: {
+    type: String,
+    default: '',
   },
 })
 
@@ -161,12 +188,14 @@ const emit = defineEmits([
   'upload-click',
   'cancel-click',
   'camera-click',
+  'force-cancel',
 ])
 
 // Reactive data
 const selectedFile = ref(null)
 const fileInput = ref(null)
 const isDragging = ref(false)
+const showCancelConfirmation = ref(false)
 
 // Computed
 const dialogModel = computed({
@@ -190,16 +219,15 @@ watch(
   () => props.modelValue,
   (newVal) => {
     if (newVal) {
-      // Dialog is opening - check for pre-selected file
       if (props.preSelectedFile) {
         selectedFile.value = props.preSelectedFile
       }
     } else {
-      // Dialog is closing - reset if no pre-selected file
       if (!props.preSelectedFile) {
         selectedFile.value = null
       }
       isDragging.value = false
+      showCancelConfirmation.value = false
     }
   },
 )
@@ -253,9 +281,18 @@ function handleUpload() {
 }
 
 function handleCancel() {
-  selectedFile.value = null
-  emit('cancel-click')
-  dialogModel.value = false
+  if (props.uploading) {
+    showCancelConfirmation.value = true
+  } else {
+    selectedFile.value = null
+    emit('cancel-click')
+    dialogModel.value = false
+  }
+}
+
+function confirmCancel() {
+  showCancelConfirmation.value = false
+  emit('force-cancel')
 }
 
 // Expose methods for parent components if needed
@@ -376,5 +413,10 @@ defineExpose({
   font-family: 'Poppins', sans-serif;
   font-weight: 500;
   min-width: 100px;
+}
+
+.cancel-confirmation-card {
+  min-width: 350px;
+  max-width: 500px;
 }
 </style>

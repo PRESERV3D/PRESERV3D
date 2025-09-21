@@ -71,7 +71,8 @@ async def process_pdf(
         if text and len(text.strip()) >= 100:
             cleaned_text = clean_text(text)
 
-            metadata = extract_metadata(cleaned_text, filename or (file.filename if file else None))
+            # NER-driven metadata extraction
+            metadata = extract_metadata_ner(cleaned_text, filename or (file.filename if file else None))
 
             # Keyword Extraction
             try:
@@ -106,8 +107,9 @@ async def process_pdf(
                 "date": metadata.get("date"),
                 "categories": metadata.get("categories"),
                 "organization": metadata.get("organization"),
+                "place": metadata.get("place"),
                 "summary": summary,
-                "keywords": keywords,  # Fixed: was [kw for kw, _ in keywords] but keywords is already a list
+                "keywords": keywords,
                 "extracted_text": cleaned_text,
             }
         else:
@@ -123,7 +125,6 @@ def clean_text(text):
     cleaned = re.sub(r'[ \t]+', ' ', cleaned)      
     cleaned = re.sub(r'\n{2,}', '\n', cleaned)     
     cleaned = cleaned.strip()
-
     return cleaned
 
 def extract_text(pdf_bytes, filename=None, char_limit=5000):
@@ -200,145 +201,55 @@ def extract_text(pdf_bytes, filename=None, char_limit=5000):
         "filename": filename
     }
 
-def detect_categories(text, filename=None):
+def extract_metadata_ner(text, filename=None):
+    print("Extracting metadata using NER model...")
     
-    text_lower = text.lower()
-    filename_lower = (filename or "").lower()
+    # Process text with NER model
+    doc = nlp(text)
     
-    # Document type patterns
-    type_patterns = {
-        "annual_report": [
-            r"annual\s+report",
-            r"yearly\s+report", 
-            r"financial\s+year",
-            r"fiscal\s+year",
-            r"board\s+of\s+directors",
-            r"financial\s+statement",
-            r"president'?s\s+message",
-            r"chairman'?s\s+letter"
-        ],
-        "memorabilia": [
-            r"class\s+of\s+\d{4}",
-            r"graduating\s+class",
-            r"yearbook",
-            r"alumni",
-            r"graduation\s+ceremony",
-            r"commencement",
-            r"reunion",
-            r"class\s+notes",
-            r"memory\s+book"
-        ],
-        "newsletter": [
-            r"newsletter",
-            r"bulletin",
-            r"news\s+update",
-            r"quarterly\s+update",
-            r"monthly\s+report",
-            r"campus\s+news"
-        ],
-        "academic_catalog": [
-            r"course\s+catalog",
-            r"academic\s+catalog",
-            r"curriculum",
-            r"degree\s+requirements",
-            r"course\s+offerings",
-            r"academic\s+calendar"
-        ],
-        "brochure": [
-            r"brochure",
-            r"prospectus",
-            r"information\s+packet",
-            r"program\s+overview",
-            r"welcome\s+packet"
-        ],
-        "minutes": [
-            r"meeting\s+minutes",
-            r"board\s+minutes",
-            r"committee\s+meeting",
-            r"senate\s+minutes",
-            r"council\s+meeting"
-        ],
-        "research_report": [
-            r"research\s+report",
-            r"technical\s+report",
-            r"white\s+paper",
-            r"policy\s+brief",
-            r"study\s+findings"
-        ]
+    # Extract entities by type
+    entities = {
+        "TITLE": [],
+        "AUTHOR": [],
+        "DATE": [],
+        "ORG": [],
+        "PLACE": []
     }
     
-    # Check filename first
-    for doc_type, patterns in type_patterns.items():
-        for pattern in patterns:
-            if re.search(pattern, filename_lower):
-                return doc_type.replace("_", " ").title()
-    
-    # Check content
-    for doc_type, patterns in type_patterns.items():
-        score = 0
-        for pattern in patterns:
-            if re.search(pattern, text_lower):
-                score += 1
-        
-        # If multiple patterns match, it's likely this document type
-        if score >= 2:
-            return doc_type.replace("_", " ").title()
-        elif score == 1 and len(patterns) <= 3:  # For types with fewer patterns
-            return doc_type.replace("_", " ").title()
-    
-    return "Document"
-
-def extract_organization_info(text):
-    # Common organizational patterns
-    org_patterns = [
-        r"([A-Z][a-zA-Z\s]+(?:University|College|Institute|School|Academy))",
-        r"([A-Z][a-zA-Z\s]+(?:Corporation|Company|Inc\.|LLC|Foundation))",
-        r"([A-Z][a-zA-Z\s]+(?:Department|Division|Office|Bureau))",
-        r"(?:University\s+of\s+|College\s+of\s+)([A-Z][a-zA-Z\s]+)",
-        r"([A-Z][A-Z\s]+)(?:\s+University|\s+College|\s+Institute)",  # All caps names
-    ]
-    
-    organizations = set()
-    
-    for pattern in org_patterns:
-        matches = re.finditer(pattern, text, re.IGNORECASE)
-        for match in matches:
-            org = match.group(1).strip()
-            # Clean up the match
-            org = re.sub(r'\s+', ' ', org)  # Multiple spaces to single
-            if len(org) > 3 and len(org.split()) <= 6:  # Reasonable length
-                organizations.add(org)
-    
-    # Also look for common university abbreviations
-    abbrev_pattern = r'\b([A-Z]{2,6})(?:\s+University|\s+College)?\b'
-    abbrev_matches = re.finditer(abbrev_pattern, text)
-    for match in abbrev_matches:
-        abbrev = match.group(1)
-        if len(abbrev) >= 2 and abbrev not in ['PDF', 'USA', 'LLC', 'INC']:
-            organizations.add(abbrev)
-    
-    return list(organizations)[:3]  # Return top 3
-
-def extract_metadata(text, filename=None):    
-    doc = nlp(text)
-    entities = {"PERSON": [], "DATE": [], "ORG": []}
-
-    # Extract named entities
     for ent in doc.ents:
         if ent.label_ in entities:
-            entities[ent.label_].append(ent.text.strip())
+            clean_text = ent.text.strip().replace('\n', ' ')
+            if clean_text and len(clean_text) > 1:
+                entities[ent.label_].append(clean_text)
     
-    # Detect document type
-    categories = detect_categories(text, filename)
+    print(f"NER extracted entities: {entities}")
+    title = extract_title_ner(entities["TITLE"], text, filename)
+    author = extract_author_ner(entities["AUTHOR"], text)
+    date = extract_date_ner(entities["DATE"], text)
+    organization = extract_organization_ner(entities["ORG"], text)
+    place = extract_place_ner(entities["PLACE"])
+    categories = detect_categories_ner(text, filename, entities)
     
-    # Extract organization info
-    organizations = extract_organization_info(text)
-    if entities["ORG"]:
-        organizations.extend(entities["ORG"][:2])
+    return {
+        "file_name": filename or "Unknown",
+        "title": title,
+        "author": author,
+        "date": date,
+        "categories": categories,
+        "organization": organization,
+        "place": place,
+    }
+
+def extract_title_ner(title_entities, text, filename):
     
-    # Remove duplicates and clean
-    organizations = list(dict.fromkeys(organizations))[:3]
+    # First, try NER-extracted titles
+    if title_entities:
+        for title_candidate in title_entities:
+            # Validate title quality
+            if validate_title(title_candidate):
+                return clean_title(title_candidate)
     
+    # Fallback to regex-based extraction (existing logic)
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     
     # Enhanced patterns for institutional documents
@@ -423,49 +334,58 @@ def extract_metadata(text, filename=None):
     title = ' '.join(title_lines).strip()
     
     # Clean up title
-    title = re.sub(r'\s+', ' ', title)  # Multiple spaces to single
+    if title:
+        title = clean_title(title)
     
     # Fallback to filename if title empty or too short
     if not title or len(title) < 10:
         if base:
             title = base.replace('_', ' ').replace('-', ' ').title()
         else:
-            title = f"{categories} Document"
+            title = "Document"
     
-    if not title:
-        title = "Unknown Document"
+    return title or "Unknown Document"
+
+def extract_author_ner(author_entities, text):
     
-    # Enhanced author/contributor extraction for institutional docs
-    contributors = []
+    authors = []
     
-    # Add people from NER
-    for person in entities["PERSON"][:10]:
-        clean_person = person.replace('\n', ' ').strip()
-        if clean_person and len(clean_person) > 2:
-            contributors.append(clean_person)
+    # Process NER-extracted authors
+    for author in author_entities:
+        if validate_author(author):
+            authors.append(clean_author(author))
     
-    # Look for specific contributor patterns
-    contributor_patterns = [
-        r'(?:President|Chancellor|Director|Dean|Chair(?:man|woman|person)?|Principal):\s*([A-Z][a-zA-Z\s\.]+)',
-        r'(?:Prepared\s+by|Compiled\s+by|Edited\s+by):\s*([A-Z][a-zA-Z\s\.]+)',
-        r'(?:Message\s+from|Letter\s+from)\s+([A-Z][a-zA-Z\s\.]+)',
-    ]
+    # If no good NER authors, use regex fallback
+    if not authors:
+        # Look for specific contributor patterns in text
+        contributor_patterns = [
+            r'(?:President|Chancellor|Director|Dean|Chair(?:man|woman|person)?|Principal):\s*([A-Z][a-zA-Z\s\.]+)',
+            r'(?:Prepared\s+by|Compiled\s+by|Edited\s+by|Written\s+by):\s*([A-Z][a-zA-Z\s\.]+)',
+            r'(?:Message\s+from|Letter\s+from)\s+([A-Z][a-zA-Z\s\.]+)',
+            r'(?:Author|By):\s*([A-Z][a-zA-Z\s\.]+)',
+        ]
+        
+        for pattern in contributor_patterns:
+            matches = re.finditer(pattern, text, re.IGNORECASE)
+            for match in matches:
+                author = match.group(1).strip()
+                if validate_author(author):
+                    authors.append(clean_author(author))
     
-    for pattern in contributor_patterns:
-        matches = re.finditer(pattern, text, re.IGNORECASE)
-        for match in matches:
-            contributor = match.group(1).strip()
-            if contributor and len(contributor.split()) <= 4:
-                contributors.append(contributor)
+    # Remove duplicates and limit
+    unique_authors = list(dict.fromkeys(authors))[:5]
     
-    # Clean and deduplicate contributors
-    contributors = list(dict.fromkeys(contributors))[:10]
-    contributor_str = ', '.join(contributors) if contributors else "Unknown"
+    return ', '.join(unique_authors) if unique_authors else "Unknown"
+
+def extract_date_ner(date_entities, text):
     
-    # Enhanced date extraction
-    date = "Unknown"
+    # Try NER dates first
+    for date_candidate in date_entities:
+        parsed_date = parse_and_validate_date(date_candidate)
+        if parsed_date:
+            return parsed_date
     
-    # Look for specific date patterns common in institutional docs
+    # Fallback to regex patterns
     date_patterns = [
         r'(?:Academic\s+Year|Fiscal\s+Year|Class\s+of)\s+(\d{4}(?:-\d{2,4})?)',
         r'(?:Annual\s+Report|Year\s+Ending?)\s+(\d{4})',
@@ -479,35 +399,350 @@ def extract_metadata(text, filename=None):
     for pattern in date_patterns:
         matches = re.finditer(pattern, text, re.IGNORECASE)
         for match in matches:
-            try:
-                date_str = match.group(1)
-                if len(date_str) == 4:  # Just year
-                    date = f"{date_str}-01-01"
-                else:
-                    parsed_date = date_parse(date_str, fuzzy=True)
-                    date = parsed_date.date().isoformat()
-                break
-            except:
-                continue
+            date_str = match.group(1)
+            parsed_date = parse_and_validate_date(date_str)
+            if parsed_date:
+                return parsed_date
     
-    # Fallback to NER dates
-    if date == "Unknown":
-        for d in entities["DATE"]:
-            try:
-                parsed_date = date_parse(d, fuzzy=True)
-                date = parsed_date.date().isoformat()
-                break
-            except:
-                continue
+    return "Unknown"
+
+def extract_organization_ner(org_entities, text):
     
-    return {
-        "file_name": filename or "Unknown",
-        "title": title,
-        "author": contributor_str,
-        "date": date,
-        "categories": categories,
-        "organization": ', '.join(organizations) if organizations else "Unknown",
+    organizations = []
+    
+    # Process NER-extracted organizations
+    for org in org_entities:
+        if validate_organization(org):
+            organizations.append(clean_organization(org))
+    
+    # If no good NER organizations, use regex fallback
+    if not organizations:
+        org_patterns = [
+            r"([A-Z][a-zA-Z\s]+(?:University|College|Institute|School|Academy))",
+            r"([A-Z][a-zA-Z\s]+(?:Corporation|Company|Inc\.|LLC|Foundation))",
+            r"([A-Z][a-zA-Z\s]+(?:Department|Division|Office|Bureau))",
+            r"(?:University\s+of\s+|College\s+of\s+)([A-Z][a-zA-Z\s]+)",
+            r"([A-Z][A-Z\s]+)(?:\s+University|\s+College|\s+Institute)",  # All caps names
+        ]
+        
+        for pattern in org_patterns:
+            matches = re.finditer(pattern, text, re.IGNORECASE)
+            for match in matches:
+                org = match.group(1).strip()
+                if validate_organization(org):
+                    organizations.append(clean_organization(org))
+    
+    # Remove duplicates and limit
+    unique_orgs = list(dict.fromkeys(organizations))[:3]
+    
+    return ', '.join(unique_orgs) if unique_orgs else "Unknown"
+
+def extract_place_ner(place_entities):
+    
+    places = []
+    
+    # Process NER-extracted places
+    for place in place_entities:
+        if validate_place(place):
+            places.append(clean_place(place))
+    
+    # Remove duplicates and limit
+    unique_places = list(dict.fromkeys(places))[:3]
+    
+    return ', '.join(unique_places) if unique_places else "Unknown"
+
+def detect_categories_ner(text, filename, entities):
+    
+    text_lower = text.lower()
+    filename_lower = (filename or "").lower()
+    
+    # Enhanced patterns incorporating NER context
+    type_patterns = {
+        "annual_report": [
+            r"annual\s+report",
+            r"yearly\s+report", 
+            r"financial\s+year",
+            r"fiscal\s+year",
+            r"board\s+of\s+directors",
+            r"financial\s+statement",
+            r"president'?s\s+message",
+            r"chairman'?s\s+letter"
+        ],
+        "memorabilia": [
+            r"class\s+of\s+\d{4}",
+            r"graduating\s+class",
+            r"yearbook",
+            r"alumni",
+            r"graduation\s+ceremony",
+            r"commencement",
+            r"reunion",
+            r"class\s+notes",
+            r"memory\s+book"
+        ],
+        "newsletter": [
+            r"newsletter",
+            r"bulletin",
+            r"news\s+update",
+            r"quarterly\s+update",
+            r"monthly\s+report",
+            r"campus\s+news"
+        ],
+        "academic_catalog": [
+            r"course\s+catalog",
+            r"academic\s+catalog",
+            r"curriculum",
+            r"degree\s+requirements",
+            r"course\s+offerings",
+            r"academic\s+calendar"
+        ],
+        "brochure": [
+            r"brochure",
+            r"prospectus",
+            r"information\s+packet",
+            r"program\s+overview",
+            r"welcome\s+packet"
+        ],
+        "minutes": [
+            r"meeting\s+minutes",
+            r"board\s+minutes",
+            r"committee\s+meeting",
+            r"senate\s+minutes",
+            r"council\s+meeting"
+        ],
+        "research_report": [
+            r"research\s+report",
+            r"technical\s+report",
+            r"white\s+paper",
+            r"policy\s+brief",
+            r"study\s+findings"
+        ]
     }
+    
+    # Use NER entities to boost category confidence
+    entity_context = []
+    for entity_type, entity_list in entities.items():
+        entity_context.extend([e.lower() for e in entity_list])
+    entity_text = ' '.join(entity_context)
+    
+    # Check filename and entity context first
+    combined_text = f"{filename_lower} {entity_text}"
+    for doc_type, patterns in type_patterns.items():
+        for pattern in patterns:
+            if re.search(pattern, combined_text):
+                return doc_type.replace("_", " ").title()
+    
+    # Check main content
+    for doc_type, patterns in type_patterns.items():
+        score = 0
+        for pattern in patterns:
+            if re.search(pattern, text_lower):
+                score += 1
+        
+        # If multiple patterns match, it's likely this document type
+        if score >= 2:
+            return doc_type.replace("_", " ").title()
+        elif score == 1 and len(patterns) <= 3:  # For types with fewer patterns
+            return doc_type.replace("_", " ").title()
+    
+    return "Archives"
+
+# Validation helper functions
+def validate_title(title):
+    if not title or len(title.strip()) < 5:
+        return False
+    
+    # Avoid common non-title patterns
+    bad_patterns = [
+        r'^page\s+\d+',
+        r'^\d+$',
+        r'^copyright',
+        r'^table\s+of\s+contents',
+        r'^index$',
+        r'^\w+@\w+\.', 
+    ]
+    
+    title_lower = title.lower()
+    for pattern in bad_patterns:
+        if re.match(pattern, title_lower):
+            return False
+    
+    return True
+
+def validate_author(author):
+    if not author or len(author.strip()) < 2:
+        return False
+    
+    # Should look like a name
+    if not re.search(r'[A-Za-z]', author):
+        return False
+    
+    # Avoid common non-author patterns
+    bad_patterns = [
+        r'^\d+$',
+        r'^page\s+\d+',
+        r'@',  # email parts
+        r'^copyright',
+        r'^table',
+        r'^index',
+    ]
+    
+    author_lower = author.lower()
+    for pattern in bad_patterns:
+        if re.search(pattern, author_lower):
+            return False
+    
+    return len(author.split()) <= 6  # Reasonable name length
+
+def validate_organization(org):
+    if not org or len(org.strip()) < 3:
+        return False
+    
+    org_clean = re.sub(r'\s+', ' ', org.strip())
+    
+    # Should have reasonable length
+    if len(org_clean.split()) > 8:
+        return False
+    
+    return True
+
+def validate_place(place):
+    if not place or len(place.strip()) < 2:
+        return False
+    
+    # Should look like a place name
+    place_clean = place.strip()
+    
+    # Avoid common non-place patterns
+    if re.search(r'^\d+$|^page|^copyright|^table', place_clean.lower()):
+        return False
+    
+    return len(place_clean.split()) <= 5  # Reasonable place name length
+
+def parse_and_validate_date(date_str):
+    if not date_str:
+        return None
+    
+    date_str = date_str.strip()
+    
+    try:
+        # Handle year-only dates
+        if len(date_str) == 4 and date_str.isdigit():
+            year = int(date_str)
+            if 1800 <= year <= 2025:
+                return str(year)  # Return just the year
+        
+        # Handle date ranges - get the latest date
+        range_patterns = [
+            r'(\w+)\s*[-–—]\s*(\w+\s+\d{4})',  # "September - October 2020"
+            r'(\w+\s+\d{4})\s*[-–—]\s*(\w+\s+\d{4})',  # "January 2020 - March 2020"
+            r'(\d{4})\s*[-–—]\s*(\d{4})',  # "2019 - 2020"
+            r'(\d{1,2}/\d{4})\s*[-–—]\s*(\d{1,2}/\d{4})',  # "01/2020 - 03/2020"
+        ]
+        
+        for pattern in range_patterns:
+            match = re.search(pattern, date_str)
+            if match:
+                start_date, end_date = match.groups()
+                
+                # For patterns like "September - October 2020"
+                if pattern == range_patterns[0]:
+                    # Extract year from end_date and combine with start month
+                    year_match = re.search(r'\d{4}', end_date)
+                    if year_match:
+                        year = year_match.group()
+                        start_date = f"{start_date} {year}"
+                
+                # Try to parse both dates and return the later one
+                try:
+                    start_parsed = date_parse(start_date, fuzzy=True)
+                    end_parsed = date_parse(end_date, fuzzy=True)
+                    
+                    latest_date = max(start_parsed, end_parsed)
+                    if 1800 <= latest_date.year <= 2025:
+                        return format_date_flexibly(latest_date, end_date)
+                except:
+                    # If parsing fails, try just the end date
+                    try:
+                        end_parsed = date_parse(end_date, fuzzy=True)
+                        if 1800 <= end_parsed.year <= 2025:
+                            return format_date_flexibly(end_parsed, end_date)
+                    except:
+                        continue
+        
+        # Handle academic year patterns like "2019-2020" or "2019-20"
+        academic_year_match = re.search(r'(\d{4})-(\d{2,4})', date_str)
+        if academic_year_match:
+            start_year, end_year_part = academic_year_match.groups()
+            start_year = int(start_year)
+            
+            # Handle 2-digit year (e.g., "2019-20")
+            if len(end_year_part) == 2:
+                end_year = int(str(start_year)[:2] + end_year_part)
+            else:
+                end_year = int(end_year_part)
+            
+            # Return the later year (end of academic year)
+            if 1800 <= end_year <= 2025:
+                return str(end_year)  # Return just the year
+        
+        # Parse single dates
+        parsed = date_parse(date_str, fuzzy=True)
+        if 1800 <= parsed.year <= 2025:
+            return format_date_flexibly(parsed, date_str)
+            
+    except Exception as e:
+        # Try to extract just a year as fallback
+        year_match = re.search(r'\b(19|20)\d{2}\b', date_str)
+        if year_match:
+            year = int(year_match.group())
+            if 1800 <= year <= 2025:
+                return str(year)
+    
+    return None
+
+def format_date_flexibly(parsed_date, original_str):
+    original_lower = original_str.lower()
+    
+    # Check if original has day information
+    has_day = any(pattern in original_lower for pattern in [
+        r'\d{1,2}(?:st|nd|rd|th)?[,\s]',  # "15th,", "3rd "
+        r'\b\d{1,2}[,\s]',  # "15, ", "3 "
+    ]) or re.search(r'\b\d{1,2}[,\s]', original_str)
+    
+    # Check if original has specific month name or number
+    has_month = any(month in original_lower for month in [
+        'january', 'february', 'march', 'april', 'may', 'june',
+        'july', 'august', 'september', 'october', 'november', 'december',
+        'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+        'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+    ]) or re.search(r'\b\d{1,2}/\d{4}\b', original_str)
+    
+    # Return most specific format available
+    if has_day and has_month:
+        return parsed_date.strftime('%Y-%m-%d')  # Full date
+    elif has_month:
+        return parsed_date.strftime('%m-%Y')     # Month-Year
+    else:
+        return str(parsed_date.year)             # Year only
+
+# Cleaning helper functions
+def clean_title(title):
+    title = re.sub(r'\s+', ' ', title.strip())
+    title = re.sub(r'^\W+|\W+$', '', title)  # Remove leading/trailing non-word chars
+    return title
+
+def clean_author(author):
+    author = re.sub(r'\s+', ' ', author.strip())
+    author = re.sub(r'[^\w\s\.,\'-]', '', author)  # Keep basic name characters
+    return author
+
+def clean_organization(org):
+    org = re.sub(r'\s+', ' ', org.strip())
+    return org
+
+def clean_place(place):
+    place = re.sub(r'\s+', ' ', place.strip())
+    return place
 
 def generate_summary(text, title=None, author=None, date=None, keywords=None, categories=None, max_attempts=3):
     print("Generating summary...")

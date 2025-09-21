@@ -10,7 +10,15 @@
       <q-card-section>
         <q-input outlined v-model="localMetadata.title" label="Title" />
         <q-input outlined v-model="localMetadata.author" label="Author(s)" class="meta-info" />
-        <q-input outlined v-model="localMetadata.date" type="date" label="Date" class="q-mt-sm" />
+
+        <q-input
+          outlined
+          v-model="localMetadata.date"
+          label="Date"
+          class="q-mt-sm"
+          @blur="normalizeDate"
+        />
+
         <q-input
           v-model="localMetadata.summary"
           type="textarea"
@@ -24,7 +32,6 @@
         <div class="q-mt-md">
           <div class="sub-font-3" style="font-size: 16px; margin-bottom: 0.5rem">Tags:</div>
           <div class="tags">
-            <!-- Existing Categories -->
             <template v-if="localMetadata.categories?.length">
               <q-chip
                 v-for="(category, i) in localMetadata.categories"
@@ -42,7 +49,6 @@
               <q-chip color="grey-7" text-color="white">Uncategorized</q-chip>
             </template>
 
-            <!-- Add (+) Button -->
             <q-btn
               dense
               round
@@ -54,7 +60,6 @@
             />
           </div>
 
-          <!-- Inline Input for Adding Category -->
           <div v-if="addingCategory" class="q-mt-sm">
             <q-input
               dense
@@ -96,6 +101,34 @@ const saving = ref(false)
 
 const addingCategory = ref(false)
 const newCategory = ref('')
+
+// ✅ Month map for conversions
+const monthMap = {
+  january: '01',
+  jan: '01',
+  february: '02',
+  feb: '02',
+  march: '03',
+  mar: '03',
+  april: '04',
+  apr: '04',
+  may: '05',
+  june: '06',
+  jun: '06',
+  july: '07',
+  jul: '07',
+  august: '08',
+  aug: '08',
+  september: '09',
+  sept: '09',
+  sep: '09',
+  october: '10',
+  oct: '10',
+  november: '11',
+  nov: '11',
+  december: '12',
+  dec: '12',
+}
 
 const localMetadata = reactive({
   file_name: '',
@@ -156,6 +189,39 @@ function addCategory() {
     localMetadata.categories.push(value)
   }
   cancelAddCategory()
+}
+
+// ✅ Normalize/convert month names to numbers on blur
+function normalizeDate() {
+  let input = localMetadata.date.trim()
+  if (!input) return
+
+  const lower = input.toLowerCase()
+
+  // Pure year (e.g., "2024")
+  if (/^\d{4}$/.test(lower)) {
+    localMetadata.date = lower
+    return
+  }
+
+  // Month + Year (e.g., "March 2024", "Sept 1998")
+  const monthYearMatch = lower.match(/([a-z]+)\s+(\d{4})/)
+  if (monthYearMatch) {
+    const month = monthMap[monthYearMatch[1]]
+    if (month) {
+      localMetadata.date = `${monthYearMatch[2]}-${month}`
+      return
+    }
+  }
+
+  // Month only (e.g., "March", "Sep")
+  const singleMonth = Object.keys(monthMap).find((m) => lower === m)
+  if (singleMonth) {
+    localMetadata.date = monthMap[singleMonth]
+    return
+  }
+
+  // Already in YYYY-MM-DD or similar → leave as is
 }
 
 const cancel = () => {
