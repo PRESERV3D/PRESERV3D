@@ -21,8 +21,8 @@
         <div class="q-mt-xl col">
           <q-input
             v-model="editableData.title"
-            class="document-title"
-            style="font-size: 20px; font-weight: bold; margin-bottom: 2rem"
+            class="sub-font-3 q-mb-md"
+            style="font-size: 20px"
             dense
             outlined
           />
@@ -30,7 +30,7 @@
             <q-input
               v-model="editableData.author"
               class="sub-font-3 q-mb-md"
-              style="font-size: 16px; max-width: 25rem"
+              style="font-size: 16px; width: 17rem"
               dense
               outlined
             />
@@ -67,7 +67,7 @@
       <div class="preview-container">
         <div class="box-view">
           <div class="row items-center">
-            <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
+            <div class="q-ml-md sub-font-3 space" style="font-size: 16px">Tags:</div>
             <div class="tags">
               <!-- <span class="tag-box" v-for="(category, i) in doc.metadata.categories" :key="i">
                 {{ category }}
@@ -208,7 +208,10 @@
 
           <div class="row description-row">
             <div class="description-section">
-              <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 2rem">
+              <div
+                class="q-ml-md sub-font-3"
+                style="font-size: 16px; margin-top: 2rem; margin-bottom: 1rem"
+              >
                 Description
               </div>
               <div class="summary">
@@ -1244,14 +1247,6 @@ async function cancelChanges() {
   margin-left: 1rem;
 }
 
-.document-title {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 36px;
-  line-height: 3rem;
-  color: #560505;
-}
-
 .document-img {
   width: 300px;
   margin-left: 10rem;
@@ -1262,52 +1257,10 @@ async function cancelChanges() {
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
 }
 
-.actions {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 500;
-  font-size: 14px;
-  color: #880000;
-}
-
-.row-1 {
-  margin-left: 30.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.start-reading-btn {
-  background-color: #363636;
-  color: white;
-  border-radius: 20px;
-  font-weight: 400;
-  font-size: 14px;
-  font-family: 'Poppins', sans-serif;
-  height: 2rem;
-  width: 10rem;
-  place-content: center;
-  align-items: center;
-}
-
-.btn-arrow-tilt {
-  width: 0.6rem;
-  height: 0.6rem;
-  object-fit: contain;
-}
-
-.summary {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 400;
-  font-size: 12px;
-  color: #000000;
-  margin-top: 1rem;
-}
-
 .summary-input :deep(.q-field__native) {
   font-family: 'Poppins', sans-serif !important;
   font-weight: 400 !important;
-  font-size: 14px !important;
+  font-size: 12px !important;
   color: black !important;
   line-height: 1.4 !important;
 }
@@ -1318,5 +1271,24 @@ async function cancelChanges() {
 
 .add-category-input {
   max-width: 200px;
+}
+
+.space {
+  margin-top: 10rem;
+}
+
+/* Responsivesness */
+@media (max-width: 1200px) {
+  .document-img {
+    display: none;
+  }
+
+  .space {
+    margin-top: 2rem;
+  }
+
+  .tags {
+    margin-top: 2rem;
+  }
 }
 </style>
