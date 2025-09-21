@@ -100,9 +100,17 @@
           <q-spinner color="primary" size="lg" />
         </div>
 
-        <!-- Three Artifacts Section -->
-        <div v-else class="row q-gutter-md q-px-sm q-mb-lg">
-          <div v-for="(model, i) in featuredModels" :key="i" class="col card-wrapper">
+        <!-- Three Artifacts Section - Now Responsive Grid -->
+        <div v-else class="artifacts-grid q-px-sm q-mb-lg">
+          <div
+            v-for="(model, i) in featuredModels"
+            :key="i"
+            class="artifact-card-wrapper"
+            :class="{
+              'hide-on-tablet': i >= 2,
+              'hide-on-mobile': i >= 1
+            }"
+          >
             <q-card class="my-card" rounded bordered>
               <div class="card">
                 <model-viewer
@@ -377,11 +385,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          notifyDialogTitle
-        }}</q-card-section>
+            notifyDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-          notifyDialogMessage
-        }}</q-card-section>
+            notifyDialogMessage
+          }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -1492,8 +1500,50 @@ async function addCollection() {
   background-color: rgba(239, 175, 0, 0.1);
 }
 
+
+/* RESPONSIVE ARTIFACTS GRID */
+.artifacts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.artifact-card-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+
 /* ========================
- RESPONSIVE DESIGN
+ ARTIFACTS RESPONSIVE DESIGN
+======================== */
+
+/* Hide artifacts based on screen size */
+/* Tablet view - hide 3rd artifact (index 2+) */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .artifacts-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hide-on-tablet {
+    display: none;
+  }
+}
+
+/* Mobile view - hide 2nd and 3rd artifacts (index 1+) */
+@media (max-width: 768px) {
+  .artifacts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hide-on-mobile {
+    display: none;
+  }
+}
+
+/* ========================
+ DASH & RECENTLY VIEWED RESPONSIVE DESIGN
 ======================== */
 
 /* Base styles (mobile first) */
