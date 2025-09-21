@@ -58,36 +58,26 @@
             <div class="stat-item">
               <q-icon name="visibility" size="sm" color="grey-6" />
               <span
-                >{{
+              >{{
                   documentsStore?.viewCounts[
                     topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].id
-                  ] || 0
+                    ] || 0
                 }}
                 views</span
               >
               <div class="stat-item q-ml-md">
                 <q-icon name="star" size="sm" color="grey-6" />
                 <span
-                  >{{
+                >{{
                     documentsStore?.starCounts[
                       topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].id
-                    ] || 0
+                      ] || 0
                   }}
                   stars</span
                 >
               </div>
             </div>
           </div>
-          <!--          <q-btn-->
-          <!--            label="Read This Document"-->
-          <!--            color="primary"-->
-          <!--            size="sm"-->
-          <!--            class="read-document-btn"-->
-          <!--            no-caps-->
-          <!--            unelevated-->
-          <!--            @click.stop="viewDocument(topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].id)"-->
-          <!--          >-->
-          <!--          </q-btn>-->
         </div>
       </q-card-section>
     </q-card>
@@ -104,7 +94,8 @@
         @click.stop="goBack"
       />
     </div>
-    <!-- Books Grid -->
+
+    <!-- Books Grid - Now Responsive -->
     <div class="books-section q-mt-lg">
       <div class="books-grid">
         <div
@@ -114,6 +105,8 @@
           :class="{
             'book-hovered': hoveredBook === index,
             'book-selected': selectedBook === index,
+            'hide-on-tablet': index >= 3,
+            'hide-on-mobile': index >= 2
           }"
           @mouseenter="hoveredBook = index"
           @mouseleave="hoveredBook = null"
@@ -134,10 +127,6 @@
                     <div class="book-overlay-gradient"></div>
                     <!-- Only show text overlay on hover -->
                     <div v-if="hoveredBook === index" class="book-overlay-content">
-                      <!-- <div
-                        class="book-title-overlay clickable-text"
-                        @click.stop="navigateToDocument(doc.id)"
-                      > -->
                       <div class="book-title clickable-text" @click.stop="handleClickView(doc)">
                         {{ doc.metadata?.title || doc.file_name }}
                       </div>
@@ -158,10 +147,6 @@
                       </div>
                       <!-- Only show text on hover -->
                       <div v-if="hoveredBook === index">
-                        <!-- <div
-                          class="book-title clickable-text"
-                          @click.stop="navigateToDocument(doc.id)"
-                        > -->
                         <div class="book-title clickable-text" @click.stop="handleClickView(doc)">
                           {{ doc.metadata?.title || 'POLYTECHNIC UNIVERSITY' }}
                         </div>
@@ -229,11 +214,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          notifyDialogTitle
-        }}</q-card-section>
+            notifyDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-          notifyDialogMessage
-        }}</q-card-section>
+            notifyDialogMessage
+          }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -966,112 +951,36 @@ onMounted(async () => {
   color: white;
 }
 
-// Responsive Design
-@media (max-width: 1400px) {
-  .author-info {
-    width: 400px;
-    min-width: 400px;
+
+/* ========================
+ HIGHLIGHT RESPONSIVE DESIGN
+======================== */
+
+/* Hide books based on screen size */
+/* Tablet view */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .hide-on-tablet {
+    display: none;
   }
 }
 
-@media (max-width: 1200px) {
+/* Mobile view  */
+@media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none;
+  }
+}
+
+/* Adjust books-grid for responsive layout */
+@media (max-width: 1024px) and (min-width: 769px) {
   .books-grid {
     grid-template-columns: repeat(3, 1fr);
-  }
-
-  .author-info {
-    width: 350px;
-    min-width: 350px;
-  }
-}
-
-@media (max-width: 900px) {
-  .books-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .book-container {
-    max-width: 250px; /* Adjusted for medium screens */
-    height: 380px; /* Adjusted for medium screens */
-  }
-
-  .book-cover {
-    height: 360px; /* Adjusted for medium screens */
   }
 }
 
 @media (max-width: 768px) {
-  .header-section {
-    flex-direction: column;
-    gap: 2rem;
-    margin-bottom: 3rem;
-  }
-
-  .author-info {
-    position: relative;
-    width: 100%;
-    min-width: auto;
-    max-width: 100%;
-    transform: none;
-    opacity: 1;
-    pointer-events: auto;
-    margin-bottom: 2rem;
-
-    &.author-info-visible {
-      transform: none;
-    }
-  }
-
-  .author-info-container {
-    max-width: 100%;
-  }
-
-  .highlights-title {
-    font-size: 2.5rem;
-  }
-
   .books-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem; /* Kept tighter spacing */
-  }
-
-  .book-container {
-    height: 350px; /* Slightly smaller for mobile but still bigger than original */
-    max-width: 240px; /* Adjusted for mobile */
-  }
-
-  .book-cover {
-    height: 330px; /* Adjusted for mobile */
-  }
-
-  .back-forward-nav {
-    position: static;
-    justify-content: center;
-    margin-bottom: 2rem;
-  }
-
-  .highlights-container {
-    padding: 1rem;
-  }
-
-  .books-section {
-    margin-top: 2rem;
-  }
-}
-
-@media (max-width: 600px) {
-  .book-item.book-hovered,
-  .book-item.book-selected {
-    transform: scale(1.05);
-  }
-
-  .book-container {
-    max-width: 200px;
-    height: 320px;
-  }
-
-  .book-cover {
-    height: 300px;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>
