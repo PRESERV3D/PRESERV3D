@@ -66,28 +66,38 @@
               no-caps
               @click="logClick(doc.id, 'document', 'read')"
             > -->
-            <q-btn class="start-reading-btn" no-caps @click="handleClickRead(doc)">
+            <q-btn
+              v-if="$q.screen.width > 570"
+              class="start-reading-btn"
+              no-caps
+              @click="handleClickRead(doc)"
+            >
               Start Reading
               <img src="/img/arrow-tilt.png" alt="Start Reading" class="q-ml-sm btn-arrow-tilt" />
             </q-btn>
-            <!-- Action icons -->
 
-            <div class="row-1 items-center">
-              <q-icon
-                v-if="!isAdmin"
-                name="visibility"
-                color="grey"
-                size="xs"
-                class="action-icon"
-              />
+            <q-btn
+              v-else
+              class="start-reading-btn"
+              no-caps
+              round
+              dense
+              flat
+              @click="handleClickRead(doc)"
+            >
+              <q-icon name="menu_book" size="xs" />
+            </q-btn>
+
+            <!-- Action icons -->
+            <div class="row items-center q-gutter-sm">
+              <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
               <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
 
               <q-icon
-                v-if="!isAdmin"
                 :name="doc.starred ? 'star' : 'star_border'"
                 :class="{ starred: doc.starred }"
                 class="action-icon star-icon"
-                size="sm"
+                size="xs"
                 @click.stop="isAdmin ? null : toggleFavorite(doc, 'document')"
               />
               <span class="count-text">{{ documentsStore.starCounts[doc.id] || 0 }}</span>
@@ -97,13 +107,13 @@
                 :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
                 class="bookmark-icon q-ml-md q-mr-md"
                 :class="{ bookmarked: doc.bookmarked }"
-                size="sm"
+                size="xs"
                 @click.stop="openBookmarkDialog(doc, 'document')"
               />
             </div>
           </div>
           <div class="row">
-            <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
+            <div class="q-ml-md sub-font-3 space" style="font-size: 16px">Tags:</div>
             <div class="tags">
               <template v-if="doc.metadata.categories && doc.metadata.categories.length">
                 <span class="tag-box" v-for="(category, i) in doc.metadata.categories" :key="i">
@@ -157,8 +167,8 @@
             </div>
             <div class="meta-section">
               <div class="font-label">
-                <p><strong>Uploaded At:</strong> {{ formatDate(doc.uploaded_at) }}</p>
-                <p><strong>Updated At:</strong> {{ formatDate(doc.updated_at) }}</p>
+                <p><strong>Uploaded On:</strong> {{ formatDate(doc.uploaded_at) }}</p>
+                <p><strong>Updated On:</strong> {{ formatDate(doc.updated_at) }}</p>
                 <p><strong>Date:</strong> {{ doc.metadata.date }}</p>
               </div>
             </div>
@@ -788,9 +798,8 @@ async function logClick(itemId, itemType, action) {
 .row-1 {
   margin-left: 30.5rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .start-reading-btn {
@@ -818,5 +827,44 @@ async function logClick(itemId, itemType, action) {
   font-size: 12px;
   color: #000000;
   margin-top: 1rem;
+  text-align: justify;
+}
+
+.space {
+  margin-top: 10rem;
+}
+
+/* Responsivesness */
+@media (max-width: 1200px) {
+  .document-img {
+    display: none;
+  }
+
+  .space {
+    margin-top: 2rem;
+  }
+
+  .tags {
+    margin-top: 2rem;
+  }
+
+  .row-1 {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .description-section,
+  .meta-section {
+    flex: 0 0 100%;
+  }
+}
+
+@media (max-width: 570px) {
+  .start-reading-btn {
+    width: 3rem;
+    height: 2rem;
+    margin-left: 0.5rem;
+  }
 }
 </style>
