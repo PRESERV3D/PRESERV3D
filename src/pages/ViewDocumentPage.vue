@@ -66,12 +66,29 @@
               no-caps
               @click="logClick(doc.id, 'document', 'read')"
             > -->
-            <q-btn class="start-reading-btn" no-caps @click="handleClickRead(doc)">
+            <q-btn
+              v-if="$q.screen.width > 1445 || $q.screen.width < 1201"
+              class="start-reading-btn"
+              no-caps
+              @click="handleClickRead(doc)"
+            >
               Start Reading
               <img src="/img/arrow-tilt.png" alt="Start Reading" class="q-ml-sm btn-arrow-tilt" />
             </q-btn>
-            <!-- Action icons -->
 
+            <q-btn
+              v-else
+              class="start-reading-btn"
+              no-caps
+              round
+              dense
+              flat
+              @click="handleClickRead(doc)"
+            >
+              <q-icon name="menu_book" size="xs" />
+            </q-btn>
+
+            <!-- Action icons -->
             <div class="row-1 items-center">
               <q-icon
                 v-if="!isAdmin"
@@ -103,7 +120,7 @@
             </div>
           </div>
           <div class="row">
-            <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
+            <div class="q-ml-md sub-font-3 space" style="font-size: 16px">Tags:</div>
             <div class="tags">
               <template v-if="doc.metadata.categories && doc.metadata.categories.length">
                 <span class="tag-box" v-for="(category, i) in doc.metadata.categories" :key="i">
@@ -818,5 +835,28 @@ async function logClick(itemId, itemType, action) {
   font-size: 12px;
   color: #000000;
   margin-top: 1rem;
+}
+
+.space {
+  margin-top: 10rem;
+}
+
+/* Responsivesness */
+@media (max-width: 1200px) {
+  .document-img {
+    display: none;
+  }
+
+  .space {
+    margin-top: 2rem;
+  }
+
+  .tags {
+    margin-top: 2rem;
+  }
+
+  .row-1 {
+    margin-left: 0;
+  }
 }
 </style>
