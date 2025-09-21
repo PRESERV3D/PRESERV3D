@@ -142,7 +142,7 @@
     </q-dialog> -->
 
     <!-- Document Highlights Section -->
-    <div class="column q-py-md q-gutter-lg">
+    <div class="q-py-md q-gutter-lg">
       <div class="box-highlights">
         <div class="row justify-between q-px-lg q-pt-lg q-mb-md">
           <p class="title-font-2" style="font-size: 16px; margin: 0">Document Highlights</p>
@@ -154,9 +154,9 @@
           </router-link>
         </div>
 
-        <div class="row docs-gap justify-start">
+        <div class="row docs-gap justify-center q-py-sm">
           <div v-for="(doc, index) in topDocuments" :key="index">
-            <div class="row q-mb-lg">
+            <div class="row q-mb-lg doc-wrapper">
               <q-card class="my-card docCard" style="transform: rotate(-5deg)">
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
@@ -1667,8 +1667,6 @@ function applySort(option) {
 }
 
 .docs-gap {
-  margin-left: 2.5rem;
-  margin-bottom: 0.5rem;
   gap: 2rem;
 }
 
@@ -1720,5 +1718,14 @@ function applySort(option) {
   background-color: rgba(255, 255, 255, 0.5) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
   transform: translateY(-1px) !important;
+}
+
+/* Responsiveness */
+@media (max-width: 615px) {
+  .doc-wrapper {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
 }
 </style>
