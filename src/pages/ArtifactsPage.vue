@@ -446,12 +446,13 @@ import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import UploadDialog from 'src/components/UploadDialog.vue'
 import '@google/model-viewer'
 
 const router = useRouter()
-
+const $q = useQuasar()
 const modelStore = useModelStore()
 const searchStore = useSearchStore()
 const userStore = useUserStore()
@@ -1329,7 +1330,7 @@ const handleUpload = async () => {
   uploadProgress.value = 0
 
   if (!file || !fileName.endsWith('.glb')) {
-    alert('Only .glb files are allowed.')
+    $q.notify({ type: 'negative', message: 'Only .glb files are allowed.' })
     uploading.value = false
     return
   }
@@ -1339,7 +1340,10 @@ const handleUpload = async () => {
   try {
     const alreadyExists = await fileExists(fileName)
     if (alreadyExists) {
-      alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
+      $q.notify({
+        type: 'negative',
+        message: `A file named "${fileName}" already exists. Please rename or choose another file.`,
+      })
       uploading.value = false
       return
     }
@@ -1370,7 +1374,7 @@ const handleUpload = async () => {
       file_name: fileName,
       file_url: fileUrl,
       uploaded_at: new Date(),
-      metadata: null, // initially empty
+      metadata: null,
       donated_by: null,
       updated_at: null,
       data_source: null,
