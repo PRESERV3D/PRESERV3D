@@ -827,6 +827,7 @@ async function logClick(itemId, itemType, action) {
   font-size: 12px;
   color: #000000;
   margin-top: 1rem;
+  text-align: justify;
 }
 
 .space {
@@ -851,6 +852,14 @@ async function logClick(itemId, itemType, action) {
     margin-left: 0;
   }
 }
+
+@media (max-width: 900px) {
+  .description-section,
+  .meta-section {
+    flex: 0 0 100%;
+  }
+}
+
 @media (max-width: 570px) {
   .start-reading-btn {
     width: 3rem;

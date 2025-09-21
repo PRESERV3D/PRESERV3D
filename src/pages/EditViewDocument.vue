@@ -29,8 +29,8 @@
           <div class="row items-center">
             <q-input
               v-model="editableData.author"
-              class="sub-font-3 q-mb-md"
-              style="font-size: 16px; width: 17rem"
+              class="sub-font-3 q-mb-md author-input"
+              style="font-size: 16px"
               dense
               outlined
             />
@@ -214,27 +214,26 @@
               >
                 Description
               </div>
-              <div class="summary">
-                <q-input
-                  v-model="editableData.summary"
-                  type="textarea"
-                  outlined
-                  dense
-                  class="q-ml-md summary-input"
-                  :input-style="{ minHeight: '60px' }"
-                />
 
-                <!-- Generate Summary Button -->
-                <q-btn
-                  flat
-                  no-caps
-                  dense
-                  label="Generate"
-                  class="q-ml-md find-more-info-btn"
-                  style="margin-top: 1rem"
-                  @click="generateSummary"
-                />
-              </div>
+              <q-input
+                v-model="editableData.summary"
+                type="textarea"
+                outlined
+                dense
+                class="q-ml-md summary-input"
+                :input-style="{ minHeight: '8rem' }"
+              />
+
+              <!-- Generate Summary Button -->
+              <q-btn
+                flat
+                no-caps
+                dense
+                label="Generate"
+                class="q-ml-md find-more-info-btn"
+                style="margin-top: 1rem"
+                @click="generateSummary"
+              />
 
               <q-dialog v-model="showSummaryDialog" persistent>
                 <q-card style="min-width: 400px; max-width: 600px; position: relative">
@@ -1263,10 +1262,11 @@ async function cancelChanges() {
   font-size: 12px !important;
   color: black !important;
   line-height: 1.4 !important;
+  text-align: justify !important;
 }
 
-.summary-input {
-  width: 100%;
+.summary-input :deep(textarea) {
+  resize: none !important;
 }
 
 .add-category-input {
@@ -1275,6 +1275,10 @@ async function cancelChanges() {
 
 .space {
   margin-top: 10rem;
+}
+
+.author-input {
+  width: 17rem;
 }
 
 /* Responsivesness */
@@ -1289,6 +1293,23 @@ async function cancelChanges() {
 
   .tags {
     margin-top: 2rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .description-row {
+    margin-right: 1rem;
+  }
+
+  .description-section,
+  .meta-section {
+    flex: 0 0 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .author-input {
+    width: 30rem;
   }
 }
 </style>
