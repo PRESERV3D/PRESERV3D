@@ -419,8 +419,8 @@
             </div>
             <div class="meta-section">
               <div class="font-label">
-                <p><strong>Uploaded At:</strong> {{ formatDate(doc.uploaded_at) }}</p>
-                <p><strong>Updated At:</strong> {{ formatDate(doc.updated_at) }}</p>
+                <p><strong>Uploaded On:</strong> {{ formatDate(doc.uploaded_at) }}</p>
+                <p><strong>Updated On:</strong> {{ formatDate(doc.updated_at) }}</p>
                 <p>
                   <strong>Date:</strong>
                   <q-btn outline dense :label="editableData.date || 'Select Date'" class="q-ml-sm">
