@@ -817,7 +817,7 @@ const saveChanges = async () => {
       return
     }
 
-    const updatedAt = new Date().toISOString()
+    const updatedAt = new Date()
     newData.updated_at = updatedAt
 
     changes = {
