@@ -100,7 +100,7 @@
           <q-spinner color="primary" size="lg" />
         </div>
 
-        <!-- Three Artifacts Section - Now Responsive Grid -->
+        <!-- Three Artifacts Section -->
         <div v-else class="artifacts-grid q-px-sm q-mb-lg">
           <div
             v-for="(model, i) in featuredModels"
@@ -176,7 +176,7 @@
       <div class="box-3 collections-section q-px-lg">
         <div class="row items-center justify-between q-mb-sm q-mt-sm">
           <p class="q-ml-lg title-font-2">Collections</p>
-          <!-- Filter, Sort, and Add New button in the upper right -->
+          <!-- Add New button in the upper right -->
           <div class="row q-gutter-sm items-center q-pr-sm">
             <q-btn
               @click="showDialog = true"
@@ -187,52 +187,6 @@
               no-caps
               unelevated
             />
-            <!-- Filter Icon Button with Menu -->
-            <!-- <q-btn
-              flat
-              round
-              icon="filter_list"
-              class="filter-sort-btn"
-              @click="showFilterMenu = !showFilterMenu"
-            >
-              <q-menu v-model="showFilterMenu" anchor="bottom right" self="top right">
-                <q-list dense>
-                  <q-item
-                    v-for="option in filterOptions"
-                    :key="option"
-                    clickable
-                    @click="selectFilter(option)"
-                    :class="{ 'bg-grey-2': selectedFilter === option }"
-                  >
-                    <q-item-section>{{ option }}</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-menu>
-            </q-btn>
-            Sort Icon Button with Menu
-            <q-btn
-              flat
-              round
-              icon="sort"
-              class="filter-sort-btn"
-              @click="showSortMenu = !showSortMenu"
-            >
-              <q-menu v-model="showSortMenu" anchor="bottom right" self="top right">
-                <q-list dense>
-                  <q-item
-                    v-for="option in sortOptions"
-                    :key="option"
-                    clickable
-                    @click="selectSort(option)"
-                    :class="{ 'bg-grey-2': selectedSort === option }"
-                  >
-                    <q-item-section>{{ option }}</q-item-section>
-                  </q-item>
-                </q-list>
-              </q-menu>
-            </q-btn>
-
-            -->
           </div>
         </div>
         <!-- Loading Spinner for Collections -->
@@ -244,9 +198,13 @@
         <div v-else>
           <div v-if="collections.length > 0" class="row q-gutter-xl q-pl-lg q-pr-sm q-mb-sm">
             <div
-              v-for="collection in visibleCollections"
+              v-for="(collection, index) in visibleCollections"
               :key="collection.collection_id"
               class="col card-wrapper"
+              :class="{
+                'hide-on-tablet': index >= 3,
+                'hide-on-mobile': index >= 2
+              }"
             >
               <q-card
                 class="my-card collection-card"
@@ -1519,8 +1477,8 @@ async function addCollection() {
  ARTIFACTS RESPONSIVE DESIGN
 ======================== */
 
-/* Hide artifacts based on screen size */
-/* Tablet view - hide 3rd artifact (index 2+) */
+/* Hide items based on screen size */
+/* Tablet view */
 @media (max-width: 1024px) and (min-width: 769px) {
   .artifacts-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1531,7 +1489,7 @@ async function addCollection() {
   }
 }
 
-/* Mobile view - hide 2nd and 3rd artifacts (index 1+) */
+/* Mobile view */
 @media (max-width: 768px) {
   .artifacts-grid {
     grid-template-columns: 1fr;
@@ -1878,226 +1836,7 @@ async function addCollection() {
   }
 }
 
-/* Collections */
 
-/* Base container - single line, no scroll, proper spacing */
-.collections-section .row.q-gutter-xl {
-  flex-wrap: nowrap !important;
-  overflow: visible !important;
-  overflow-x: visible !important;
-  gap: 1rem;
-  width: 100%;
-  justify-content: flex-start !important; /* Align items to start, don't distribute space */
-}
-
-/* Base card wrapper - FIXED WIDTH instead of flexible */
-.collections-section .card-wrapper {
-  flex: 0 0 auto !important; /* Don't grow or shrink */
-  min-width: 0;
-  width: 200px !important; /* Fixed width - adjust as needed */
-}
-
-/* Fixed size for book container */
-.collections-section .book-container {
-  height: 220px !important;
-  width: 100% !important;
-  max-width: 200px !important; /* Match card-wrapper width */
-}
-
-/* Fixed size for book cover */
-.collections-section .book-cover {
-  width: 100% !important;
-  height: 100% !important;
-  max-width: 200px !important; /* Match card-wrapper width */
-}
-
-/* Ultra-wide screens (1920px and up) */
-@media (min-width: 1920px) {
-  .collections-section .card-wrapper {
-    width: 280px !important;
-    flex: 0 0 280px !important;
-  }
-  .collections-section .book-container {
-    height: 260px !important;
-    max-width: 280px !important;
-  }
-  .collections-section .book-cover {
-    max-width: 280px !important;
-  }
-  .collections-section .row.q-gutter-xl {
-    gap: 1.5rem;
-  }
-}
-
-/* Large screens (1440px - 1919px) */
-@media (min-width: 1440px) and (max-width: 1919px) {
-  .collections-section .card-wrapper {
-    width: 260px !important;
-    flex: 0 0 260px !important;
-  }
-  .collections-section .book-container {
-    height: 350px !important;
-    max-width: 260px !important;
-  }
-  .collections-section .book-cover {
-    max-width: 260px !important;
-  }
-}
-
-/* MY SCREEN */
-@media (min-width: 1440px) and (max-width: 1525px) {
-  .collections-section .card-wrapper {
-    width: 210px !important;
-    flex: 0 0 210px !important;
-  }
-  .collections-section .book-container {
-    height: 350px !important;
-    max-width: 210px !important;
-  }
-  .collections-section .book-cover {
-    max-width: 210px !important;
-  }
-  .collections-section .row.q-gutter-xl {
-    gap: 2px;
-  }
-
-}
-
-/* Medium-large screens (1300px - 1439px) */
-@media (min-width: 1300px) and (max-width: 1439px) {
-  .collections-section .card-wrapper {
-    width: 230px !important;
-    flex: 0 0 230px !important;
-  }
-  .collections-section .book-container {
-    height: 350px !important;
-    max-width: 230px !important;
-  }
-  .collections-section .book-cover {
-    max-width: 230px !important;
-  }
-  .collections-section .row.q-gutter-xl {
-    gap: 3px;
-  }
-}
-
-/* Standard desktop (1200px - 1299px) */
-@media (min-width: 1200px) and (max-width: 1299px) {
-  .collections-section .card-wrapper {
-    width: 220px !important;
-    flex: 0 0 220px !important;
-  }
-  .collections-section .book-container {
-    height: 220px !important;
-    max-width: 220px !important;
-  }
-  .collections-section .book-cover {
-    max-width: 220px !important;
-  }
-  .collections-section .row.q-gutter-xl {
-    gap: 1rem;
-  }
-}
-
-/* Compact screens (1050px - 1199px) */
-@media (min-width: 1050px) and (max-width: 1199px) {
-  .collections-section .card-wrapper {
-    width: 200px !important;
-    flex: 0 0 200px !important;
-  }
-  .collections-section .book-container {
-    height: 210px !important;
-    max-width: 200px !important;
-  }
-  .collections-section .book-cover {
-    max-width: 200px !important;
-  }
-  .collections-section .row.q-gutter-xl {
-    gap: 1rem;
-  }
-}
-
-/* Small desktop/Large tablet (768px - 1049px) */
-@media (min-width: 768px) and (max-width: 1049px) {
-  .collections-section .card-wrapper {
-    width: 180px !important;
-    flex: 0 0 180px !important;
-  }
-  .collections-section .book-container {
-    height: 200px !important;
-    max-width: 180px !important;
-  }
-  .collections-section .book-cover {
-    max-width: 180px !important;
-  }
-  .collections-section .row.q-gutter-xl {
-    gap: 0.8rem;
-  }
-}
-
-/* Tablet portrait (600px - 767px) */
-@media (min-width: 600px) and (max-width: 767px) {
-  .collections-section .card-wrapper {
-    width: 160px !important;
-    flex: 0 0 160px !important;
-  }
-  .collections-section .book-container {
-    height: 180px !important;
-    max-width: 160px !important;
-  }
-  .collections-section .book-cover {
-    max-width: 160px !important;
-  }
-  .collections-section .row.q-gutter-xl {
-    gap: 0.8rem;
-  }
-}
-
-/* Mobile landscape (480px - 599px) */
-@media (min-width: 480px) and (max-width: 599px) {
-  .collections-section .card-wrapper {
-    width: 140px !important;
-    flex: 0 0 140px !important;
-  }
-  .collections-section .book-container {
-    height: 160px !important;
-    max-width: 140px !important;
-  }
-  .collections-section .book-cover {
-    max-width: 140px !important;
-  }
-  .collections-section .row.q-gutter-xl {
-    gap: 0.5rem;
-  }
-}
-
-/* Mobile portrait (320px - 479px) */
-@media (max-width: 479px) {
-  .collections-section .card-wrapper {
-    width: 120px !important;
-    flex: 0 0 120px !important;
-  }
-  .collections-section .book-container {
-    height: 140px !important;
-    max-width: 120px !important;
-  }
-  .collections-section .book-cover {
-    max-width: 120px !important;
-  }
-  .collections-section .row.q-gutter-xl {
-    gap: 0.5rem;
-  }
-}
-
-/* center the remaining collections after deletion */
-.collections-section .row.q-gutter-xl.center-remaining {
-  justify-content: center !important;
-}
-
-/* left-aligned collections */
-.collections-section .row.q-gutter-xl.left-aligned {
-  justify-content: flex-start !important;
-}
 /*
   ========================
   MOBILE STYLES — TEMPORARILY DISABLED
