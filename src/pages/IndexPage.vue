@@ -1493,100 +1493,270 @@ async function addCollection() {
 }
 
 /* ========================
-   RESPONSIVE BREAKPOINTS
+ RESPONSIVE DESIGN
 ======================== */
 
-/* Ultra-wide screens (1920px and up) */
-@media (min-width: 1920px) {
+/* Base styles (mobile first) */
+.dash-title {
+  font-size: 1.5rem; /* 24px */
+}
+
+.dash-subtitle {
+  font-size: 0.625rem; /* 10px */
+  width: 70%;
+}
+
+.btn-explore,
+.btn-document {
+  font-size: 0.5rem; /* 8px */
+}
+
+.recently-viewed-item {
+  padding: 0.25rem 0.375rem 1rem;
+  margin-bottom: 0.125rem;
+  min-height: 2.5rem; /* 40px */
+}
+
+.circular-holder {
+  width: 2rem; /* 32px */
+  height: 2rem;
+}
+
+.circle-icon-center {
+  font-size: 0.875rem; /* 14px */
+}
+
+.artifact-name {
+  font-size: 0.625rem; /* 10px */
+  line-height: 1.5;
+  margin-top: 1.25rem;
+}
+
+.view-info {
+  font-size: 0.5rem; /* 8px */
+}
+
+.view-icon,
+.star-icon,
+.action-icons {
+  display: none;
+}
+
+.item-details {
+  margin: 0 0.25rem;
+}
+
+.my-card {
+  min-height: 11.25rem; /* 180px */
+  height: fit-content;
+}
+
+.artifact-card-section {
+  padding: 0.5rem;
+}
+
+/* Hide trophy section on mobile */
+.gt-sm {
+  display: none;
+}
+
+/* Full width main content on mobile */
+.col-md-7 {
+  width: 100%;
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+.trophies {
+  max-width: 12.5rem; /* 200px */
+}
+
+
+.title-font-2 {
+  font-size: 0.875rem; /* 14px */
+}
+
+/* ========================
+   TABLET (48rem / 768px+)
+======================== */
+@media (min-width: 48rem) {
   .dash-title {
-    font-size: 34px;
+    font-size: 1.625rem; /* 26px */
   }
 
   .dash-subtitle {
-    font-size: 18px;
+    font-size: 0.75rem; /* 12px */
+    width: 90%;
   }
 
-  /* Recently Viewed Responsive */
+  .btn-explore,
+  .btn-document {
+    font-size: 0.8125rem; /* 13px */
+  }
+
   .recently-viewed-item {
-    padding: 0.6rem 1rem;
-    min-height: 70px;
+    padding: 0.8rem 0.6rem;
+    min-height: 3.75rem; /* 60px */
   }
 
   .circular-holder {
-    width: 55px;
-    height: 55px;
+    width: 2.25rem; /* 36px */
+    height: 2.25rem;
   }
 
   .circle-icon-center {
-    font-size: 30px;
+    font-size: 1.25rem; /* 20px */
   }
 
   .artifact-name {
-    font-size: 16px;
+    font-size: 0.6875rem; /* 11px */
+    line-height: 1.1;
+    margin-top: 1.25rem;
   }
 
   .view-info {
-    font-size: 14px;
+    font-size: 0.5rem; /* 8px */
   }
 
-  .view-icon,
-  .star-icon {
-    font-size: 22px;
-  }
-
-  .action-icons {
-    gap: 0.4rem;
-  }
-
-  .item-details {
-    margin: 0 0.8rem;
+  .title-font-2 {
+    font-size: 0.875rem; /* 14px */
   }
 
   .my-card {
-    min-height: 350px;
-  }
-
-  .artifact-card-section {
-    padding: 1rem;
+    min-height: 17.5rem; /* 280px */
   }
 }
 
-/* Large screens (1440px - 1919px) */
-@media (min-width: 1440px) and (max-width: 1919px) {
+/* ========================
+   DESKTOP (64rem / 1024px+)
+======================== */
+@media (min-width: 64rem) {
+  /* Show trophy section */
+  .gt-sm {
+    display: block;
+  }
+
+  /* Reset to Bootstrap grid behavior */
+  .col-md-7 {
+    width: auto;
+    flex: 0 0 58.333333%;
+    max-width: 58.333333%;
+  }
+
+  /* Trophy section responsive sizing */
+  .trophies {
+    max-width: 100%;
+    width: 100%;
+  }
+
   .dash-title {
-    font-size: 32px;
+    font-size: 1.75rem; /* 28px */
+    width: auto;
   }
 
   .dash-subtitle {
-    font-size: 16px;
+    font-size: 0.75rem; /* 12px */
+    width: auto;
   }
 
-  /* Recently Viewed Responsive */
+  .btn-explore,
+  .btn-document {
+    font-size: 0.8125rem; /* 13px */
+  }
+
   .recently-viewed-item {
-    padding: 0.5rem 0.8rem;
-    min-height: 65px;
+    padding: 0.7rem 0.5rem;
+    min-height: 3.4375rem; /* 55px */
   }
 
   .circular-holder {
-    width: 50px;
-    height: 50px;
+    width: 2.625rem; /* 42px */
+    height: 2.625rem;
   }
 
   .circle-icon-center {
-    font-size: 28px;
+    font-size: 1.375rem; /* 22px */
   }
 
   .artifact-name {
-    font-size: 15px;
+    font-size: 0.8125rem; /* 13px */
+    margin-top: 0;
   }
 
   .view-info {
-    font-size: 13px;
+    font-size: 0.625rem; /* 10px */
   }
 
   .view-icon,
   .star-icon {
-    font-size: 20px;
+    display: inline;
+    font-size: 0.9375rem; /* 15px */
+  }
+
+  .action-icons {
+    display: flex;
+    gap: 0.2rem;
+  }
+
+  .item-details {
+    margin: 0 0.4rem;
+  }
+
+  .title-font-2 {
+    font-size: 1.125rem; /* 18px */
+  }
+
+  .my-card {
+    min-height: 18.75rem; /* 300px */
+  }
+
+  .artifact-card-section {
+    padding: 0.6rem;
+  }
+
+  .trophies {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* ========================
+   LARGE DESKTOP (90rem / 1440px+)
+======================== */
+@media (min-width: 90rem) {
+  .dash-title {
+    font-size: 2rem; /* 32px */
+  }
+
+  .dash-subtitle {
+    font-size: 1rem; /* 16px */
+  }
+
+  .recently-viewed-item {
+    padding: 0.5rem 0.8rem;
+    min-height: 4.0625rem; /* 65px */
+  }
+
+  .circular-holder {
+    width: 3.125rem; /* 50px */
+    height: 3.125rem;
+  }
+
+  .circle-icon-center {
+    font-size: 1.75rem; /* 28px */
+  }
+
+  .artifact-name {
+    font-size: 0.9375rem; /* 15px */
+  }
+
+  .view-info {
+    font-size: 0.8125rem; /* 13px */
+  }
+
+  .view-icon,
+  .star-icon {
+    font-size: 1.25rem; /* 20px */
   }
 
   .action-icons {
@@ -1598,507 +1768,63 @@ async function addCollection() {
   }
 
   .my-card {
-    min-height: 320px;
+    min-height: 20rem; /* 320px */
   }
 }
 
-/* Medium-large screens (1300px - 1439px) */
-@media (min-width: 1300px) and (max-width: 1439px) {
+/* ========================
+   EXTRA LARGE (120rem / 1920px+)
+======================== */
+@media (min-width: 120rem) {
   .dash-title {
-    font-size: 30px;
+    font-size: 2.125rem; /* 34px */
   }
 
   .dash-subtitle {
-    font-size: 14px;
+    font-size: 1.125rem; /* 18px */
   }
 
-  /* Recently Viewed Responsive */
   .recently-viewed-item {
-    padding: 0.4rem 0.6rem;
-    min-height: 60px;
+    padding: 0.6rem 1rem;
+    min-height: 4.375rem; /* 70px */
   }
 
   .circular-holder {
-    width: 45px;
-    height: 45px;
+    width: 3.4375rem; /* 55px */
+    height: 3.4375rem;
   }
 
   .circle-icon-center {
-    font-size: 25px;
+    font-size: 1.875rem; /* 30px */
   }
 
   .artifact-name {
-    font-size: 14px;
+    font-size: 1rem; /* 16px */
   }
 
   .view-info {
-    font-size: 12px;
+    font-size: 0.875rem; /* 14px */
   }
 
   .view-icon,
   .star-icon {
-    font-size: 18px;
+    font-size: 1.375rem; /* 22px */
   }
 
   .action-icons {
-    gap: 0.25rem;
-  }
-}
-
-/* Fix title wrapping at 1338px */
-@media (min-width: 1300px) and (max-width: 1338px) {
-  .dash-title {
-    font-size: 28px;
-  }
-}
-
-/* Fix subtitle wrapping at 1394px */
-@media (min-width: 1339px) and (max-width: 1394px) {
-  .dash-subtitle {
-    font-size: 13px;
-  }
-}
-
-/* Standard desktop (1200px - 1299px) */
-@media (min-width: 1200px) and (max-width: 1299px) {
-  .dash-title {
-    font-size: 28px;
-  }
-
-  .dash-subtitle {
-    font-size: 12px;
-  }
-
-  .btn-explore,
-  .btn-document {
-    font-size: 13px;
-  }
-
-  /* Recently Viewed Responsive */
-  .recently-viewed-item {
-    padding: 0.7rem 0.5rem;
-    min-height: 55px;
-  }
-
-  .circular-holder {
-    width: 42px;
-    height: 42px;
-  }
-
-  .circle-icon-center {
-    font-size: 22px;
-  }
-
-  .artifact-name {
-    font-size: 13px;
-  }
-
-  .title-font-2 {
-    font-size: 18px;
-  }
-
-  .view-info {
-    font-size: 10px;
-  }
-
-  .view-icon,
-  .star-icon {
-    font-size: 15px;
-  }
-
-  .action-icons {
-    gap: 0.2rem;
+    gap: 0.4rem;
   }
 
   .item-details {
-    margin: 0 0.4rem;
+    margin: 0 0.8rem;
   }
 
   .my-card {
-    min-height: 300px;
+    min-height: 21.875rem; /* 350px */
   }
 
   .artifact-card-section {
-    padding: 0.6rem;
-  }
-}
-
-/* Different breakpoints */
-@media (min-width: 1211px) and (max-width: 1226px) {
-  .btn-explore,
-  .btn-document {
-    font-size: 13px;
-  }
-
-  .dash-title {
-    font-size: 26px;
-  }
-
-  .dash-subtitle {
-    font-size: 12px;
-  }
-}
-
-/* Fix buttons wrapping at 1210px and below */
-@media (min-width: 1200px) and (max-width: 1210px) {
-  .btn-explore,
-  .btn-document {
-    font-size: 13px;
-  }
-
-  .dash-title {
-    font-size: 24px;
-  }
-
-  .dash-subtitle {
-    font-size: 12px;
-  }
-}
-
-/* Compact screens (1050px - 1199px) */
-@media (min-width: 1050px) and (max-width: 1199px) {
-  .dash-title {
-    font-size: 26px;
-  }
-
-  .dash-subtitle {
-    font-size: 12px;
-  }
-
-  .btn-explore,
-  .btn-document {
-    font-size: 13px;
-  }
-
-  .trophies {
-    max-width: 350px;
-  }
-
-  /* Recently Viewed Responsive */
-  .recently-viewed-item {
-    padding: 0.9rem 0.4rem;
-    min-height: 50px;
-  }
-
-  .circular-holder {
-    width: 35px;
-    height: 35px;
-  }
-
-  .circle-icon-center {
-    font-size: 22px;
-  }
-
-  .title-font-2 {
-    font-size: 16px;
-  }
-
-  .artifact-name {
-    margin-top: 18px;
-    font-size: 12px;
-    line-height: 1.1;
-  }
-
-  .view-info {
-    font-size: 8px;
-  }
-
-  .view-icon,
-  .star-icon {
-    font-size: 12px;
-  }
-
-  .action-icons {
-    gap: 0.15rem;
-  }
-
-  .item-details {
-    margin: 0 0.3rem;
-  }
-}
-
-@media (min-width: 1050px) and (max-width: 1166px) {
-  .btn-explore,
-  .btn-document {
-    font-size: 12px;
-  }
-  .dash-title {
-    font-size: 24px;
-  }
-  .dash-subtitle {
-    font-size: 11px;
-  }
-}
-
-@media (min-width: 1050px) and (max-width: 1121px) {
-  .btn-explore,
-  .btn-document {
-    font-size: 10px;
-  }
-}
-
-@media (min-width: 1050px) and (max-width: 1093px) {
-  .dash-title {
-    font-size: 22px;
-  }
-  .dash-subtitle {
-    font-size: 10px;
-  }
-}
-
-/* Small desktop/Large tablet (768px - 1049px) */
-@media (min-width: 768px) and (max-width: 1049px) {
-  .dash-title {
-    font-size: 22px;
-  }
-
-  .dash-subtitle {
-    font-size: 10px;
-  }
-
-  .btn-explore,
-  .btn-document {
-    font-size: 10px;
-  }
-
-  .trophies {
-    max-width: 300px;
-  }
-
-  /* Recently Viewed Responsive */
-  .recently-viewed-item {
-    padding: 0.8rem 0.4rem;
-    margin-bottom: 0.2rem;
-    min-height: 48px;
-  }
-
-  .circular-holder {
-    width: 38px;
-    height: 38px;
-  }
-
-  .circle-icon-center {
-    font-size: 22px;
-  }
-
-  .title-font-2 {
-    font-size: 16px;
-  }
-  .artifact-name {
-    margin-top: 20px;
-    font-size: 12px;
-    line-height: 1.1;
-  }
-
-  .view-info {
-    font-size: 9px;
-  }
-
-  /* Hide both view and star icons starting from this breakpoint */
-  .view-icon,
-  .star-icon {
-    display: none !important;
-  }
-
-  .action-icons {
-    display: none !important;
-  }
-
-  .item-details {
-    margin: 0 0.25rem;
-  }
-
-  .my-card {
-    min-height: 280px;
-  }
-
-  .artifact-card-section {
-    padding: 0.5rem;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1032px) {
-  .dash-title {
-    font-size: 20px;
-  }
-  .btn-explore,
-  .btn-document {
-    font-size: 8px;
-  }
-
-  .trophies {
-    max-width: 200px;
-  }
-}
-
-/* no trophy view */
-@media (min-width: 768px) and (max-width: 1025px) {
-  .gt-sm {
-    display: none !important;
-  }
-  .col-md-7 {
-    width: 100% !important;
-  }
-  .dash-title {
-    font-size: 26px;
-  }
-
-  .col-md-7 .dash-subtitle {
-    width: 90%;
-  }
-  .dash-subtitle {
-    font-size: 12px;
-  }
-
-  .btn-explore,
-  .btn-document {
-    font-size: 13px;
-  }
-  .title-font-2 {
-    font-size: 14px;
-  }
-  .recently-viewed-item {
-    padding: 0.8rem 0.6rem;
-    min-height: 60px;
-  }
-
-  .artifact-name {
-    margin-top: 20px;
-    font-size: 11px;
-    line-height: 1.1;
-  }
-
-  .view-info {
-    font-size: 8px;
-  }
-
-  .circular-holder {
-    width: 36px;
-    height: 36px;
-  }
-
-  .circle-icon-center {
-    font-size: 20px;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 895px) {
-  .dash-title {
-    font-size: 24px;
-  }
-
-  .col-md-7 .dash-subtitle {
-    width: 70%;
-  }
-
-  .col-md-7 .dash-title {
-    width: 80%;
-  }
-  .dash-subtitle {
-    font-size: 10px;
-  }
-
-  .btn-explore,
-  .btn-document {
-    font-size: 11px;
-  }
-}
-
-/* Tablet portrait (600px - 767px) */
-@media (min-width: 600px) and (max-width: 767px) {
-  .gt-sm {
-    display: none !important;
-  }
-  .col-md-7 .dash-subtitle {
-    width: 70%;
-  }
-
-  .col-md-7 .dash-title {
-    width: 80%;
-  }
-
-  .dash-title {
-    font-size: 24px;
-  }
-
-  .dash-subtitle {
-    font-size: 10px;
-  }
-
-  .btn-explore,
-  .btn-document {
-    font-size: 10px;
-  }
-
-  /* Recently Viewed Title */
-  .recently-viewed-title {
-    font-size: 14px;
-    margin-bottom: 0.5rem;
-  }
-
-  /* Recently Viewed Responsive */
-  .recently-viewed-item {
-    padding: 0.2rem 0.3rem;
-    margin-bottom: 0.1rem;
-    min-height: 40px;
-  }
-
-  .circular-holder {
-    width: 32px;
-    height: 32px;
-  }
-
-  .circle-icon-center {
-    font-size: 14px;
-  }
-
-  .artifact-name {
-    font-size: 10px;
-    line-height: 1;
-  }
-
-  .view-info {
-    font-size: 8px;
-    margin-top: 1px;
-  }
-
-  /* Icons already hidden from previous breakpoint */
-  .view-icon,
-  .star-icon {
-    display: none !important;
-  }
-
-  .action-icons {
-    display: none !important;
-  }
-
-  .item-details {
-    margin: 0 0.2rem;
-  }
-
-  .my-card {
-    min-height: 180px; /* Reduced from 260px */
-    height: fit-content;
-  }
-
-  .artifact-card-section {
-    padding: 0.4rem;
-    padding-bottom: 0.5rem;
-  }
-}
-
-@media (min-width: 600px) and (max-width: 731px) {
-  .dash-title {
-    font-size: 24px;
-  }
-
-  .dash-subtitle {
-    font-size: 10px;
-  }
-
-  .btn-explore,
-  .btn-document {
-    font-size: 8px;
+    padding: 1rem;
   }
 }
 
