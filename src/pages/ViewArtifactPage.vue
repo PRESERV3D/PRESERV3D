@@ -1255,7 +1255,7 @@ model-viewer:-ms-fullscreen {
 .a-title {
   font-family: 'Poppins', sans-serif;
   font-weight: 500;
-  font-size: 64px;
+  font-size: 3.5rem;
   color: #560505;
   margin-top: 1rem;
   margin-left: 30rem;
@@ -1417,10 +1417,14 @@ model-viewer:-ms-fullscreen {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  margin-top: 0.5rem;
-  margin-left: auto;
-  padding-left: 1rem;
+  margin-top: 0.25rem;
+  margin-left: 0;
+  padding-left: 0;
+  justify-content: flex-start;
+  align-self: flex-start;
 }
+
+
 
 .action-icons-top .action-icon {
   cursor: pointer;
@@ -1444,12 +1448,6 @@ model-viewer:-ms-fullscreen {
 .action-icons-top,
 .action-icons-top .star-icon.starred {
   color: #efaf00;
-}
-
-.action-icons-top {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
 }
 
 .icon-with-count {
@@ -1671,7 +1669,145 @@ model-viewer:-ms-fullscreen {
   margin: 0.15rem 0;
 }
 
-/* Mobile Responsiveness */
+/* ========================
+  RESPONSIVE DESIGN
+======================== */
+
+/* Desktop size */
+@media screen and (max-width: 1199px) {
+  .artifact-card {
+    width: 550px;
+    height: 500px;
+  }
+
+  .large-artifacts {
+    width: 520px !important;
+    height: 470px !important;
+  }
+
+  .info-section {
+    max-width: 400px;
+  }
+
+  .a-title {
+    margin-top: 3rem;
+    font-size: 3rem;
+    margin-left: 15rem;
+  }
+}
+
+/* Tablet size */
+@media screen and (max-width: 991px) {
+  .main-content {
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .artifact-card {
+    width: 100%;
+    max-width: 600px;
+    height: 450px;
+  }
+
+  .large-artifacts {
+    width: 90% !important;
+    height: 400px !important;
+    max-width: 570px !important;
+  }
+
+  .info-section {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .a-title {
+    font-size: 48px;
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .control-buttons {
+    bottom: 15px;
+    right: 15px;
+  }
+
+
+}
+
+/* Tablet Small */
+@media screen and (max-width: 767px) {
+  .artifact-card {
+    max-width: 500px;
+    height: 400px;
+  }
+
+  .large-artifacts {
+    width: 90% !important;
+    height: 350px !important;
+  }
+
+  .control-buttons {
+    gap: 6px;
+  }
+
+  .control-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .control-icon {
+    font-size: 14px !important;
+  }
+
+  .top-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .categories-container {
+    align-items: flex-start;
+  }
+
+  .a-title {
+    font-size: 36px;
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .func-button {
+    justify-content: center !important;
+    margin-top: 1rem !important;
+  }
+
+  .two-column-details .detail-label,
+  .two-column-details .detail-value {
+    flex: none;
+    width: 100%;
+  }
+
+  .two-column-details .detail-value .a-info-title2,
+  .two-column-details .detail-value .a-info-subtitle {
+    text-align: left;
+  }
+
+  /* Make side-by-side details responsive too */
+  .side-by-side-details .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .side-by-side-details .detail-label,
+  .side-by-side-details .detail-value {
+    flex: none;
+    width: 100%;
+    text-align: left;
+  }
+}
+
+
+/* Help Mobile Responsiveness */
 @media (max-width: 768px) {
   .help-content {
     padding: 1.5rem;
@@ -1708,139 +1844,5 @@ model-viewer:-ms-fullscreen {
   }
 }
 
-@media (max-width: 480px) {
-  .help-content {
-    padding: 0.75rem;
-    margin: 0.5rem;
-  }
 
-  .help-title {
-    font-size: 16px;
-    margin-bottom: 0.75rem;
-  }
-
-  .help-section-title {
-    font-size: 14px;
-    gap: 0.4rem;
-  }
-
-  .help-icon {
-    font-size: 16px;
-  }
-
-  .help-method {
-    font-size: 10px;
-    gap: 0.4rem;
-  }
-
-  .method-icon {
-    font-size: 11px;
-  }
-}
-
-@media (max-width: 768px) {
-  .main-content {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .artifact-card {
-    width: 100%;
-    max-width: 400px;
-    height: 400px;
-  }
-
-  .large-artifacts {
-    width: 300px !important;
-    height: 300px !important;
-  }
-
-  .control-buttons {
-    bottom: 15px;
-    right: 15px;
-    gap: 6px;
-  }
-
-  .control-btn {
-    width: 28px;
-    height: 28px;
-  }
-
-  .control-icon {
-    font-size: 14px !important;
-  }
-
-  .back-button-top {
-    top: 0.5rem;
-    left: 0.5rem;
-  }
-
-  .top-actions {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .categories-container {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .action-icons-top {
-    margin-top: 1rem;
-    margin-left: 0;
-    padding-left: 0;
-    justify-content: flex-start;
-  }
-
-  /* Admin back button mobile positioning */
-  .func-button {
-    justify-content: center !important;
-    margin-top: 1rem !important;
-  }
-
-  .a-title {
-    font-size: 32px !important;
-    margin-left: 0 !important;
-    text-align: center !important;
-  }
-}
-
-@media (max-width: 480px) {
-  .title-input :deep(.q-field__native) {
-    font-size: 32px !important;
-    padding: 12px 0 !important;
-  }
-
-  .title-section {
-    margin-bottom: 1rem;
-  }
-
-  .func-button {
-    padding: 0.5rem !important;
-    margin-top: 1rem !important;
-  }
-
-  .action-icons-top {
-    gap: 0.75rem;
-  }
-
-  .action-icons-top .count-text {
-    font-size: 11px;
-  }
-
-  .control-buttons {
-    bottom: 10px;
-    right: 10px;
-    gap: 4px;
-  }
-
-  .control-btn {
-    width: 26px;
-    height: 26px;
-  }
-
-  .control-icon {
-    font-size: 12px !important;
-  }
-}
 </style>
