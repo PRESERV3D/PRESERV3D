@@ -418,11 +418,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          notifyDialogTitle
-        }}</q-card-section>
+            notifyDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-          notifyDialogMessage
-        }}</q-card-section>
+            notifyDialogMessage
+          }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -1785,4 +1785,119 @@ function applySort(option) {
   line-height: 1.3;
 }
 
+/* Responsive styles for buttons */
+.subtitle-btn-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.artifact-btn {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Mobile styles (max-width: 767px) */
+@media (max-width: 767px) {
+  .subtitle-btn-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .artifact-btn {
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+
+
+  .artifact-btn-style {
+    min-width: 80px;
+    margin: 0.25rem !important;
+  }
+
+  .add-new-btn {
+    min-width: 80px !important;
+    margin: 0.25rem !important;
+  }
+
+  /* Make filter dropdown responsive */
+  .artifact-btn-style .q-list {
+    width: 90vw !important;
+    max-width: 400px !important;
+  }
+
+  .artifact-btn-style .row {
+    flex-direction: column;
+  }
+
+  .artifact-btn-style .col {
+    margin-bottom: 1rem;
+  }
+
+  .artifact-btn-style q-scroll-area {
+    width: 100% !important;
+  }
+}
+
+/* Tablet styles (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .subtitle-btn-row {
+    align-items: center;
+  }
+
+  .artifact-btn {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+  }
+
+  .artifact-btn-style {
+    margin: 0.25rem 0.25rem 0.25rem 0.5rem !important;
+  }
+
+  .add-new-btn {
+    margin: 0.25rem !important;
+  }
+
+  /* Adjust filter dropdown for tablets */
+  .artifact-btn-style .q-list {
+    width: 35rem !important;
+  }
+}
+
+/* Small desktop styles (1024px - 1199px) */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .artifact-btn-style {
+    margin-left: 0.5rem !important;
+  }
+}
+
+/* Additional responsive adjustments for very small screens */
+@media (max-width: 480px) {
+  .page-header {
+    padding: 0 0.5rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  .artifact-btn {
+    justify-content: space-around;
+    margin-bottom: 2.5rem;
+  }
+
+  .artifact-btn-style,
+  .add-new-btn {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
 </style>
