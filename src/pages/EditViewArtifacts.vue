@@ -1633,7 +1633,7 @@ async function cancelRelatedLinks() {
   margin-left: auto;
 }
 
-// Additional Design
+/* Additional Design */
 .artifact-detail-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -1976,7 +1976,6 @@ async function cancelRelatedLinks() {
     word-wrap: break-word;
   }
 
-]
   .categories-container {
     display: flex;
     align-items: flex-start;
