@@ -5,18 +5,34 @@
       <label class="subtitle-logsign">Let's Get You Set Up</label>
     </div>
 
-    <div class="column q-gutter-sm">
+    <div class="column q-gutter-sm q-mt-md">
       <q-form @submit.prevent="registerAdmin">
-        <div class="row items-center q-gutter-lg q-mt-xs">
+        <div class="row items-center q-gutter-lg">
           <label class="labelNames">First Name</label>
-          <q-input filled dense v-model="form.first_name" class="text-box" style="width: 25.8rem" />
+          <q-input
+            filled
+            dense
+            v-model="form.first_name"
+            lazy-rules
+            :rules="[(val) => !!val || 'Please enter your first name.']"
+            class="text-box"
+            style="width: 25.8rem"
+          />
         </div>
-        <div class="row items-center q-gutter-lg q-mt-sm">
+        <div class="row items-center q-gutter-lg">
           <label class="labelNames">Last Name</label>
-          <q-input filled dense v-model="form.last_name" class="text-box" style="width: 25.8rem" />
+          <q-input
+            filled
+            dense
+            v-model="form.last_name"
+            lazy-rules
+            :rules="[(val) => !!val || 'Please enter your first name.']"
+            class="text-box"
+            style="width: 25.8rem"
+          />
         </div>
 
-        <div class="row q-mt-lg">
+        <div class="row">
           <div class="col">
             <label class="labelNames">Email</label>
             <q-input
@@ -76,7 +92,7 @@
         <div class="column items-center q-mt-md">
           <label class="already">
             Already have an account?
-            <router-link to="/admin/login" class="signup-login-link">Log In</router-link>
+            <router-link to="/user/login" class="signup-login-link">Log In</router-link>
           </label>
         </div>
       </q-form>
@@ -197,3 +213,9 @@ async function registerAdmin() {
   }
 }
 </script>
+
+<style scoped>
+.labelNames {
+  margin-bottom: 1rem;
+}
+</style>
