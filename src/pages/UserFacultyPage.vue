@@ -377,7 +377,7 @@ async function registerUser() {
         'Success',
         'Registration successful! Please check your email to authenticate your account.',
       )
-      // alert('Registration successful! Please check your email to confirm your account.')
+
       router.push('/user/login')
     }
   } catch (err) {
