@@ -142,7 +142,7 @@
     </q-dialog> -->
 
     <!-- Document Highlights Section -->
-    <div class="column q-py-md q-gutter-lg">
+    <div class="q-py-md q-gutter-lg">
       <div class="box-highlights">
         <div class="row justify-between q-px-lg q-pt-lg q-mb-md">
           <p class="title-font-2" style="font-size: 16px; margin: 0">Document Highlights</p>
@@ -154,9 +154,9 @@
           </router-link>
         </div>
 
-        <div class="row docs-gap justify-start">
+        <div class="row docs-gap justify-center q-py-sm">
           <div v-for="(doc, index) in topDocuments" :key="index">
-            <div class="row q-mb-lg">
+            <div class="row q-mb-lg doc-wrapper">
               <q-card class="my-card docCard" style="transform: rotate(-5deg)">
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
@@ -530,26 +530,26 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { useQuasar } from 'quasar'
 import { useDocumentsStore } from 'stores/documentsStore'
 import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
 import { useRouter } from 'vue-router'
+import { processOCRPages } from '/services/ocr_service'
+import { PDFDocument } from 'pdf-lib'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import UploadDialog from 'src/components/UploadDialog.vue'
-import Tesseract from 'tesseract.js'
 import axios from 'axios'
 
+const $q = useQuasar()
 const searchStore = useSearchStore()
 const documentsStore = useDocumentsStore()
 const userStore = useUserStore()
 
 const scannedFile = ref(null)
 const topDocuments = ref([])
-// const author = ref('')
-// const date = ref('')
-// const category = ref('') //added
 const sortOption = ref('Newest')
 const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
 const categoryOptions = ref([])
@@ -854,6 +854,7 @@ const metadata = ref({
   summary: '',
   keywords: [],
   categories: [],
+  extracted_text: '',
 })
 
 function sanitizeFileName(name) {
@@ -920,160 +921,68 @@ async function processFileWithNLP(file, fileName) {
   return await axios.post('http://localhost:8000/process-text', formData)
 }
 
-async function processImageWithOCR(base64Image, fileName, options = {}) {
-  try {
-    // Validate inputs
-    if (!base64Image || !fileName) {
-      throw new Error('Base64 image and filename are required')
-    }
+// async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData) {
+//   // Ensure the metadata object structure matches your database schema
+//   const metadataObject = {
+//     title: nlpData.title || '',
+//     author: nlpData.author || '',
+//     date: nlpData.date || '',
+//     summary: nlpData.summary || '',
+//     keywords: Array.isArray(nlpData.keywords) ? nlpData.keywords : [],
+//     categories: Array.isArray(nlpData.categories) ? nlpData.categories : [nlpData.categories],
+//     extracted_text: nlpData.extracted_text || '',
+//   }
 
-    const defaultOptions = {
-      language: 'eng',
-      tessedit_pageseg_mode: 6,
-      tessedit_char_whitelist:
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789' +
-        '.,;:!?()[]{}-_"\'@#$%^&*+=<>/\\|`~°€£¥§',
-      tessedit_ocr_engine_mode: 2,
-      preserve_interword_spaces: 1,
-      tessedit_do_invert: 0,
-      user_defined_dpi: 300,
-    }
+//   console.log('Inserting metadata:', metadataObject)
 
-    const ocrOptions = { ...defaultOptions, ...options }
-    console.log(`Starting OCR processing for: ${fileName}`)
+//   return await supabase.from('documents_metadata').insert([
+//     {
+//       file_name: fileName,
+//       file_url: fileUrl,
+//       preview_url: previewUrl,
+//       metadata: metadataObject,
+//       uploaded_by: user,
+//       uploaded_at: new Date().toISOString(), // Use ISO string format
+//       updated_at: new Date().toISOString(),
+//     },
+//   ])
+// }
 
-    const imageDataUrl = `data:image/png;base64,${base64Image}`
-
-    // Process with Tesseract
-    let result = await Tesseract.recognize(imageDataUrl, ocrOptions.language, {
-      ...ocrOptions,
-    })
-
-    let extractedText = result.data.text
-
-    // Retry if no text
-    if (!extractedText || extractedText.trim() === '') {
-      console.warn('OCR Result: No text detected — retrying with alternative settings...')
-      result = await Tesseract.recognize(imageDataUrl, ocrOptions.language, {
-        ...ocrOptions,
-        tessedit_pageseg_mode: 3,
-        tessedit_ocr_engine_mode: 1,
-      })
-      extractedText = result.data.text
-    }
-
-    const cleanedText = postProcessText(extractedText)
-
-    console.log('OCR Result:', cleanedText)
-    console.log('Confidence:', result.data.confidence)
-
-    // Skip if no text or confidence < 60
-    if (!cleanedText || cleanedText.trim() === '') {
-      console.warn(`Skipping OCR for ${fileName} — no text detected.`)
-      return null
-    }
-    if (result.data.confidence < 60) {
-      console.warn(`Skipping OCR for ${fileName} — confidence too low (${result.data.confidence}).`)
-      return null
-    }
-
-    logOCRMetrics(result.data)
-
-    const nlpForm = new FormData()
-    nlpForm.append('filename', fileName)
-    nlpForm.append('raw_text', cleanedText)
-    nlpForm.append('ocr_confidence', result.data.confidence.toString())
-    nlpForm.append(
-      'processing_metadata',
-      JSON.stringify({
-        ocrEngine: 'Tesseract',
-        confidence: result.data.confidence,
-        language: ocrOptions.language,
-        timestamp: new Date().toISOString(),
-      }),
-    )
-
-    return await sendToNLPService(nlpForm)
-  } catch (error) {
-    console.error('OCR Processing Error:', error)
-
-    if (error.message.includes('network') || error.code === 'NETWORK_ERROR') {
-      throw new Error('Network error: Unable to connect to processing service')
-    } else if (error.message.includes('timeout')) {
-      throw new Error('Processing timeout: Image too complex or service unavailable')
-    } else {
-      throw new Error(`OCR processing failed: ${error.message}`)
-    }
+async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData, user) {
+  // Ensure the metadata object structure matches your database schema
+  const metadataObject = {
+    title: nlpData.title || '',
+    author: nlpData.author || '',
+    date: nlpData.date || '',
+    summary: nlpData.summary || '',
+    keywords: Array.isArray(nlpData.keywords) ? nlpData.keywords : [],
+    categories: Array.isArray(nlpData.categories) ? nlpData.categories : [nlpData.categories],
+    extracted_text: nlpData.extracted_text || '',
   }
-}
 
-// Post-process OCR text to improve quality
-function postProcessText(text) {
-  if (!text) return ''
+  console.log('Inserting metadata:', metadataObject)
 
-  return (
-    text
-      // Fix common OCR errors
-      .replace(/[|]/g, 'l') // Pipe to lowercase L
-      .replace(/0/g, 'O') // Zero to O in contexts where it makes sense
-      .replace(/5/g, 'S') // 5 to S in some contexts
-      .replace(/1/g, 'l') // 1 to lowercase L
-      // Clean up whitespace
-      .replace(/\s+/g, ' ') // Multiple spaces to single space
-      .replace(/\n\s*\n/g, '\n\n') // Clean up line breaks
-      // Remove artifacts
-      .replace(/[^\w\s.,;:!?()[\]{}\-_"'@#$%^&*+=<>/\\|`~°€£¥§\n]/g, '')
-      .trim()
-  )
-}
+  const { data, error } = await supabase
+    .from('documents_metadata')
+    .insert([
+      {
+        file_name: fileName,
+        file_url: fileUrl,
+        preview_url: previewUrl,
+        metadata: metadataObject,
+        uploaded_by: user,
+        uploaded_at: new Date(), // ISO string format
+      },
+    ])
+    .select()
+    .single()
 
-// Log OCR quality metrics for debugging
-function logOCRMetrics(ocrData) {
-  console.log('OCR Quality Metrics:', {
-    confidence: Math.round(ocrData.confidence),
-    wordCount: ocrData.words ? ocrData.words.length : 0,
-    lineCount: ocrData.lines ? ocrData.lines.length : 0,
-    paragraphCount: ocrData.paragraphs ? ocrData.paragraphs.length : 0,
-  })
-}
-
-// Enhanced NLP service communication with retry logic
-async function sendToNLPService(formData, maxRetries = 3) {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const response = await axios.post('http://localhost:8000/process-text', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
-
-      return response
-    } catch (error) {
-      console.warn(`NLP Service attempt ${attempt}/${maxRetries} failed:`, error.message)
-
-      if (attempt === maxRetries) {
-        throw error
-      }
-
-      // Exponential backoff
-      const delay = Math.pow(2, attempt) * 1000
-      await new Promise((resolve) => setTimeout(resolve, delay))
-    }
+  if (error) {
+    console.error('Error inserting metadata:', error)
+    throw error
   }
-}
 
-async function saveMetadataToDB(fileName, fileUrl, previewUrl, metadata) {
-  return await supabase.from('documents_metadata').insert([
-    {
-      file_name: fileName,
-      file_url: fileUrl,
-      preview_url: previewUrl,
-      metadata,
-      uploaded_by: user,
-      uploaded_at: new Date(),
-      updated_at: new Date(),
-    },
-  ])
+  return data
 }
 
 // function triggerFileInput() {
@@ -1119,7 +1028,7 @@ function onFileDropped(file) {
   if (file?.type === 'application/pdf') {
     onFileSelected(file)
   } else {
-    alert('Only PDF files are allowed.')
+    $q.notify({ type: 'negative', message: 'Only PDF files are allowed.' })
     selectedFile.value = null
   }
 }
@@ -1149,10 +1058,34 @@ async function handleCancelMetadata(cancelledData) {
   }
 }
 
+// function normalizeValue(key, value) {
+//   if (value === '') return null
+
+//   if (Array.isArray(value)) {
+//     return value
+//   }
+
+//   return value
+// }
+
+// function normalizeObject(obj) {
+//   if (!obj || typeof obj !== 'object') return obj
+//   const normalized = {}
+//   for (const key in obj) {
+//     normalized[key] = normalizeValue(key, obj[key])
+//   }
+//   return normalized
+// }
+
 async function saveMetadata(updatedMetadata) {
-  console.log('Saving metadata: ', updatedMetadata)
   try {
-    const { error } = await supabase
+    const oldData = {
+      ...currentDocumentData.value,
+    }
+
+    const now = new Date()
+
+    const { data: updatedData, error: updateError } = await supabase
       .from('documents_metadata')
       .update({
         metadata: {
@@ -1162,22 +1095,43 @@ async function saveMetadata(updatedMetadata) {
           summary: updatedMetadata.summary,
           keywords: updatedMetadata.keywords,
           categories: updatedMetadata.categories,
+          extracted_text: updatedMetadata.extracted_text,
         },
-        updated_at: new Date(),
+        updated_at: now,
       })
-      .eq('file_name', metadata.value.file_name)
+      .eq('id', metadata.value.id)
+      .select()
+      .single()
 
-    if (error) {
-      console.error('Failed to update metadata:', error)
-      alert('Failed to update metadata.')
-    } else {
-      alert('Metadata saved successfully!')
-      dialog.value = false
-      router.push({ name: 'admin-home' })
+    if (updateError) {
+      console.error('Failed to update metadata:', updateError)
+      $q.notify({ type: 'negative', message: 'Failed to update metadata.' })
+      return
     }
+
+    const newData = {
+      ...updatedData,
+    }
+
+    const changes = getChanges(oldData, newData)
+
+    await logItemHistory({
+      itemId: metadata.value.id,
+      itemType: 'document',
+      action: 'update',
+      oldData,
+      newData,
+      changes,
+    })
+
+    currentDocumentData.value = updatedData
+
+    $q.notify({ type: 'positive', message: 'Metadata saved successfully!' })
+    dialog.value = false
+    router.push('/documents')
   } catch (err) {
     console.error('Error saving metadata:', err)
-    alert('Unexpected error occurred.')
+    $q.notify({ type: 'negative', message: 'Unexpected error occurred.' })
   }
 }
 
@@ -1185,113 +1139,213 @@ const handleScan = () => {
   router.push({ name: 'document-scanner' })
 }
 
+let currentDocumentData = ref(null)
+
 // Upload handler
 const handleUpload = async () => {
+  if (!selectedFile.value || !selectedFile.value.name.endsWith('.pdf')) {
+    $q.notify({ type: 'negative', message: 'Only .pdf files are allowed.' })
+    return
+  }
+
+  // Compress file
+  const compressedFile = await compressPdf(selectedFile.value)
+  if (!compressedFile) {
+    $q.notify({ type: 'negative', message: 'Compression failed. Please try again.' })
+    return
+  }
+
+  const fileName = sanitizeFileName(compressedFile.name)
+  uploading.value = true
+  uploadProgress.value = 0
+  loading.value = true
+
+  // Check for existing filename
+  const alreadyExists = await fileExists(fileName)
+  if (alreadyExists) {
+    $q.notify({
+      type: 'negative',
+      message: `A file named "${fileName}" already exists. Please rename or choose another file.`,
+    })
+    return
+  }
+
+  const progressInterval = setInterval(() => {
+    if (uploadProgress.value < 90) {
+      uploadProgress.value += 1
+    }
+  }, 200)
+
+  // NLP processing
+  let response = await processFileWithNLP(compressedFile, fileName)
+  console.log('NLP Response:', response)
+
+  if (response.data.status === 'ocr_required') {
+    console.log('OCR required, processing...')
+    const ocrResult = await processOCRPages(response.data, {
+      minPages: 3,
+      minCharacters: 5000,
+    })
+
+    if (ocrResult && ocrResult.success) {
+      // Update the NLP response with OCR results
+      response.data = {
+        ...response.data,
+        extracted_text: ocrResult.nlpResponse?.extracted_text || '',
+        title: ocrResult.nlpResponse?.title || response.data.title,
+        author: ocrResult.nlpResponse?.author || response.data.author,
+        summary: ocrResult.nlpResponse?.summary || response.data.summary,
+        keywords: ocrResult.nlpResponse?.keywords || response.data.keywords,
+        categories: ocrResult.nlpResponse?.categories || response.data.categories,
+      }
+      console.log('OCR processing completed successfully')
+    } else {
+      console.warn('OCR processing failed, continuing with limited data')
+    }
+  }
+
+  const nlpData = response.data
+  console.log('NLP Response:', nlpData)
+
+  // Preview image
+  const preview = await generatePdfPreview(compressedFile)
+  const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
+
+  const previewUploadError = await uploadPreviewImage(preview, previewFileName)
+  if (previewUploadError) throw previewUploadError
+
+  // Upload file
+  const uploadError = await uploadFileToStorage(compressedFile, fileName)
+  if (uploadError) {
+    console.error('Supabase Upload Error:', uploadError)
+    throw uploadError
+  }
+
+  clearInterval(progressInterval)
+  uploadProgress.value = 100
+
+  // Get public URLs
+  const fileUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/documents/${encodeURIComponent(fileName)}`
+  const previewUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/pdf-previews/${encodeURIComponent(previewFileName)}`
+
+  // Save metadata
+  let insertedData
   try {
-    if (!selectedFile.value || !selectedFile.value.name.endsWith('.pdf')) {
-      alert('Only .pdf files are allowed.')
-      return
-    }
+    insertedData = await saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData, user)
+  } catch (dbError) {
+    console.error('DB error:', dbError)
+    $q.notify({ type: 'negative', message: 'Upload succeeded but metadata failed to save.' })
+    return
+  }
 
-    // Compress file
-    const compressedFile = await compressPdf(selectedFile.value)
-    if (!compressedFile) {
-      alert('Compression failed. Please try again.')
-      return
-    }
+  currentDocumentData.value = insertedData
 
-    const fileName = sanitizeFileName(compressedFile.name)
-    uploading.value = true
-    uploadProgress.value = 0
-    loading.value = true
+  // // Log data
+  // const newData = {
+  //   id: insertedData.id,
+  //   file_name: insertedData.file_name,
+  //   file_url: insertedData.file_url,
+  //   metadata: insertedData.metadata,
+  //   uploaded_at: insertedData.uploaded_at,
+  //   updated_at: insertedData.updated_at,
+  //   preview_url: insertedData.preview_url,
+  //   search_text: insertedData.search_text,
+  //   related_links: insertedData.related_links,
+  // }
 
-    // Check for existing filename
-    const exists = await fileExists(fileName)
-    if (exists) {
-      alert(`A file named "${fileName}" already exists.`)
-      return
-    }
+  const changes = getChanges(null, insertedData)
 
-    const progressInterval = setInterval(() => {
-      if (uploadProgress.value < 90) uploadProgress.value += 1
-    }, 200)
+  // Log history
+  await logItemHistory({
+    itemId: insertedData.id,
+    itemType: 'document',
+    action: 'upload',
+    oldData: null,
+    newData: insertedData,
+    changes,
+  })
 
-    // NLP processing
-    let response = await processFileWithNLP(compressedFile, fileName)
-    console.log('NLP Response:', response)
+  // Success result
+  metadata.value = {
+    id: insertedData.id,
+    file_name: fileName,
+    file_url: fileUrl,
+    title: nlpData.title || '',
+    author: nlpData.author || '',
+    date: nlpData.date || '',
+    summary: nlpData.summary || '',
+    keywords: nlpData.keywords || [],
+    categories: nlpData.categories || [],
+    extracted_text: nlpData.extracted_text || '',
+  }
 
-    if (response.data.status === 'ocr_required') {
-      console.log('OCR required, processing...')
-      for (const page of response.data.pages) {
-        await processImageWithOCR(
-          page.image_base64,
-          `${response.data.filename}_page${page.page_number}.png`,
-        )
+  dialog.value = true
+}
+
+function getChanges(oldData = {}, newData = {}) {
+  const safeOld = oldData || {}
+  const safeNew = newData || {}
+
+  const changes = {}
+
+  if (safeNew.metadata) {
+    const metadataChanges = {}
+    for (const key in safeNew.metadata) {
+      const oldValue = safeOld.metadata?.[key] ?? null
+      const newValue = safeNew.metadata?.[key] ?? null
+      if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+        metadataChanges[key] = { old: oldValue, new: newValue }
       }
     }
-
-    const nlpData = response.data
-    console.log('NLP Response:', nlpData)
-
-    // Preview image
-    const preview = await generatePdfPreview(compressedFile)
-    const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
-
-    const previewUploadError = await uploadPreviewImage(preview, previewFileName)
-    if (previewUploadError) throw previewUploadError
-
-    // Upload file
-    try {
-      const uploadError = await uploadFileToStorage(compressedFile, fileName)
-      if (uploadError) {
-        console.error('Supabase Upload Error:', uploadError)
-        throw uploadError
-      }
-    } catch (err) {
-      console.error('Upload failed (caught):', err.message, err)
+    if (Object.keys(metadataChanges).length > 0) {
+      changes.metadata = metadataChanges
     }
+  }
 
-    clearInterval(progressInterval)
-    uploadProgress.value = 100
+  for (const key of Object.keys(safeNew)) {
+    if (key === 'metadata') continue
+    const oldValue = safeOld[key] ?? null
+    const newValue = safeNew[key] ?? null
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+      changes[key] = { old: oldValue, new: newValue }
+    }
+  }
 
-    // Get public URLs
-    const fileUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/documents/${encodeURIComponent(fileName)}`
-    const previewUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/pdf-previews/${encodeURIComponent(previewFileName)}`
+  return changes
+}
 
-    // Save metadata
-    const { error: dbError } = await saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData)
-    if (dbError) {
-      console.error('DB error:', dbError)
-      alert('Upload succeeded but metadata failed to save.')
+async function logItemHistory({ itemId, itemType, action, oldData, newData, changes }) {
+  try {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError || !authData?.user) {
+      console.error('Auth error:', authError)
       return
     }
 
-    // Success result
-    metadata.value = {
-      file_name: fileName,
-      file_url: fileUrl,
-      title: nlpData.title || '',
-      author: nlpData.author || '',
-      date: nlpData.date || '',
-      summary: nlpData.summary || '',
-      keywords: nlpData.keywords || [],
-      categories: nlpData.categories || [],
-    }
+    const adminName =
+      `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
 
-    dialog.value = true
+    const { error } = await supabase.from('item_history').insert({
+      item_id: itemId,
+      item_type: itemType,
+      action: action,
+      performed_by: adminName || 'Admin',
+      old_data: oldData,
+      new_data: newData,
+      changes: changes,
+    })
+
+    if (error) {
+      console.error('Error logging history:', error)
+    } else {
+      console.log('History logged successfully')
+    }
   } catch (err) {
-    console.error('Upload failed:', err)
-    alert('Upload failed. See console for details.')
-  } finally {
-    uploading.value = false
-    loading.value = false
-    uploadProgress.value = 0
+    console.error('Unexpected error logging history:', err)
   }
 }
 
 // Compress pdf on upload
-import { PDFDocument } from 'pdf-lib'
-
 async function compressPdf(file) {
   console.log(`Starting PDF compression for: ${file.name}`)
   const originalSize = file.size
@@ -1792,8 +1846,6 @@ function applySort(option) {
 }
 
 .docs-gap {
-  margin-left: 2.5rem;
-  margin-bottom: 0.5rem;
   gap: 2rem;
 }
 
@@ -1845,5 +1897,14 @@ function applySort(option) {
   background-color: rgba(255, 255, 255, 0.5) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
   transform: translateY(-1px) !important;
+}
+
+/* Responsiveness */
+@media (max-width: 615px) {
+  .doc-wrapper {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
 }
 </style>

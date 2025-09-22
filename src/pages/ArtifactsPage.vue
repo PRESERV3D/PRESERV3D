@@ -446,12 +446,13 @@ import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import UploadDialog from 'src/components/UploadDialog.vue'
 import '@google/model-viewer'
 
 const router = useRouter()
-
+const $q = useQuasar()
 const modelStore = useModelStore()
 const searchStore = useSearchStore()
 const userStore = useUserStore()
@@ -1237,6 +1238,93 @@ function sanitizeFileName(name) {
 //   }
 // }
 
+// const handleUpload = async () => {
+//   const file = selectedFile.value
+//   const fileName = sanitizeFileName(file.name)
+//   uploading.value = true
+//   uploadProgress.value = 0
+
+//   if (!file || !fileName.endsWith('.glb')) {
+//     alert('Only .glb files are allowed.')
+//     return
+//   }
+
+//   loading.value = true
+
+//   try {
+//     const alreadyExists = await fileExists(fileName)
+
+//     if (alreadyExists) {
+//       alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
+//       return
+//     }
+
+//     // Fake progress bar animation
+//     const progressInterval = setInterval(() => {
+//       if (uploadProgress.value < 90) {
+//         uploadProgress.value += 1
+//       }
+//     }, 200)
+
+//     // Upload to R2 Storage
+//     const { uploadError } = await uploadFileToR2(file, 'artifacts', fileName)
+
+//     clearInterval(progressInterval)
+//     uploadProgress.value = 100
+
+//     const fileUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/artifacts/${encodeURIComponent(fileName)}`
+
+//     if (uploadError) {
+//       console.error('Upload error:', uploadError)
+//       alert('Upload failed.')
+//       return
+//     }
+
+//     // Save metadata
+//     const insertData = {
+//       file_name: fileName,
+//       file_url: fileUrl,
+//       uploaded_at: new Date(),
+//       updated_at: new Date(),
+//     }
+
+//     const { error: dbError } = await supabase.from('artifacts_metadata').insert([insertData])
+//     if (dbError) {
+//       console.error('Supabase insert error:', dbError)
+//       alert('Upload succeeded but metadata failed to save.')
+//       return
+//     } else {
+//       console.log('Upload Success')
+//     }
+
+//     setTimeout(() => {
+//       uploading.value = false
+//       uploadProgress.value = 0
+//     }, 1000)
+
+//     // Open metadata confirmation dialog
+//     metadata.value = {
+//       file_name: fileName,
+//       file_url: fileUrl,
+//       title: '',
+//       author: '',
+//       date: '',
+//       summary: '',
+//       keywords: [],
+//       categories: [],
+//     }
+
+//     dialog.value = true
+//   } catch (err) {
+//     console.error('Upload failed:', err)
+//     alert('Upload failed. See console for details.')
+//   } finally {
+//     loading.value = false
+//   }
+// }
+
+let currentArtifactData = ref(null)
+
 const handleUpload = async () => {
   const file = selectedFile.value
   const fileName = sanitizeFileName(file.name)
@@ -1244,7 +1332,8 @@ const handleUpload = async () => {
   uploadProgress.value = 0
 
   if (!file || !fileName.endsWith('.glb')) {
-    alert('Only .glb files are allowed.')
+    $q.notify({ type: 'negative', message: 'Only .glb files are allowed.' })
+    uploading.value = false
     return
   }
 
@@ -1252,9 +1341,12 @@ const handleUpload = async () => {
 
   try {
     const alreadyExists = await fileExists(fileName)
-
     if (alreadyExists) {
-      alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
+      $q.notify({
+        type: 'negative',
+        message: `A file named "${fileName}" already exists. Please rename or choose another file.`,
+      })
+      uploading.value = false
       return
     }
 
@@ -1267,56 +1359,81 @@ const handleUpload = async () => {
 
     // Upload to R2 Storage
     const { uploadError } = await uploadFileToR2(file, 'artifacts', fileName)
-
     clearInterval(progressInterval)
     uploadProgress.value = 100
-
-    const fileUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/artifacts/${encodeURIComponent(fileName)}`
 
     if (uploadError) {
       console.error('Upload error:', uploadError)
       alert('Upload failed.')
+      uploading.value = false
       return
     }
 
-    // Save metadata
+    const fileUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/artifacts/${encodeURIComponent(fileName)}`
+
+    // Save initial metadata (without user-filled metadata yet)
     const insertData = {
       file_name: fileName,
       file_url: fileUrl,
       uploaded_at: new Date(),
-      updated_at: new Date(),
+      metadata: null,
+      donated_by: null,
+      updated_at: null,
+      data_source: null,
+      search_text: null,
+      date_received: null,
+      related_links: null,
     }
 
-    const { error: dbError } = await supabase.from('artifacts_metadata').insert([insertData])
-    if (dbError) {
+    const { data: insertedData, error: dbError } = await supabase
+      .from('artifacts_metadata')
+      .insert([insertData])
+      .select()
+
+    if (dbError || !insertedData || insertedData.length === 0) {
       console.error('Supabase insert error:', dbError)
       alert('Upload succeeded but metadata failed to save.')
+      uploading.value = false
       return
-    } else {
-      console.log('Upload Success')
     }
 
+    const item = insertedData[0]
+    console.log('Upload success', item)
+
+    currentArtifactData.value = { ...item }
+    metadata.value = { ...item }
+
+    const changes = {
+      id: { old: null, new: item.id },
+      file_name: { old: null, new: insertData.file_name },
+      file_url: { old: null, new: insertData.file_url },
+      uploaded_at: { old: null, new: insertData.uploaded_at },
+    }
+
+    await logItemHistory({
+      itemId: item.id,
+      itemType: 'artifact',
+      action: 'upload',
+      oldData: null,
+      newData: item,
+      changes,
+    })
+
+    // Reset progress after a short delay
     setTimeout(() => {
       uploading.value = false
       uploadProgress.value = 0
     }, 1000)
 
-    // Open metadata confirmation dialog
-    metadata.value = {
-      file_name: fileName,
-      file_url: fileUrl,
-      title: '',
-      author: '',
-      date: '',
-      summary: '',
-      keywords: [],
-      categories: [],
-    }
+    // Store inserted item in metadata.value for later editing
+    metadata.value = { ...item }
 
+    // Open metadata confirmation dialog
     dialog.value = true
   } catch (err) {
     console.error('Upload failed:', err)
     alert('Upload failed. See console for details.')
+    uploading.value = false
   } finally {
     loading.value = false
   }
@@ -1338,48 +1455,170 @@ async function fileExists(fileName) {
   return !!data
 }
 
-async function saveMetadata(updatedMetadata) {
-  console.log('Saving metadata: ', updatedMetadata)
-  try {
-    const { error } = await supabase
-      .from('artifacts_metadata')
-      .update({
-        metadata: {
-          title: updatedMetadata.title,
-          author: updatedMetadata.author,
-          date: updatedMetadata.date,
-          summary: updatedMetadata.summary,
-          keywords: updatedMetadata.keywords,
-          categories: updatedMetadata.categories,
-        },
-        updated_at: new Date(),
-      })
-      .eq('file_name', metadata.value.file_name)
+// async function saveMetadata(updatedMetadata) {
+//   console.log('Saving metadata: ', updatedMetadata)
+//   try {
+//     const { error } = await supabase
+//       .from('artifacts_metadata')
+//       .update({
+//         metadata: {
+//           title: updatedMetadata.title,
+//           author: updatedMetadata.author,
+//           date: updatedMetadata.date,
+//           summary: updatedMetadata.summary,
+//           keywords: updatedMetadata.keywords,
+//           categories: updatedMetadata.categories,
+//         },
+//         updated_at: new Date(),
+//       })
+//       .eq('file_name', metadata.value.file_name)
 
-    if (error) {
-      console.error('Failed to update metadata:', error)
-      alert('Failed to update metadata.')
-    } else {
-      alert('Metadata saved successfully!')
-      dialog.value = false
-      router.push({ name: 'admin-home' })
+//     if (error) {
+//       console.error('Failed to update metadata:', error)
+//       alert('Failed to update metadata.')
+//     } else {
+//       alert('Metadata saved successfully!')
+//       dialog.value = false
+//       router.push({ name: 'admin-home' })
+//     }
+//   } catch (err) {
+//     console.error('Error saving metadata:', err)
+//     alert('Unexpected error occurred.')
+//   }
+// }
+
+function normalizeValue(key, value) {
+  if (value === '') return null
+
+  if (Array.isArray(value)) {
+    return value
+  }
+
+  return value
+}
+
+function normalizeObject(obj) {
+  if (!obj || typeof obj !== 'object') return obj
+  const normalized = {}
+  for (const key in obj) {
+    normalized[key] = normalizeValue(key, obj[key])
+  }
+  return normalized
+}
+
+async function saveMetadata(updatedMetadata) {
+  try {
+    const oldData = {
+      ...currentArtifactData.value,
     }
+
+    const now = new Date()
+
+    const updateData = {
+      ...oldData,
+      metadata: normalizeObject({
+        title: updatedMetadata.title,
+        author: updatedMetadata.author,
+        date: updatedMetadata.date,
+        summary: updatedMetadata.summary,
+        keywords: updatedMetadata.keywords,
+        categories: updatedMetadata.categories,
+      }),
+      updated_at: now,
+    }
+
+    const { data: updatedData, error: updateError } = await supabase
+      .from('artifacts_metadata')
+      .update(updateData)
+      .eq('id', metadata.value.id)
+      .select()
+      .single()
+
+    if (updateError) {
+      console.error('Failed to update metadata:', updateError)
+      showNotifyDialog('Error', 'Failed to save changes.')
+      return
+    }
+
+    const newData = {
+      ...updatedData,
+    }
+
+    const changes = getChanges(oldData, newData)
+
+    await logItemHistory({
+      itemId: metadata.value.id,
+      itemType: 'artifact',
+      action: 'update',
+      oldData,
+      newData,
+      changes,
+    })
+
+    currentArtifactData.value = updatedData
+    showNotifyDialog('Notice', 'Metadata saved successfully!')
+    dialog.value = false
+    router.push('/artifacts')
   } catch (err) {
     console.error('Error saving metadata:', err)
     alert('Unexpected error occurred.')
   }
 }
 
+// getChanges function
+function getChanges(oldData = {}, newData = {}) {
+  const changes = {}
+
+  if (newData.metadata) {
+    const metadataChanges = {}
+    for (const key in newData.metadata) {
+      const oldValue = oldData.metadata?.[key] ?? null
+      const newValue = newData.metadata?.[key] ?? null
+      if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+        metadataChanges[key] = { old: oldValue, new: newValue }
+      }
+    }
+    if (Object.keys(metadataChanges).length > 0) {
+      changes.metadata = metadataChanges
+    }
+  }
+
+  for (const key of Object.keys(newData)) {
+    if (key === 'metadata') continue
+    const oldValue = oldData[key] ?? null
+    const newValue = newData[key] ?? null
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+      changes[key] = { old: oldValue, new: newValue }
+    }
+  }
+
+  return changes
+}
+
 async function handleCancelMetadata(cancelledData) {
   try {
-    const fileName = cancelledData.file_name
+    const itemId = cancelledData.id
 
-    const { error } = await supabase.from('artifacts_metadata').delete().eq('file_name', fileName)
+    const { error: deleteItemError } = await supabase
+      .from('artifacts_metadata')
+      .delete()
+      .eq('id', itemId)
 
-    if (error) {
-      console.error('Error deleting cancelled metadata:', error)
+    if (deleteItemError) {
+      console.error('Error deleting cancelled metadata:', deleteItemError)
     } else {
       console.log('Cancelled metadata removed successfully.')
+    }
+
+    const { error: deleteLogError } = await supabase
+      .from('item_history')
+      .delete()
+      .eq('item_id', itemId)
+
+    if (deleteLogError) {
+      console.error('Error deleting history log for cancelled item', deleteLogError)
+    } else {
+      console.log('History log removed after cancellation')
     }
   } catch (err) {
     console.error('Failed to cancel and delete metadata:', err)
@@ -1391,6 +1630,37 @@ async function handleCancelMetadata(cancelledData) {
 function handleCancel() {
   selectedFile.value = null
   showDialog.value = false
+}
+
+async function logItemHistory({ itemId, itemType, action, oldData, newData, changes }) {
+  try {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError || !authData?.user) {
+      console.error('Auth error:', authError)
+      return
+    }
+
+    const adminName =
+      `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+
+    const { error } = await supabase.from('item_history').insert({
+      item_id: itemId,
+      item_type: itemType,
+      action: action,
+      performed_by: adminName || 'Admin',
+      old_data: oldData,
+      new_data: newData,
+      changes: changes,
+    })
+
+    if (error) {
+      console.error('Error logging history:', error)
+    } else {
+      console.log('History logged successfully')
+    }
+  } catch (err) {
+    console.error('Unexpected error logging history:', err)
+  }
 }
 
 // Filter and sort options

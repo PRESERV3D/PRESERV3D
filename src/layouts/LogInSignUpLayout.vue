@@ -33,7 +33,6 @@
   height: auto;
   position: absolute;
   bottom: 0px;
-
   left: -5.5rem;
 }
 
@@ -53,5 +52,21 @@
   );
   box-shadow: -20px 15px 4px 0px rgba(0, 0, 0, 0.45);
   overflow: hidden;
+}
+
+/* Responsive adjustments */
+
+@media screen and (max-width: 1130px), screen and (max-height: 630px) {
+  .bg-glow {
+    display: none;
+  }
+
+  .login-card-style {
+    width: 100%;
+    min-height: 100vh;
+    overflow: auto;
+    border-radius: 0;
+    box-shadow: none;
+  }
 }
 </style>
