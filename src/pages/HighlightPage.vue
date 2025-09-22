@@ -95,7 +95,7 @@
       />
     </div>
 
-    <!-- Books Grid - Now Responsive -->
+    <!-- Books Grid -->
     <div class="books-section q-mt-lg">
       <div class="books-grid">
         <div
@@ -125,7 +125,7 @@
                       fit="cover"
                     />
                     <div class="book-overlay-gradient"></div>
-                    <!-- Only show text overlay on hover -->
+                    <!-- Only show text overlay on hover - but remove the hide class -->
                     <div v-if="hoveredBook === index" class="book-overlay-content">
                       <div class="book-title clickable-text" @click.stop="handleClickView(doc)">
                         {{ doc.metadata?.title || doc.file_name }}
@@ -956,6 +956,13 @@ onMounted(async () => {
  HIGHLIGHT RESPONSIVE DESIGN
 ======================== */
 
+/* Hide author info card on mobile and tablet */
+@media (max-width: 1024px) {
+  .author-info {
+    display: none !important;
+  }
+}
+
 /* Hide books based on screen size */
 /* Tablet view */
 @media (max-width: 1024px) and (min-width: 769px) {
@@ -964,23 +971,33 @@ onMounted(async () => {
   }
 }
 
-/* Mobile view  */
+/* Mobile view */
 @media (max-width: 768px) {
   .hide-on-mobile {
     display: none;
   }
 }
 
-/* Adjust books-grid for responsive layout */
+/* Adjust books-grid for responsive layout with more spacing */
 @media (max-width: 1024px) and (min-width: 769px) {
   .books-grid {
+    /* Show 3 books with increased spacing on tablet */
     grid-template-columns: repeat(3, 1fr);
+    gap: 2.5rem !important;
+    padding: 0 1rem;
   }
 }
 
 @media (max-width: 768px) {
   .books-grid {
+    /* Show 2 books with increased spacing on mobile */
     grid-template-columns: repeat(2, 1fr);
+    gap: 2rem !important;
+    padding: 0 0.5rem;
+  }
+
+  .books-section {
+    padding: 0 1rem;
   }
 }
 </style>
