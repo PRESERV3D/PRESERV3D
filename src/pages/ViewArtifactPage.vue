@@ -362,11 +362,11 @@
 
             <div class="detail-row q-mb-md">
               <div class="detail-label">
-                <div class="a-info-title2">Uploaded At</div>
+                <div class="a-info-title2">Uploaded On</div>
                 <div class="a-info-subtitle">{{ formatDate(model.uploaded_at) }}</div>
               </div>
               <div class="detail-value">
-                <div class="a-info-title2">Updated At</div>
+                <div class="a-info-title2">Updated On</div>
                 <div class="a-info-subtitle">{{ formatDate(model.updated_at) }}</div>
               </div>
             </div>
