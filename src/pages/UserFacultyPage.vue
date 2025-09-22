@@ -32,8 +32,8 @@
             lazy-rules
             :rules="[
               (val) => !!val || 'Please enter your email.',
-              (val) =>
-                val.includes('@mail.pup.edu.ph') || 'Please use your PUP email only.',
+              // (val) => val.includes('@pup.edu.ph') || 'Please use your PUP email only.',
+              (val) => val.includes('@gmail.com') || 'Please use your gmail only.',
               checkEmailUnique,
             ]"
             class="text-box"
@@ -148,6 +148,21 @@
       </div>
     </q-form>
   </div>
+
+  <!-- Message Dialog -->
+  <q-dialog v-model="notifyDialogOpen">
+    <q-card class="sucess-add-to-collection">
+      <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
+        notifyDialogTitle
+      }}</q-card-section>
+      <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
+        notifyDialogMessage
+      }}</q-card-section>
+      <q-card-actions>
+        <q-btn flat label="Okay" class="btn-save" v-close-popup @click="handleNotifyDialogClose" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
@@ -233,8 +248,14 @@ async function validateStepOne() {
     return
   }
 
-  if (!email.includes('@mail.pup.edu.ph')) {
-    alert('Please use your PUP email only.')
+  // if (!email.includes('@pup.edu.ph')) {
+  //   alert('Please use your PUP email only.')
+  //   return
+  // }
+
+  // Only for checking
+  if (!email.includes('@gmail.com')) {
+    alert('Please use gmail only.')
     return
   }
 
@@ -297,7 +318,7 @@ async function registerUser() {
           role: 'user',
           type: 'faculty',
         },
-        redirectTo: 'http://localhost:9000/user/login',
+        emailRedirectTo: 'http://localhost:9000/user/login',
       },
     })
 
@@ -305,6 +326,8 @@ async function registerUser() {
       alert(error.message)
       return
     }
+
+    const now = new Date()
 
     if (data.user) {
       const { error: profileError } = await supabase.from('registered_faculty').insert([
@@ -326,32 +349,92 @@ async function registerUser() {
         return
       }
 
-      const { error: favoritesCollectionError } = await supabase.from('collections').insert([
+      const { error: allUserError } = await supabase.from('all_users').insert([
         {
-          collection_name: 'Favorites',
-          description: 'Items you marked as favorite will appear here.',
-          user_id: data.user.id,
-          is_default: true,
-          is_locked: true,
-          created_at: new Date(),
-          updated_at: new Date(),
-          cover_url:
-            'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers//favoritescover.png',
+          id: data.user.id,
+          email,
+          created_at: now,
+          user_type: 'faculty',
         },
       ])
 
-      if (favoritesCollectionError) {
-        console.error(favoritesCollectionError)
+      if (allUserError) {
+        console.error('Error in adding user to all users table: ', allUserError)
+        return
+      }
+
+      const { createFavorites, error: favoritesError } = await createFavoritesCollection(
+        data.user.id,
+      )
+
+      if (!createFavorites) {
+        console.error('Error in creating Favorites collection: ', favoritesError)
         alert('User created, but failed to create Favorites collection.')
         return
       }
 
-      alert('Registration successful! Please check your email to confirm your account.')
+      await showNotifyDialog(
+        'Success',
+        'Registration successful! Please check your email to authenticate your account.',
+      )
+
       router.push('/user/login')
     }
   } catch (err) {
     console.error('Unexpected error:', err)
     alert('An unexpected error occurred.')
+  }
+}
+
+async function createFavoritesCollection(userId) {
+  try {
+    const { error } = await supabase.from('collections').insert([
+      {
+        collection_name: 'Favorites',
+        description: 'Items you marked as favorite will appear here.',
+        user_id: userId,
+        is_default: true,
+        is_locked: true,
+        created_at: new Date(),
+        // updated_at: now,
+        cover_url:
+          'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers/favoritescover.png',
+      },
+    ])
+
+    if (error) {
+      console.error('Error in creating Favorites collection: :', error)
+      return { createFavorites: false, error }
+    }
+
+    return { createFavorites: true }
+  } catch (err) {
+    console.error('Unexpected error in creating Favorites collection:', err)
+    return { success: false, error: err }
+  }
+}
+
+// Notification dialog state
+const notifyDialogOpen = ref(false)
+const notifyDialogTitle = ref('')
+const notifyDialogMessage = ref('')
+const dialogResolve = ref(null)
+
+function showNotifyDialog(title, message) {
+  return new Promise((resolve) => {
+    notifyDialogTitle.value = title
+    notifyDialogMessage.value = message
+    notifyDialogOpen.value = true
+
+    dialogResolve.value = resolve
+  })
+}
+
+function handleNotifyDialogClose() {
+  notifyDialogOpen.value = false
+  if (dialogResolve.value) {
+    dialogResolve.value()
+    dialogResolve.value = null
   }
 }
 </script>

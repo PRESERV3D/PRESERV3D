@@ -26,7 +26,7 @@
             dense
             v-model="form.last_name"
             lazy-rules
-            :rules="[(val) => !!val || 'Please enter your first name.']"
+            :rules="[(val) => !!val || 'Please enter your last name.']"
             class="text-box"
             style="width: 25.8rem"
           />
@@ -51,7 +51,14 @@
           </div>
           <div class="col">
             <label class="labelNames">Contact Number</label>
-            <q-input filled dense v-model="form.contact" class="text-box-2" />
+            <q-input
+              filled
+              dense
+              v-model="form.contact"
+              lazy-rules
+              :rules="[(val) => !!val || 'Please enter your contact number.']"
+              class="text-box-2"
+            />
           </div>
         </div>
 
@@ -98,6 +105,21 @@
       </q-form>
     </div>
   </div>
+
+  <!-- Message Dialog -->
+  <q-dialog v-model="notifyDialogOpen">
+    <q-card class="sucess-add-to-collection">
+      <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
+        notifyDialogTitle
+      }}</q-card-section>
+      <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
+        notifyDialogMessage
+      }}</q-card-section>
+      <q-card-actions>
+        <q-btn flat label="Okay" class="btn-save" v-close-popup @click="handleNotifyDialogClose" />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
@@ -131,10 +153,10 @@ const checkEmailUnique = async (val) => {
     return true
   }
 
-  return !data || 'An account with this email already exists.'
+  return !data || 'An account with this email already exists. Please use a different email.'
 }
 
-// Password strength
+// Password strength status
 const passwordStrength = computed(() => {
   const pwd = form.value.password
   const strong =
@@ -149,6 +171,11 @@ const passwordStrengthColor = computed(() =>
 // Register admin
 async function registerAdmin() {
   const { first_name, last_name, email, contact, password, confirmPassword } = form.value
+
+  if (!first_name || !last_name || !email || !contact) {
+    alert('Please fill out all required fields.')
+    return
+  }
 
   if (!email.includes('@iskolarngbayan.pup.edu.ph')) {
     alert('Please use your PUP email only.')
@@ -177,7 +204,7 @@ async function registerAdmin() {
           role: 'admin',
           type: 'admin',
         },
-        redirectTo: 'http://localhost:9000/#/user/login',
+        emailRedirectTo: 'http://localhost:9000/#/user/login',
       },
     })
 
@@ -185,6 +212,8 @@ async function registerAdmin() {
       alert(error.message)
       return
     }
+
+    const now = new Date()
 
     if (data.user) {
       const { error: insertError } = await supabase.from('registered_admins').insert([
@@ -204,12 +233,53 @@ async function registerAdmin() {
         return
       }
 
-      alert('Registration successful! Please check your email to confirm your account.')
+      const { error: allUserError } = await supabase.from('all_users').insert([
+        {
+          id: data.user.id,
+          email,
+          created_at: now,
+          user_type: 'admin',
+        },
+      ])
+
+      if (allUserError) {
+        console.error('Error in adding user to all users table: ', allUserError)
+        return
+      }
+
+      await showNotifyDialog(
+        'Success',
+        'Registration successful! Please check your email to authenticate your account.',
+      )
       router.push('/user/login')
     }
   } catch (err) {
     console.error(err)
     alert('An unexpected error occurred.')
+  }
+}
+
+// Notification dialog state
+const notifyDialogOpen = ref(false)
+const notifyDialogTitle = ref('')
+const notifyDialogMessage = ref('')
+const dialogResolve = ref(null)
+
+function showNotifyDialog(title, message) {
+  return new Promise((resolve) => {
+    notifyDialogTitle.value = title
+    notifyDialogMessage.value = message
+    notifyDialogOpen.value = true
+
+    dialogResolve.value = resolve
+  })
+}
+
+function handleNotifyDialogClose() {
+  notifyDialogOpen.value = false
+  if (dialogResolve.value) {
+    dialogResolve.value()
+    dialogResolve.value = null
   }
 }
 </script>
