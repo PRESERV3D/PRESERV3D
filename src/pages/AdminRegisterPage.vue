@@ -92,7 +92,7 @@
         <div class="column items-center q-mt-md">
           <label class="already">
             Already have an account?
-            <router-link to="/admin/login" class="signup-login-link">Log In</router-link>
+            <router-link to="/user/login" class="signup-login-link">Log In</router-link>
           </label>
         </div>
       </q-form>
