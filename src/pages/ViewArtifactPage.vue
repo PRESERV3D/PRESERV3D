@@ -1234,10 +1234,13 @@ model-viewer:-ms-fullscreen {
 .action-buttons {
   display: flex;
   align-items: center;
-  margin-left: auto;
   color: #880000;
   font-family: 'Poppins', sans-serif !important;
   font-size: 16px !important;
+  margin-left: 0;
+  padding-left: 0;
+  justify-content: flex-start;
+  align-self: flex-start;
 }
 
 .loading-container {
