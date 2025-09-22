@@ -1672,34 +1672,132 @@ model-viewer:-ms-fullscreen {
   margin: 0.15rem 0;
 }
 
+/* Base responsive container improvements */
+.artifact-detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.main-content {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  width: 100%;
+  min-width: 0;
+}
+
+.info-section {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
 /* ========================
   RESPONSIVE DESIGN
 ======================== */
 
-/* Desktop size */
+/* Desktop - 1300px and below */
+@media screen and (max-width: 1300px) {
+  .a-title {
+    margin-left: 15rem;
+    font-size: 3.2rem;
+  }
+
+  /* Improve two-column layouts */
+  .two-column-details .detail-row {
+    gap: 2rem;
+  }
+
+  .two-column-details .detail-label,
+  .two-column-details .detail-value {
+    flex: 1;
+    min-width: 0;
+    max-width: 48%;
+  }
+
+  .side-by-side-details .detail-row {
+    gap: 2rem;
+  }
+
+  .side-by-side-details .detail-label,
+  .side-by-side-details .detail-value {
+    flex: 1;
+    min-width: 0;
+    max-width: 48%;
+  }
+}
+
+/* Desktop - 1199px and below */
 @media screen and (max-width: 1199px) {
   .artifact-card {
-    width: 550px;
+    width: 500px;
     height: 500px;
   }
 
   .large-artifacts {
-    width: 520px !important;
+    width: 470px !important;
     height: 470px !important;
   }
 
   .info-section {
-    max-width: 400px;
+    max-width: none;
+    flex: 1;
+    min-width: 0;
   }
 
   .a-title {
     margin-top: 3rem;
     font-size: 3rem;
-    margin-left: 15rem;
+    margin-left: 5rem;
+  }
+
+  .main-content {
+    gap: 1.5rem;
+  }
+
+  /* Tighten column gaps */
+  .two-column-details .detail-row,
+  .side-by-side-details .detail-row {
+    gap: 1.5rem;
   }
 }
 
-/* Tablet size */
+/* Large Tablet - 1068px and below */
+@media screen and (max-width: 1068px) {
+  .artifact-card {
+    width: 450px;
+    height: 450px;
+  }
+
+  .large-artifacts {
+    width: 420px !important;
+    height: 420px !important;
+  }
+
+  .a-title {
+    margin-left: 2rem;
+    font-size: 2.8rem;
+  }
+
+  .main-content {
+    gap: 1rem;
+  }
+
+  .info-section {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
+
+  /* Adjust column gaps */
+  .two-column-details .detail-row,
+  .side-by-side-details .detail-row {
+    gap: 1rem;
+  }
+}
+
+/* Tablet - 991px and below */
 @media screen and (max-width: 991px) {
   .main-content {
     flex-direction: column;
@@ -1735,10 +1833,22 @@ model-viewer:-ms-fullscreen {
     right: 15px;
   }
 
+  /* Maintain two-column layout on tablet */
+  .two-column-details .detail-row,
+  .side-by-side-details .detail-row {
+    gap: 2rem;
+  }
 
+  .two-column-details .detail-label,
+  .two-column-details .detail-value,
+  .side-by-side-details .detail-label,
+  .side-by-side-details .detail-value {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
-/* Tablet Small */
+/* Tablet Small - 767px and below */
 @media screen and (max-width: 767px) {
   .artifact-card {
     max-width: 500px;
@@ -1783,6 +1893,13 @@ model-viewer:-ms-fullscreen {
     margin-top: 1rem !important;
   }
 
+  /* Stack two-column details on smaller screens */
+  .two-column-details .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
   .two-column-details .detail-label,
   .two-column-details .detail-value {
     flex: none;
@@ -1794,7 +1911,7 @@ model-viewer:-ms-fullscreen {
     text-align: left;
   }
 
-  /* Make side-by-side details responsive too */
+  /* Stack side-by-side details too */
   .side-by-side-details .detail-row {
     flex-direction: column;
     align-items: flex-start;
@@ -1809,13 +1926,64 @@ model-viewer:-ms-fullscreen {
   }
 }
 
+/* Mobile - 575px and below */
+@media screen and (max-width: 575px) {
+  .artifact-card {
+    width: calc(100% - 1rem);
+    height: 350px;
+    padding: 0.5rem;
+    margin: 0 0.5rem;
+  }
 
-/* Help Mobile Responsiveness */
+  .large-artifacts {
+    width: 280px !important;
+    height: 280px !important;
+  }
+
+  .a-title {
+    font-size: 28px;
+    padding: 12px 0;
+  }
+
+  .control-buttons {
+    bottom: 10px;
+    right: 10px;
+    gap: 4px;
+  }
+
+  .control-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .control-icon {
+    font-size: 12px !important;
+  }
+
+  .category-tag {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+  }
+
+  .func-button .func-btn {
+    font-size: 14px !important;
+    width: 80px !important;
+    padding: 6px 12px !important;
+  }
+
+  /* Ensure mobile layout is fully stacked */
+  .detail-row {
+    gap: 0.25rem;
+  }
+}
+
+/* Help overlay responsiveness improvements */
 @media (max-width: 768px) {
   .help-content {
     padding: 1.5rem;
     margin: 1rem;
     max-height: 85%;
+    width: 90%;
   }
 
   .help-title {
@@ -1825,6 +1993,7 @@ model-viewer:-ms-fullscreen {
   }
 
   .help-sections {
+    grid-template-columns: 1fr;
     gap: 1rem;
   }
 
