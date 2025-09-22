@@ -174,7 +174,7 @@
                       :class="notif.read ? 'bg-white' : 'bg-grey-3'"
                     >
                       <q-item-section>{{ notif.message }}</q-item-section>
-                      <q-item-section side>{{ notif.time }}</q-item-section>
+                      <q-item-section side>{{ notif.dateTime }}</q-item-section>
                     </q-item>
                     <q-separator />
                     <q-item clickable class="text-center text-primary">
@@ -487,7 +487,10 @@ async function fetchNotifications() {
 
   notifications.value = data.map((notif) => ({
     ...notif,
-    time: new Date(notif.created_at).toLocaleTimeString([], {
+    dateTime: new Date(notif.created_at).toLocaleString('en-PH', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
@@ -521,9 +524,14 @@ async function setupRealtimeNotifications() {
           console.log('Admin notification matched:', notif)
           notifications.value.unshift({
             ...notif,
-            time: new Date(notif.created_at).toLocaleTimeString([], {
+            dateTime: new Date(notif.created_at).toLocaleString('en-PH', {
+              year: 'numeric',
+              month: 'short',
+              day: '2-digit',
               hour: '2-digit',
               minute: '2-digit',
+              hour12: true,
+              timeZone: 'Asia/Manila',
             }),
           })
           notificationCount.value++

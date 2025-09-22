@@ -20,17 +20,17 @@
         </div>
         <div class="q-mt-xl col">
           <q-input
-            v-model="doc.metadata.title"
-            class="document-title"
-            style="font-size: 20px; font-weight: bold; margin-bottom: 2rem"
+            v-model="editableData.title"
+            class="sub-font-3 q-mb-md"
+            style="font-size: 20px"
             dense
             outlined
           />
           <div class="row items-center">
             <q-input
-              v-model="doc.metadata.author"
-              class="sub-font-3 q-mb-md"
-              style="font-size: 16px; max-width: 25rem"
+              v-model="editableData.author"
+              class="sub-font-3 q-mb-md author-input"
+              style="font-size: 16px"
               dense
               outlined
             />
@@ -67,7 +67,7 @@
       <div class="preview-container">
         <div class="box-view">
           <div class="row items-center">
-            <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 10rem">Tags:</div>
+            <div class="q-ml-md sub-font-3 space" style="font-size: 16px">Tags:</div>
             <div class="tags">
               <!-- <span class="tag-box" v-for="(category, i) in doc.metadata.categories" :key="i">
                 {{ category }}
@@ -208,30 +208,32 @@
 
           <div class="row description-row">
             <div class="description-section">
-              <div class="q-ml-md sub-font-3" style="font-size: 16px; margin-top: 2rem">
+              <div
+                class="q-ml-md sub-font-3"
+                style="font-size: 16px; margin-top: 2rem; margin-bottom: 1rem"
+              >
                 Description
               </div>
-              <div class="summary">
-                <q-input
-                  v-model="doc.metadata.summary"
-                  type="textarea"
-                  outlined
-                  dense
-                  class="q-ml-md summary-input"
-                  :input-style="{ minHeight: '60px' }"
-                />
 
-                <!-- Generate Summary Button -->
-                <q-btn
-                  flat
-                  no-caps
-                  dense
-                  label="Generate"
-                  class="q-ml-md find-more-info-btn"
-                  style="margin-top: 1rem"
-                  @click="generateSummary"
-                />
-              </div>
+              <q-input
+                v-model="editableData.summary"
+                type="textarea"
+                outlined
+                dense
+                class="q-ml-md summary-input"
+                :input-style="{ minHeight: '8rem' }"
+              />
+
+              <!-- Generate Summary Button -->
+              <q-btn
+                flat
+                no-caps
+                dense
+                label="Generate"
+                class="q-ml-md find-more-info-btn"
+                style="margin-top: 1rem"
+                @click="generateSummary"
+              />
 
               <q-dialog v-model="showSummaryDialog" persistent>
                 <q-card style="min-width: 400px; max-width: 600px; position: relative">
@@ -417,13 +419,13 @@
             </div>
             <div class="meta-section">
               <div class="font-label">
-                <p><strong>Uploaded At:</strong> {{ formatDate(doc.uploaded_at) }}</p>
-                <p><strong>Updated At:</strong> {{ formatDate(doc.updated_at) }}</p>
+                <p><strong>Uploaded On:</strong> {{ formatDate(doc.uploaded_at) }}</p>
+                <p><strong>Updated On:</strong> {{ formatDate(doc.updated_at) }}</p>
                 <p>
                   <strong>Date:</strong>
-                  <q-btn outline dense :label="doc.metadata.date || 'Select Date'" class="q-ml-sm">
+                  <q-btn outline dense :label="editableData.date || 'Select Date'" class="q-ml-sm">
                     <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                      <q-date v-model="doc.metadata.date" mask="YYYY-MM-DD" />
+                      <q-date v-model="editableData.date" mask="YYYY-MM-DD" />
                     </q-popup-proxy>
                   </q-btn>
                 </p>
@@ -534,29 +536,200 @@ const userSequence = ref([])
 const activeColor = ref(null)
 const simonScore = ref(0)
 
-// Editing logic from doc page
+// Reactive reference for all editable data
+const editableData = ref({
+  date: '',
+  title: '',
+  author: '',
+  summary: '',
+  extracted_text: '',
+})
+
+const showNotifyDialog = (title, message) => {
+  notifyDialogTitle.value = title
+  notifyDialogMessage.value = message
+  notifyDialogOpen.value = true
+}
+
 async function saveChanges() {
+  if (!doc.value) return
+
   try {
-    if (!doc.value) return
+    const oldData = {
+      metadata: { ...doc.value.metadata },
+      related_links: doc.value.related_links,
+      updated_at: doc.value.updated_at,
+    }
+
+    const newData = {
+      metadata: {
+        ...doc.value.metadata,
+        title: editableData.value.title,
+        date: editableData.value.date,
+        author: editableData.value.author,
+        summary: editableData.value.summary,
+        categories: [...editableCategories.value],
+        // extracted_text: editableData.value.extracted_text,
+      },
+      related_links: [...links.value],
+    }
+
+    let changes = getChanges(oldData, newData)
+
+    if (Object.keys(changes).length === 0) {
+      showNotifyDialog('Info', 'No changes made.')
+      return
+    }
+
+    const updatedAt = new Date().toISOString()
+    newData.updated_at = updatedAt
+
+    changes = {
+      ...changes,
+      updated_at: { old: normalizeDate(oldData.updated_at), new: normalizeDate(updatedAt) },
+    }
 
     const { error } = await supabase
       .from('documents_metadata')
-      .update({
-        metadata: {
-          ...doc.value.metadata,
-          categories: editableCategories.value,
-        },
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', route.params.id)
+      .update(newData)
+      .eq('id', doc.value.id)
 
-    if (error) throw error
+    if (error) {
+      console.error('Error updating document: ', error)
+      showNotifyDialog('Error', 'Failed to save changes')
+      return
+    }
 
-    console.log('Document changes saved successfully')
-    router.push({ name: 'view-document', params: { id: route.params.id } })
+    await logItemHistory({
+      itemId: doc.value.id,
+      itemType: 'document',
+      action: 'update',
+      oldData,
+      newData,
+      changes,
+    })
+
+    doc.value = {
+      ...doc.value,
+      ...newData,
+    }
+
+    const storeDocument = documentsStore.documents.find((d) => d.id === doc.value.id)
+    if (storeDocument) Object.assign(storeDocument, doc.value)
+
+    console.log('Changes saved: ', doc.value)
+    // router.push({ name: 'view-document', params: { id: route.params.id } })
+    router.push(`/documents/${doc.value.id}`)
   } catch (err) {
     console.error('Error saving document changes:', err)
   }
+}
+
+async function logItemHistory({ itemId, itemType, action, oldData, newData, changes }) {
+  try {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError || !authData?.user) {
+      console.error('Auth error:', authError)
+      return
+    }
+
+    const adminName =
+      `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+
+    const { error } = await supabase.from('item_history').insert({
+      item_id: itemId,
+      item_type: itemType,
+      action: action,
+      performed_by: adminName || 'Admin',
+      old_data: oldData,
+      new_data: newData,
+      changes: changes,
+    })
+
+    if (error) {
+      console.error('Error logging history:', error)
+    } else {
+      console.log('History logged successfully')
+    }
+  } catch (err) {
+    console.error('Unexpected error logging history:', err)
+  }
+}
+
+function normalizeDate(value) {
+  if (!value) return value
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? value : d.toISOString()
+}
+
+function diffLinks(oldLinks = [], newLinks = []) {
+  const oldMap = new Map((oldLinks || []).map((link) => [link.url, link]))
+  const newMap = new Map((newLinks || []).map((link) => [link.url, link]))
+
+  const added = []
+  const removed = []
+
+  for (const [url, link] of newMap) {
+    if (!oldMap.has(url)) added.push(link)
+  }
+
+  for (const [url, link] of oldMap) {
+    if (!newMap.has(url)) removed.push(link)
+  }
+
+  return { added, removed }
+}
+
+function getChanges(oldData, newData) {
+  const changes = {}
+
+  // Compare metadata
+  const metadataChanges = {}
+  for (const field in newData.metadata) {
+    let oldValue = oldData.metadata?.[field]
+    let newValue = newData.metadata?.[field]
+
+    if (field.toLowerCase().includes('date')) {
+      oldValue = normalizeDate(oldValue)
+      newValue = normalizeDate(newValue)
+    }
+
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+      metadataChanges[field] = { old: oldValue, new: newValue }
+    }
+  }
+  if (Object.keys(metadataChanges).length > 0) {
+    changes.metadata = metadataChanges
+  }
+
+  // Compare top-level fields
+  for (const field of Object.keys(newData)) {
+    if (field === 'metadata' || field === 'updated_at') continue
+
+    let oldValue = oldData[field]
+    let newValue = newData[field]
+
+    if (field === 'related_links') {
+      const { added, removed } = diffLinks(oldValue, newValue)
+      if (added.length || removed.length) {
+        changes.related_links = {}
+        if (added.length) changes.related_links.added = added
+        if (removed.length) changes.related_links.removed = removed
+      }
+      continue
+    }
+
+    if (field.toLowerCase().includes('date')) {
+      oldValue = normalizeDate(oldValue)
+      newValue = normalizeDate(newValue)
+    }
+
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+      changes[field] = { old: oldValue, new: newValue }
+    }
+  }
+
+  return changes
 }
 
 const goBack = () => {
@@ -883,6 +1056,39 @@ watch(
     }
   },
 )
+
+watch(
+  doc,
+  (newDocument) => {
+    if (newDocument) {
+      // Initialize categories
+      if (newDocument.metadata?.categories) {
+        editableCategories.value = [...newDocument.metadata.categories]
+      } else {
+        editableCategories.value = []
+      }
+
+      // Initialize all editable data
+      editableData.value = {
+        date: newDocument.metadata?.date,
+        title: newDocument.metadata?.title,
+        author: newDocument.metadata?.author,
+        summary: newDocument.metadata?.summary,
+      }
+    } else {
+      editableCategories.value = []
+      editableData.value = {
+        date: '',
+        title: '',
+        author: '',
+        summary: '',
+        // extracted_text: '',
+      }
+    }
+  },
+  { immediate: true },
+)
+
 // Related Links
 const showRelatedDialog = ref(false)
 const newLink = ref('')
@@ -1040,14 +1246,6 @@ async function cancelChanges() {
   margin-left: 1rem;
 }
 
-.document-title {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 36px;
-  line-height: 3rem;
-  color: #560505;
-}
-
 .document-img {
   width: 300px;
   margin-left: 10rem;
@@ -1058,61 +1256,60 @@ async function cancelChanges() {
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
 }
 
-.actions {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 500;
-  font-size: 14px;
-  color: #880000;
-}
-
-.row-1 {
-  margin-left: 30.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.start-reading-btn {
-  background-color: #363636;
-  color: white;
-  border-radius: 20px;
-  font-weight: 400;
-  font-size: 14px;
-  font-family: 'Poppins', sans-serif;
-  height: 2rem;
-  width: 10rem;
-  place-content: center;
-  align-items: center;
-}
-
-.btn-arrow-tilt {
-  width: 0.6rem;
-  height: 0.6rem;
-  object-fit: contain;
-}
-
-.summary {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 400;
-  font-size: 12px;
-  color: #000000;
-  margin-top: 1rem;
-}
-
 .summary-input :deep(.q-field__native) {
   font-family: 'Poppins', sans-serif !important;
   font-weight: 400 !important;
-  font-size: 14px !important;
+  font-size: 12px !important;
   color: black !important;
   line-height: 1.4 !important;
+  text-align: justify !important;
 }
 
-.summary-input {
-  width: 100%;
+.summary-input :deep(textarea) {
+  resize: none !important;
 }
 
 .add-category-input {
   max-width: 200px;
+}
+
+.space {
+  margin-top: 10rem;
+}
+
+.author-input {
+  width: 17rem;
+}
+
+/* Responsivesness */
+@media (max-width: 1200px) {
+  .document-img {
+    display: none;
+  }
+
+  .space {
+    margin-top: 2rem;
+  }
+
+  .tags {
+    margin-top: 2rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .description-row {
+    margin-right: 1rem;
+  }
+
+  .description-section,
+  .meta-section {
+    flex: 0 0 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .author-input {
+    width: 30rem;
+  }
 }
 </style>

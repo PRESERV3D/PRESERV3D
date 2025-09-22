@@ -93,10 +93,20 @@
 
             <div class="column q-gutter-sm">
               <q-btn
+                v-if="!$q.screen.lt.sm"
                 @click="showDialog = true"
                 :label="selectedFile ? selectedFile.name : 'Choose File'"
                 class="choose-file"
                 no-caps
+                unelevated
+              />
+              <!-- Show icon button on small screens -->
+              <q-btn
+                v-else
+                @click="showDialog = true"
+                icon="attach_file"
+                class="choose-file"
+                round
                 unelevated
               />
 
@@ -116,57 +126,68 @@
             </div>
           </div>
 
-          <!-- Start Date with Date Validation -->
-          <div class="column q-mt-md">
-            <label class="labelNames">Start Date</label>
-            <q-input
-              dense
-              v-model="form.start_date"
-              mask="####-##-##"
-              placeholder="YYYY-MM-DD"
-              :rules="[(val) => !!val || 'Please select a start date.']"
-              class="text-box-2"
-            >
-              <template v-slot:append>
-                <q-icon name="event" class="cursor-pointer" @click="$refs.startDatePicker.show()" />
-              </template>
-              <q-popup-proxy ref="startDatePicker" transition-show="scale" transition-hide="scale">
-                <q-date
-                  v-model="form.start_date"
-                  mask="YYYY-MM-DD"
-                  :options="startDateOptions"
-                  :min="minDate"
-                  :max="maxDate"
-                />
-              </q-popup-proxy>
-            </q-input>
+          <!--Date Validation Field-->
+          <div class="row q-mt-lg">
+            <div class="col q-gutter-sm">
+              <label class="labelNames">Start Date</label>
+              <q-input
+                dense
+                v-model="form.start_date"
+                mask="####-##-##"
+                placeholder="YYYY-MM-DD"
+                :rules="[(val) => !!val || 'Please select a start date.']"
+                class="text-box-2"
+                style="margin-top: 0.5rem"
+              >
+                <template v-slot:append>
+                  <q-icon
+                    name="event"
+                    class="cursor-pointer"
+                    @click="$refs.startDatePicker.show()"
+                  />
+                </template>
+                <q-popup-proxy
+                  ref="startDatePicker"
+                  transition-show="scale"
+                  transition-hide="scale"
+                >
+                  <q-date
+                    v-model="form.start_date"
+                    mask="YYYY-MM-DD"
+                    :options="startDateOptions"
+                    :min="minDate"
+                    :max="maxDate"
+                  />
+                </q-popup-proxy>
+              </q-input>
+            </div>
+            <div class="col q-ml-md q-gutter-sm">
+              <label class="labelNames">End Date</label>
+              <q-input
+                dense
+                v-model="form.end_date"
+                mask="####-##-##"
+                placeholder="YYYY-MM-DD"
+                :rules="[(val) => !!val || 'Please select an end date.']"
+                class="text-box-2"
+                style="margin-top: 0.5rem"
+              >
+                <template v-slot:append>
+                  <q-icon name="event" class="cursor-pointer" @click="$refs.endDatePicker.show()" />
+                </template>
+                <q-popup-proxy ref="endDatePicker" transition-show="scale" transition-hide="scale">
+                  <q-date
+                    v-model="form.end_date"
+                    mask="YYYY-MM-DD"
+                    :options="endDateOptions"
+                    :min="minDate"
+                    :max="maxDate"
+                  />
+                </q-popup-proxy>
+              </q-input>
+            </div>
           </div>
-
-          <!-- End Date with Date Validation -->
-          <div class="column q-mt-md">
-            <label class="labelNames">End Date</label>
-            <q-input
-              dense
-              v-model="form.end_date"
-              mask="####-##-##"
-              placeholder="YYYY-MM-DD"
-              :rules="[(val) => !!val || 'Please select an end date.']"
-              class="text-box-2"
-            >
-              <template v-slot:append>
-                <q-icon name="event" class="cursor-pointer" @click="$refs.endDatePicker.show()" />
-              </template>
-              <q-popup-proxy ref="endDatePicker" transition-show="scale" transition-hide="scale">
-                <q-date
-                  v-model="form.end_date"
-                  mask="YYYY-MM-DD"
-                  :options="endDateOptions"
-                  :min="minDate"
-                  :max="maxDate"
-                />
-              </q-popup-proxy>
-            </q-input>
-          </div>
+          <!--End of Date Validation Field-->
 
           <!-- <label class="labelNames">Password</label>
           <q-input
@@ -199,7 +220,7 @@
           /> -->
         </div>
 
-        <div class="column items-center">
+        <div class="column items-center q-mt-lg">
           <a @click="step--" class="labelNames cursor-pointer q-mb-sm">Back</a>
           <q-btn
             class="visitor-signup-btn"
@@ -585,7 +606,8 @@ async function compressPdf(file) {
 
 .choose-file {
   background-color: rgba(204, 172, 0, 0.7);
-  width: 10rem;
+  min-width: 10rem;
+  max-width: 15.5rem;
   color: #560505;
   border-radius: 8px;
   font-weight: 400;
@@ -623,5 +645,22 @@ async function compressPdf(file) {
   margin-top: 2rem;
   font-size: 14px;
   font-weight: 500;
+}
+
+/*Responsiveness for Pupose and Institution*/
+@media screen and (max-width: 600px) {
+  .row.q-mt-lg {
+    flex-direction: column;
+  }
+
+  .row.q-mt-lg .col {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .choose-file {
+    min-width: 3rem;
+    height: 2rem;
+  }
 }
 </style>

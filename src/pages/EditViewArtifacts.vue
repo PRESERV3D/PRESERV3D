@@ -498,12 +498,14 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useModelStore } from 'stores/modelStore'
+import { useUserStore } from 'stores/user'
 import '@google/model-viewer'
 import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
 const modelStore = useModelStore()
+const userStore = useUserStore()
 
 const model = ref(null)
 const loading = ref(true)
@@ -546,18 +548,52 @@ const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
+// function formatDate(dateStr) {
+//   const date = new Date(dateStr)
+//   return `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA', {
+//     hour: '2-digit',
+//     minute: '2-digit',
+//   })}`
+// }
+
+// function formatDateForInput(dateStr) {
+//   if (!dateStr) return ''
+//   const date = new Date(dateStr)
+//   return date.toISOString().slice(0, 16)
+// }
+
 function formatDate(dateStr) {
+  if (!dateStr) return ''
   const date = new Date(dateStr)
-  return `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })}`
+  return `${date.toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' })} ${date.toLocaleTimeString(
+    'en-CA',
+    {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Manila',
+    },
+  )}`
 }
 
+// Format value for <input type="datetime-local"> (PH local)
 function formatDateForInput(dateStr) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
-  return date.toISOString().slice(0, 16)
+  const phDate = new Date(date.toLocaleString('en-PH', { timeZone: 'Asia/Manila' }))
+
+  const year = phDate.getFullYear()
+  const month = String(phDate.getMonth() + 1).padStart(2, '0')
+  const day = String(phDate.getDate()).padStart(2, '0')
+  const hours = String(phDate.getHours()).padStart(2, '0')
+  const minutes = String(phDate.getMinutes()).padStart(2, '0')
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+function toUTC(dateStr) {
+  if (!dateStr) return null
+  const localDate = new Date(dateStr) // PH local
+  return localDate.toISOString() // safe for timestamptz column
 }
 
 // Initialize editable data when model changes
@@ -574,13 +610,13 @@ watch(
 
       // Initialize all editable data
       editableData.value = {
-        title: newModel.metadata?.title || 'Untitled Artifact',
-        summary: newModel.metadata?.summary || '',
-        author: newModel.metadata?.author || '[Author Name]',
-        date: newModel.metadata?.date || '',
-        dataSource: newModel.data_source || 'Artifacts Metadata',
-        donatedBy: newModel.donated_by || '[Donor/Lender Name]',
-        dateReceived: formatDateForInput(newModel.date_received || newModel.uploaded_at),
+        title: newModel.metadata?.title,
+        summary: newModel.metadata?.summary,
+        author: newModel.metadata?.author,
+        date: newModel.metadata?.date,
+        dataSource: newModel.data_source,
+        donatedBy: newModel.donated_by,
+        dateReceived: formatDateForInput(newModel.date_received),
       }
     } else {
       editableCategories.value = []
@@ -726,71 +762,105 @@ const removeCategory = (index) => {
   const found = categories.value.find((c) => c.name === removed)
   if (found) found.selected = false
 }
+function normalizeValue(key, value) {
+  if (value === '') return null
+
+  if (Array.isArray(value)) {
+    return value
+  }
+
+  return value
+}
+
+function normalizeObject(obj) {
+  if (!obj || typeof obj !== 'object') return obj
+  const normalized = {}
+  for (const key in obj) {
+    normalized[key] = normalizeValue(key, obj[key])
+  }
+  return normalized
+}
 
 // Save and Cancel functions
 const saveChanges = async () => {
-  if (model.value) {
-    try {
-      // Update in Supabase
-      const { error } = await supabase
-        .from('artifacts_metadata')
-        .update({
-          metadata: {
-            ...model.value.metadata,
-            title: editableData.value.title,
-            categories: [...editableCategories.value],
-            summary: editableData.value.summary,
-            author: editableData.value.author,
-            date: editableData.value.date,
-          },
-          data_source: editableData.value.dataSource,
-          donated_by: editableData.value.donatedBy,
-          date_received: editableData.value.dateReceived,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', model.value.id)
+  if (!model.value) return
 
-      if (error) {
-        console.error('Error updating artifact:', error)
-        showNotifyDialog('Error', 'Failed to save changes.')
-        return
-      }
-
-      // Update local model
-      model.value = {
-        ...model.value,
-        metadata: {
-          ...model.value.metadata,
-          title: editableData.value.title,
-          categories: [...editableCategories.value],
-          summary: editableData.value.summary,
-          author: editableData.value.author,
-          date: editableData.value.date,
-        },
-        data_source: editableData.value.dataSource,
-        donated_by: editableData.value.donatedBy,
-        date_received: editableData.value.dateReceived,
-        updated_at: new Date().toISOString(),
-      }
-
-      // Update in store if exists
-      const storeModel = modelStore.models.find((m) => m.id === model.value.id)
-      if (storeModel) {
-        Object.assign(storeModel, model.value)
-      }
-
-      console.log('Changes saved:', model.value)
-
-      // Redirect to artifacts page
-      router.push(`/artifacts/${model.value.id}`)
-    } catch (err) {
-      console.error('Unexpected error:', err)
-      showNotifyDialog('Error', 'An unexpected error occurred.')
+  try {
+    const oldData = {
+      metadata: { ...model.value.metadata },
+      data_source: model.value.data_source,
+      donated_by: model.value.donated_by,
+      date_received: model.value.date_received,
+      related_links: model.value.related_links,
+      updated_at: model.value.updated_at,
     }
+
+    const newData = {
+      metadata: normalizeObject({
+        ...model.value.metadata,
+        title: editableData.value.title,
+        categories: [...editableCategories.value],
+        summary: editableData.value.summary,
+        author: editableData.value.author,
+        date: editableData.value.date,
+      }),
+      data_source: editableData.value.dataSource,
+      donated_by: editableData.value.donatedBy,
+      date_received: toUTC(editableData.value.dateReceived),
+      related_links: [...links.value],
+    }
+
+    let changes = getChanges(oldData, newData)
+
+    if (Object.keys(changes).length === 0) {
+      showNotifyDialog('Info', 'No changes made.')
+      return
+    }
+
+    const updatedAt = new Date()
+    newData.updated_at = updatedAt
+
+    changes = {
+      ...changes,
+      updated_at: { old: normalizeDate(oldData.updated_at), new: normalizeDate(updatedAt) },
+    }
+
+    const { error: updateError } = await supabase
+      .from('artifacts_metadata')
+      .update(newData)
+      .eq('id', model.value.id)
+
+    if (updateError) {
+      console.error('Failed to update artifact: ', updateError)
+      showNotifyDialog('Error', 'Failed to save changes.')
+      return
+    }
+
+    await logItemHistory({
+      itemId: model.value.id,
+      itemType: 'artifact',
+      action: 'update',
+      oldData,
+      newData,
+      changes,
+    })
+
+    model.value = {
+      ...model.value,
+      ...newData,
+    }
+
+    const storeModel = modelStore.models.find((m) => m.id === model.value.id)
+    if (storeModel) Object.assign(storeModel, model.value)
+
+    console.log('Changes saved:', model.value)
+    router.push(`/artifacts/${model.value.id}`)
+  } catch (err) {
+    console.error('Unexpected error:', err)
+    showNotifyDialog('Error', 'An unexpected error occurred.')
   }
 }
 
-// Update your existing cancelChanges function in the script setup
 const cancelChanges = () => {
   if (model.value) {
     if (model.value.metadata?.categories) {
@@ -800,13 +870,13 @@ const cancelChanges = () => {
     }
 
     editableData.value = {
-      title: model.value.metadata?.title || 'Untitled Artifact',
-      summary: model.value.metadata?.summary || '',
-      author: model.value.metadata?.author || '[Author Name]',
-      date: model.value.metadata?.date || '',
-      dataSource: model.value.data_source || 'Artifacts Metadata',
-      donatedBy: model.value.donated_by || '[Donor/Lender Name]',
-      dateReceived: formatDateForInput(model.value.date_received || model.value.uploaded_at),
+      title: model.value.metadata?.title,
+      summary: model.value.metadata?.summary,
+      author: model.value.metadata?.author,
+      date: model.value.metadata?.date,
+      dataSource: model.value.data_source,
+      donatedBy: model.value.donated_by,
+      dateReceived: formatDateForInput(model.value.date_received),
     }
   }
   newCategory.value = ''
@@ -815,6 +885,163 @@ const cancelChanges = () => {
 
   // Route to view-artifact page
   router.push(`/artifacts/${route.params.id}`)
+}
+
+async function logItemHistory({ itemId, itemType, action, oldData, newData, changes }) {
+  try {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError || !authData?.user) {
+      console.error('Auth error:', authError)
+      return
+    }
+
+    const adminName =
+      `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+
+    const { error } = await supabase.from('item_history').insert({
+      item_id: itemId,
+      item_type: itemType,
+      action: action,
+      performed_by: adminName || 'Admin',
+      old_data: oldData,
+      new_data: newData,
+      changes: changes,
+    })
+
+    if (error) {
+      console.error('Error logging history:', error)
+    } else {
+      console.log('History logged successfully')
+    }
+  } catch (err) {
+    console.error('Unexpected error logging history:', err)
+  }
+}
+
+// function normalizeDate(value) {
+//   if (!value) return value
+//   const d = new Date(value)
+//   return isNaN(d.getTime()) ? value : d.toISOString() // always UTC ISO
+// }
+
+// function getChanges(oldData, newData) {
+//   const changes = {}
+
+//   // Compare metadata field-by-field
+//   const metadataChanges = {}
+//   for (const field in newData.metadata) {
+//     let oldValue = oldData.metadata?.[field]
+//     let newValue = newData.metadata?.[field]
+
+//     // Normalize dates inside metadata (like "date")
+//     if (field.toLowerCase().includes('date')) {
+//       oldValue = normalizeDate(oldValue)
+//       newValue = normalizeDate(newValue)
+//     }
+
+//     if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+//       metadataChanges[field] = { old: oldValue, new: newValue }
+//     }
+//   }
+//   if (Object.keys(metadataChanges).length > 0) {
+//     changes.metadata = metadataChanges
+//   }
+
+//   // Compare top-level fields
+//   for (const field of Object.keys(newData)) {
+//     if (field === 'metadata') continue
+
+//     let oldValue = oldData[field]
+//     let newValue = newData[field]
+
+//     // Normalize top-level date fields (like "date_received")
+//     if (field.toLowerCase().includes('date')) {
+//       oldValue = normalizeDate(oldValue)
+//       newValue = normalizeDate(newValue)
+//     }
+
+//     if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+//       changes[field] = { old: oldValue, new: newValue }
+//     }
+//   }
+
+//   return changes
+// }
+
+function normalizeDate(value) {
+  if (!value || (typeof value === 'string' && value.trim() === '')) return null
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? value : d.toISOString()
+}
+
+function diffLinks(oldLinks = [], newLinks = []) {
+  const oldMap = new Map((oldLinks || []).map((link) => [link.url, link]))
+  const newMap = new Map((newLinks || []).map((link) => [link.url, link]))
+
+  const added = []
+  const removed = []
+
+  for (const [url, link] of newMap) {
+    if (!oldMap.has(url)) added.push(link)
+  }
+
+  for (const [url, link] of oldMap) {
+    if (!newMap.has(url)) removed.push(link)
+  }
+
+  return { added, removed }
+}
+
+function getChanges(oldData, newData) {
+  const changes = {}
+
+  // Compare metadata
+  const metadataChanges = {}
+  for (const field in newData.metadata) {
+    let oldValue = oldData.metadata?.[field]
+    let newValue = newData.metadata?.[field]
+
+    if (field.toLowerCase().includes('date')) {
+      oldValue = normalizeDate(oldValue)
+      newValue = normalizeDate(newValue)
+    }
+
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+      metadataChanges[field] = { old: oldValue, new: newValue }
+    }
+  }
+  if (Object.keys(metadataChanges).length > 0) {
+    changes.metadata = metadataChanges
+  }
+
+  // Compare top-level fields
+  for (const field of Object.keys(newData)) {
+    if (field === 'metadata' || field === 'updated_at') continue
+
+    let oldValue = oldData[field]
+    let newValue = newData[field]
+
+    if (field === 'related_links') {
+      const { added, removed } = diffLinks(oldValue, newValue)
+      if (added.length || removed.length) {
+        changes.related_links = {}
+        if (added.length) changes.related_links.added = added
+        if (removed.length) changes.related_links.removed = removed
+      }
+      continue
+    }
+
+    if (field.toLowerCase().includes('date')) {
+      oldValue = normalizeDate(oldValue)
+      newValue = normalizeDate(newValue)
+    }
+
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+      changes[field] = { old: oldValue, new: newValue }
+    }
+  }
+
+  return changes
 }
 
 // Commented out bookmark functionality for now
@@ -1069,26 +1296,33 @@ function drop(index) {
   hasChanges.value = true
 }
 
-async function saveRelatedLinks() {
-  try {
-    // Save directly to Supabase
-    const { error } = await supabase
-      .from('artifacts_metadata')
-      .update({
-        related_links: links.value,
-      })
-      .eq('id', route.params.id)
+// async function saveRelatedLinks() {
+//   try {
+//     // Save directly to Supabase
+//     const { error } = await supabase
+//       .from('artifacts_metadata')
+//       .update({
+//         related_links: links.value,
+//       })
+//       .eq('id', route.params.id)
 
-    if (error) throw error
+//     if (error) throw error
 
-    console.log('Related links saved successfully:', links.value)
+//     console.log('Related links saved successfully:', links.value)
 
-    hasChanges.value = false
-    showRelatedDialog.value = false
-  } catch (err) {
-    console.error('Error fetching/saving related links:', err)
-    console.log('Error saving related links:', err)
-  }
+//     hasChanges.value = false
+//     showRelatedDialog.value = false
+//   } catch (err) {
+//     console.error('Error fetching/saving related links:', err)
+//     console.log('Error saving related links:', err)
+//   }
+// }
+
+function saveRelatedLinks() {
+  console.log('Links stored locally:', links.value)
+
+  hasChanges.value = true
+  showRelatedDialog.value = false
 }
 
 async function cancelRelatedLinks() {
