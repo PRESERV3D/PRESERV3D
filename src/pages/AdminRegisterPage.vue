@@ -116,7 +116,7 @@
         notifyDialogMessage
       }}</q-card-section>
       <q-card-actions>
-        <q-btn flat label="Close" class="btn-save" v-close-popup />
+        <q-btn flat label="Okay" class="btn-save" v-close-popup @click="handleNotifyDialogClose" />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -247,7 +247,7 @@ async function registerAdmin() {
         return
       }
 
-      showNotifyDialog(
+      await showNotifyDialog(
         'Success',
         'Registration successful! Please check your email to authenticate your account.',
       )
@@ -263,10 +263,23 @@ async function registerAdmin() {
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
+const dialogResolve = ref(null)
 
-const showNotifyDialog = (title, message) => {
-  notifyDialogTitle.value = title
-  notifyDialogMessage.value = message
-  notifyDialogOpen.value = true
+function showNotifyDialog(title, message) {
+  return new Promise((resolve) => {
+    notifyDialogTitle.value = title
+    notifyDialogMessage.value = message
+    notifyDialogOpen.value = true
+
+    dialogResolve.value = resolve
+  })
+}
+
+function handleNotifyDialogClose() {
+  notifyDialogOpen.value = false
+  if (dialogResolve.value) {
+    dialogResolve.value()
+    dialogResolve.value = null
+  }
 }
 </script>
