@@ -809,35 +809,59 @@ async function confirmAction() {
           data: {
             role: 'user',
             type: 'visitor',
-            start_date: row.start_date,
-            end_date: row.end_date,
+            // start_date: row.start_date,
+            // end_date: row.end_date,
           },
           emailRedirectTo: `${window.location.origin}/resetpassword`, // full URL
         },
       })
 
-      if (signUpError) throw signUpError
+      if (signUpError) {
+        alert(signUpError.message)
+        return
+      }
+
       console.log('SignUp confirmation email sent:', data)
 
-      const insertResponse = await supabase.from('approved_visitors').insert({
-        id: data.user.id, // Use user ID from the sign-up response
-        registration_id: row.id,
-        approved_at: new Date().toISOString(),
-        approved_by: adminName,
-        email: row.email,
-        first_name: row.first_name,
-        last_name: row.last_name,
-      })
+      const now = new Date()
 
-      console.log('Insert response:', insertResponse)
+      const { data: insertData, error: insertError } = await supabase
+        .from('approved_visitors')
+        .insert([
+          {
+            id: data.user.id, // Use user ID from the sign-up response
+            registration_id: row.id,
+            approved_at: now,
+            approved_by: adminName,
+            email: row.email,
+            first_name: row.first_name,
+            last_name: row.last_name,
+          },
+        ])
 
-      if (insertResponse.error) {
-        throw insertResponse.error
+      if (insertError) {
+        console.error('Error in inserting to approved_users: ', insertError)
+        return
+      }
+
+      console.log('Inserting to approved users successful: ', insertData)
+
+      const { error: allUserError } = await supabase.from('all_users').insert([
+        {
+          id: data.user.id,
+          email: row.email,
+          created_at: now,
+          user_type: 'visitor',
+        },
+      ])
+
+      if (allUserError) {
+        console.error('Error in adding user to all users table: ', allUserError)
+        return
       }
 
       confirmDialog.value.show = false
 
-      // Refresh data table
       await fetchVisitors()
     }
   } catch (err) {
