@@ -37,7 +37,7 @@
     />
 
     <!-- Document Highlights Section -->
-    <div class="column q-py-md q-gutter-lg">
+    <div class="q-py-md q-gutter-lg">
       <div class="box-highlights">
         <div class="row justify-between q-px-lg q-pt-lg q-mb-md">
           <p class="title-font-2" style="font-size: 16px; margin: 0">Document Highlights</p>
@@ -49,9 +49,9 @@
           </router-link>
         </div>
 
-        <div class="row docs-gap justify-start">
+        <div class="row docs-gap justify-center q-py-sm">
           <div v-for="(doc, index) in topDocuments" :key="index">
-            <div class="row q-mb-lg">
+            <div class="row q-mb-lg doc-wrapper">
               <q-card class="my-card docCard" style="transform: rotate(-5deg)">
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
@@ -433,6 +433,7 @@ import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
 import { useRouter } from 'vue-router'
 import { processOCRPages } from '/services/ocr_service'
+import { PDFDocument } from 'pdf-lib'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import UploadDialog from 'src/components/UploadDialog.vue'
 import axios from 'axios'
@@ -818,7 +819,34 @@ async function processFileWithNLP(file, fileName) {
   })
 }
 
-async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData) {
+// async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData) {
+//   // Ensure the metadata object structure matches your database schema
+//   const metadataObject = {
+//     title: nlpData.title || '',
+//     author: nlpData.author || '',
+//     date: nlpData.date || '',
+//     summary: nlpData.summary || '',
+//     keywords: Array.isArray(nlpData.keywords) ? nlpData.keywords : [],
+//     categories: Array.isArray(nlpData.categories) ? nlpData.categories : [nlpData.categories],
+//     extracted_text: nlpData.extracted_text || '',
+//   }
+
+//   console.log('Inserting metadata:', metadataObject)
+
+//   return await supabase.from('documents_metadata').insert([
+//     {
+//       file_name: fileName,
+//       file_url: fileUrl,
+//       preview_url: previewUrl,
+//       metadata: metadataObject,
+//       uploaded_by: user,
+//       uploaded_at: new Date().toISOString(), // Use ISO string format
+//       updated_at: new Date().toISOString(),
+//     },
+//   ])
+// }
+
+async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData, user) {
   // Ensure the metadata object structure matches your database schema
   const metadataObject = {
     title: nlpData.title || '',
@@ -832,17 +860,27 @@ async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData) {
 
   console.log('Inserting metadata:', metadataObject)
 
-  return await supabase.from('documents_metadata').insert([
-    {
-      file_name: fileName,
-      file_url: fileUrl,
-      preview_url: previewUrl,
-      metadata: metadataObject,
-      uploaded_by: user,
-      uploaded_at: new Date().toISOString(), // Use ISO string format
-      updated_at: new Date().toISOString(),
-    },
-  ])
+  const { data, error } = await supabase
+    .from('documents_metadata')
+    .insert([
+      {
+        file_name: fileName,
+        file_url: fileUrl,
+        preview_url: previewUrl,
+        metadata: metadataObject,
+        uploaded_by: user,
+        uploaded_at: new Date(), // ISO string format
+      },
+    ])
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error inserting metadata:', error)
+    throw error
+  }
+
+  return data
 }
 
 // File selection handlers
@@ -889,11 +927,34 @@ async function handleCancelMetadata(cancelledData) {
   }
 }
 
-async function saveMetadata(updatedMetadata) {
-  console.log('Saving metadata: ', updatedMetadata)
+// function normalizeValue(key, value) {
+//   if (value === '') return null
 
+//   if (Array.isArray(value)) {
+//     return value
+//   }
+
+//   return value
+// }
+
+// function normalizeObject(obj) {
+//   if (!obj || typeof obj !== 'object') return obj
+//   const normalized = {}
+//   for (const key in obj) {
+//     normalized[key] = normalizeValue(key, obj[key])
+//   }
+//   return normalized
+// }
+
+async function saveMetadata(updatedMetadata) {
   try {
-    const { error } = await supabase
+    const oldData = {
+      ...currentDocumentData.value,
+    }
+
+    const now = new Date()
+
+    const { data: updatedData, error: updateError } = await supabase
       .from('documents_metadata')
       .update({
         metadata: {
@@ -905,18 +966,38 @@ async function saveMetadata(updatedMetadata) {
           categories: updatedMetadata.categories,
           extracted_text: updatedMetadata.extracted_text,
         },
-        updated_at: new Date(),
+        updated_at: now,
       })
-      .eq('file_name', metadata.value.file_name)
+      .eq('id', metadata.value.id)
+      .select()
+      .single()
 
-    if (error) {
-      console.error('Failed to update metadata:', error)
+    if (updateError) {
+      console.error('Failed to update metadata:', updateError)
       $q.notify({ type: 'negative', message: 'Failed to update metadata.' })
-    } else {
-      $q.notify({ type: 'positive', message: 'Metadata saved successfully!' })
-      dialog.value = false
-      router.push({ name: 'admin-home' })
+      return
     }
+
+    const newData = {
+      ...updatedData,
+    }
+
+    const changes = getChanges(oldData, newData)
+
+    await logItemHistory({
+      itemId: metadata.value.id,
+      itemType: 'document',
+      action: 'update',
+      oldData,
+      newData,
+      changes,
+    })
+
+    currentDocumentData.value = updatedData
+
+    $q.notify({ type: 'positive', message: 'Metadata saved successfully!' })
+    dialog.value = false
+    router.push('/documents')
   } catch (err) {
     console.error('Error saving metadata:', err)
     $q.notify({ type: 'negative', message: 'Unexpected error occurred.' })
@@ -926,6 +1007,8 @@ async function saveMetadata(updatedMetadata) {
 const handleScan = () => {
   router.push({ name: 'document-scanner' })
 }
+
+let currentDocumentData = ref(null)
 
 // Upload handler
 const handleUpload = async () => {
@@ -1074,21 +1157,52 @@ const handleUpload = async () => {
 
     // Save metadata
     currentProcess.value = 'Saving metadata...'
-    const { error: dbError } = await saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData)
-    if (dbError && !cancelRequested) {
-      console.error('DB error:', dbError)
-      $q.notify({ type: 'negative', message: 'Upload succeeded but metadata failed to save.' })
+    let insertedData
+    try {
+      insertedData = await saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData, user)
+    } catch (dbError) {
+      if (!cancelRequested) {
+        console.error('DB error:', dbError)
+        $q.notify({ type: 'negative', message: 'Upload succeeded but metadata failed to save.' })
+      }
       return
     }
 
-    // Check final cancellation
     if (cancelRequested) {
-      console.log('Upload cancelled during metadata save')
+      console.log('Upload cancelled before finalizing metadata')
       return
     }
+
+    currentDocumentData.value = insertedData
+
+    // // Log data
+    // const newData = {
+    //   id: insertedData.id,
+    //   file_name: insertedData.file_name,
+    //   file_url: insertedData.file_url,
+    //   metadata: insertedData.metadata,
+    //   uploaded_at: insertedData.uploaded_at,
+    //   updated_at: insertedData.updated_at,
+    //   preview_url: insertedData.preview_url,
+    //   search_text: insertedData.search_text,
+    //   related_links: insertedData.related_links,
+    // }
+
+    const changes = getChanges(null, insertedData)
+
+    // Log history
+    await logItemHistory({
+      itemId: insertedData.id,
+      itemType: 'document',
+      action: 'upload',
+      oldData: null,
+      newData: insertedData,
+      changes,
+    })
 
     // Success result
     metadata.value = {
+      id: insertedData.id,
       file_name: fileName,
       file_url: fileUrl,
       title: nlpData.title || '',
@@ -1151,9 +1265,70 @@ function resetUploadState() {
   }
 }
 
-// Compress pdf on upload
-import { PDFDocument } from 'pdf-lib'
+function getChanges(oldData = {}, newData = {}) {
+  const safeOld = oldData || {}
+  const safeNew = newData || {}
 
+  const changes = {}
+
+  if (safeNew.metadata) {
+    const metadataChanges = {}
+    for (const key in safeNew.metadata) {
+      const oldValue = safeOld.metadata?.[key] ?? null
+      const newValue = safeNew.metadata?.[key] ?? null
+      if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+        metadataChanges[key] = { old: oldValue, new: newValue }
+      }
+    }
+    if (Object.keys(metadataChanges).length > 0) {
+      changes.metadata = metadataChanges
+    }
+  }
+
+  for (const key of Object.keys(safeNew)) {
+    if (key === 'metadata') continue
+    const oldValue = safeOld[key] ?? null
+    const newValue = safeNew[key] ?? null
+    if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+      changes[key] = { old: oldValue, new: newValue }
+    }
+  }
+
+  return changes
+}
+
+async function logItemHistory({ itemId, itemType, action, oldData, newData, changes }) {
+  try {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    if (authError || !authData?.user) {
+      console.error('Auth error:', authError)
+      return
+    }
+
+    const adminName =
+      `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+
+    const { error } = await supabase.from('item_history').insert({
+      item_id: itemId,
+      item_type: itemType,
+      action: action,
+      performed_by: adminName || 'Admin',
+      old_data: oldData,
+      new_data: newData,
+      changes: changes,
+    })
+
+    if (error) {
+      console.error('Error logging history:', error)
+    } else {
+      console.log('History logged successfully')
+    }
+  } catch (err) {
+    console.error('Unexpected error logging history:', err)
+  }
+}
+
+// Compress pdf on upload
 async function compressPdf(file) {
   console.log(`Starting PDF compression for: ${file.name}`)
   const originalSize = file.size
@@ -1654,8 +1829,6 @@ function applySort(option) {
 }
 
 .docs-gap {
-  margin-left: 2.5rem;
-  margin-bottom: 0.5rem;
   gap: 2rem;
 }
 
@@ -1707,5 +1880,14 @@ function applySort(option) {
   background-color: rgba(255, 255, 255, 0.5) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
   transform: translateY(-1px) !important;
+}
+
+/* Responsiveness */
+@media (max-width: 615px) {
+  .doc-wrapper {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
 }
 </style>
