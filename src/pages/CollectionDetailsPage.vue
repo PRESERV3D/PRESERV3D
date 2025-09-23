@@ -151,6 +151,43 @@
                 </q-card>
               </div>
             </div>
+
+            <!-- Artifacts Pagination -->
+            <div v-if="totalArtifacts > artifactsPerPage" class="pagination-container">
+              <div class="pagination-controls">
+                <q-btn
+                  flat
+                  round
+                  icon="chevron_left"
+                  :disable="artifactsCurrentPage === 1"
+                  @click="prevArtifactsPage"
+                  class="pagination-btn"
+                  size="sm"
+                />
+                <div class="pagination-info">
+                  <span class="pagination-numbers">
+                    <span
+                      v-for="page in artifactsTotalPages"
+                      :key="page"
+                      @click="goToArtifactsPage(page)"
+                      :class="['page-number', { active: page === artifactsCurrentPage }]"
+                    >
+                      {{ page }}
+                    </span>
+                  </span>
+                </div>
+                <q-btn
+                  flat
+                  round
+                  icon="chevron_right"
+                  :disable="artifactsCurrentPage === artifactsTotalPages"
+                  @click="nextArtifactsPage"
+                  class="pagination-btn"
+                  size="sm"
+                />
+              </div>
+            </div>
+
             <p v-if="!artifacts.length" class="text-grey">No artifacts in this collection.</p>
           </div>
 
@@ -251,6 +288,43 @@
                 </q-card>
               </div>
             </div>
+
+            <!-- Documents Pagination -->
+            <div v-if="totalDocuments > documentsPerPage" class="pagination-container">
+              <div class="pagination-controls">
+                <q-btn
+                  flat
+                  round
+                  icon="chevron_left"
+                  :disable="documentsCurrentPage === 1"
+                  @click="prevDocumentsPage"
+                  class="pagination-btn"
+                  size="sm"
+                />
+                <div class="pagination-info">
+                  <span class="pagination-numbers">
+                    <span
+                      v-for="page in documentsTotalPages"
+                      :key="page"
+                      @click="goToDocumentsPage(page)"
+                      :class="['page-number', { active: page === documentsCurrentPage }]"
+                    >
+                      {{ page }}
+                    </span>
+                  </span>
+                </div>
+                <q-btn
+                  flat
+                  round
+                  icon="chevron_right"
+                  :disable="documentsCurrentPage === documentsTotalPages"
+                  @click="nextDocumentsPage"
+                  class="pagination-btn"
+                  size="sm"
+                />
+              </div>
+            </div>
+
             <p v-if="!documents.length" class="text-grey">No documents in this collection.</p>
           </div>
         </div>
@@ -450,14 +524,68 @@ const editData = ref({
 })
 const editFileInput = ref(null)
 
-// Computed properties for display
+// PAGINATION FOR ADDED ARTIFACTS/COLLECTIONS
+const artifactsCurrentPage = ref(1)
+const documentsCurrentPage = ref(1)
+const artifactsPerPage = ref(2)
+const documentsPerPage = ref(4)
 const displayedArtifacts = computed(() => {
-  return artifacts.value.slice(0, 2) // Show first 2 artifacts
+  const start = (artifactsCurrentPage.value - 1) * artifactsPerPage.value
+  return artifacts.value.slice(start, start + artifactsPerPage.value)
 })
 
 const displayedDocuments = computed(() => {
-  return documents.value.slice(0, 4) // Show first 4 documents
+  const start = (documentsCurrentPage.value - 1) * documentsPerPage.value
+  return documents.value.slice(start, start + documentsPerPage.value)
 })
+
+const totalArtifacts = computed(() => {
+  return artifacts.value.length
+})
+
+const totalDocuments = computed(() => {
+  return documents.value.length
+})
+
+const artifactsTotalPages = computed(() => {
+  return Math.ceil(totalArtifacts.value / artifactsPerPage.value)
+})
+
+const documentsTotalPages = computed(() => {
+  return Math.ceil(totalDocuments.value / documentsPerPage.value)
+})
+
+function nextArtifactsPage() {
+  if (artifactsCurrentPage.value < artifactsTotalPages.value) {
+    artifactsCurrentPage.value++
+  }
+}
+
+function prevArtifactsPage() {
+  if (artifactsCurrentPage.value > 1) {
+    artifactsCurrentPage.value--
+  }
+}
+
+function goToArtifactsPage(page) {
+  artifactsCurrentPage.value = page
+}
+
+function nextDocumentsPage() {
+  if (documentsCurrentPage.value < documentsTotalPages.value) {
+    documentsCurrentPage.value++
+  }
+}
+
+function prevDocumentsPage() {
+  if (documentsCurrentPage.value > 1) {
+    documentsCurrentPage.value--
+  }
+}
+
+function goToDocumentsPage(page) {
+  documentsCurrentPage.value = page
+}
 
 // Helper function to show message dialogs
 function showMessageDialog(title, content) {
@@ -560,6 +688,8 @@ async function fetchCollectionItems() {
     }))
   }
 }
+
+
 
 // Log user activity
 async function logClick(itemId, itemType, action) {
@@ -1276,6 +1406,72 @@ function goToAddArtifact() {
 
 .bookmark-icon.bookmarked {
   color: #560505;
+}
+
+/* Pagination Styles */
+.pagination-container {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #ffffffa3;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-btn {
+  color: #560505;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not([disabled]) {
+  background-color: #560505;
+  color: white;
+}
+
+.pagination-btn[disabled] {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-numbers {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.page-number {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #666;
+  font-size: 0.9rem;
+  min-width: 32px;
+  text-align: center;
+}
+
+.page-number:hover {
+  background-color: #f5f5f5;
+  color: #560505;
+}
+
+.page-number.active {
+  background-color: #560505;
+  color: white;
+  font-weight: 600;
 }
 
 /* Responsive Design */
