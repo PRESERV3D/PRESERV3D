@@ -32,114 +32,9 @@
       @file-dropped="onFileDropped"
       @upload-click="handleUpload"
       @cancel-click="handleCancel"
+      @force-cancel="handleForceCancel"
       @camera-click="handleScan"
     />
-
-    <!-- <q-dialog v-model="showDialog" persistent>
-      <q-card class="add-documentarti-card">
-        <div class="upload-sections-container">
-          // Camera Section
-          <q-card-section
-            class="two-box-upload-docuarti camera-section"
-            v-if="!selectedFile"
-            @click="handleScan"
-          >
-            <q-img src="/img/camera.png" alt="Camera" class="upload-icon-docu" />
-            <q-btn
-              outline
-              label="Use Camera"
-              class="camera-btn"
-              @click="handleScan"
-              no-caps
-              style="color: #560505; border-radius: 4px; padding: 4px 24px"
-            />
-          </q-card-section>
-
-          // Upload Section
-          <q-card-section
-            :class="[
-              selectedFile ? 'box-upload-docuarti' : 'two-box-upload-docuarti',
-              'upload-section',
-              { 'drag-over': isDragging },
-            ]"
-            @dragover.prevent="onDragOver"
-            @dragleave.prevent="onDragLeave"
-            @drop.prevent="onFileDrop"
-          >
-            <q-img src="/img/drag-drop-icon.png" alt="Upload-Document" class="upload-icon-docu" />
-            <div
-              v-if="!selectedFile"
-              class="sub-font-3 text-center"
-              style="font-size: 14px; font-weight: 200"
-            >
-              <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
-                DRAG and DROP files
-              </div>
-              or
-              <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a>
-              on your computer
-            </div>
-            <div v-else class="documentarti-preview text-center">
-              <q-btn
-                dense
-                round
-                flat
-                icon="close"
-                v-close-popup
-                class="thumbnail-delete"
-                @click="deleteSelectedFile"
-              />
-              <q-img src="/img/document-icon.png" alt="Document" class="document-icon" />
-              <div class="selected-document-name q-mt-md">
-                {{ selectedFile.name }}
-              </div>
-              // Upload progress bar
-              <q-linear-progress
-                v-if="uploading"
-                :value="uploadProgress / 100"
-                color="primary"
-                class="q-mt-md full-width"
-              />
-            </div>
-            <input
-              type="file"
-              ref="fileInput"
-              accept=".pdf"
-              style="display: none"
-              @change="handleFileChange"
-            />
-          </q-card-section>
-        </div>
-
-        <q-card-actions class="row q-ml-lg justify-between items-center">
-          <div></div>
-
-          // Action Buttons
-          <div class="action-buttons">
-            <q-btn
-              v-if="!uploading"
-              label="Upload"
-              :disabled="selectedFile === null"
-              class="q-ml-xl q-mt-sm btn-save"
-              @click="handleUpload"
-              no-caps
-            />
-
-            <q-spinner v-else color="primary" size="2em" class="q-ml-xl q-mt-sm" />
-          </div>
-
-          <q-btn
-            flat
-            label="Cancel"
-            class="q-mt-sm sub-font-2"
-            style="color: #000000"
-            v-close-popup
-            no-caps
-            @click="handleCancel"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog> -->
 
     <!-- Document Highlights Section -->
     <div class="q-py-md q-gutter-lg">
@@ -439,7 +334,7 @@
                     :class="{ bookmarked: doc.bookmarked }"
                     size="xs"
                     class="action-icon bookmark-icon"
-                    @click="openBookmarkDialog(doc, 'document')"
+                    @click.stop="openBookmarkDialog(doc, 'document')"
                   />
                 </div>
               </q-card>
@@ -456,64 +351,59 @@
               >
                 {{ doc.metadata.author }}
               </div>
-
-              <!-- Bookmark Dialog -->
-              <q-dialog v-model="dialogOpen">
-                <q-card class="add-to-collections">
-                  <q-card-section class="collection-header">
-                    <div class="sub-font-3" style="font-size: 18px; font-weight: 800">
-                      Choose a Collection
-                    </div>
-                  </q-card-section>
-                  <q-card-section class="collections-scroll-container">
-                    <div v-if="userCollections.length > 0">
-                      <div
-                        v-for="collection in userCollections"
-                        :key="collection.collection_id"
-                        class="q-py-sm flex items-center justify-between"
-                        style="
-                          font-family: 'Poppins', sans-serif;
-                          font-size: 16px;
-                          font-weight: 500;
-                        "
-                      >
-                        <span>{{ collection.collection_name }}</span>
-                        <q-checkbox
-                          v-model="selectedCollections"
-                          :val="collection.collection_id"
-                          dense
-                          color="primary"
-                        />
-                      </div>
-                    </div>
-
-                    <div v-else class="text-caption text-grey text-center">
-                      You don’t have any collections yet.
-                    </div>
-                  </q-card-section>
-
-                  <q-card-actions class="collection-footer" align="center">
-                    <q-btn label="Save" color="primary" @click="saveToSelectedCollections" />
-                    <q-btn flat label="Cancel" v-close-popup @click="resetForm" />
-                  </q-card-actions>
-                </q-card>
-              </q-dialog>
-
-              <!-- Message Dialog -->
-              <q-dialog v-model="notifyDialogOpen">
-                <q-card class="sucess-add-to-collection">
-                  <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-                    notifyDialogTitle
-                  }}</q-card-section>
-                  <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-                    notifyDialogMessage
-                  }}</q-card-section>
-                  <q-card-actions>
-                    <q-btn flat label="Close" class="btn-save" v-close-popup />
-                  </q-card-actions>
-                </q-card>
-              </q-dialog>
             </div>
+            <!-- Bookmark Dialog -->
+            <q-dialog v-model="dialogOpen">
+              <q-card class="add-to-collections">
+                <q-card-section class="collection-header">
+                  <div class="sub-font-3" style="font-size: 18px; font-weight: 800">
+                    Choose a Collection
+                  </div>
+                </q-card-section>
+                <q-card-section class="collections-scroll-container">
+                  <div v-if="userCollections.length > 0">
+                    <div
+                      v-for="collection in userCollections"
+                      :key="collection.collection_id"
+                      class="q-py-sm flex items-center justify-between"
+                      style="font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 500"
+                    >
+                      <span>{{ collection.collection_name }}</span>
+                      <q-checkbox
+                        v-model="selectedCollections"
+                        :val="collection.collection_id"
+                        dense
+                        color="primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div v-else class="text-caption text-grey text-center">
+                    You don’t have any collections yet.
+                  </div>
+                </q-card-section>
+
+                <q-card-actions class="collection-footer" align="center">
+                  <q-btn label="Save" color="primary" @click="saveToSelectedCollections" />
+                  <q-btn flat label="Cancel" v-close-popup @click="resetForm" />
+                </q-card-actions>
+              </q-card>
+            </q-dialog>
+
+            <!-- Message Dialog -->
+            <q-dialog v-model="notifyDialogOpen">
+              <q-card class="sucess-add-to-collection">
+                <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
+                  notifyDialogTitle
+                }}</q-card-section>
+                <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
+                  notifyDialogMessage
+                }}</q-card-section>
+                <q-card-actions>
+                  <q-btn flat label="Close" class="btn-save" v-close-popup />
+                </q-card-actions>
+              </q-card>
+            </q-dialog>
           </div>
         </div>
       </div>
@@ -578,8 +468,6 @@ if (userStore.profile.role === undefined) {
 const userRole = userStore.profile.role
 const isAdmin = computed(() => userRole === 'admin')
 const userType = computed(() => userStore.profile.user_type || 'Unknown') // from userstore because some users dont have usertype on auth
-
-// Initial load
 
 onMounted(async () => {
   const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
@@ -836,12 +724,14 @@ const fetchAllDocuments = async () => {
 // )
 
 const selectedFile = ref(null)
-// const fileInput = ref(null)
-// const isDragging = ref(false)
 const dialog = ref(false)
 const loading = ref(false)
 const uploading = ref(false)
 const uploadProgress = ref(0)
+const currentProcess = ref('')
+let nlpAbortController = null
+let ocrAbortController = null
+let cancelRequested = false
 const router = useRouter()
 const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 
@@ -918,7 +808,10 @@ async function processFileWithNLP(file, fileName) {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('filename', fileName)
-  return await axios.post('http://localhost:8000/process-text', formData)
+
+  return await axios.post('http://localhost:8000/process-text', formData, {
+    signal: nlpAbortController?.signal,
+  })
 }
 
 // async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData) {
@@ -985,40 +878,6 @@ async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData, user) {
   return data
 }
 
-// function triggerFileInput() {
-//   fileInput.value?.click()
-// }
-
-// function handleFileChange(event) {
-//   selectedFile.value = event.target.files[0] || null
-// }
-
-// function onDragOver() {
-//   isDragging.value = true
-// }
-
-// function onDragLeave() {
-//   isDragging.value = false
-// }
-
-// function onFileDrop(e) {
-//   isDragging.value = false
-//   const file = e.dataTransfer.files[0]
-//   if (file?.type === 'application/pdf') {
-//     selectedFile.value = file
-//   } else {
-//     alert('Only PDF files are allowed.')
-//     uploading.value = false
-//   }
-// }
-
-// function deleteSelectedFile() {
-//   selectedFile.value = null
-//   isDragging.value = false
-//   uploading.value = false
-//   uploadProgress.value = 0
-// }
-
 // File selection handlers
 function onFileSelected(file) {
   selectedFile.value = file
@@ -1035,10 +894,15 @@ function onFileDropped(file) {
 
 function handleCancel() {
   selectedFile.value = null
-  scannedFile.value = null // Also clear scanned file
+  scannedFile.value = null
   showDialog.value = false
-  uploading.value = false
-  uploadProgress.value = 0
+
+  // If upload is in progress, this should trigger force cancel
+  if (uploading.value) {
+    handleForceCancel()
+  } else {
+    resetUploadState()
+  }
 }
 
 async function handleCancelMetadata(cancelledData) {
@@ -1148,138 +1012,252 @@ const handleUpload = async () => {
     return
   }
 
+  // Reset cancellation state
+  cancelRequested = false
+  nlpAbortController = null
+  ocrAbortController = null
+
   // Compress file
+  currentProcess.value = 'Compressing PDF...'
   const compressedFile = await compressPdf(selectedFile.value)
   if (!compressedFile) {
     $q.notify({ type: 'negative', message: 'Compression failed. Please try again.' })
     return
   }
 
+  // Check if cancelled during compression
+  if (cancelRequested) {
+    console.log('Upload cancelled during compression')
+    return
+  }
+
   const fileName = sanitizeFileName(compressedFile.name)
+  nlpAbortController = new AbortController()
   uploading.value = true
   uploadProgress.value = 0
   loading.value = true
 
   // Check for existing filename
-  const alreadyExists = await fileExists(fileName)
-  if (alreadyExists) {
-    $q.notify({
-      type: 'negative',
-      message: `A file named "${fileName}" already exists. Please rename or choose another file.`,
-    })
+  const exists = await fileExists(fileName)
+  if (exists) {
+    $q.notify({ type: 'negative', message: `A file named "${fileName}" already exists.` })
+    resetUploadState()
     return
   }
 
-  const progressInterval = setInterval(() => {
-    if (uploadProgress.value < 90) {
-      uploadProgress.value += 1
-    }
-  }, 200)
-
-  // NLP processing
-  let response = await processFileWithNLP(compressedFile, fileName)
-  console.log('NLP Response:', response)
-
-  if (response.data.status === 'ocr_required') {
-    console.log('OCR required, processing...')
-    const ocrResult = await processOCRPages(response.data, {
-      minPages: 3,
-      minCharacters: 5000,
-    })
-
-    if (ocrResult && ocrResult.success) {
-      // Update the NLP response with OCR results
-      response.data = {
-        ...response.data,
-        extracted_text: ocrResult.nlpResponse?.extracted_text || '',
-        title: ocrResult.nlpResponse?.title || response.data.title,
-        author: ocrResult.nlpResponse?.author || response.data.author,
-        summary: ocrResult.nlpResponse?.summary || response.data.summary,
-        keywords: ocrResult.nlpResponse?.keywords || response.data.keywords,
-        categories: ocrResult.nlpResponse?.categories || response.data.categories,
-      }
-      console.log('OCR processing completed successfully')
-    } else {
-      console.warn('OCR processing failed, continuing with limited data')
-    }
-  }
-
-  const nlpData = response.data
-  console.log('NLP Response:', nlpData)
-
-  // Preview image
-  const preview = await generatePdfPreview(compressedFile)
-  const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
-
-  const previewUploadError = await uploadPreviewImage(preview, previewFileName)
-  if (previewUploadError) throw previewUploadError
-
-  // Upload file
-  const uploadError = await uploadFileToStorage(compressedFile, fileName)
-  if (uploadError) {
-    console.error('Supabase Upload Error:', uploadError)
-    throw uploadError
-  }
-
-  clearInterval(progressInterval)
-  uploadProgress.value = 100
-
-  // Get public URLs
-  const fileUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/documents/${encodeURIComponent(fileName)}`
-  const previewUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/pdf-previews/${encodeURIComponent(previewFileName)}`
-
-  // Save metadata
-  let insertedData
   try {
-    insertedData = await saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData, user)
-  } catch (dbError) {
-    console.error('DB error:', dbError)
-    $q.notify({ type: 'negative', message: 'Upload succeeded but metadata failed to save.' })
-    return
+    const progressInterval = setInterval(() => {
+      if (cancelRequested) {
+        clearInterval(progressInterval)
+        return
+      }
+      if (uploadProgress.value < 90) uploadProgress.value += 1
+    }, 200)
+
+    // NLP processing
+    currentProcess.value = 'Processing document with NLP...'
+    let response = await processFileWithNLP(compressedFile, fileName, nlpAbortController.signal)
+    console.log('NLP Response:', response)
+
+    // Check if cancelled after NLP
+    if (cancelRequested) {
+      clearInterval(progressInterval)
+      console.log('Upload cancelled after NLP processing')
+      return
+    }
+
+    if (response.data.status === 'ocr_required') {
+      console.log('OCR required, processing...')
+      currentProcess.value = 'Extracting text from images...'
+      ocrAbortController = new AbortController()
+
+      const ocrResult = await processOCRPages(response.data, {
+        minPages: 3,
+        minCharacters: 5000,
+        signal: ocrAbortController.signal,
+      })
+
+      if (ocrResult && ocrResult.canceled) {
+        clearInterval(progressInterval)
+        console.warn('OCR canceled.')
+        $q.notify({ type: 'warning', message: 'Upload canceled.' })
+        return
+      }
+
+      if (ocrResult && ocrResult.success) {
+        // Update the NLP response with OCR results
+        response.data = {
+          ...response.data,
+          extracted_text: ocrResult.nlpResponse?.extracted_text || '',
+          title: ocrResult.nlpResponse?.title || response.data.title,
+          author: ocrResult.nlpResponse?.author || response.data.author,
+          summary: ocrResult.nlpResponse?.summary || response.data.summary,
+          keywords: ocrResult.nlpResponse?.keywords || response.data.keywords,
+          categories: ocrResult.nlpResponse?.categories || response.data.categories,
+        }
+        console.log('OCR processing completed successfully')
+      } else {
+        console.warn('OCR processing failed, continuing with limited data')
+      }
+    }
+
+    // Check if cancelled before file operations
+    if (cancelRequested) {
+      clearInterval(progressInterval)
+      console.log('Upload cancelled before file operations')
+      return
+    }
+
+    const nlpData = response.data
+    console.log('NLP Response:', nlpData)
+
+    // Preview image
+    currentProcess.value = 'Generating preview...'
+    const preview = await generatePdfPreview(compressedFile)
+    const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
+
+    // Check if cancelled during preview generation
+    if (cancelRequested) {
+      clearInterval(progressInterval)
+      console.log('Upload cancelled during preview generation')
+      return
+    }
+
+    const previewUploadError = await uploadPreviewImage(preview, previewFileName)
+    if (previewUploadError && !cancelRequested) {
+      throw previewUploadError
+    }
+
+    // Upload file
+    currentProcess.value = 'Uploading file...'
+    const uploadError = await uploadFileToStorage(compressedFile, fileName)
+    if (uploadError && !cancelRequested) {
+      console.error('Supabase Upload Error:', uploadError)
+      throw uploadError
+    }
+
+    // Check if cancelled during upload
+    if (cancelRequested) {
+      clearInterval(progressInterval)
+      console.log('Upload cancelled during file upload')
+      return
+    }
+
+    clearInterval(progressInterval)
+    uploadProgress.value = 100
+
+    // Get public URLs
+    const fileUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/documents/${encodeURIComponent(fileName)}`
+    const previewUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/pdf-previews/${encodeURIComponent(previewFileName)}`
+
+    // Save metadata
+    currentProcess.value = 'Saving metadata...'
+    let insertedData
+    try {
+      insertedData = await saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData, user)
+    } catch (dbError) {
+      if (!cancelRequested) {
+        console.error('DB error:', dbError)
+        $q.notify({ type: 'negative', message: 'Upload succeeded but metadata failed to save.' })
+      }
+      return
+    }
+
+    if (cancelRequested) {
+      console.log('Upload cancelled before finalizing metadata')
+      return
+    }
+
+    currentDocumentData.value = insertedData
+
+    // // Log data
+    // const newData = {
+    //   id: insertedData.id,
+    //   file_name: insertedData.file_name,
+    //   file_url: insertedData.file_url,
+    //   metadata: insertedData.metadata,
+    //   uploaded_at: insertedData.uploaded_at,
+    //   updated_at: insertedData.updated_at,
+    //   preview_url: insertedData.preview_url,
+    //   search_text: insertedData.search_text,
+    //   related_links: insertedData.related_links,
+    // }
+
+    const changes = getChanges(null, insertedData)
+
+    // Log history
+    await logItemHistory({
+      itemId: insertedData.id,
+      itemType: 'document',
+      action: 'upload',
+      oldData: null,
+      newData: insertedData,
+      changes,
+    })
+
+    // Success result
+    metadata.value = {
+      id: insertedData.id,
+      file_name: fileName,
+      file_url: fileUrl,
+      title: nlpData.title || '',
+      author: nlpData.author || '',
+      date: nlpData.date || '',
+      summary: nlpData.summary || '',
+      keywords: nlpData.keywords || [],
+      categories: nlpData.categories || [],
+      extracted_text: nlpData.extracted_text || '',
+    }
+
+    dialog.value = true
+  } catch (err) {
+    if (cancelRequested) {
+      console.log('Upload process was cancelled')
+      $q.notify({ type: 'warning', message: 'Upload canceled.' })
+    } else {
+      console.error('Unexpected upload error:', err)
+      $q.notify({ type: 'negative', message: 'Upload failed. Please try again.' })
+    }
+  } finally {
+    resetUploadState()
+  }
+}
+
+function handleForceCancel() {
+  console.log('Force cancel requested - stopping all processes')
+
+  cancelRequested = true
+
+  if (nlpAbortController) {
+    console.log('Aborting NLP request...')
+    nlpAbortController.abort()
+    nlpAbortController = null
   }
 
-  currentDocumentData.value = insertedData
-
-  // // Log data
-  // const newData = {
-  //   id: insertedData.id,
-  //   file_name: insertedData.file_name,
-  //   file_url: insertedData.file_url,
-  //   metadata: insertedData.metadata,
-  //   uploaded_at: insertedData.uploaded_at,
-  //   updated_at: insertedData.updated_at,
-  //   preview_url: insertedData.preview_url,
-  //   search_text: insertedData.search_text,
-  //   related_links: insertedData.related_links,
-  // }
-
-  const changes = getChanges(null, insertedData)
-
-  // Log history
-  await logItemHistory({
-    itemId: insertedData.id,
-    itemType: 'document',
-    action: 'upload',
-    oldData: null,
-    newData: insertedData,
-    changes,
-  })
-
-  // Success result
-  metadata.value = {
-    id: insertedData.id,
-    file_name: fileName,
-    file_url: fileUrl,
-    title: nlpData.title || '',
-    author: nlpData.author || '',
-    date: nlpData.date || '',
-    summary: nlpData.summary || '',
-    keywords: nlpData.keywords || [],
-    categories: nlpData.categories || [],
-    extracted_text: nlpData.extracted_text || '',
+  if (ocrAbortController) {
+    console.log('Aborting OCR request...')
+    ocrAbortController.abort()
+    ocrAbortController = null
   }
 
-  dialog.value = true
+  resetUploadState()
+
+  console.log('All upload processes cancelled')
+}
+
+function resetUploadState() {
+  uploading.value = false
+  uploadProgress.value = 0
+  currentProcess.value = ''
+  loading.value = false
+
+  // Clean up controllers
+  if (nlpAbortController) {
+    nlpAbortController = null
+  }
+  if (ocrAbortController) {
+    ocrAbortController = null
+  }
 }
 
 function getChanges(oldData = {}, newData = {}) {
