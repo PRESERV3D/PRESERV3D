@@ -362,11 +362,11 @@
 
             <div class="detail-row q-mb-md">
               <div class="detail-label">
-                <div class="a-info-title2">Uploaded At</div>
+                <div class="a-info-title2">Uploaded On</div>
                 <div class="a-info-subtitle">{{ formatDate(model.uploaded_at) }}</div>
               </div>
               <div class="detail-value">
-                <div class="a-info-title2">Updated At</div>
+                <div class="a-info-title2">Updated On</div>
                 <div class="a-info-subtitle">{{ formatDate(model.updated_at) }}</div>
               </div>
             </div>
@@ -1234,10 +1234,13 @@ model-viewer:-ms-fullscreen {
 .action-buttons {
   display: flex;
   align-items: center;
-  margin-left: auto;
   color: #880000;
   font-family: 'Poppins', sans-serif !important;
   font-size: 16px !important;
+  margin-left: 0;
+  padding-left: 0;
+  justify-content: flex-start;
+  align-self: flex-start;
 }
 
 .loading-container {
@@ -1255,7 +1258,7 @@ model-viewer:-ms-fullscreen {
 .a-title {
   font-family: 'Poppins', sans-serif;
   font-weight: 500;
-  font-size: 64px;
+  font-size: 3.5rem;
   color: #560505;
   margin-top: 1rem;
   margin-left: 30rem;
@@ -1417,10 +1420,14 @@ model-viewer:-ms-fullscreen {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  margin-top: 0.5rem;
-  margin-left: auto;
-  padding-left: 1rem;
+  margin-top: 0.25rem;
+  margin-left: 0;
+  padding-left: 0;
+  justify-content: flex-start;
+  align-self: flex-start;
 }
+
+
 
 .action-icons-top .action-icon {
   cursor: pointer;
@@ -1444,12 +1451,6 @@ model-viewer:-ms-fullscreen {
 .action-icons-top,
 .action-icons-top .star-icon.starred {
   color: #efaf00;
-}
-
-.action-icons-top {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
 }
 
 .icon-with-count {
@@ -1671,12 +1672,318 @@ model-viewer:-ms-fullscreen {
   margin: 0.15rem 0;
 }
 
-/* Mobile Responsiveness */
+/* Base responsive container improvements */
+.artifact-detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.main-content {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  width: 100%;
+  min-width: 0;
+}
+
+.info-section {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ========================
+  RESPONSIVE DESIGN
+======================== */
+
+/* Desktop - 1300px and below */
+@media screen and (max-width: 1300px) {
+  .a-title {
+    margin-left: 15rem;
+    font-size: 3.2rem;
+  }
+
+  /* Improve two-column layouts */
+  .two-column-details .detail-row {
+    gap: 2rem;
+  }
+
+  .two-column-details .detail-label,
+  .two-column-details .detail-value {
+    flex: 1;
+    min-width: 0;
+    max-width: 48%;
+  }
+
+  .side-by-side-details .detail-row {
+    gap: 2rem;
+  }
+
+  .side-by-side-details .detail-label,
+  .side-by-side-details .detail-value {
+    flex: 1;
+    min-width: 0;
+    max-width: 48%;
+  }
+}
+
+/* Desktop - 1199px and below */
+@media screen and (max-width: 1199px) {
+  .artifact-card {
+    width: 500px;
+    height: 500px;
+  }
+
+  .large-artifacts {
+    width: 470px !important;
+    height: 470px !important;
+  }
+
+  .info-section {
+    max-width: none;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .a-title {
+    margin-top: 3rem;
+    font-size: 3rem;
+    margin-left: 5rem;
+  }
+
+  .main-content {
+    gap: 1.5rem;
+  }
+
+  /* Tighten column gaps */
+  .two-column-details .detail-row,
+  .side-by-side-details .detail-row {
+    gap: 1.5rem;
+  }
+}
+
+/* Large Tablet - 1068px and below */
+@media screen and (max-width: 1068px) {
+  .artifact-card {
+    width: 450px;
+    height: 450px;
+  }
+
+  .large-artifacts {
+    width: 420px !important;
+    height: 420px !important;
+  }
+
+  .a-title {
+    margin-left: 2rem;
+    font-size: 2.8rem;
+  }
+
+  .main-content {
+    gap: 1rem;
+  }
+
+  .info-section {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
+
+  /* Adjust column gaps */
+  .two-column-details .detail-row,
+  .side-by-side-details .detail-row {
+    gap: 1rem;
+  }
+}
+
+/* Tablet - 991px and below */
+@media screen and (max-width: 991px) {
+  .main-content {
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .artifact-card {
+    width: 100%;
+    max-width: 600px;
+    height: 450px;
+  }
+
+  .large-artifacts {
+    width: 90% !important;
+    height: 400px !important;
+    max-width: 570px !important;
+  }
+
+  .info-section {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .a-title {
+    font-size: 48px;
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .control-buttons {
+    bottom: 15px;
+    right: 15px;
+  }
+
+  /* Maintain two-column layout on tablet */
+  .two-column-details .detail-row,
+  .side-by-side-details .detail-row {
+    gap: 2rem;
+  }
+
+  .two-column-details .detail-label,
+  .two-column-details .detail-value,
+  .side-by-side-details .detail-label,
+  .side-by-side-details .detail-value {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Tablet Small - 767px and below */
+@media screen and (max-width: 767px) {
+  .artifact-card {
+    max-width: 500px;
+    height: 400px;
+  }
+
+  .large-artifacts {
+    width: 90% !important;
+    height: 350px !important;
+  }
+
+  .control-buttons {
+    gap: 6px;
+  }
+
+  .control-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .control-icon {
+    font-size: 14px !important;
+  }
+
+  .top-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .categories-container {
+    align-items: flex-start;
+  }
+
+  .a-title {
+    font-size: 36px;
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .func-button {
+    justify-content: center !important;
+    margin-top: 1rem !important;
+  }
+
+  /* Stack two-column details on smaller screens */
+  .two-column-details .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .two-column-details .detail-label,
+  .two-column-details .detail-value {
+    flex: none;
+    width: 100%;
+  }
+
+  .two-column-details .detail-value .a-info-title2,
+  .two-column-details .detail-value .a-info-subtitle {
+    text-align: left;
+  }
+
+  /* Stack side-by-side details too */
+  .side-by-side-details .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .side-by-side-details .detail-label,
+  .side-by-side-details .detail-value {
+    flex: none;
+    width: 100%;
+    text-align: left;
+  }
+}
+
+/* Mobile - 575px and below */
+@media screen and (max-width: 575px) {
+  .artifact-card {
+    width: calc(100% - 1rem);
+    height: 350px;
+    padding: 0.5rem;
+    margin: 0 0.5rem;
+  }
+
+  .large-artifacts {
+    width: 280px !important;
+    height: 280px !important;
+  }
+
+  .a-title {
+    font-size: 28px;
+    padding: 12px 0;
+  }
+
+  .control-buttons {
+    bottom: 10px;
+    right: 10px;
+    gap: 4px;
+  }
+
+  .control-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .control-icon {
+    font-size: 12px !important;
+  }
+
+  .category-tag {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+  }
+
+  .func-button .func-btn {
+    font-size: 14px !important;
+    width: 80px !important;
+    padding: 6px 12px !important;
+  }
+
+  /* Ensure mobile layout is fully stacked */
+  .detail-row {
+    gap: 0.25rem;
+  }
+}
+
+/* Help overlay responsiveness improvements */
 @media (max-width: 768px) {
   .help-content {
     padding: 1.5rem;
     margin: 1rem;
     max-height: 85%;
+    width: 90%;
   }
 
   .help-title {
@@ -1686,6 +1993,7 @@ model-viewer:-ms-fullscreen {
   }
 
   .help-sections {
+    grid-template-columns: 1fr;
     gap: 1rem;
   }
 
@@ -1708,139 +2016,5 @@ model-viewer:-ms-fullscreen {
   }
 }
 
-@media (max-width: 480px) {
-  .help-content {
-    padding: 0.75rem;
-    margin: 0.5rem;
-  }
 
-  .help-title {
-    font-size: 16px;
-    margin-bottom: 0.75rem;
-  }
-
-  .help-section-title {
-    font-size: 14px;
-    gap: 0.4rem;
-  }
-
-  .help-icon {
-    font-size: 16px;
-  }
-
-  .help-method {
-    font-size: 10px;
-    gap: 0.4rem;
-  }
-
-  .method-icon {
-    font-size: 11px;
-  }
-}
-
-@media (max-width: 768px) {
-  .main-content {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .artifact-card {
-    width: 100%;
-    max-width: 400px;
-    height: 400px;
-  }
-
-  .large-artifacts {
-    width: 300px !important;
-    height: 300px !important;
-  }
-
-  .control-buttons {
-    bottom: 15px;
-    right: 15px;
-    gap: 6px;
-  }
-
-  .control-btn {
-    width: 28px;
-    height: 28px;
-  }
-
-  .control-icon {
-    font-size: 14px !important;
-  }
-
-  .back-button-top {
-    top: 0.5rem;
-    left: 0.5rem;
-  }
-
-  .top-actions {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .categories-container {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .action-icons-top {
-    margin-top: 1rem;
-    margin-left: 0;
-    padding-left: 0;
-    justify-content: flex-start;
-  }
-
-  /* Admin back button mobile positioning */
-  .func-button {
-    justify-content: center !important;
-    margin-top: 1rem !important;
-  }
-
-  .a-title {
-    font-size: 32px !important;
-    margin-left: 0 !important;
-    text-align: center !important;
-  }
-}
-
-@media (max-width: 480px) {
-  .title-input :deep(.q-field__native) {
-    font-size: 32px !important;
-    padding: 12px 0 !important;
-  }
-
-  .title-section {
-    margin-bottom: 1rem;
-  }
-
-  .func-button {
-    padding: 0.5rem !important;
-    margin-top: 1rem !important;
-  }
-
-  .action-icons-top {
-    gap: 0.75rem;
-  }
-
-  .action-icons-top .count-text {
-    font-size: 11px;
-  }
-
-  .control-buttons {
-    bottom: 10px;
-    right: 10px;
-    gap: 4px;
-  }
-
-  .control-btn {
-    width: 26px;
-    height: 26px;
-  }
-
-  .control-icon {
-    font-size: 12px !important;
-  }
-}
 </style>

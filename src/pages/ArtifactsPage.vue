@@ -296,7 +296,9 @@
     <!-- Three Artifacts per Row Grid -->
     <div class="artifacts-grid">
       <div
-        v-for="(model, i) in searchStore.query ? searchStore.searchedModels : modelStore.models"
+        v-for="(model, i) in searchStore.query
+          ? searchStore.searchedModels
+          : modelStore.filteredModels"
         :key="i"
         class="artifact-card-wrapper"
       >
@@ -314,7 +316,7 @@
           </div>
 
           <q-card-section class="q-pa-sm artifact-card-section">
-            <div class="artifact-title-icon-row">
+            <div class="artifact-title-icon-row q-mt-sm">
               <router-link
                 :to="{ name: 'view-artifact', params: { id: model.id } }"
                 class="artifact-title-link"
@@ -418,11 +420,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          notifyDialogTitle
-        }}</q-card-section>
+            notifyDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-          notifyDialogMessage
-        }}</q-card-section>
+            notifyDialogMessage
+          }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -446,12 +448,13 @@ import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import UploadDialog from 'src/components/UploadDialog.vue'
 import '@google/model-viewer'
 
 const router = useRouter()
-
+const $q = useQuasar()
 const modelStore = useModelStore()
 const searchStore = useSearchStore()
 const userStore = useUserStore()
@@ -1322,6 +1325,8 @@ function sanitizeFileName(name) {
 //   }
 // }
 
+let currentArtifactData = ref(null)
+
 const handleUpload = async () => {
   const file = selectedFile.value
   const fileName = sanitizeFileName(file.name)
@@ -1329,7 +1334,7 @@ const handleUpload = async () => {
   uploadProgress.value = 0
 
   if (!file || !fileName.endsWith('.glb')) {
-    alert('Only .glb files are allowed.')
+    $q.notify({ type: 'negative', message: 'Only .glb files are allowed.' })
     uploading.value = false
     return
   }
@@ -1339,7 +1344,10 @@ const handleUpload = async () => {
   try {
     const alreadyExists = await fileExists(fileName)
     if (alreadyExists) {
-      alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
+      $q.notify({
+        type: 'negative',
+        message: `A file named "${fileName}" already exists. Please rename or choose another file.`,
+      })
       uploading.value = false
       return
     }
@@ -1370,11 +1378,11 @@ const handleUpload = async () => {
       file_name: fileName,
       file_url: fileUrl,
       uploaded_at: new Date(),
-      metadata: null, // initially empty
+      metadata: null,
       donated_by: null,
       updated_at: null,
       data_source: null,
-      search_text: '     ',
+      search_text: null,
       date_received: null,
       related_links: null,
     }
@@ -1393,6 +1401,9 @@ const handleUpload = async () => {
 
     const item = insertedData[0]
     console.log('Upload success', item)
+
+    currentArtifactData.value = { ...item }
+    metadata.value = { ...item }
 
     const changes = {
       id: { old: null, new: item.id },
@@ -1478,48 +1489,65 @@ async function fileExists(fileName) {
 //   }
 // }
 
+function normalizeValue(key, value) {
+  if (value === '') return null
+
+  if (Array.isArray(value)) {
+    return value
+  }
+
+  return value
+}
+
+function normalizeObject(obj) {
+  if (!obj || typeof obj !== 'object') return obj
+  const normalized = {}
+  for (const key in obj) {
+    normalized[key] = normalizeValue(key, obj[key])
+  }
+  return normalized
+}
+
 async function saveMetadata(updatedMetadata) {
   try {
     const oldData = {
-      ...metadata.value,
-      metadata: metadata.value.metadata ?? null,
-      updated_at: metadata.value.updated_at ?? null,
+      ...currentArtifactData.value,
     }
 
-    const now = new Date().toISOString()
+    const now = new Date()
 
-    const newData = {
+    const updateData = {
       ...oldData,
-      metadata: {
+      metadata: normalizeObject({
         title: updatedMetadata.title,
         author: updatedMetadata.author,
         date: updatedMetadata.date,
         summary: updatedMetadata.summary,
         keywords: updatedMetadata.keywords,
         categories: updatedMetadata.categories,
-      },
+      }),
       updated_at: now,
     }
 
-    // Update Supabase
-    const { error: updateError } = await supabase
+    const { data: updatedData, error: updateError } = await supabase
       .from('artifacts_metadata')
-      .update({
-        metadata: newData.metadata,
-        updated_at: now,
-      })
+      .update(updateData)
       .eq('id', metadata.value.id)
+      .select()
+      .single()
 
     if (updateError) {
       console.error('Failed to update metadata:', updateError)
-      alert('Failed to update metadata.')
+      showNotifyDialog('Error', 'Failed to save changes.')
       return
     }
 
-    // Compute changes
+    const newData = {
+      ...updatedData,
+    }
+
     const changes = getChanges(oldData, newData)
 
-    // Log history
     await logItemHistory({
       itemId: metadata.value.id,
       itemType: 'artifact',
@@ -1529,9 +1557,10 @@ async function saveMetadata(updatedMetadata) {
       changes,
     })
 
-    alert('Metadata saved successfully!')
+    currentArtifactData.value = updatedData
+    showNotifyDialog('Notice', 'Metadata saved successfully!')
     dialog.value = false
-    router.push({ name: 'admin-home' })
+    router.push('/artifacts')
   } catch (err) {
     console.error('Error saving metadata:', err)
     alert('Unexpected error occurred.')
@@ -1773,5 +1802,131 @@ function applySort(option) {
 .my-card:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.artifact-card-section {
+  min-height: 4.375rem;
+}
+
+.artifact-title {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+}
+
+/* Responsive styles for buttons */
+.subtitle-btn-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.artifact-btn {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Mobile styles (max-width: 767px) */
+@media (max-width: 767px) {
+  .subtitle-btn-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .artifact-btn {
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+
+
+  .artifact-btn-style {
+    min-width: 80px;
+    margin: 0.25rem !important;
+  }
+
+  .add-new-btn {
+    min-width: 80px !important;
+    margin: 0.25rem !important;
+  }
+
+  /* Make filter dropdown responsive */
+  .artifact-btn-style .q-list {
+    width: 90vw !important;
+    max-width: 400px !important;
+  }
+
+  .artifact-btn-style .row {
+    flex-direction: column;
+  }
+
+  .artifact-btn-style .col {
+    margin-bottom: 1rem;
+  }
+
+  .artifact-btn-style q-scroll-area {
+    width: 100% !important;
+  }
+}
+
+/* Tablet styles (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .subtitle-btn-row {
+    align-items: center;
+  }
+
+  .artifact-btn {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+  }
+
+  .artifact-btn-style {
+    margin: 0.25rem 0.25rem 0.25rem 0.5rem !important;
+  }
+
+  .add-new-btn {
+    margin: 0.25rem !important;
+  }
+
+  /* Adjust filter dropdown for tablets */
+  .artifact-btn-style .q-list {
+    width: 35rem !important;
+  }
+}
+
+/* Small desktop styles (1024px - 1199px) */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .artifact-btn-style {
+    margin-left: 0.5rem !important;
+  }
+}
+
+/* Additional responsive adjustments for very small screens */
+@media (max-width: 480px) {
+  .page-header {
+    padding: 0 0.5rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  .artifact-btn {
+    justify-content: space-around;
+    margin-bottom: 2.5rem;
+  }
+
+  .artifact-btn-style,
+  .add-new-btn {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
 }
 </style>

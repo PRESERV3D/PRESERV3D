@@ -105,7 +105,7 @@
                     />
                   </div>
                   <q-card-section class="q-pa-sm artifact-card-section">
-                    <div class="title-row">
+                    <div class="title-row q-mt-sm">
                       <router-link
                         :to="{ name: 'view-artifact', params: { id: artifact.id } }"
                         class="artifact-title-link"
@@ -119,10 +119,10 @@
                       <div class="action-icons">
                         <!-- View Icon with Count -->
                         <div class="icon-with-count">
-                          <q-icon name="visibility" class="action-icon view-icon" size="18px" />
+                          <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
                           <span class="count-text">{{
-                            modelStore.viewCounts[artifact.id] || 0
-                          }}</span>
+                              modelStore.viewCounts[artifact.id] || 0
+                            }}</span>
                         </div>
                         <!-- Star Icon with Count -->
                         <div class="icon-with-count">
@@ -130,19 +130,19 @@
                             :name="artifact.starred ? 'star' : 'star_border'"
                             class="action-icon star-icon"
                             :class="{ starred: artifact.starred }"
-                            size="18px"
+                            size="20px"
                             @click.stop="toggleFavorite(artifact.id, 'artifact')"
                           />
                           <span class="count-text">{{
-                            modelStore.starCounts[artifact.id] || 0
-                          }}</span>
+                              modelStore.starCounts[artifact.id] || 0
+                            }}</span>
                         </div>
                         <q-icon
                           v-if="collection.collection_name !== 'Favorites'"
                           :name="artifact.bookmarked ? 'bookmark' : 'bookmark_border'"
                           class="action-icon bookmark-icon"
                           :class="{ bookmarked: artifact.bookmarked }"
-                          size="18px"
+                          size="20px"
                           @click.stop="toggleBookmark(artifact.id, 'artifact')"
                         />
                       </div>
@@ -151,6 +151,43 @@
                 </q-card>
               </div>
             </div>
+
+            <!-- Artifacts Pagination -->
+            <div v-if="totalArtifacts > artifactsPerPage" class="pagination-container">
+              <div class="pagination-controls">
+                <q-btn
+                  flat
+                  round
+                  icon="chevron_left"
+                  :disable="artifactsCurrentPage === 1"
+                  @click="prevArtifactsPage"
+                  class="pagination-btn"
+                  size="sm"
+                />
+                <div class="pagination-info">
+                  <span class="pagination-numbers">
+                    <span
+                      v-for="page in artifactsTotalPages"
+                      :key="page"
+                      @click="goToArtifactsPage(page)"
+                      :class="['page-number', { active: page === artifactsCurrentPage }]"
+                    >
+                      {{ page }}
+                    </span>
+                  </span>
+                </div>
+                <q-btn
+                  flat
+                  round
+                  icon="chevron_right"
+                  :disable="artifactsCurrentPage === artifactsTotalPages"
+                  @click="nextArtifactsPage"
+                  class="pagination-btn"
+                  size="sm"
+                />
+              </div>
+            </div>
+
             <p v-if="!artifacts.length" class="text-grey">No artifacts in this collection.</p>
           </div>
 
@@ -181,30 +218,31 @@
                     @click="logClick(document.id, 'document', 'view_document')"
                   >
                     <!-- Document Preview Image -->
-                    <q-img
-                      :src="document.preview_url"
-                      :alt="document.metadata?.title || document.file_name || 'Document Preview'"
-                      class="document-preview-image"
-                      :style="{ width: '100%', height: '200px' }"
-                      loading="lazy"
-                    >
-                      <!-- Fallback if preview fails to load -->
-                      <template v-slot:error>
-                        <div class="document-preview-fallback">
-                          <q-icon name="description" size="3rem" color="#560505" />
-                          <div class="text-caption">Preview not available</div>
-                        </div>
-                      </template>
-                    </q-img>
+                    <div class="document-preview-container">
+                      <q-img
+                        :src="document.preview_url"
+                        :alt="document.metadata?.title || document.file_name || 'Document Preview'"
+                        class="document-preview-image"
+                        loading="lazy"
+                      >
+                        <!-- Fallback if preview fails to load -->
+                        <template v-slot:error>
+                          <div class="document-preview-fallback">
+                            <q-icon name="description" size="3rem" color="#560505" />
+                            <div class="text-caption">Preview not available</div>
+                          </div>
+                        </template>
+                      </q-img>
+                    </div>
                   </router-link>
                   <q-card-section class="q-pa-sm document-card-section">
                     <div class="title-row">
                       <router-link
                         :to="{ name: 'view-document', params: { id: document.id } }"
-                        class="artifact-title-link"
+                        class="document-title-link"
                         @click="logClick(document.id, 'document', 'view_document')"
                       >
-                        <div class="text-subtitle2 artifact-title q-mr-sm">
+                        <div class="text-subtitle2 document-title">
                           {{
                             document.metadata?.title || document.file_name || 'Untitled Document'
                           }}
@@ -212,39 +250,81 @@
                       </router-link>
                       <div class="action-icons">
                         <!-- View Icon with Count -->
-                        <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
-                        <span class="count-text">{{
-                          documentsStore.viewCounts[document.id] || 0
-                        }}</span>
-
+                        <div class="icon-with-count">
+                          <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
+                          <span class="count-text">{{
+                              documentsStore.viewCounts[document.id] || 0
+                            }}</span>
+                        </div>
                         <!-- Star Icon with Count -->
-                        <q-icon
-                          :name="document.starred ? 'star' : 'star_border'"
-                          :class="{ starred: document.starred }"
-                          size="xs"
-                          class="action-icon star-icon"
-                          @click.stop="toggleFavorite(document.id, 'document')"
-                        />
-                        <span class="count-text">{{
-                          documentsStore.starCounts[document.id] || 0
-                        }}</span>
+                        <div class="icon-with-count">
+                          <q-icon
+                            :name="document.starred ? 'star' : 'star_border'"
+                            :class="{ starred: document.starred }"
+                            size="20px"
+                            class="action-icon star-icon"
+                            @click.stop="toggleFavorite(document.id, 'document')"
+                          />
+                          <span class="count-text">{{
+                              documentsStore.starCounts[document.id] || 0
+                            }}</span>
+                        </div>
                         <q-icon
                           v-if="collection.collection_name !== 'Favorites'"
                           :name="document.bookmarked ? 'bookmark' : 'bookmark_border'"
                           class="action-icon bookmark-icon"
                           :class="{ bookmarked: document.bookmarked }"
-                          size="18px"
+                          size="20px"
                           @click.stop="toggleBookmark(document.id, 'document')"
                         />
                       </div>
                     </div>
-                    <p class="document-author" style="margin-left: 1.25rem">
-                      {{ document.metadata?.author || 'Unknown Author' }}
-                    </p>
+                    <div class="document-author-container">
+                      <p class="document-author">
+                        {{ document.metadata?.author || 'Unknown Author' }}
+                      </p>
+                    </div>
                   </q-card-section>
                 </q-card>
               </div>
             </div>
+
+            <!-- Documents Pagination -->
+            <div v-if="totalDocuments > documentsPerPage" class="pagination-container">
+              <div class="pagination-controls">
+                <q-btn
+                  flat
+                  round
+                  icon="chevron_left"
+                  :disable="documentsCurrentPage === 1"
+                  @click="prevDocumentsPage"
+                  class="pagination-btn"
+                  size="sm"
+                />
+                <div class="pagination-info">
+                  <span class="pagination-numbers">
+                    <span
+                      v-for="page in documentsTotalPages"
+                      :key="page"
+                      @click="goToDocumentsPage(page)"
+                      :class="['page-number', { active: page === documentsCurrentPage }]"
+                    >
+                      {{ page }}
+                    </span>
+                  </span>
+                </div>
+                <q-btn
+                  flat
+                  round
+                  icon="chevron_right"
+                  :disable="documentsCurrentPage === documentsTotalPages"
+                  @click="nextDocumentsPage"
+                  class="pagination-btn"
+                  size="sm"
+                />
+              </div>
+            </div>
+
             <p v-if="!documents.length" class="text-grey">No documents in this collection.</p>
           </div>
         </div>
@@ -343,11 +423,11 @@
     <q-dialog v-model="messageDialogOpen">
       <q-card class="delete-notice">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          messageDialogTitle
-        }}</q-card-section>
+            messageDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-          messageDialogContent
-        }}</q-card-section>
+            messageDialogContent
+          }}</q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Close" class="btn-save" @click="handleMessageDialogClose" />
         </q-card-actions>
@@ -374,11 +454,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          notifyDialogTitle
-        }}</q-card-section>
+            notifyDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-          notifyDialogMessage
-        }}</q-card-section>
+            notifyDialogMessage
+          }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -444,14 +524,68 @@ const editData = ref({
 })
 const editFileInput = ref(null)
 
-// Computed properties for display
+// PAGINATION FOR ADDED ARTIFACTS/COLLECTIONS
+const artifactsCurrentPage = ref(1)
+const documentsCurrentPage = ref(1)
+const artifactsPerPage = ref(2)
+const documentsPerPage = ref(4)
 const displayedArtifacts = computed(() => {
-  return artifacts.value.slice(0, 2) // Show first 2 artifacts
+  const start = (artifactsCurrentPage.value - 1) * artifactsPerPage.value
+  return artifacts.value.slice(start, start + artifactsPerPage.value)
 })
 
 const displayedDocuments = computed(() => {
-  return documents.value.slice(0, 4) // Show first 4 documents
+  const start = (documentsCurrentPage.value - 1) * documentsPerPage.value
+  return documents.value.slice(start, start + documentsPerPage.value)
 })
+
+const totalArtifacts = computed(() => {
+  return artifacts.value.length
+})
+
+const totalDocuments = computed(() => {
+  return documents.value.length
+})
+
+const artifactsTotalPages = computed(() => {
+  return Math.ceil(totalArtifacts.value / artifactsPerPage.value)
+})
+
+const documentsTotalPages = computed(() => {
+  return Math.ceil(totalDocuments.value / documentsPerPage.value)
+})
+
+function nextArtifactsPage() {
+  if (artifactsCurrentPage.value < artifactsTotalPages.value) {
+    artifactsCurrentPage.value++
+  }
+}
+
+function prevArtifactsPage() {
+  if (artifactsCurrentPage.value > 1) {
+    artifactsCurrentPage.value--
+  }
+}
+
+function goToArtifactsPage(page) {
+  artifactsCurrentPage.value = page
+}
+
+function nextDocumentsPage() {
+  if (documentsCurrentPage.value < documentsTotalPages.value) {
+    documentsCurrentPage.value++
+  }
+}
+
+function prevDocumentsPage() {
+  if (documentsCurrentPage.value > 1) {
+    documentsCurrentPage.value--
+  }
+}
+
+function goToDocumentsPage(page) {
+  documentsCurrentPage.value = page
+}
 
 // Helper function to show message dialogs
 function showMessageDialog(title, content) {
@@ -554,6 +688,8 @@ async function fetchCollectionItems() {
     }))
   }
 }
+
+
 
 // Log user activity
 async function logClick(itemId, itemType, action) {
@@ -1124,15 +1260,45 @@ function goToAddArtifact() {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
+.artifact-card-section {
+  min-height: 4.375rem;
+}
+
+.artifact-title {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+}
+
+.action-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-right: 1rem;
+}
+
+.icon-with-count {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.count-text {
+  font-size: 0.75rem;
+  color: #666;
+}
+
 /* Documents Grid */
 .documents-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
+  align-items: start;
 }
 
 .document-card-wrapper {
   min-width: 0;
+  width: 100%;
 }
 
 .document-preview-card {
@@ -1140,11 +1306,172 @@ function goToAddArtifact() {
   overflow: hidden;
   transition: all 0.2s ease;
   background: white;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .document-preview-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.document-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.document-preview-container {
+  width: 100%;
+  height: 200px;
+  position: relative;
+  overflow: hidden;
+}
+
+.document-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.document-preview-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #f5f5f5;
+  color: #560505;
+}
+
+.document-card-section {
+  padding: 0.75rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 5rem;
+}
+
+.title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+  flex: 1;
+}
+
+.document-title-link {
+  text-decoration: none;
+  color: inherit;
+  flex: 1;
+  margin-right: 0.5rem;
+}
+
+.document-title {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+  font-weight: 500;
+  color: #333;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+
+.document-author-container {
+  margin-top: auto;
+}
+
+.document-author {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Action Icons Styling */
+.action-icon {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.star-icon.starred {
+  color: #ffc107;
+}
+
+.bookmark-icon.bookmarked {
+  color: #560505;
+}
+
+/* Pagination Styles */
+.pagination-container {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #ffffffa3;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-btn {
+  color: #560505;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not([disabled]) {
+  background-color: #560505;
+  color: white;
+}
+
+.pagination-btn[disabled] {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  display: flex;
+  align-items: center;
+}
+
+.pagination-numbers {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.page-number {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #666;
+  font-size: 0.9rem;
+  min-width: 32px;
+  text-align: center;
+}
+
+.page-number:hover {
+  background-color: #f5f5f5;
+  color: #560505;
+}
+
+.page-number.active {
+  background-color: #560505;
+  color: white;
+  font-weight: 600;
 }
 
 /* Responsive Design */
@@ -1158,7 +1485,7 @@ function goToAddArtifact() {
   }
 
   .documents-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -1168,7 +1495,8 @@ function goToAddArtifact() {
   }
 
   .documents-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
   }
 
   .combined-content-section {
@@ -1187,10 +1515,38 @@ function goToAddArtifact() {
     width: 160px;
     height: 220px;
   }
+
+  .document-preview-container {
+    height: 160px;
+  }
+
+  .document-card-section {
+    padding: 0.5rem;
+    min-height: 4rem;
+  }
+
+  .document-title {
+    font-size: 0.85rem;
+  }
+
+  .document-author {
+    font-size: 0.75rem;
+  }
 }
+
+@media (max-width: 480px) {
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .document-preview-container {
+    height: 140px;
+  }
+}
+
 /* Collection Image Styles - Seamless integration with book design */
 .book-content.has-image {
-  background: none !important; /* Remove the gradient when image is present */
+  background: none !important;
   padding: 0 !important;
 }
 
@@ -1212,7 +1568,7 @@ function goToAddArtifact() {
   left: 0;
   right: 0;
   bottom: 0;
-  width: 20px; /* Width of the shadow effect */
+  width: 20px;
   height: 100%;
   background: linear-gradient(
     to right,
@@ -1232,7 +1588,6 @@ function goToAddArtifact() {
   border-radius: inherit;
 }
 
-/* Ensure the book-content maintains its original styling when no image */
 .book-content:not(.has-image) {
   /* Keep original gradient and styling */
 }
@@ -1249,20 +1604,6 @@ function goToAddArtifact() {
   overflow: hidden;
 }
 
-/* BIG Book image styles */
-.book-content.has-image {
-  position: relative;
-  overflow: hidden;
-}
-
-.big-book-cover .book-background-image {
-  border-radius: 8px;
-}
-
-.big-book-cover {
-  position: relative;
-}
-
 .big-book-cover .book-content {
   background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
   border-radius: 0 20px 20px 0;
@@ -1273,45 +1614,7 @@ function goToAddArtifact() {
   border-radius: 0 20px 20px 0;
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .collection-container {
-    flex-direction: column;
-  }
-
-  .collection-details-section {
-    max-width: none;
-  }
-
-  .documents-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .two-artifacts-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .documents-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .combined-content-section {
-    padding: 1rem;
-  }
-
-  .collection-details-section {
-    gap: 1rem;
-  }
-
-  .book-container {
-    height: 250px;
-  }
-
-  .big-book-cover {
-    width: 160px;
-    height: 220px;
-  }
+.big-book-cover .book-background-image {
+  border-radius: 8px;
 }
 </style>

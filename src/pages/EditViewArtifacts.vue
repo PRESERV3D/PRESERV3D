@@ -762,6 +762,24 @@ const removeCategory = (index) => {
   const found = categories.value.find((c) => c.name === removed)
   if (found) found.selected = false
 }
+function normalizeValue(key, value) {
+  if (value === '') return null
+
+  if (Array.isArray(value)) {
+    return value
+  }
+
+  return value
+}
+
+function normalizeObject(obj) {
+  if (!obj || typeof obj !== 'object') return obj
+  const normalized = {}
+  for (const key in obj) {
+    normalized[key] = normalizeValue(key, obj[key])
+  }
+  return normalized
+}
 
 // Save and Cancel functions
 const saveChanges = async () => {
@@ -778,14 +796,14 @@ const saveChanges = async () => {
     }
 
     const newData = {
-      metadata: {
+      metadata: normalizeObject({
         ...model.value.metadata,
         title: editableData.value.title,
         categories: [...editableCategories.value],
         summary: editableData.value.summary,
         author: editableData.value.author,
         date: editableData.value.date,
-      },
+      }),
       data_source: editableData.value.dataSource,
       donated_by: editableData.value.donatedBy,
       date_received: toUTC(editableData.value.dateReceived),
@@ -799,7 +817,7 @@ const saveChanges = async () => {
       return
     }
 
-    const updatedAt = new Date().toISOString()
+    const updatedAt = new Date()
     newData.updated_at = updatedAt
 
     changes = {
@@ -807,13 +825,13 @@ const saveChanges = async () => {
       updated_at: { old: normalizeDate(oldData.updated_at), new: normalizeDate(updatedAt) },
     }
 
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from('artifacts_metadata')
       .update(newData)
       .eq('id', model.value.id)
 
-    if (error) {
-      console.error('Error updating artifact: ', error)
+    if (updateError) {
+      console.error('Failed to update artifact: ', updateError)
       showNotifyDialog('Error', 'Failed to save changes.')
       return
     }
@@ -951,7 +969,7 @@ async function logItemHistory({ itemId, itemType, action, oldData, newData, chan
 // }
 
 function normalizeDate(value) {
-  if (!value) return value
+  if (!value || (typeof value === 'string' && value.trim() === '')) return null
   const d = new Date(value)
   return isNaN(d.getTime()) ? value : d.toISOString()
 }
@@ -1331,6 +1349,8 @@ async function cancelRelatedLinks() {
 <style scoped>
 /* ADMIN VIEW PAGE ARTIFACT */
 
+/* Title Section Styles - Matching View Page Exactly */
+
 .title-section {
   width: 100%;
   text-align: center;
@@ -1340,27 +1360,30 @@ async function cancelRelatedLinks() {
 .title-input {
   width: 100%;
   max-width: 800px;
-  margin-left: 30rem;
+  margin-left: 21rem;
 }
 
 .title-input :deep(.q-field__control) {
   padding: 0 !important;
   min-height: auto !important;
   overflow: visible !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 .title-input :deep(.q-field__native) {
   font-family: 'Poppins', sans-serif !important;
   font-weight: 500 !important;
-  font-size: clamp(32px, 6vw, 64px) !important;
+  font-size: 3.5rem !important;
   color: #560505 !important;
-  padding: 16px 0 !important;
+  padding: 1.5rem 0 !important;
   line-height: 1.2 !important;
   text-align: center !important;
   width: 100% !important;
-  margin: 0 !important;
+  margin: 1rem 0 0 0 !important;
   border: none !important;
   outline: none !important;
+  background: transparent !important;
 }
 
 .title-input .a-title {
@@ -1457,6 +1480,7 @@ async function cancelRelatedLinks() {
 .summary-input {
   width: 100%;
 }
+
 .loading-container {
   display: flex;
   justify-content: center;
@@ -1632,48 +1656,450 @@ async function cancelRelatedLinks() {
   margin-left: auto;
 }
 
-@media (max-width: 768px) {
+/* Additional Design */
+
+
+.artifact-detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.main-content {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  width: 100%;
+  min-width: 0;
+}
+
+.info-section {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.detail-input,
+.summary-input {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Date Received specifically on large screens */
+.side-by-side-details .detail-input {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+.side-by-side-details .detail-input :deep(.q-field__control) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.side-by-side-details .detail-input :deep(.q-field__native) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Specific fix for datetime-local input (Date Received) */
+.side-by-side-details .detail-input[type="datetime-local"],
+.side-by-side-details .detail-input :deep(input[type="datetime-local"]) {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.side-by-side-details .detail-value {
+  max-width: 45% !important;
+  flex: 0 0 45% !important;
+}
+
+/* ========================
+  RESPONSIVE DESIGN
+======================== */
+
+/* Desktop - 1300px and below */
+@media screen and (max-width: 1300px) {
+  .title-input :deep(.q-field__relative) {
+    margin-top: 3rem !important;
+  }
+
+  .title-input :deep(.q-field__native) {
+    font-size: 3.2rem !important;
+  }
+  /* Force all two-column layouts to be more responsive */
+  .two-column-details .detail-row {
+    gap: 1rem;
+  }
+
+  .two-column-details .detail-label,
+  .two-column-details .detail-value {
+    flex: 1;
+    min-width: 0;
+    max-width: 48%;
+  }
+
+  .side-by-side-details .detail-row {
+    gap: 1rem;
+  }
+
+  .side-by-side-details .detail-label,
+  .side-by-side-details .detail-value {
+    flex: 1;
+    min-width: 0;
+    max-width: 48%;
+  }
+
+  .detail-input {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .detail-input :deep(.q-field__control) {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .detail-input :deep(.q-field__native) {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+/* Desktop - 1199px and below */
+@media screen and (max-width: 1199px) {
+  .title-input {
+    margin-left: 15rem;
+    max-width: 600px;
+  }
+
+  .title-input :deep(.q-field__relative) {
+    margin-top: 3rem !important;
+  }
+
+  .title-input :deep(.q-field__native) {
+    font-size: 3rem !important;
+  }
+  .artifact-card {
+    width: 500px;
+    height: 500px;
+  }
+
+  .large-artifacts {
+    width: 470px !important;
+    height: 470px !important;
+  }
+
+  .info-section {
+    max-width: none;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .main-content {
+    gap: 1.5rem;
+  }
+
+}
+
+/* Large Tablet - 1068px and below */
+@media screen and (max-width: 1068px) {
+  .title-input {
+    margin-left: 0;
+    max-width: 515px;
+  }
+
+  .title-input :deep(.q-field__native) {
+    font-size: 3rem !important;
+  }
+  .artifact-card {
+    width: 450px;
+    height: 450px;
+  }
+
+  .large-artifacts {
+    width: 420px !important;
+    height: 420px !important;
+  }
+
+
+  .main-content {
+    gap: 1rem;
+  }
+
+  .categories-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+
+  .add-category-btn {
+    flex-shrink: 0;
+    margin-left: 8px;
+    margin-top: 0;
+  }
+
+  .detail-input {
+    min-width: 0;
+    flex: 1;
+    max-width: 100%;
+  }
+
+  .detail-input :deep(.q-field__control) {
+    max-width: 100%;
+  }
+
+  .detail-input :deep(.q-field__native) {
+    max-width: 100%;
+  }
+
+  .info-section {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .two-column-details .detail-row {
+    gap: 1rem;
+  }
+
+  .two-column-details .detail-label,
+  .two-column-details .detail-value {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .two-column-details .detail-input {
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+/* Tablet - 991px and below */
+@media screen and (max-width: 991px) {
   .main-content {
     flex-direction: column;
     align-items: center;
+    gap: 2rem;
   }
 
   .artifact-card {
     width: 100%;
-    max-width: 400px;
+    max-width: 600px;
+    height: 450px;
+  }
+
+  .large-artifacts {
+    width: 90% !important;
+    height: 400px !important;
+    max-width: 570px !important;
+  }
+
+  .info-section {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .title-input {
+    margin-left: 0;
+    text-align: center;
+    max-width: 100%;
+  }
+
+  .title-input :deep(.q-field__native) {
+    font-size: 48px !important;
+  }
+
+  .categories-container {
+    justify-content: flex-start;
+  }
+
+  /* Fix all input fields at this breakpoint */
+  .detail-input,
+  .summary-input {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .detail-input :deep(.q-field__control),
+  .summary-input :deep(.q-field__control) {
+    max-width: 100%;
+  }
+
+  /* Two-column details responsive fixes */
+  .two-column-details .detail-row {
+    gap: 2rem;
+  }
+
+  .two-column-details .detail-label,
+  .two-column-details .detail-value {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .side-by-side-details .detail-row {
+    gap: 2rem;
+  }
+
+  .side-by-side-details .detail-label,
+  .side-by-side-details .detail-value {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+
+@media screen and (max-width: 767px) {
+  .artifact-card {
+    max-width: 500px;
     height: 400px;
   }
 
   .large-artifacts {
-    width: 300px !important;
-    height: 300px !important;
+    width: 90% !important;
+    height: 350px !important;
   }
 
-  .back-button-top {
-    top: 0.5rem;
-    left: 0.5rem;
+  .title-input :deep(.q-field__native) {
+    font-size: 36px !important;
   }
 
-  .top-actions {
+  /* Keep save/cancel actions on right */
+  .save-cancel-actions {
+    justify-content: flex-end;
+  }
+
+  /* Make both columns responsive - Stack two-column details */
+  .two-column-details .detail-row {
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.5rem;
   }
 
-  .action-icons {
-    margin-top: 1rem;
+  .two-column-details .detail-label,
+  .two-column-details .detail-value {
+    flex: none;
     width: 100%;
-    justify-content: flex-end;
+  }
+
+  .two-column-details .detail-value .a-info-title2,
+  .two-column-details .detail-value .a-info-subtitle {
+    text-align: left;
+  }
+
+
+  .side-by-side-details .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .side-by-side-details .detail-label,
+  .side-by-side-details .detail-value {
+    flex: none;
+    width: 100%;
+    text-align: left;
+  }
+
+  .detail-input :deep(.q-field__control),
+  .summary-input :deep(.q-field__control) {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .detail-input :deep(.q-field__native),
+  .summary-input :deep(.q-field__native) {
+    max-width: 100%;
+    word-wrap: break-word;
+  }
+
+  .categories-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .add-category-btn {
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 4px;
   }
 }
 
-@media (max-width: 768px) {
+/* Mobile - 575px and below */
+@media screen and (max-width: 575px) {
+  .artifact-card {
+    width: calc(100% - 1rem);
+    height: 350px;
+    padding: 0.5rem;
+    margin: 0 0.5rem;
+  }
+
+  .large-artifacts {
+    width: 280px !important;
+    height: 280px !important;
+  }
+
   .title-input :deep(.q-field__native) {
-    font-size: 32px !important;
+    font-size: 28px !important;
     padding: 12px 0 !important;
   }
 
   .title-section {
     margin-bottom: 1rem;
   }
+
+  .save-cancel-actions {
+    padding: 0.25rem !important;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .category-tag {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+  }
+
+  .cancel-btn,
+  .func-btn {
+    font-size: 14px !important;
+  }
+
+  /* Ensure all input fields are properly sized on mobile */
+  .detail-input,
+  .summary-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .detail-input :deep(.q-field__control),
+  .summary-input :deep(.q-field__control) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .categories-container {
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .add-category-btn {
+    margin-top: 2px;
+  }
+
+  .button-group {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
 }
+
 </style>
