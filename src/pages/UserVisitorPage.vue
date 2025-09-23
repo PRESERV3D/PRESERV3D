@@ -264,7 +264,8 @@ import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
 import UploadDialog from 'components/UploadDialog.vue'
 import { date } from 'quasar'
-import { addMonths, differenceInCalendarDays } from 'date-fns'
+// import { addMonths, differenceInCalendarDays } from 'date-fns'
+import { addMonths, startOfDay } from 'date-fns'
 
 const step = ref(1)
 
@@ -283,7 +284,8 @@ const form = ref({
 })
 
 // Allowed dates: 7 days from current date and within 6 months only
-const today = new Date()
+// const today = new Date()
+const today = startOfDay(new Date())
 
 // Min selectable date: current date
 const minDate = ref(date.formatDate(today, 'YYYY-MM-DD'))
@@ -294,13 +296,16 @@ const maxDate = ref(date.formatDate(maxDateObj, 'YYYY-MM-DD'))
 
 // Allow only dates starting 7 days from today until 6 months later
 const startDateOptions = (val) => {
-  const date = new Date(val) // convert string to Date
-  const diff = differenceInCalendarDays(date, today)
+  // const date = new Date(val) // convert string to Date
+  // const diff = differenceInCalendarDays(date, today)
 
-  return diff >= 7 && diff <= differenceInCalendarDays(maxDateObj, today)
+  // return diff >= 7 && diff <= differenceInCalendarDays(maxDateObj, today)
+
+  const d = startOfDay(new Date(val))
+  return d >= today && d <= maxDateObj
 }
 
-// Same rule for end date
+// // Same rule for end date
 const endDateOptions = (val) => startDateOptions(val)
 
 // No date restrictions for date options

@@ -792,6 +792,7 @@ async function confirmAction() {
       .from('registration_visitors')
       .update({ status: action })
       .eq('id', row.id)
+      .select()
 
     console.log('Update response:', updateResponse)
 
@@ -812,7 +813,7 @@ async function confirmAction() {
             // start_date: row.start_date,
             // end_date: row.end_date,
           },
-          emailRedirectTo: `${window.location.origin}/resetpassword`, // full URL
+          emailRedirectTo: 'http://localhost:9000/resetpassword',
         },
       })
 
