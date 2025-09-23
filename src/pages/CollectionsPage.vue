@@ -354,7 +354,7 @@ async function addCollection() {
 <style scoped>
 .box-collections {
   border-radius: 10px;
-  background-color: #ffffff;
+  background: linear-gradient(-80deg, rgb(255, 251, 221) 10%, #fbfae9 30%, #ffffff 70%);
   width: 100%;
   height: auto;
   display: flex;
