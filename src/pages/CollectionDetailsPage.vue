@@ -207,9 +207,13 @@
 
             <div class="documents-grid">
               <div
-                v-for="document in displayedDocuments"
+                v-for="(document, index) in displayedDocuments"
                 :key="document.id"
                 class="document-card-wrapper"
+                :class="{
+                  'hide-on-tablet': index >= 3,
+                  'hide-on-mobile': index >= 2
+                }"
               >
                 <q-card class="my-card document-preview-card" rounded bordered>
                   <router-link
@@ -466,6 +470,8 @@
     </q-dialog>
   </q-page>
 </template>
+
+
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
@@ -1273,22 +1279,28 @@ function goToAddArtifact() {
 .action-icons {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-right: 1rem;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  min-width: fit-content;
 }
 
 .icon-with-count {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.125rem;
+  flex-shrink: 0;
+  min-width: fit-content;
 }
 
 .count-text {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #666;
+  white-space: nowrap;
+  min-width: 1rem;
+  text-align: center;
 }
 
-/* Documents Grid */
+/* Documents Grid - Now Responsive */
 .documents-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1359,13 +1371,15 @@ function goToAddArtifact() {
   align-items: flex-start;
   margin-bottom: 0.5rem;
   flex: 1;
+  gap: 0.5rem;
 }
 
 .document-title-link {
   text-decoration: none;
   color: inherit;
   flex: 1;
-  margin-right: 0.5rem;
+  margin-right: 0.25rem;
+  min-width: 0;
 }
 
 .document-title {
@@ -1394,10 +1408,11 @@ function goToAddArtifact() {
   white-space: nowrap;
 }
 
-/* Action Icons Styling */
+/* Action Icons Styling - Fixed positioning */
 .action-icon {
   cursor: pointer;
   transition: color 0.2s ease;
+  flex-shrink: 0;
 }
 
 .star-icon.starred {
@@ -1406,6 +1421,37 @@ function goToAddArtifact() {
 
 .bookmark-icon.bookmarked {
   color: #560505;
+}
+
+/* Additional responsive fixes for action icons */
+@media (max-width: 768px) {
+  .action-icons {
+    gap: 0.125rem;
+  }
+
+  .icon-with-count {
+    gap: 0.1rem;
+  }
+
+  .count-text {
+    font-size: 0.65rem;
+    min-width: 0.8rem;
+  }
+
+  .action-icon {
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .count-text {
+    font-size: 0.6rem;
+    min-width: 0.7rem;
+  }
+
+  .action-icon {
+    font-size: 14px !important;
+  }
 }
 
 /* Pagination Styles */
@@ -1472,29 +1518,35 @@ function goToAddArtifact() {
   font-weight: 600;
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .collection-container {
-    flex-direction: column;
-  }
+/* ========================
+ RESPONSIVE DESIGN
+======================== */
 
-  .collection-details-section {
-    max-width: none;
-  }
-
+/* Hide documents based on screen size */
+/* Tablet view - hide 4th document (index 3+) */
+@media (max-width: 1024px) and (min-width: 769px) {
   .documents-grid {
     grid-template-columns: repeat(3, 1fr);
   }
+
+  .hide-on-tablet {
+    display: none;
+  }
 }
 
+/* Mobile view - hide 3rd and 4th documents */
 @media (max-width: 768px) {
-  .two-artifacts-grid {
-    grid-template-columns: 1fr;
-  }
-
   .documents-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
+  }
+
+  .hide-on-mobile {
+    display: none;
+  }
+
+  .two-artifacts-grid {
+    grid-template-columns: 1fr;
   }
 
   .combined-content-section {
@@ -1532,6 +1584,7 @@ function goToAddArtifact() {
   }
 }
 
+/* Extra small screens */
 @media (max-width: 480px) {
   .documents-grid {
     grid-template-columns: 1fr;
@@ -1539,6 +1592,25 @@ function goToAddArtifact() {
 
   .document-preview-container {
     height: 140px;
+  }
+
+  .collection-container {
+    flex-direction: column;
+  }
+
+  .collection-details-section {
+    max-width: none;
+  }
+}
+
+/* General responsive adjustments for larger screens */
+@media (max-width: 1200px) {
+  .collection-container {
+    flex-direction: column;
+  }
+
+  .collection-details-section {
+    max-width: none;
   }
 }
 
