@@ -1331,6 +1331,8 @@ async function cancelRelatedLinks() {
 <style scoped>
 /* ADMIN VIEW PAGE ARTIFACT */
 
+/* Title Section Styles - Matching View Page Exactly */
+
 .title-section {
   width: 100%;
   text-align: center;
@@ -1340,27 +1342,30 @@ async function cancelRelatedLinks() {
 .title-input {
   width: 100%;
   max-width: 800px;
-  margin-left: 30rem;
+  margin-left: 21rem;
 }
 
 .title-input :deep(.q-field__control) {
   padding: 0 !important;
   min-height: auto !important;
   overflow: visible !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 .title-input :deep(.q-field__native) {
   font-family: 'Poppins', sans-serif !important;
   font-weight: 500 !important;
-  font-size: clamp(32px, 6vw, 64px) !important;
+  font-size: 3.5rem !important;
   color: #560505 !important;
-  padding: 16px 0 !important;
+  padding: 1.5rem 0 !important;
   line-height: 1.2 !important;
   text-align: center !important;
   width: 100% !important;
-  margin: 0 !important;
+  margin: 1rem 0 0 0 !important;
   border: none !important;
   outline: none !important;
+  background: transparent !important;
 }
 
 .title-input .a-title {
@@ -1634,6 +1639,8 @@ async function cancelRelatedLinks() {
 }
 
 /* Additional Design */
+
+
 .artifact-detail-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -1696,6 +1703,13 @@ async function cancelRelatedLinks() {
 
 /* Desktop - 1300px and below */
 @media screen and (max-width: 1300px) {
+  .title-input :deep(.q-field__relative) {
+    margin-top: 3rem !important;
+  }
+
+  .title-input :deep(.q-field__native) {
+    font-size: 3.2rem !important;
+  }
   /* Force all two-column layouts to be more responsive */
   .two-column-details .detail-row {
     gap: 1rem;
@@ -1740,6 +1754,18 @@ async function cancelRelatedLinks() {
 
 /* Desktop - 1199px and below */
 @media screen and (max-width: 1199px) {
+  .title-input {
+    margin-left: 15rem;
+    max-width: 600px;
+  }
+
+  .title-input :deep(.q-field__relative) {
+    margin-top: 3rem !important;
+  }
+
+  .title-input :deep(.q-field__native) {
+    font-size: 3rem !important;
+  }
   .artifact-card {
     width: 500px;
     height: 500px;
@@ -1756,18 +1782,22 @@ async function cancelRelatedLinks() {
     min-width: 0;
   }
 
-  .title-input {
-    margin-left: 8rem;
-    max-width: 700px;
-  }
-
   .main-content {
     gap: 1.5rem;
   }
+
 }
 
 /* Large Tablet - 1068px and below */
 @media screen and (max-width: 1068px) {
+  .title-input {
+    margin-left: 0;
+    max-width: 515px;
+  }
+
+  .title-input :deep(.q-field__native) {
+    font-size: 3rem !important;
+  }
   .artifact-card {
     width: 450px;
     height: 450px;
@@ -1778,10 +1808,6 @@ async function cancelRelatedLinks() {
     height: 420px !important;
   }
 
-  .title-input {
-    margin-left: 4rem;
-    max-width: 600px;
-  }
 
   .main-content {
     gap: 1rem;
