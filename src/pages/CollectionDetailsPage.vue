@@ -255,21 +255,22 @@
                       <div class="action-icons">
                         <!-- View Icon with Count -->
                         <div class="icon-with-count">
-                          <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
-                          <span class="count-text">{{
+                          <q-icon name="visibility" color="grey" size="16px" class="action-icon" />
+                          <span class="count-text" style="font-size: 0.75rem">{{
                               documentsStore.viewCounts[document.id] || 0
                             }}</span>
                         </div>
                         <!-- Star Icon with Count -->
-                        <div class="icon-with-count">
+                        <div class="icon-with-count"
+                             style="display:flex; align-items:center; gap:1px;">
                           <q-icon
                             :name="document.starred ? 'star' : 'star_border'"
                             :class="{ starred: document.starred }"
-                            size="20px"
+                            size="16px"
                             class="action-icon star-icon"
                             @click.stop="toggleFavorite(document.id, 'document')"
                           />
-                          <span class="count-text">{{
+                          <span class="count-text" style="font-size: 0.75rem">{{
                               documentsStore.starCounts[document.id] || 0
                             }}</span>
                         </div>
