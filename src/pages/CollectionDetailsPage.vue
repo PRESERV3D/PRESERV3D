@@ -105,7 +105,7 @@
                     />
                   </div>
                   <q-card-section class="q-pa-sm artifact-card-section">
-                    <div class="title-row">
+                    <div class="title-row q-mt-sm">
                       <router-link
                         :to="{ name: 'view-artifact', params: { id: artifact.id } }"
                         class="artifact-title-link"
@@ -119,7 +119,7 @@
                       <div class="action-icons">
                         <!-- View Icon with Count -->
                         <div class="icon-with-count">
-                          <q-icon name="visibility" class="action-icon view-icon" size="18px" />
+                          <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
                           <span class="count-text">{{
                             modelStore.viewCounts[artifact.id] || 0
                           }}</span>
@@ -130,7 +130,7 @@
                             :name="artifact.starred ? 'star' : 'star_border'"
                             class="action-icon star-icon"
                             :class="{ starred: artifact.starred }"
-                            size="18px"
+                            size="20px"
                             @click.stop="toggleFavorite(artifact.id, 'artifact')"
                           />
                           <span class="count-text">{{
@@ -142,7 +142,7 @@
                           :name="artifact.bookmarked ? 'bookmark' : 'bookmark_border'"
                           class="action-icon bookmark-icon"
                           :class="{ bookmarked: artifact.bookmarked }"
-                          size="18px"
+                          size="20px"
                           @click.stop="toggleBookmark(artifact.id, 'artifact')"
                         />
                       </div>
@@ -1122,6 +1122,24 @@ function goToAddArtifact() {
 .artifact-preview-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.artifact-card-section {
+  min-height: 4.375rem;
+}
+
+.artifact-title {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+}
+
+.action-icons {
+  margin-right: 1.5rem;
+}
+
+.icon-with-count {
+  gap: 0.25rem !important;
 }
 
 /* Documents Grid */
