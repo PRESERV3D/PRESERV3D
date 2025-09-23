@@ -116,11 +116,11 @@
                         </div>
                       </router-link>
                       <!-- ADDED: Action Icons with Counts -->
-                      <div class="action-icons">
+                      <div class="action-icons q-mr-md" style="margin-top:  -3px;">
                         <!-- View Icon with Count -->
                         <div class="icon-with-count">
-                          <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
-                          <span class="count-text">{{
+                          <q-icon name="visibility" color="grey" size="20px" class="action-icon" />
+                          <span class="count-text" style="font-size: 0.875rem;">{{
                               modelStore.viewCounts[artifact.id] || 0
                             }}</span>
                         </div>
@@ -133,7 +133,7 @@
                             size="20px"
                             @click.stop="toggleFavorite(artifact.id, 'artifact')"
                           />
-                          <span class="count-text">{{
+                          <span class="count-text" style="font-size: 0.875rem;">{{
                               modelStore.starCounts[artifact.id] || 0
                             }}</span>
                         </div>
