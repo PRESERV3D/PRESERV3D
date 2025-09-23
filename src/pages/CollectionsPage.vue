@@ -100,11 +100,7 @@
         <q-card-section class="row q-gutter-md" style="gap: 0.5rem">
           <div class="col-auto q-ml-md">
             <div class="upload-box" @click="triggerFileInput">
-              <q-img
-                v-if="previewImage"
-                :src="previewImage"
-                style="width: 100%; height: 14.5rem; object-fit: contain; border-radius: 10px"
-              />
+              <img v-if="previewImage" :src="previewImage" alt="Preview" class="preview-image" />
               <div v-else class="upload">
                 <q-img src="/img/write.png" alt="Upload" class="upload-icon" />
                 <div>Upload Photo</div>
@@ -277,6 +273,10 @@ async function loadCollections(userId) {
   }
 
   isLoading.value = false
+}
+
+function triggerFileInput() {
+  fileInput.value.click()
 }
 
 function handleImageUpload(event) {
