@@ -1420,10 +1420,8 @@ function goToAddArtifact() {
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: #ffffffa3;
   border-radius: 8px;
   padding: 0.5rem 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .pagination-btn {
@@ -1469,8 +1467,8 @@ function goToAddArtifact() {
 }
 
 .page-number.active {
-  background-color: #560505;
-  color: white;
+  background-color: #efefef66;
+  color: black;
   font-weight: 600;
 }
 
