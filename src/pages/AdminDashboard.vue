@@ -1419,5 +1419,68 @@ function generateTempPassword(length = 12) {
   }
 }
 
+/* ========================
+ RECENTLY UPLOADED SECTION (box-4)
+======================== */
+
+/* Keep original proportions - only minor adjustments for mobile */
+.box-4 {
+  margin-left: 0; /* Remove on mobile */
+  margin-top: 1rem;
+}
+
+/* Tablet (768px+) */
+@media (min-width: 48rem) {
+  .box-4 {
+    margin-left: 1rem;
+  }
+}
+
+/* Desktop (1024px+) - restore original values */
+@media (min-width: 64rem) {
+  .box-4 {
+    margin-left: 3rem; /* Original value */
+    height: 35rem; /* Original value */
+  }
+
+  .recent-box {
+    width: 15rem; /* Original value */
+    height: 22rem; /* Original value */
+  }
+
+  .recent-card {
+    width: 13rem; /* Original value */
+    height: 15rem; /* Original value */
+  }
+
+  .arrow-button {
+    width: 50px; /* Original value */
+    height: 50px; /* Original value */
+    margin-top: 3.5rem; /* Original value */
+  }
+
+  .btn-arrows {
+    width: 24px; /* Original value */
+    height: 24px; /* Original value */
+  }
+}
+
+/* Large Desktop (1440px+) - keep originals */
+@media (min-width: 90rem) {
+  .box-4 {
+    margin-left: 3rem; /* Keep original */
+    height: 35rem; /* Keep original */
+  }
+
+  .recent-box {
+    width: 15rem; /* Keep original */
+    height: 22rem; /* Keep original */
+  }
+
+  .recent-card {
+    width: 13rem; /* Keep original */
+    height: 15rem; /* Keep original */
+  }
+}
 
 </style>
