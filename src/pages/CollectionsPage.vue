@@ -50,12 +50,16 @@
     <div v-else>
       <div v-if="collections.length > 0" class="box-collections">
         <div
-          v-for="collection in collections"
+          v-for="(collection, index) in collections"
           :key="collection.collection_id"
           class="collection-item"
+          :class="{
+            'hide-on-tablet': index >= 6,
+            'hide-on-mobile': index >= 4
+          }"
         >
           <router-link :to="`/collection/${collection.collection_id}`" class="collection-link">
-            <!-- Updated book styling to match others collection page style -->
+            <!-- Updated book styling to match collections design -->
             <div class="book-container">
               <div class="book-cover">
                 <div class="book-spine"></div>
@@ -379,6 +383,7 @@ async function addCollection() {
   padding-left: 1.5rem;
   gap: 3rem;
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+  justify-content: center;
 }
 
 .collection-item {
@@ -395,6 +400,7 @@ async function addCollection() {
 .book-container {
   position: relative;
   perspective: 1000px;
+  height: 330px;
 }
 
 .book-cover {
@@ -583,22 +589,30 @@ async function addCollection() {
  RESPONSIVE DESIGN
 ======================== */
 
-@media (max-width: 1200px) {
+/* Hide collections based on screen size - similar to documents hiding */
+/* Desktop - show all collections */
+@media (min-width: 1025px) {
+  .collection-item:nth-child(n) {
+    display: flex;
+  }
+
   .box-collections {
-    gap: 2rem;
-    padding: 2rem 1.5rem;
-  }
-
-  .book-cover {
-    width: 180px;
-    height: 260px;
-  }
-
-  .fade-title-container {
-    width: 180px;
+    justify-content: flex-start;
   }
 }
 
+/* Tablet view - limit collections display and center remaining */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .hide-on-tablet {
+    display: none;
+  }
+
+  .box-collections {
+    justify-content: center;
+  }
+}
+
+/* Mobile view - further limit collections and center remaining */
 @media (max-width: 768px) {
   .box-collections {
     justify-content: center;
@@ -607,32 +621,46 @@ async function addCollection() {
   }
 
   .book-cover {
-    width: 160px;
-    height: 220px;
+    width: 12rem;
+    height: 16rem;
   }
 
   .fade-title-container {
-    width: 160px;
+    width: 12rem;
   }
 
   .fade-title {
     font-size: 0.85rem;
   }
+
+  .hide-on-mobile {
+    display: none;
+  }
 }
 
+/* Extra small screens - center remaining collections */
 @media (max-width: 480px) {
   .box-collections {
     padding: 1rem;
     gap: 1rem;
+    justify-content: center;
   }
 
   .book-cover {
-    width: 140px;
-    height: 200px;
+    width: 10rem;
+    height: 16rem;
   }
 
   .fade-title-container {
-    width: 140px;
+    width: 10rem;
+  }
+}
+
+/* General responsive adjustments for larger screens */
+@media (max-width: 1200px) {
+  .box-collections {
+    gap: 2rem;
+    padding: 2rem 1.5rem;
   }
 }
 
