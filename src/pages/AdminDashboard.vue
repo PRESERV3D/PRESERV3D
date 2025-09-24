@@ -1487,8 +1487,6 @@ function generateTempPassword(length = 12) {
 
 
 
-/* Add this to your existing CSS - replace the existing box-3 and box-4 sections */
-
 /* Legend alignment fix */
 .box-3 .row.q-py-lg.justify-center.q-gutter-md {
   align-items: center !important;
@@ -1502,6 +1500,28 @@ function generateTempPassword(length = 12) {
 .box-3 .row.q-py-lg.justify-center.q-gutter-md p {
   vertical-align: middle !important;
   margin: 0 !important;
+}
+
+/* Make graphs responsive by default */
+.users-graph {
+  width: 22rem;
+  max-width: 100%;
+}
+
+.users-graph canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+.graph {
+  width: 20rem;
+  max-width: 100%;
+  align-self: center;
+}
+
+.graph canvas {
+  max-width: 100%;
+  height: auto;
 }
 
 /* ========================
@@ -1528,13 +1548,12 @@ function generateTempPassword(length = 12) {
 .box-4 {
   border-radius: 15px;
   background: linear-gradient(25deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
-  flex: 0 0 33%; /* Take 35% of available space, similar to box-2 proportions */
+  flex: 0 0 33%;
   width: 35%;
   height: 35rem;
   box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
   justify-content: center;
   margin-left: 0; /* Remove default margin */
-  margin-top: 0;
 }
 
 /* Stack layout (1200px and below) */
@@ -1546,6 +1565,8 @@ function generateTempPassword(length = 12) {
 
   .box-3 {
     width: 100%;
+    flex: none; /* Remove flex constraints */
+    height: auto; /* Allow height to adjust */
   }
 
   .box-4 {
@@ -1553,6 +1574,72 @@ function generateTempPassword(length = 12) {
     flex: none; /* Remove flex constraints */
     margin-left: 0;
     margin-top: 0;
+  }
+
+  /* Make box-3 content responsive */
+  .box-3 .row.q-py-md {
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .box-3 .col-6 {
+    width: 100%;
+    flex: none;
+  }
+
+  /* Users per Month section responsive */
+  .box-3 .users-graph {
+    width: 100% !important;
+    max-width: 100%;
+    margin-top: 1rem;
+  }
+
+  .box-3 .users-graph canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Legend section responsive */
+  .box-3 .row.q-py-lg.justify-center.q-gutter-md {
+    flex-wrap: wrap;
+    justify-content: flex-start !important;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Most Viewed Artifacts section responsive */
+  .box-3 .fade-title-container {
+    max-width: 12rem !important;
+    min-width: 0; /* Allow shrinking */
+  }
+
+  .box-3 .row.items-center.justify-between {
+    align-items: center !important;
+    flex-wrap: nowrap !important; /* Force single line */
+    gap: 0.5rem;
+  }
+
+  .box-3 .row.q-mb-md.items-center.q-gutter-sm {
+    flex: 1;
+    min-width: 0; /* Allow shrinking */
+    flex-wrap: nowrap !important; /* Keep number and title together */
+    align-items: center !important; /* Keep number and title aligned */
+    justify-content: flex-start !important; /* Keep number at start */
+  }
+
+  .box-3 .number {
+    flex-shrink: 0 !important; /* Number shouldn't shrink */
+  }
+
+  .box-3 .fade-title {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .box-3 .q-mr-md.sub-font-2 {
+    flex-shrink: 0; /* Don't shrink the view count */
+    white-space: nowrap; /* Keep view count on one line */
   }
 
   /* Adjust recently uploaded content for full width */
@@ -1586,6 +1673,151 @@ function generateTempPassword(length = 12) {
   .btn-arrows {
     width: 20px;
     height: 20px;
+  }
+
+  /* Additional mobile responsive for box-3 */
+  .box-3 {
+    padding: 1rem !important;
+  }
+
+  .box-3 .number-report {
+    font-size: 1.5rem;
+  }
+
+  .box-3 .label {
+    font-size: 10px;
+  }
+
+  .box-3 .users-graph {
+    width: 100% !important;
+    margin-top: 0.5rem;
+  }
+
+  .box-3 .row.q-py-lg.justify-center.q-gutter-md {
+    justify-content: center !important;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .box-3 .row.q-py-lg.justify-center.q-gutter-md p {
+    font-size: 10px !important;
+    text-align: center;
+  }
+
+  .box-3 .box-legend {
+    margin-right: 0.25rem !important;
+  }
+
+  /* Most viewed artifacts mobile adjustments */
+  .box-3 .number {
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    flex-shrink: 0 !important;
+    margin-right: 0.5rem !important;
+  }
+
+  .box-3 .sub-font-2 {
+    font-size: 12px !important;
+  }
+
+  .box-3 .fade-title-container {
+    max-width: 6rem !important; /* Even smaller on mobile */
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* Target the specific structure from your HTML */
+  .box-3 div[class*="row items-center justify-between"] {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+  }
+
+  /* Target the left side (number + title) */
+  .box-3 div[class*="row q-mb-md items-center q-gutter-sm"] {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    margin-right: 1rem !important;
+  }
+
+  /* Target the right side (views) specifically */
+  .box-3 div[class*="q-mr-md sub-font-2"] {
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+    margin-right: 1rem !important; /* Add some space from the right edge */
+    white-space: nowrap !important;
+  }
+
+  .box-3 .fade-title-container {
+    max-width: 8rem !important; /* Smaller on mobile */
+  }
+
+  /* Main container for each item row */
+  .box-3 .row.items-center.justify-between {
+    align-items: center !important;
+    flex-wrap: nowrap !important; /* Keep single line on mobile too */
+    display: flex !important;
+    justify-content: space-between !important; /* Keep views on the right */
+  }
+
+  /* Left side: number + title container on mobile */
+  .box-3 .row.q-mb-md.items-center.q-gutter-sm {
+    gap: 0.5rem !important; /* Increase gap for better spacing */
+    flex-wrap: nowrap !important;
+    align-items: center !important; /* Center align all items */
+    justify-content: flex-start !important;
+    display: flex !important;
+    flex-direction: row !important; /* Force horizontal layout */
+    text-align: left !important;
+    flex: 1 !important; /* Take available space but leave room for views */
+    min-width: 0 !important; /* Allow shrinking */
+  }
+
+  /* Ensure number stays on the left and aligned */
+  .box-3 .number {
+    flex-shrink: 0 !important;
+    margin-right: 0 !important;
+    align-self: center !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Override any centering from parent containers but keep items aligned */
+  .box-3 .column {
+    align-items: flex-start !important;
+  }
+
+  .box-3 .fade-title {
+    font-size: 11px !important;
+    text-align: left !important;
+    line-height: 1.2 !important;
+    display: inline !important; /* Keep inline */
+  }
+
+  .box-3 .fade-title-container {
+    display: inline-flex !important; /* Inline flex to stay beside number */
+    align-items: center !important;
+    flex-direction: row !important;
+    vertical-align: middle !important;
+  }
+
+  /* Ensure view count stays on the right and aligned */
+  .box-3 .q-mr-md.sub-font-2 {
+    align-self: center !important;
+    line-height: 1.2 !important;
+    margin-left: 0 !important; /* Reset margin */
+    margin-right: 3rem !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important; /* Keep on one line */
   }
 }
 </style>
