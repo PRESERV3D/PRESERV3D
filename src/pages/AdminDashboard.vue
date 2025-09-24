@@ -13,8 +13,10 @@
             <q-btn to="/documents" label="Browse Documents" class="btn-document" no-caps />
           </div>
         </div>
-        <div class="col-5">
-          <q-img src="/img/trophy-document.png" alt="Trophy and Document" class="trophies" />
+        <div class="col-5 gt-sm">
+          <div class="row justify-center justify-md-end">
+            <q-img src="/img/trophy-document.png" alt="Trophy and Document" class="trophies" />
+          </div>
         </div>
       </div>
 
@@ -1154,4 +1156,268 @@ function generateTempPassword(length = 12) {
   height: 2rem;
   width: 6rem;
 } */
+
+
+/* ========================
+ ADMIN DASH RESPONSIVE DESIGN
+======================== */
+
+/* Base styles (mobile first) */
+.dash-title {
+  font-size: 1.5rem; /* 24px */
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+.dash-subtitle {
+  font-size: 0.625rem; /* 10px */
+  width: 70%;
+  line-height: 1.3;
+  margin-bottom: 1rem;
+}
+
+.btn-explore,
+.btn-document {
+  font-size: 0.5rem; /* 8px */
+  padding: 0.25rem 0.5rem;
+  min-height: 2rem;
+  white-space: nowrap;
+}
+
+.title-font-2 {
+  font-size: 0.875rem; /* 14px */
+}
+
+.trophies {
+  max-width: 12.5rem; /* 200px */
+  height: auto;
+}
+
+/* Hide trophy section on mobile */
+.col-5 {
+  display: none;
+}
+
+/* Full width main content on mobile */
+.col-7 {
+  width: 100%;
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+/* Button layout adjustments for mobile */
+.row.q-ml-md.q-gutter-lg {
+  margin-left: 0.5rem;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+/* ========================
+   TABLET (48rem / 768px+)
+======================== */
+@media (min-width: 48rem) {
+  .dash-title {
+    font-size: 1.625rem; /* 26px */
+  }
+
+  .dash-subtitle {
+    font-size: 0.75rem; /* 12px */
+    width: 90%;
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 0.8125rem; /* 13px */
+    padding: 0.375rem 0.75rem;
+    min-height: 2.25rem;
+  }
+
+  .title-font-2 {
+    font-size: 0.875rem; /* 14px */
+  }
+
+  .trophies {
+    max-width: 15rem;
+  }
+
+  .row.q-ml-md.q-gutter-lg {
+    margin-left: 1rem;
+    gap: 1rem;
+  }
+}
+
+/* ========================
+   DESKTOP (64rem / 1024px+)
+======================== */
+@media (min-width: 64rem) {
+  /* Show trophy section with proper positioning */
+  .col-5 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 0 0 41.666667%;
+    max-width: 41.666667%;
+  }
+
+  .col-7 {
+    width: auto;
+    flex: 0 0 58.333333%;
+    max-width: 58.333333%;
+  }
+
+  .dash-title {
+    font-size: 1.5rem; /* Smaller for longer admin title */
+    line-height: 1.3;
+  }
+
+  .dash-subtitle {
+    font-size: 0.75rem; /* 12px */
+    width: auto;
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 0.8125rem; /* 13px */
+    padding: 0.5rem 1rem;
+    min-height: 2.5rem;
+  }
+
+  .title-font-2 {
+    font-size: 1.125rem; /* 18px */
+  }
+
+  .trophies {
+    height: 15rem; /* Same as index page */
+    width: 15rem;
+    max-width: 100%;
+  }
+
+  .row.q-ml-md.q-gutter-lg {
+    margin-left: 1rem;
+    gap: 1.5rem;
+  }
+}
+
+/* ========================
+   LARGE DESKTOP (90rem / 1440px+)
+======================== */
+@media (min-width: 90rem) {
+  .dash-title {
+    font-size: 2rem; /* 32px */
+  }
+
+  .dash-subtitle {
+    font-size: 1rem; /* 16px */
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 1rem; /* 16px */
+    padding: 0.625rem 1.25rem;
+    min-height: 2.75rem;
+  }
+
+  .title-font-2 {
+    font-size: 1.25rem; /* 20px */
+  }
+
+  .trophies {
+    height: 16rem;
+    width: 16rem;
+  }
+}
+
+/* ========================
+   EXTRA LARGE (120rem / 1920px+)
+======================== */
+@media (min-width: 120rem) {
+  .dash-title {
+    font-size: 2.125rem; /* 34px */
+  }
+
+  .dash-subtitle {
+    font-size: 1.125rem; /* 18px */
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 1.125rem; /* 18px */
+    padding: 0.75rem 1.5rem;
+    min-height: 3rem;
+  }
+
+  .title-font-2 {
+    font-size: 1.375rem; /* 22px */
+  }
+
+  .trophies {
+    height: 17rem;
+    width: 17rem;
+  }
+}
+
+/* ========================
+ BOX LAYOUT RESPONSIVE ADJUSTMENTS
+======================== */
+
+/* Mobile adjustments for box layouts */
+@media (max-width: 767px) {
+  .row.q-gutter-sm {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .box-1, .box-2 {
+    width: 100%;
+  }
+
+  .box-1 {
+    padding: 1rem;
+  }
+
+  .box-2 {
+    margin-top: 1rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .row.q-gutter-sm {
+    gap: 1rem;
+  }
+
+  .trophies {
+    height: 12rem;
+    width: 12rem;
+  }
+}
+
+/* Additional responsive adjustments for better mobile experience */
+@media (max-width: 767px) {
+  .q-ml-xl {
+    margin-left: 1rem !important;
+  }
+
+  .q-pa-md {
+    padding: 0.5rem;
+  }
+
+  /* Make buttons stack vertically on very small screens */
+  @media (max-width: 480px) {
+    .row.q-ml-md.q-gutter-lg {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin-left: 0.5rem;
+    }
+
+    .btn-explore,
+    .btn-document {
+      width: 100%;
+      max-width: 200px;
+    }
+  }
+}
+
+
 </style>
