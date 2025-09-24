@@ -54,7 +54,8 @@
       </div>
     </div>
 
-    <div class="row q-my-lg">
+    <div class="q-my-lg reports-recently-container">
+      <!-- Reports Section (box-3) -->
       <div class="column box-3 q-px-lg">
         <div class="row item-center justify-between q-mb-sm">
           <p class="q-ml-md title-font-2">Reports</p>
@@ -197,6 +198,7 @@
         </div>
       </div>
 
+      <!-- Recently Uploaded Section (box-4) -->
       <div class="box-4">
         <p class="q-ml-lg title-font-2">Recently Uploaded</p>
 
@@ -207,10 +209,10 @@
                 <component
                   :is="isGLB(currentItem?.file_name) ? 'model-viewer' : 'img'"
                   v-bind="
-                    isGLB(currentItem?.file_name)
-                      ? modelViewerProps(currentItem.file_url)
-                      : imgProps(currentItem)
-                  "
+                isGLB(currentItem?.file_name)
+                  ? modelViewerProps(currentItem.file_url)
+                  : imgProps(currentItem)
+              "
                   class="q-mx-auto"
                   style="max-width: 200px; max-height: 240px"
                 />
@@ -222,9 +224,9 @@
                   <router-link
                     v-if="currentItem"
                     :to="{
-                      name: isGLB(currentItem.file_name) ? 'view-artifact' : 'view-document',
-                      params: { id: currentItem.id },
-                    }"
+                  name: isGLB(currentItem.file_name) ? 'view-artifact' : 'view-document',
+                  params: { id: currentItem.id },
+                }"
                     class="sub-font-4"
                     style="text-decoration: none"
                   >
@@ -249,10 +251,10 @@
               round
               class="arrow-button"
               @click="
-                currentIndex =
-                  (currentIndex - 1 + recentStore.recentItems.length) %
-                  recentStore.recentItems.length
-              "
+            currentIndex =
+              (currentIndex - 1 + recentStore.recentItems.length) %
+              recentStore.recentItems.length
+          "
             >
               <q-img src="/icons/arrow_left.png" alt="back" class="btn-arrows" />
             </q-btn>
@@ -1483,4 +1485,107 @@ function generateTempPassword(length = 12) {
   }
 }
 
+
+
+/* Add this to your existing CSS - replace the existing box-3 and box-4 sections */
+
+/* Legend alignment fix */
+.box-3 .row.q-py-lg.justify-center.q-gutter-md {
+  align-items: center !important;
+}
+
+.box-3 .box-legend {
+  vertical-align: middle !important;
+  margin-right: 0.5rem !important;
+}
+
+.box-3 .row.q-py-lg.justify-center.q-gutter-md p {
+  vertical-align: middle !important;
+  margin: 0 !important;
+}
+
+/* ========================
+ RESPONSIVE LAYOUT FOR REPORTS AND RECENTLY UPLOADED
+======================== */
+
+/* Default layout (above 1200px) - side by side */
+.reports-recently-container {
+  display: flex;
+  align-items: flex-start; /* Align tops of both boxes */
+  gap: 2rem; /* Increased gap for better spacing */
+  width: 100%;
+}
+
+.box-3 {
+  flex: 1 1 65%; /* Take 60% of available space */
+  min-width: 0;
+  border-radius: 15px;
+  background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+  height: 35rem; /* Match box-4 height */
+}
+
+.box-4 {
+  border-radius: 15px;
+  background: linear-gradient(25deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
+  flex: 0 0 33%; /* Take 35% of available space, similar to box-2 proportions */
+  width: 35%;
+  height: 35rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+  justify-content: center;
+  margin-left: 0; /* Remove default margin */
+  margin-top: 0;
+}
+
+/* Stack layout (1200px and below) */
+@media (max-width: 75rem) { /* 1200px */
+  .reports-recently-container {
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .box-3 {
+    width: 100%;
+  }
+
+  .box-4 {
+    width: 100%;
+    flex: none; /* Remove flex constraints */
+    margin-left: 0;
+    margin-top: 0;
+  }
+
+  /* Adjust recently uploaded content for full width */
+  .recent-box {
+    margin: 0 auto; /* Center the box */
+  }
+}
+
+/* Mobile adjustments for recently uploaded */
+@media (max-width: 48rem) { /* 768px */
+  .box-4 {
+    padding: 1rem;
+  }
+
+  .recent-box {
+    width: 12rem;
+    height: 20rem;
+  }
+
+  .recent-card {
+    width: 10rem;
+    height: 13rem;
+  }
+
+  .arrow-button {
+    width: 40px;
+    height: 40px;
+    margin-top: 2rem;
+  }
+
+  .btn-arrows {
+    width: 20px;
+    height: 20px;
+  }
+}
 </style>
