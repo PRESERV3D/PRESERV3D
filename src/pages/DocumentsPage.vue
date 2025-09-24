@@ -294,14 +294,9 @@
           </div>
 
           <!-- Document in Categories -->
+
           <div class="row q-gutter-lg q-ma-md justify-between">
-            <div
-              v-for="(doc, i) in searchStore.query
-                ? searchStore.searchedDocuments
-                : documentsStore.filteredDocuments"
-              :key="i"
-              class="card-wrapper-2"
-            >
+            <div v-for="(doc, i) in displayedDocuments" :key="i" class="card-wrapper-2">
               <q-card class="docCard" rounded bordered>
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
@@ -404,6 +399,39 @@
                 </q-card-actions>
               </q-card>
             </q-dialog>
+          </div>
+
+          <div class="pagination-controls justify-center">
+            <q-btn
+              flat
+              round
+              icon="chevron_left"
+              :disable="documentsCurrentPage === 1"
+              @click="prevDocumentsPage"
+              class="pagination-btn"
+              size="sm"
+            />
+
+            <span class="pagination-numbers">
+              <span
+                v-for="page in documentsTotalPages"
+                :key="page"
+                @click="goToDocumentsPage(page)"
+                :class="['page-number', { active: page === documentsCurrentPage }]"
+              >
+                {{ page }}
+              </span>
+            </span>
+
+            <q-btn
+              flat
+              round
+              icon="chevron_right"
+              :disable="documentsCurrentPage === documentsTotalPages"
+              @click="nextDocumentsPage"
+              class="pagination-btn"
+              size="sm"
+            />
           </div>
         </div>
       </div>
@@ -1740,6 +1768,42 @@ function applySort(option) {
   } else {
     documentsStore.sortByField(option)
   }
+}
+
+// pagination state
+const documentsCurrentPage = ref(1)
+const documentsPerPage = ref(10) // 👈 show 10 per page
+
+// computed for paginated documents
+const displayedDocuments = computed(() => {
+  const docs = searchStore.query ? searchStore.searchedDocuments : documentsStore.filteredDocuments
+
+  const start = (documentsCurrentPage.value - 1) * documentsPerPage.value
+  return docs.slice(start, start + documentsPerPage.value)
+})
+
+// total pages
+const documentsTotalPages = computed(() => {
+  const docs = searchStore.query ? searchStore.searchedDocuments : documentsStore.filteredDocuments
+
+  return Math.ceil(docs.length / documentsPerPage.value)
+})
+
+// pagination controls
+function nextDocumentsPage() {
+  if (documentsCurrentPage.value < documentsTotalPages.value) {
+    documentsCurrentPage.value++
+  }
+}
+
+function prevDocumentsPage() {
+  if (documentsCurrentPage.value > 1) {
+    documentsCurrentPage.value--
+  }
+}
+
+function goToDocumentsPage(page) {
+  documentsCurrentPage.value = page
 }
 </script>
 
