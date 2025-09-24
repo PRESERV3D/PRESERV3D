@@ -1801,6 +1801,10 @@ function prevDocumentsPage() {
     documentsCurrentPage.value--
   }
 }
+
+function goToDocumentsPage(page) {
+  documentsCurrentPage.value = page
+}
 </script>
 
 <style scoped>
