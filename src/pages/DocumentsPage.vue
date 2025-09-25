@@ -1216,7 +1216,7 @@ const handleUpload = async () => {
       $q.notify({ type: 'warning', message: 'Upload canceled.' })
     } else {
       console.error('Unexpected upload error:', err)
-      $q.notify({ type: 'negative', message: 'Upload failed. Please try again.' })
+      $q.notify({ type: 'negative', message: err.message || 'Upload failed. Please try again.' })
     }
   } finally {
     resetUploadState()
@@ -1241,7 +1241,7 @@ function handleForceCancel() {
   }
 
   resetUploadState()
-
+  $q.notify({ type: 'warning', message: 'Upload Cancelled' })
   console.log('All upload processes cancelled')
 }
 

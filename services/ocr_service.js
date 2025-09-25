@@ -1,18 +1,18 @@
 import Tesseract from 'tesseract.js'
 import axios from 'axios'
 
-// Batch OCR processing with smart stopping conditions and cancellation support
+// Batch OCR processing
 async function processBatchWithOCR(images, options = {}) {
   try {
     const {
       minPages = 3,
-      minCharacters = 5000,
+      maxCharacters = 5000,
       language = 'eng',
       maxConcurrent = 2,
-      signal = null, // AbortSignal for cancellation
+      signal = null,
     } = options
 
-    console.log(`Starting batch OCR: targeting ${minPages} pages or ${minCharacters} characters`)
+    console.log(`Starting batch OCR: targeting ${minPages} pages or ${maxCharacters} characters`)
 
     let totalText = ''
     let processedPages = 0
@@ -28,14 +28,14 @@ async function processBatchWithOCR(images, options = {}) {
       }
 
       // Check if we've met our targets
-      if (successfulPages >= minPages && totalText.length >= minCharacters) {
+      if (successfulPages >= minPages && totalText.length >= maxCharacters) {
         console.log(`Target reached: ${successfulPages} pages, ${totalText.length} characters`)
         break
       }
 
       const batch = images.slice(i, i + maxConcurrent)
 
-      // Process batch concurrently with cancellation support
+      // Process batch concurrently
       const batchPromises = batch.map(async (imageData, batchIndex) => {
         const pageIndex = i + batchIndex
         try {
@@ -96,7 +96,7 @@ async function processBatchWithOCR(images, options = {}) {
         }
 
         // Early exit check after each successful page
-        if (successfulPages >= minPages && totalText.length >= minCharacters) {
+        if (successfulPages >= minPages && totalText.length >= maxCharacters) {
           console.log(`Early completion: ${successfulPages} pages, ${totalText.length} characters`)
           break
         }
@@ -104,11 +104,11 @@ async function processBatchWithOCR(images, options = {}) {
 
       // Progress update
       console.log(
-        `Progress: ${successfulPages}/${minPages} pages, ${totalText.length}/${minCharacters} characters`,
+        `Progress: ${successfulPages}/${minPages} pages, ${totalText.length}/${maxCharacters} characters`,
       )
     }
 
-    // Final cancellation check before NLP
+    // Cancellation check before NLP
     if (signal && signal.aborted) {
       console.log('OCR aborted before NLP processing')
       return { success: false, canceled: true, message: 'OCR processing aborted' }
@@ -121,8 +121,22 @@ async function processBatchWithOCR(images, options = {}) {
     console.log(`- Total text: ${totalText.length} characters`)
     console.log(`- Success rate: ${Math.round((successfulPages / processedPages) * 100)}%`)
 
-    // Send combined results to NLP service if we have enough content
-    if (successfulPages >= 1 && totalText.trim().length >= 1000) {
+    // Check if file is blank
+    if (totalText.trim().length === 0) {
+      return {
+        success: false,
+        error: 'Document appears to be blank - no text could be extracted',
+        ocrResults: results,
+        summary: {
+          pagesProcessed: processedPages,
+          pagesSuccessful: successfulPages,
+          totalCharacters: totalText.length,
+        },
+      }
+    }
+
+    // Send results to NLP service
+    if (successfulPages >= 1) {
       const nlpForm = new FormData()
       nlpForm.append('filename', `batch_${results.length}_pages`)
       nlpForm.append('raw_text', totalText.trim())
@@ -140,7 +154,7 @@ async function processBatchWithOCR(images, options = {}) {
             successfulPages,
             totalText.length,
             minPages,
-            minCharacters,
+            maxCharacters,
           ),
         }),
       )
@@ -149,7 +163,7 @@ async function processBatchWithOCR(images, options = {}) {
         const nlpResponse = await axios.post('http://localhost:8000/process-text', nlpForm, {
           headers: { 'Content-Type': 'multipart/form-data' },
           timeout: 120000,
-          signal: signal, // Pass the abort signal to NLP request too
+          signal: signal,
         })
 
         return {
@@ -173,7 +187,7 @@ async function processBatchWithOCR(images, options = {}) {
     } else {
       return {
         success: false,
-        error: 'Insufficient text extracted',
+        error: 'No pages could be processed successfully',
         ocrResults: results,
         summary: {
           pagesProcessed: processedPages,
@@ -193,7 +207,7 @@ async function processBatchWithOCR(images, options = {}) {
   }
 }
 
-// Fast single image processing with cancellation support
+// Fast single image processing
 async function processImageFast(base64Image, fileName, options = {}) {
   try {
     const defaultOptions = {
@@ -231,20 +245,12 @@ async function processImageFast(base64Image, fileName, options = {}) {
     const confidence = result.data.confidence || 0
     const text = result.data.text || ''
 
-    // Quick quality check
-    if (!text || text.trim().length < 50 || confidence < 30) {
-      console.warn(
-        `Poor quality OCR for ${fileName}: ${text.length} chars, ${confidence}% confidence`,
-      )
+    if (!text) {
+      console.warn(`No text extracted from ${fileName}`)
       return null
     }
 
-    // Fast text cleanup
     const cleanedText = fastPostProcessText(text)
-
-    if (!cleanedText || cleanedText.trim().length < 40) {
-      return null
-    }
 
     return {
       fileName,
@@ -255,7 +261,7 @@ async function processImageFast(base64Image, fileName, options = {}) {
   } catch (error) {
     if (error.message.includes('Aborted')) {
       console.log(`OCR cancelled for ${fileName}`)
-      throw error // Re-throw to be caught by parent
+      throw error
     }
 
     console.error(`OCR failed for ${fileName}:`, error.message)
@@ -269,7 +275,6 @@ function fastPostProcessText(text) {
 
   return (
     text
-      // Essential fixes only
       .replace(/[|]/g, 'I')
       .replace(/\b[O0](\d)/g, '0$1')
       .replace(/\bth[e3]\b/gi, 'the')
@@ -284,26 +289,24 @@ function fastPostProcessText(text) {
   )
 }
 
-// Helper functions
 function calculateAverageConfidence(results) {
   if (results.length === 0) return 0
   const total = results.reduce((sum, r) => sum + r.confidence, 0)
   return Math.round(total / results.length)
 }
 
-function getStoppingReason(pages, characters, minPages, minCharacters) {
-  if (pages >= minPages && characters >= minCharacters) {
+function getStoppingReason(pages, characters, minPages, maxCharacters) {
+  if (pages >= minPages && characters >= maxCharacters) {
     return 'Both targets met'
   } else if (pages >= minPages) {
     return 'Minimum pages reached'
-  } else if (characters >= minCharacters) {
+  } else if (characters >= maxCharacters) {
     return 'Minimum characters reached'
   } else {
     return 'All pages processed'
   }
 }
 
-// Helper function to convert various input formats to batch format
 function normalizeInputToBatch(input, fileName) {
   // Single base64 string
   if (typeof input === 'string') {
@@ -331,18 +334,15 @@ function normalizeInputToBatch(input, fileName) {
   throw new Error('Invalid input format for OCR processing')
 }
 
-// Main function - handles both single images and batches
+// Main function
 export async function processImageWithOCR(input, fileNameOrOptions = {}, legacyOptions = {}) {
   try {
     let images, options
 
-    // Handle legacy call format: processImageWithOCR(base64String, fileName, options)
     if (typeof input === 'string' && typeof fileNameOrOptions === 'string') {
       images = normalizeInputToBatch(input, fileNameOrOptions)
       options = legacyOptions
-    }
-    // Handle new format: processImageWithOCR(imagesArray, options)
-    else {
+    } else {
       images = normalizeInputToBatch(input)
       options = typeof fileNameOrOptions === 'object' ? fileNameOrOptions : {}
     }
@@ -355,7 +355,19 @@ export async function processImageWithOCR(input, fileNameOrOptions = {}, legacyO
       const result = await processImageFast(images[0].base64, images[0].fileName, options)
 
       if (!result) {
-        return null
+        return {
+          success: false,
+          error: 'Failed to process image with OCR',
+        }
+      }
+
+      // Check if the document is blank
+      if (result.text.trim().length === 0) {
+        return {
+          success: false,
+          error: 'Document appears to be blank - no text could be extracted',
+          ocrResult: result,
+        }
       }
 
       const nlpForm = new FormData()
@@ -370,7 +382,7 @@ export async function processImageWithOCR(input, fileNameOrOptions = {}, legacyO
       })
     }
 
-    // For multiple images, use batch processing with smart stopping
+    // For multiple images, use batch processing
     return await processBatchWithOCR(images, options)
   } catch (error) {
     if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
@@ -383,7 +395,7 @@ export async function processImageWithOCR(input, fileNameOrOptions = {}, legacyO
   }
 }
 
-// Helper function to process OCR pages from NLP service response
+// Process OCR pages from NLP service response
 export async function processOCRPages(ocrResponse, options = {}) {
   try {
     if (!ocrResponse || ocrResponse.status !== 'ocr_required' || !ocrResponse.pages) {
@@ -392,16 +404,15 @@ export async function processOCRPages(ocrResponse, options = {}) {
 
     console.log(`Processing ${ocrResponse.pages.length} pages from NLP service`)
 
-    // Convert NLP response format to our batch format
+    // Convert NLP response format
     const images = ocrResponse.pages.map((page) => ({
       base64: page.image_base64,
       fileName: `${ocrResponse.filename || 'document'}_page${page.page_number}.png`,
     }))
 
-    // Use our optimized batch processing with smart stopping
     const result = await processBatchWithOCR(images, {
       minPages: 3,
-      minCharacters: 5000,
+      maxCharacters: 5000,
       maxConcurrent: 2,
       ...options,
     })
@@ -415,7 +426,7 @@ export async function processOCRPages(ocrResponse, options = {}) {
       console.log('OCR processing was cancelled')
       return result
     } else {
-      throw new Error(`OCR processing failed: ${result.error}`)
+      throw new Error(`${result.error}`)
     }
   } catch (error) {
     if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
