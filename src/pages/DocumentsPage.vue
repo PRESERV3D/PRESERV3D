@@ -1666,7 +1666,16 @@ watch(
     })
 
     authorOptions.value = [...authors.values()].sort()
-    categoryOptions.value = [...categories.values()].sort()
+
+    // Remove "All" before sorting and re-insert it at the front
+    const allLabel = categories.get('all')
+    const sortedCategories = [...categories.entries()]
+      .filter(([k]) => k !== 'all')
+      .map(([, v]) => v)
+      .sort()
+
+    categoryOptions.value = [allLabel, ...sortedCategories]
+
     dateOptions.value = [...years].sort((a, b) => b - a)
   },
   { immediate: true },
