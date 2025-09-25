@@ -210,13 +210,13 @@ async function loginUser() {
 
     const role = user.user_metadata?.role
     if (role === 'admin') {
-      $q.notify({ type: 'positive', message: 'Welcome, Admin!' })
+      $q.notify({ type: 'positive', message: 'Welcome, Admin!', position: 'top' })
       await router.push('/admindash')
     } else if (role === 'user') {
-      $q.notify({ type: 'positive', message: 'Welcome, User!' })
+      $q.notify({ type: 'positive', message: 'Welcome, User!', position: 'top' })
       await router.push('/home')
     } else {
-      alert('Access denied. Unknown role.')
+      $q.notify({ type: 'warning', message: 'Access denied. Unknown user role.', position: 'top' })
       await supabase.auth.signOut()
     }
 
