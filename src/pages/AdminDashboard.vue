@@ -158,7 +158,7 @@
         </div>
         <div class="row q-py-md">
           <div class="col-6">
-            <p class="q-ml-md sub-font">Users per Month</p>
+            <p class="q-ml-md sub-font">New Users per Month</p>
             <div class="row q-py-lg justify-center q-gutter-md">
               <!--users-->
               <div class="box-legend" style="background-color: #880000"></div>
@@ -643,16 +643,13 @@ onMounted(async () => {
 
 // Fetch visitors with status from DB
 async function fetchVisitors() {
-  const { data, error } = await supabase
-    .from('registration_visitors')
-    .select('*')
-    .order('created_at', { descending: false })
+  const { data, error } = await supabase.from('registration_visitors').select('*')
 
   if (error) {
     console.error('Error fetching visitors:', error.message)
     return
   }
-  rows.value = data
+  rows.value = sortRows(data)
 }
 
 function initChart(data) {
@@ -672,6 +669,10 @@ function initChart(data) {
       scales: {
         y: {
           beginAtZero: true,
+          suggestedMax: (ctx) => {
+            const max = Math.max(...ctx.chart.data.datasets.flatMap((d) => d.data))
+            return max + 1 // add tick allowance
+          },
           ticks: {
             stepSize: 1,
             precision: 0,
@@ -866,7 +867,7 @@ function imgProps(item) {
 
 const pagination = {
   page: 1,
-  rowsPerPage: 8,
+  rowsPerPage: 5,
 }
 
 const rows = ref([])
@@ -896,6 +897,23 @@ const columns = [
   { name: 'end_date', label: 'End Date', align: 'center', field: 'end_date' },
   { name: 'status', label: 'Status', align: 'center', field: 'status' },
 ]
+
+const sortRows = (data) => {
+  return data.sort((a, b) => {
+    const aPriority = getRowPriority(a)
+    const bPriority = getRowPriority(b)
+
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority
+    }
+
+    return new Date(b.created_at) - new Date(a.created_at)
+  })
+}
+
+const getRowPriority = (row) => {
+  return row.status === 'Pending' ? 0 : 1
+}
 
 // function setStatus(row, status) {
 //   row.status = status
