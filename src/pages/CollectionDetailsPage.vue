@@ -121,8 +121,8 @@
                         <div class="icon-with-count">
                           <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
                           <span class="count-text">{{
-                              modelStore.viewCounts[artifact.id] || 0
-                            }}</span>
+                            modelStore.viewCounts[artifact.id] || 0
+                          }}</span>
                         </div>
                         <!-- Star Icon with Count -->
                         <div class="icon-with-count">
@@ -134,8 +134,8 @@
                             @click.stop="toggleFavorite(artifact.id, 'artifact')"
                           />
                           <span class="count-text">{{
-                              modelStore.starCounts[artifact.id] || 0
-                            }}</span>
+                            modelStore.starCounts[artifact.id] || 0
+                          }}</span>
                         </div>
                         <q-icon
                           v-if="collection.collection_name !== 'Favorites'"
@@ -253,8 +253,8 @@
                         <div class="icon-with-count">
                           <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
                           <span class="count-text">{{
-                              documentsStore.viewCounts[document.id] || 0
-                            }}</span>
+                            documentsStore.viewCounts[document.id] || 0
+                          }}</span>
                         </div>
                         <!-- Star Icon with Count -->
                         <div class="icon-with-count">
@@ -266,8 +266,8 @@
                             @click.stop="toggleFavorite(document.id, 'document')"
                           />
                           <span class="count-text">{{
-                              documentsStore.starCounts[document.id] || 0
-                            }}</span>
+                            documentsStore.starCounts[document.id] || 0
+                          }}</span>
                         </div>
                         <q-icon
                           v-if="collection.collection_name !== 'Favorites'"
@@ -423,11 +423,11 @@
     <q-dialog v-model="messageDialogOpen">
       <q-card class="delete-notice">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            messageDialogTitle
-          }}</q-card-section>
+          messageDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-            messageDialogContent
-          }}</q-card-section>
+          messageDialogContent
+        }}</q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Close" class="btn-save" @click="handleMessageDialogClose" />
         </q-card-actions>
@@ -454,11 +454,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -688,8 +688,6 @@ async function fetchCollectionItems() {
     }))
   }
 }
-
-
 
 // Log user activity
 async function logClick(itemId, itemType, action) {
@@ -1416,60 +1414,9 @@ function goToAddArtifact() {
   width: 100%;
 }
 
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-}
-
-.pagination-btn {
-  color: #560505;
-  transition: all 0.2s ease;
-}
-
-.pagination-btn:hover:not([disabled]) {
-  background-color: #560505;
-  color: white;
-}
-
-.pagination-btn[disabled] {
-  color: #ccc;
-  cursor: not-allowed;
-}
-
 .pagination-info {
   display: flex;
   align-items: center;
-}
-
-.pagination-numbers {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.page-number {
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  color: #666;
-  font-size: 0.9rem;
-  min-width: 32px;
-  text-align: center;
-}
-
-.page-number:hover {
-  background-color: #f5f5f5;
-  color: #560505;
-}
-
-.page-number.active {
-  background-color: #efefef66;
-  color: black;
-  font-weight: 600;
 }
 
 /* Responsive Design */
