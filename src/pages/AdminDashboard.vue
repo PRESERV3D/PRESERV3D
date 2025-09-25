@@ -444,6 +444,7 @@ import {
   LinearScale,
   Title,
   CategoryScale,
+  Tooltip,
 } from 'chart.js'
 
 const $q = useQuasar()
@@ -458,7 +459,15 @@ const users = ref(0)
 const monthLabels = Array.from({ length: 12 }, (_, i) =>
   new Date(2000, i).toLocaleString('default', { month: 'short' }),
 )
-Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale)
+Chart.register(
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  Title,
+  CategoryScale,
+  Tooltip,
+)
 
 let topArtifacts = ref([])
 const topDocuments = ref([])
