@@ -52,7 +52,7 @@
         <div class="row docs-gap justify-center q-py-sm">
           <div v-for="(doc, index) in topDocuments" :key="index">
             <div class="row q-mb-lg doc-wrapper">
-              <q-card class="my-card docCard" style="transform: rotate(-5deg)">
+              <q-card class="docCard" style="transform: rotate(-5deg)">
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
@@ -1942,6 +1942,85 @@ function goToDocumentsPage(page) {
 }
 
 /* Responsiveness */
+@media (max-width: 1500px) {
+  .docCard {
+    width: 10.5rem;
+    height: 16rem;
+  }
+}
+
+@media (max-width: 1420px) {
+  .bg-highlights-details {
+    width: 12.5rem;
+  }
+
+  .docs-gap {
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 1400px) {
+  .docCard {
+    width: 12rem;
+    height: 16rem;
+  }
+
+  .bg-highlights-details {
+    width: 20rem;
+  }
+
+  .docs-gap {
+    gap: 5rem;
+  }
+
+  .fade-title-container {
+    max-width: 20rem;
+  }
+}
+
+@media (max-width: 1370px) {
+  .docs-gap {
+    gap: 3rem;
+  }
+}
+
+@media (max-width: 1310px) {
+  .docs-gap {
+    row-gap: 4rem;
+    column-gap: 6rem;
+  }
+}
+
+@media (max-width: 790px) {
+  .bg-highlights-details {
+    width: 15rem;
+  }
+
+  .fade-title-container {
+    max-width: 15rem;
+  }
+}
+
+@media (max-width: 725px) {
+  .bg-highlights-details {
+    width: 13rem;
+  }
+
+  .fade-title-container {
+    max-width: 13rem;
+  }
+}
+
+@media (max-width: 660px) {
+  .bg-highlights-details {
+    display: none;
+  }
+
+  .docs-gap {
+    row-gap: 1.5rem;
+  }
+}
+
 @media (max-width: 615px) {
   .doc-wrapper {
     flex-direction: column;
