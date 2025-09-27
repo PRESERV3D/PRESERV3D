@@ -43,7 +43,7 @@
       </div>
 
       <!-- Error message -->
-      <!-- Logim attempt counter -->
+      <!-- Login attempt counter -->
       <div
         v-if="message"
         :class="messageType === 'error' ? 'text-red' : 'text-green'"
