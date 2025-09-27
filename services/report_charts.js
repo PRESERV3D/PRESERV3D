@@ -40,9 +40,13 @@ export async function renderReportCharts({ startMonth, startYear, endMonth, endY
   // Create canvases for different charts
   const canvases = {
     monthlyUsers: createCanvas('Monthly User Registrations'),
-    monthlyUploads: createCanvas('Monthly Uploads'),
+    monthlyUploads: createCanvas('Uploads per Month'),
     userTypes: createCanvas('User Types Distribution'),
-    departments: createCanvas('Top Departments'),
+    monthlyAppointments: createCanvas('Appointments per Month'),
+    appointmentStatus: createCanvas('Appointment Status Distribution'),
+    studentDepartments: createCanvas('Top Departments (Students)'),
+    facultyDepartments: createCanvas('Top Departments (Faculty)'),
+    visitorInstitutions: createCanvas('Top Institutions (Visitors)'),
     topArtifacts: createCanvas('Top Artifacts'),
     topDocuments: createCanvas('Top Documents'),
     uploadComparison: createCanvas('Artifacts vs Documents'),
@@ -66,21 +70,29 @@ export async function renderReportCharts({ startMonth, startYear, endMonth, endY
       monthlyUsersData,
       monthlyUploadsData,
       userTypesData,
-      departmentsData,
+      monthlyAppointmentsData,
+      appointmentStatusData,
+      studentDepartmentsData,
+      facultyDepartmentsData,
+      visitorInstitutionsData,
       topArtifactsData,
       topDocumentsData,
     ] = await Promise.all([
       prepareMonthlyUsersData(startMonth, startYear, endMonth, endYear),
-      prepareMonthlyUploadsData(),
+      prepareMonthlyUploadsData(endMonth, endYear),
       prepareUserTypesData(endMonth, endYear),
-      prepareDepartmentsData(endMonth, endYear),
+      prepareMonthlyAppointmentsData(startMonth, startYear, endMonth, endYear),
+      prepareAppointmentStatusData(startMonth, startYear, endMonth, endYear),
+      prepareStudentDepartmentsData(endMonth, endYear),
+      prepareFacultyDepartmentsData(endMonth, endYear),
+      prepareVisitorInstitutionsData(endMonth, endYear),
       prepareTopArtifactsData(),
       prepareTopDocumentsData(),
     ])
 
     const charts = []
 
-    // 1. Monthly User Registrations (Line Chart)
+    // Monthly User Registrations (Line Chart)
     charts.push(
       new Chart(canvases.monthlyUsers, {
         type: 'line',
@@ -135,7 +147,7 @@ export async function renderReportCharts({ startMonth, startYear, endMonth, endY
       }),
     )
 
-    // 2. Monthly Uploads (Bar Chart)
+    // Monthly Uploads (Bar Chart)
     charts.push(
       new Chart(canvases.monthlyUploads, {
         type: 'bar',
@@ -162,11 +174,11 @@ export async function renderReportCharts({ startMonth, startYear, endMonth, endY
             },
           ],
         },
-        options: getBarChartOptions('Monthly Uploads'),
+        options: getBarChartOptions('Uploads per Month'),
       }),
     )
 
-    // 3. User Types Distribution (Doughnut Chart)
+    // User Types Distribution (Doughnut Chart)
     charts.push(
       new Chart(canvases.userTypes, {
         type: 'doughnut',
@@ -197,17 +209,77 @@ export async function renderReportCharts({ startMonth, startYear, endMonth, endY
       }),
     )
 
-    // 4. Top Departments (Horizontal Bar Chart)
-    if (departmentsData.labels.length > 0) {
+    // Monthly Appointments (Line Chart)
+    if (monthlyAppointmentsData.appointmentCounts.some((count) => count > 0)) {
       charts.push(
-        new Chart(canvases.departments, {
+        new Chart(canvases.monthlyAppointments, {
+          type: 'line',
+          data: {
+            labels: monthLabels,
+            datasets: [
+              {
+                label: 'Appointments',
+                data: monthlyAppointmentsData.appointmentCounts,
+                borderColor: '#4CAF50',
+                backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                fill: true,
+                tension: 0.3,
+                borderWidth: 3,
+                pointBackgroundColor: '#4CAF50',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8,
+              },
+            ],
+          },
+          options: getLineChartOptions('Appointments per Month'),
+        }),
+      )
+    }
+
+    // Appointment Status Distribution (Pie Chart)
+    if (appointmentStatusData.labels.length > 0) {
+      charts.push(
+        new Chart(canvases.appointmentStatus, {
+          type: 'pie',
+          data: {
+            labels: appointmentStatusData.labels.map(
+              (label) => label.charAt(0).toUpperCase() + label.slice(1),
+            ),
+            datasets: [
+              {
+                data: appointmentStatusData.counts,
+                backgroundColor: [
+                  '#4CAF50', // Approved/Confirmed - Green
+                  '#FFC107', // Pending - Yellow
+                  '#F44336', // Cancelled/Rejected - Red
+                  '#2196F3', // Completed - Blue
+                  '#9C27B0', // Others - Purple
+                ],
+                borderColor: '#ffffff',
+                borderWidth: 3,
+                hoverBorderWidth: 4,
+              },
+            ],
+          },
+          options: getPieChartOptions('Appointment Status Distribution'),
+        }),
+      )
+    }
+
+    // Top Departments (Horizontal Bar Chart)
+    // Students
+    if (studentDepartmentsData.labels.length > 0) {
+      charts.push(
+        new Chart(canvases.studentDepartments, {
           type: 'bar',
           data: {
-            labels: departmentsData.labels,
+            labels: studentDepartmentsData.labels,
             datasets: [
               {
                 label: 'Students',
-                data: departmentsData.counts,
+                data: studentDepartmentsData.counts,
                 backgroundColor: '#880000',
                 borderColor: '#880000',
                 borderWidth: 1,
@@ -250,7 +322,113 @@ export async function renderReportCharts({ startMonth, startYear, endMonth, endY
       )
     }
 
-    // 5. Top Artifacts (Horizontal Bar Chart)
+    // Faculty
+    if (facultyDepartmentsData.labels.length > 0) {
+      charts.push(
+        new Chart(canvases.facultyDepartments, {
+          type: 'bar',
+          data: {
+            labels: facultyDepartmentsData.labels,
+            datasets: [
+              {
+                label: 'Faculty',
+                data: facultyDepartmentsData.counts,
+                backgroundColor: '#880000',
+                borderColor: '#880000',
+                borderWidth: 1,
+                borderRadius: 4,
+                borderSkipped: false,
+              },
+            ],
+          },
+          options: {
+            ...getBarChartOptions('Top Departments (Faculty)'),
+            indexAxis: 'y',
+            scales: {
+              x: {
+                beginAtZero: true,
+                grid: {
+                  color: '#f0f0f0',
+                  lineWidth: 1,
+                },
+                ticks: {
+                  font: {
+                    family: 'Poppins, sans-serif',
+                    size: 11,
+                  },
+                  color: '#666666',
+                },
+              },
+              y: {
+                ticks: {
+                  maxTicksLimit: 10,
+                  font: {
+                    family: 'Poppins, sans-serif',
+                    size: 10,
+                  },
+                  color: '#666666',
+                },
+              },
+            },
+          },
+        }),
+      )
+    }
+
+    // Visitors
+    if (visitorInstitutionsData.labels.length > 0) {
+      charts.push(
+        new Chart(canvases.visitorInstitutions, {
+          type: 'bar',
+          data: {
+            labels: visitorInstitutionsData.labels,
+            datasets: [
+              {
+                label: 'Visitors',
+                data: visitorInstitutionsData.counts,
+                backgroundColor: '#880000',
+                borderColor: '#880000',
+                borderWidth: 1,
+                borderRadius: 4,
+                borderSkipped: false,
+              },
+            ],
+          },
+          options: {
+            ...getBarChartOptions('Top Institutions (Visitors)'),
+            indexAxis: 'y',
+            scales: {
+              x: {
+                beginAtZero: true,
+                grid: {
+                  color: '#f0f0f0',
+                  lineWidth: 1,
+                },
+                ticks: {
+                  font: {
+                    family: 'Poppins, sans-serif',
+                    size: 11,
+                  },
+                  color: '#666666',
+                },
+              },
+              y: {
+                ticks: {
+                  maxTicksLimit: 10,
+                  font: {
+                    family: 'Poppins, sans-serif',
+                    size: 10,
+                  },
+                  color: '#666666',
+                },
+              },
+            },
+          },
+        }),
+      )
+    }
+
+    // Top Artifacts (Horizontal Bar Chart)
     if (topArtifactsData.labels.length > 0) {
       charts.push(
         new Chart(canvases.topArtifacts, {
@@ -306,7 +484,7 @@ export async function renderReportCharts({ startMonth, startYear, endMonth, endY
       )
     }
 
-    // 6. Top Documents (Horizontal Bar Chart)
+    // Top Documents (Horizontal Bar Chart)
     if (topDocumentsData.labels.length > 0) {
       charts.push(
         new Chart(canvases.topDocuments, {
@@ -362,7 +540,7 @@ export async function renderReportCharts({ startMonth, startYear, endMonth, endY
       )
     }
 
-    // 7. Upload Comparison (Pie Chart)
+    // Upload Comparison (Pie Chart)
     const totalArtifacts = monthlyUploadsData.artifactsCounts.reduce((a, b) => a + b, 0)
     const totalDocuments = monthlyUploadsData.documentsCounts.reduce((a, b) => a + b, 0)
 
@@ -660,11 +838,13 @@ async function prepareMonthlyUsersData(startMonth, startYear, endMonth, endYear)
   }
 }
 
-async function prepareMonthlyUploadsData() {
+async function prepareMonthlyUploadsData(endMonth, endYear) {
   try {
+    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
+
     const [artifactsResult, documentsResult] = await Promise.all([
-      supabase.from('artifacts_metadata').select('uploaded_at'),
-      supabase.from('documents_metadata').select('uploaded_at'),
+      supabase.from('artifacts_metadata').select('uploaded_at').lte('uploaded_at', endDate),
+      supabase.from('documents_metadata').select('uploaded_at').lte('uploaded_at', endDate),
     ])
 
     const artifactsCounts = Array(12).fill(0)
@@ -718,7 +898,64 @@ async function prepareUserTypesData(endMonth, endYear) {
   }
 }
 
-async function prepareDepartmentsData(endMonth, endYear) {
+async function prepareMonthlyAppointmentsData(startMonth, startYear, endMonth, endYear) {
+  try {
+    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
+
+    const { data: appointments } = await supabase
+      .from('appointment_booking')
+      .select('created_at')
+      .lte('created_at', endDate)
+
+    const appointmentCounts = Array(12).fill(0)
+
+    // Counts appointments by month
+    if (appointments) {
+      appointments.forEach((appointment) => {
+        const date = new Date(appointment.created_at)
+        const monthIndex = date.getMonth()
+        if (monthIndex >= 0 && monthIndex < 12) {
+          appointmentCounts[monthIndex]++
+        }
+      })
+    }
+    console.log(appointmentCounts)
+    return { appointmentCounts }
+  } catch (error) {
+    console.error('Error preparing appointments data:', error)
+    return { appointmentCounts: Array(12).fill(0) }
+  }
+}
+
+async function prepareAppointmentStatusData(startMonth, startYear, endMonth, endYear) {
+  try {
+    const startDate = new Date(startYear, startMonth - 1, 1).toISOString()
+    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
+
+    const { data: appointments } = await supabase
+      .from('appointment_booking')
+      .select('status')
+      .gte('created_at', startDate)
+      .lte('created_at', endDate)
+
+    // Count appointments by status
+    const statusCount = {}
+    appointments?.forEach((appointment) => {
+      const status = appointment.status || 'pending'
+      statusCount[status] = (statusCount[status] || 0) + 1
+    })
+
+    const labels = Object.keys(statusCount)
+    const counts = Object.values(statusCount)
+
+    return { labels, counts }
+  } catch (error) {
+    console.error('Error preparing appointment status data:', error)
+    return { labels: [], counts: [] }
+  }
+}
+
+async function prepareStudentDepartmentsData(endMonth, endYear) {
   try {
     const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
     const { data: departments } = await supabase
@@ -748,6 +985,67 @@ async function prepareDepartmentsData(endMonth, endYear) {
   }
 }
 
+async function prepareFacultyDepartmentsData(endMonth, endYear) {
+  try {
+    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
+    const { data: departments } = await supabase
+      .from('registered_faculty')
+      .select('department')
+      .lte('created_at', endDate)
+
+    const deptCount = {}
+    departments?.forEach((u) => {
+      if (u.department) {
+        deptCount[u.department] = (deptCount[u.department] || 0) + 1
+      }
+    })
+
+    // Get top 10 departments
+    const sorted = Object.entries(deptCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+
+    return {
+      labels: sorted.map(([name]) => name),
+      counts: sorted.map(([, count]) => count),
+    }
+  } catch (error) {
+    console.error('Error preparing departments data:', error)
+    return { labels: [], counts: [] }
+  }
+}
+
+async function prepareVisitorInstitutionsData(endMonth, endYear) {
+  try {
+    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
+    const { data: institutions } = await supabase
+      .from('registration_visitors')
+      .select('institution')
+      .eq('status', 'Approved')
+      .lte('created_at', endDate)
+
+    const instCount = {}
+    institutions?.forEach((u) => {
+      if (u.institution) {
+        instCount[u.institution] = (instCount[u.institution] || 0) + 1
+      }
+    })
+
+    // Get top 10 institutions
+    const sorted = Object.entries(instCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+
+    return {
+      labels: sorted.map(([name]) => name),
+      counts: sorted.map(([, count]) => count),
+    }
+  } catch (error) {
+    console.error('Error preparing institutions data:', error)
+    return { labels: [], counts: [] }
+  }
+}
+
 async function prepareTopArtifactsData() {
   try {
     const { data: artifactLogs } = await supabase
@@ -763,7 +1061,7 @@ async function prepareTopArtifactsData() {
 
     const sortedArtifacts = Object.entries(artifactCount)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
+      .slice(0, 10)
 
     if (sortedArtifacts.length === 0) {
       return { labels: [], views: [] }
@@ -808,7 +1106,7 @@ async function prepareTopDocumentsData() {
 
     const sortedDocuments = Object.entries(documentCount)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
+      .slice(0, 10)
 
     if (sortedDocuments.length === 0) {
       return { labels: [], views: [] }

@@ -131,12 +131,16 @@
 
                 <q-card-actions align="right">
                   <q-btn flat label="Cancel" color="negative" v-close-popup />
-                  <q-btn
-                    label="Generate"
-                    color="primary"
-                    :disable="!isValid"
-                    @click="generateReport"
-                  />
+
+                  <div v-if="!isGenerateReportLoading">
+                    <q-btn
+                      label="Generate"
+                      color="primary"
+                      :disable="!isValid"
+                      @click="generateReport"
+                    />
+                  </div>
+                  <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
                 </q-card-actions>
               </q-card>
             </q-dialog>
@@ -456,6 +460,7 @@ const usersPerMonth = ref(null)
 const artifacts = ref(0)
 const documents = ref(0)
 const users = ref(0)
+const isGenerateReportLoading = ref(false)
 const monthLabels = Array.from({ length: 12 }, (_, i) =>
   new Date(2000, i).toLocaleString('default', { month: 'short' }),
 )
@@ -574,6 +579,7 @@ watch(
 
 // generate
 const generateReport = async () => {
+  isGenerateReportLoading.value = true
   if (!isRange.value) {
     // Single Month Report (pass same month/year for start and end)
     await generateMonthlyReport({
@@ -599,6 +605,7 @@ const generateReport = async () => {
   startYear.value = null
   endMonth.value = null
   endYear.value = null
+  isGenerateReportLoading.value = false
   reportDialog.value = false
 }
 

@@ -130,10 +130,10 @@ import { ref, onMounted } from 'vue'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 
-// const pagination = {
-//   page: 1,
-//   rowsPerPage: 8,
-// }
+const pagination = {
+  page: 1,
+  rowsPerPage: 7,
+}
 
 const columns = [
   {
