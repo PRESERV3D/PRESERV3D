@@ -447,7 +447,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { useDocumentsStore } from 'stores/documentsStore'
 import { useSearchStore } from 'stores/searchStore'
@@ -1781,7 +1781,30 @@ function applySort(option) {
 
 // pagination state
 const documentsCurrentPage = ref(1)
-const documentsPerPage = ref(10) // 👈 show 10 per page
+const documentsPerPage = ref(12)
+
+function updateDocumentsPerPage() {
+  const width = window.innerWidth
+
+  if (width >= 1920) {
+    documentsPerPage.value = 12
+  } else if (width >= 1475) {
+    documentsPerPage.value = 10
+  } else if (width >= 1240) {
+    documentsPerPage.value = 8
+  } else {
+    documentsPerPage.value = 6
+  }
+}
+
+onMounted(() => {
+  updateDocumentsPerPage()
+  window.addEventListener('resize', updateDocumentsPerPage)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateDocumentsPerPage)
+})
 
 // computed for paginated documents
 const displayedDocuments = computed(() => {
@@ -1841,13 +1864,22 @@ function goToDocumentsPage(page) {
   gap: 1.5rem;
 } */
 
-.doc-container {
+/* .doc-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1rem;
   padding: 2rem;
   max-width: 1920px;
   justify-content: center;
+} */
+
+.doc-container {
+  display: grid;
+  grid-template-rows: repeat(2, auto);
+  grid-template-columns: repeat(auto-fit, minmax(220px, max-content));
+  gap: 1rem;
+  justify-content: start;
+  padding: 2rem;
 }
 
 .bg-highlights-details {
@@ -2020,6 +2052,12 @@ function goToDocumentsPage(page) {
   .docs-gap {
     row-gap: 4rem;
     column-gap: 6rem;
+  }
+}
+
+@media (max-width: 1240px) {
+  .doc-container {
+    justify-content: center;
   }
 }
 
