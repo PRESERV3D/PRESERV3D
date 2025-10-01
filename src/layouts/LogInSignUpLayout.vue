@@ -29,7 +29,7 @@
 } */
 
 .bg-glow {
-  width: 70rem;
+  width: 80rem;
   height: auto;
   position: absolute;
   bottom: 0px;
@@ -38,7 +38,6 @@
 
 .login-card-style {
   height: 100vh;
-
   position: relative;
   border-top-left-radius: 20px;
   border-bottom-left-radius: 20px;
@@ -56,7 +55,44 @@
 
 /* Responsive adjustments */
 
-@media screen and (max-width: 1130px), screen and (max-height: 630px) {
+/* bigger screen */
+@media screen and (min-width: 1700px) and (max-height: 700px) {
+  .bg-glow {
+    display: none;
+  }
+
+  .login-card-style {
+    width: 100%;
+    min-height: 100vh;
+    overflow: auto;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+@media (min-height: 800px) {
+  .bg-glow {
+    width: 80rem;
+  }
+}
+/* medium screen */
+@media screen and (max-width: 1700px) and (max-height: 800px) {
+  .bg-glow {
+    width: 70rem;
+  }
+}
+
+@media screen and (max-width: 1470px) and (max-height: 800px) {
+  .bg-glow {
+    width: 60rem;
+  }
+
+  .login-card-style {
+    overflow: auto;
+  }
+}
+
+@media screen and (max-width: 1180px), screen and (max-height: 580px) {
   .bg-glow {
     display: none;
   }
