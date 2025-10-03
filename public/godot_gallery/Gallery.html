@@ -120,7 +120,7 @@
       const GODOT_CONFIG = {
         args: [],
         canvasResizePolicy: 2,
-        ensureCrossOriginIsolationHeaders: true,
+        ensureCrossOriginIsolationHeaders: false,
         executable: 'Gallery',
         experimentalVK: false,
         fileSizes: { 'Gallery.pck': 45232, 'Gallery.wasm': 52126319 },
@@ -153,40 +153,29 @@
       function sendMetadataToGodot() {
         if (!pendingModelMetadata || !godotInstance) return
 
-        console.log('Sending metadata to Godot via RPC:', pendingModelMetadata)
+        console.log('Sending metadata to Godot:', pendingModelMetadata)
 
         try {
-          // Store metadata globally
+          // Store metadata globally for Godot to access
           window.latestModelData = pendingModelMetadata
           window.latestModelDataJson = JSON.stringify(pendingModelMetadata)
 
+          // Also store in localStorage as backup
           try {
             localStorage.setItem('latestModelData', window.latestModelDataJson)
           } catch (e) {
             console.warn('localStorage unavailable:', e)
           }
 
-          window.dispatchEvent(
-            new CustomEvent('godotModelMetadataReady', {
-              detail: { models: pendingModelMetadata },
-            }),
-          )
+          console.log('Model metadata stored in window.latestModelDataJson')
+
+          // Clear pending data since it's now stored
+          pendingModelMetadata = null
         } catch (error) {
-          console.error('Failed to send model metadata to Godot:', error)
+          console.error('Failed to store model metadata:', error)
         }
       }
 
-      // When Godot finishes loading, call this:
-      function onGodotLoaded(instance) {
-        godotInstance = instance
-        console.log('Godot instance is ready.')
-
-        if (pendingModelMetadata) {
-          sendMetadataToGodot()
-        }
-      }
-
-      // Optional fallback: Parse ?models=... param from URL
       function getModelUrlsFromParams() {
         const urlParams = new URLSearchParams(window.location.search)
         const modelsParam = urlParams.get('models')
@@ -310,27 +299,14 @@
             })
             .then(() => {
               setStatusMode('hidden')
-
-              // Store the Godot instance for RPC calls
               godotInstance = engine
-              console.log('Godot engine loaded successfully')
 
-              // If we have pending URLs from postMessage, send them now
-              if (pendingModelMetadata) {
-                console.log('Found pending URLs, sending to Godot:', pendingModelMetadata)
-                sendMetadataToGodot()
-              } else {
-                // Fallback: try to get URLs from URL parameters
-                console.log('No pending URLs, checking URL parameters...')
-                const urlModelUrls = getModelUrlsFromParams()
-                if (urlModelUrls.length > 0) {
-                  console.log('Found URLs in parameters:', urlModelUrls)
-                  pendingModelMetadata = urlModelUrls
-                  sendMetadataToGodot()
-                } else {
-                  console.log('No URLs found in parameters either')
-                }
+              // Always push any pending metadata (from postMessage or URL param)
+              const urlModels = getModelUrlsFromParams()
+              if (urlModels.length > 0) {
+                pendingModelMetadata = urlModels
               }
+              sendMetadataToGodot()
             }, displayFailureNotice)
         }
       })()
