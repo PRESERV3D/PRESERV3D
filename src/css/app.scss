@@ -1273,3 +1273,10 @@ document-title-2 {
   border: 1px solid #4d0000;
   box-shadow: 0 2px 6px rgba(86, 5, 5, 0.22);
 }
+
+// remove underline in login signup fields
+
+.q-field__control:before,
+.q-field__control:after {
+  display: none !important;
+}
