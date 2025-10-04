@@ -68,6 +68,28 @@
             Sign Up
           </router-link>
         </label>
+        <!--Terms and Conditions Checkbox -->
+
+        <div class="terms-font q-mt-lg" style="text-align: center">
+          By using this service, you understood and agree <br />to the PUP Online Services
+          <a
+            href="https://www.pup.edu.ph/terms/"
+            target="_blank"
+            class="terms-font"
+            style="text-decoration: underline; color: #560505"
+          >
+            Terms of Use
+          </a>
+          and
+          <a
+            href="https://www.pup.edu.ph/privacy/"
+            target="_blank"
+            class="terms-font"
+            style="text-decoration: underline; color: #560505"
+          >
+            Privacy Policy
+          </a>
+        </div>
       </div>
     </q-form>
   </div>
