@@ -972,8 +972,16 @@ function generateTempPassword(length = 12) {
 }
 
 .graph {
-  width: 20rem;
+  width: 100%;
+  max-width: 20rem;
   align-self: center;
+  padding: 0 1rem;
+}
+
+.graph canvas {
+  max-width: 100% !important;
+  height: auto !important;
+  width: 100% !important;
 }
 
 .box-legend {
@@ -1000,6 +1008,13 @@ function generateTempPassword(length = 12) {
 .users-graph {
   margin-top: 2rem;
   width: 22rem;
+  max-width: 100%;
+}
+
+.users-graph canvas {
+  max-width: 100%;
+  height: auto;
+  width: 100% !important;
 }
 
 .btn-report {
@@ -1090,13 +1105,6 @@ function generateTempPassword(length = 12) {
   pointer-events: none;
 }
 
-/* .referral-box {
-  border-radius: 15px;
-  background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
-  height: 35rem;
-  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
-} */
-
 /*css referral letter*/
 
 .referral-box,
@@ -1150,15 +1158,6 @@ function generateTempPassword(length = 12) {
   width: 25rem;
 }
 
-/* .incomplete-see-all {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  color: #880000;
-  height: 2rem;
-  width: 6rem;
-} */
-
 
 /* ========================
  ADMIN DASH RESPONSIVE DESIGN
@@ -1188,11 +1187,6 @@ function generateTempPassword(length = 12) {
 
 .title-font-2 {
   font-size: 0.875rem; /* 14px */
-}
-
-.trophies {
-  max-width: 12.5rem; /* 200px */
-  height: auto;
 }
 
 /* Hide trophy section on mobile */
@@ -1252,7 +1246,6 @@ function generateTempPassword(length = 12) {
    DESKTOP (64rem / 1024px+)
 ======================== */
 @media (min-width: 64rem) {
-  /* Show trophy section with proper positioning */
   .col-5 {
     display: flex;
     justify-content: center;
@@ -1268,7 +1261,7 @@ function generateTempPassword(length = 12) {
   }
 
   .dash-title {
-    font-size: 1.5rem; /* Smaller for longer admin title */
+    font-size: 1.5rem;
     line-height: 1.3;
   }
 
@@ -1367,10 +1360,14 @@ function generateTempPassword(length = 12) {
   .row.q-gutter-sm {
     flex-direction: column;
     gap: 1rem;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
 
   .box-1, .box-2 {
     width: 100%;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
 
   .box-1 {
@@ -1379,23 +1376,18 @@ function generateTempPassword(length = 12) {
 
   .box-2 {
     margin-top: 1rem;
-  }
-}
-
-/* Tablet adjustments */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .row.q-gutter-sm {
-    gap: 1rem;
+    padding: 1rem;
   }
 
-  .trophies {
-    height: 12rem;
-    width: 12rem;
+  /* Reset any left margins inside box-2 */
+  .box-2 .q-ml-lg {
+    margin-left: 0.5rem !important;
   }
-}
 
-/* Additional responsive adjustments for better mobile experience */
-@media (max-width: 767px) {
+  .box-2 .q-ml-sm {
+    margin-left: 0.5rem !important;
+  }
+
   .q-ml-xl {
     margin-left: 1rem !important;
   }
@@ -1421,11 +1413,23 @@ function generateTempPassword(length = 12) {
   }
 }
 
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .row.q-gutter-sm {
+    gap: 1rem;
+  }
+
+  .trophies {
+    height: 12rem;
+    width: 12rem;
+  }
+}
+
 /* ========================
  RECENTLY UPLOADED SECTION (box-4)
 ======================== */
 
-/* Keep original proportions - only minor adjustments for mobile */
+
 .box-4 {
   margin-left: 0; /* Remove on mobile */
   margin-top: 1rem;
@@ -1438,27 +1442,27 @@ function generateTempPassword(length = 12) {
   }
 }
 
-/* Desktop (1024px+) - restore original values */
+/* Desktop (1024px+) - */
 @media (min-width: 64rem) {
   .box-4 {
-    margin-left: 3rem; /* Original value */
-    height: 35rem; /* Original value */
+    margin-left: 3rem;
+    height: 35rem;
   }
 
   .recent-box {
-    width: 15rem; /* Original value */
-    height: 22rem; /* Original value */
+    width: 15rem;
+    height: 22rem;
   }
 
   .recent-card {
-    width: 13rem; /* Original value */
-    height: 15rem; /* Original value */
+    width: 13rem;
+    height: 15rem;
   }
 
   .arrow-button {
-    width: 50px; /* Original value */
-    height: 50px; /* Original value */
-    margin-top: 3.5rem; /* Original value */
+    width: 50px;
+    height: 50px;
+    margin-top: 3.5rem;
   }
 
   .btn-arrows {
@@ -1470,22 +1474,20 @@ function generateTempPassword(length = 12) {
 /* Large Desktop (1440px+) - keep originals */
 @media (min-width: 90rem) {
   .box-4 {
-    margin-left: 3rem; /* Keep original */
-    height: 35rem; /* Keep original */
+    margin-left: 3rem;
+    height: 35rem;
   }
 
   .recent-box {
-    width: 15rem; /* Keep original */
-    height: 22rem; /* Keep original */
+    width: 15rem;
+    height: 22rem;
   }
 
   .recent-card {
-    width: 13rem; /* Keep original */
-    height: 15rem; /* Keep original */
+    width: 13rem;
+    height: 15rem;
   }
 }
-
-
 
 /* Legend alignment fix */
 .box-3 .row.q-py-lg.justify-center.q-gutter-md {
@@ -1500,28 +1502,6 @@ function generateTempPassword(length = 12) {
 .box-3 .row.q-py-lg.justify-center.q-gutter-md p {
   vertical-align: middle !important;
   margin: 0 !important;
-}
-
-/* Make graphs responsive by default */
-.users-graph {
-  width: 22rem;
-  max-width: 100%;
-}
-
-.users-graph canvas {
-  max-width: 100%;
-  height: auto;
-}
-
-.graph {
-  width: 20rem;
-  max-width: 100%;
-  align-self: center;
-}
-
-.graph canvas {
-  max-width: 100%;
-  height: auto;
 }
 
 /* ========================
@@ -1628,7 +1608,7 @@ function generateTempPassword(length = 12) {
   }
 
   .box-3 .number {
-    flex-shrink: 0 !important; /* Number shouldn't shrink */
+    flex-shrink: 0 !important;
   }
 
   .box-3 .fade-title {
@@ -1648,8 +1628,28 @@ function generateTempPassword(length = 12) {
   }
 }
 
-/* Mobile adjustments for recently uploaded */
-@media (max-width: 48rem) { /* 768px */
+/* Responsive graph adjustments */
+@media (max-width: 768px) {
+  .graph {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 0.5rem;
+  }
+
+  .graph canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .box-2 {
+    padding: 1rem 0.5rem;
+  }
+
+  .box-2 .row.q-gutter-md.q-ml-sm {
+    margin-left: 0.25rem;
+    gap: 0.5rem;
+  }
+
   .box-4 {
     padding: 1rem;
   }
@@ -1770,9 +1770,9 @@ function generateTempPassword(length = 12) {
 
   /* Left side: number + title container on mobile */
   .box-3 .row.q-mb-md.items-center.q-gutter-sm {
-    gap: 0.5rem !important; /* Increase gap for better spacing */
+    gap: 0.5rem !important;
     flex-wrap: nowrap !important;
-    align-items: center !important; /* Center align all items */
+    align-items: center !important;
     justify-content: flex-start !important;
     display: flex !important;
     flex-direction: row !important; /* Force horizontal layout */
@@ -1818,6 +1818,27 @@ function generateTempPassword(length = 12) {
     margin-right: 3rem !important;
     flex-shrink: 0 !important;
     white-space: nowrap !important; /* Keep on one line */
+  }
+}
+
+@media (min-width: 610px) and (max-width: 768px) {
+  .graph {
+    width: 100% !important;
+    max-width: 95% !important;
+    padding: 0 1rem;
+  }
+}
+
+/* Reset graph to normal size on larger screens */
+@media (min-width: 769px) {
+  .graph {
+    width: 100% !important;
+    max-width: 20rem !important;
+    padding: 0 1rem;
+  }
+
+  .box-2 {
+    padding: initial;
   }
 }
 </style>
