@@ -165,20 +165,26 @@
         </div>
         <div class="row q-py-md">
           <div class="col-6">
-            <p class="q-ml-md sub-font">New Users per Month</p>
-            <div class="row q-py-lg justify-center q-gutter-md">
+            <p class="q-ml-md sub-font">Users per Month</p>
+            <div class="row q-py-sm justify-center q-gutter-md legend-container">
               <!--users-->
-              <div class="box-legend" style="background-color: #880000"></div>
-              <p class="q-ml-sm sub-font" style="font-size: 12px">PUP Students</p>
-              <div class="box-legend" style="background-color: #efaf00"></div>
-              <p class="q-ml-sm sub-font" style="font-size: 12px">PUP Faculty</p>
-              <div class="box-legend" style="background-color: #3d86ff"></div>
-              <p class="q-ml-sm sub-font" style="font-size: 12px">Visitors</p>
-
-              <!-- Users per Month Line Graph -->
-              <div class="users-graph">
-                <canvas ref="usersPerMonth"></canvas>
+              <div class="legend-item">
+                <div class="box-legend" style="background-color: #880000"></div>
+                <p class="sub-font" style="font-size: 12px">PUP Students</p>
               </div>
+              <div class="legend-item">
+                <div class="box-legend" style="background-color: #efaf00"></div>
+                <p class="sub-font" style="font-size: 12px">PUP Faculty</p>
+              </div>
+              <div class="legend-item">
+                <div class="box-legend" style="background-color: #3d86ff"></div>
+                <p class="sub-font" style="font-size: 12px">Visitors</p>
+              </div>
+            </div>
+
+            <!-- Users per Month Line Graph -->
+            <div class="users-graph">
+              <canvas ref="usersPerMonth"></canvas>
             </div>
           </div>
 
@@ -1652,18 +1658,34 @@ function generateTempPassword(length = 12) {
 }
 
 /* Legend alignment fix */
-.box-3 .row.q-py-lg.justify-center.q-gutter-md {
+.legend-container {
+  display: flex !important;
   align-items: center !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
+  gap: 1.5rem !important;
 }
 
-.box-3 .box-legend {
-  vertical-align: middle !important;
-  margin-right: 0.5rem !important;
+.legend-item {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: baseline !important; /* Changed to baseline */
+  gap: 0.5rem !important;
 }
 
-.box-3 .row.q-py-lg.justify-center.q-gutter-md p {
-  vertical-align: middle !important;
+.legend-item .box-legend {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.legend-item p {
   margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap;
 }
 
 /* ========================
