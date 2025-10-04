@@ -952,6 +952,11 @@ onMounted(async () => {
     // Fallback to modelStore if Supabase fails
     model.value = modelStore.models.find((m) => m.id == route.params.id) || null
     console.log('Fallback Model from Store:', model.value)
+    if (!model.value) {
+      loading.value = false
+      router.replace('/not-found')
+      return
+    }
   } else {
     // Add some default values for compatibility
     model.value = {
@@ -1426,8 +1431,6 @@ model-viewer:-ms-fullscreen {
   justify-content: flex-start;
   align-self: flex-start;
 }
-
-
 
 .action-icons-top .action-icon {
   cursor: pointer;
@@ -2015,6 +2018,4 @@ model-viewer:-ms-fullscreen {
     font-size: 16px;
   }
 }
-
-
 </style>

@@ -639,6 +639,10 @@ function getStatusColor(status) {
   margin-top: 4px;
 }
 
+.form-input :deep(.q-field__control::after) {
+  margin: -2px;
+}
+
 .book-btn {
   background: #660000;
   color: white;
