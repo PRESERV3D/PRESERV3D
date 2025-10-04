@@ -35,6 +35,7 @@
     "jspdf": "^3.0.2",
     "jspdf-autotable": "^5.0.2",
     "meshoptimizer": "^0.24.0",
+    "opencv.js": "^1.2.1",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.3.93",
     "pinia": "^3.0.2",
