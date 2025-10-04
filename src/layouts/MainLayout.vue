@@ -64,8 +64,8 @@
                 </q-item-section>
                 <q-item-section>
                   <span :class="{ 'text-hidden': miniState && !isHovered }" class="nav-text">{{
-                    item.label
-                  }}</span>
+                      item.label
+                    }}</span>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -139,6 +139,20 @@
                     style="margin: 0 8px"
                   />
                 </template>
+
+                <!-- Advanced Search Button -->
+                <template v-slot:append>
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="tune"
+                    @click="showAdvancedSearch = true"
+                    class="advanced-search-btn"
+                  >
+                    <q-tooltip>Advanced Search</q-tooltip>
+                  </q-btn>
+                </template>
               </q-input>
             </div>
 
@@ -201,6 +215,162 @@
           </div>
         </div>
 
+        <!-- Advanced Search Dialog -->
+        <q-dialog v-model="showAdvancedSearch" persistent>
+          <q-card class="advanced-search-dialog">
+            <q-card-section class="row items-center q-pb-none q-mb-lg">
+              <div class="text-h6">Advanced Search</div>
+              <q-space />
+              <q-btn icon="close" flat round dense v-close-popup />
+            </q-card-section>
+
+            <q-card-section class="q-pt-none">
+              <div class="q-gutter-md">
+                <!-- Basic Search -->
+                <q-input
+                  outlined
+                  v-model="advancedSearch.query"
+                  label="Keywords"
+                  placeholder="Enter search terms..."
+                  clearable
+                />
+
+                <!-- Search Type -->
+                <q-select
+                  outlined
+                  v-model="advancedSearch.type"
+                  :options="advancedSearchTypeOptions"
+                  label="Search In"
+                  emit-value
+                  map-options
+                />
+
+                <!-- Date Range -->
+                <div class="row q-gutter-md q-mx-none">
+                  <div class="col q-px-none q-pr-sm">
+                    <q-input
+                      outlined
+                      v-model="advancedSearch.dateFrom"
+                      label="Date From"
+                      type="date"
+                    />
+                  </div>
+                  <div class="col q-px-none">
+                    <q-input
+                      outlined
+                      v-model="advancedSearch.dateTo"
+                      label="Date To"
+                      type="date"
+                    />
+                  </div>
+                </div>
+
+                <!-- File Type (only for "All Items") -->
+                <q-select
+                  outlined
+                  v-model="advancedSearch.fileType"
+                  :options="fileTypeOptions"
+                  label="File Type"
+                  emit-value
+                  map-options
+                  multiple
+                  use-chips
+                  v-if="advancedSearch.type === 'all'"
+                />
+
+                <!-- Category/Tags (only for "Artifacts" and "Documents") -->
+                <q-select
+                  outlined
+                  v-model="advancedSearch.tags"
+                  :options="tagOptions"
+                  label="Categories/Tags"
+                  emit-value
+                  map-options
+                  multiple
+                  use-chips
+                  use-input
+                  @filter="filterTags"
+                  v-if="advancedSearch.type === 'artifacts' || advancedSearch.type === 'documents'"
+                />
+
+                <!-- Sort Options -->
+                <div class="row q-gutter-md q-mx-none">
+                  <div class="col q-px-none q-pr-sm">
+                    <q-select
+                      outlined
+                      v-model="advancedSearch.sortBy"
+                      :options="sortByOptions"
+                      label="Sort By"
+                      emit-value
+                      map-options
+                    />
+                  </div>
+                  <div class="col q-px-none">
+                    <q-select
+                      outlined
+                      v-model="advancedSearch.sortOrder"
+                      :options="sortOrderOptions"
+                      label="Sort Order"
+                      emit-value
+                      map-options
+                    />
+                  </div>
+                </div>
+
+                <!-- Advanced Options Toggle -->
+                <q-expansion-item
+                  icon="settings"
+                  label="More Options"
+                  class="advanced-options"
+                >
+                  <div class="q-pa-md q-gutter-md">
+                    <!-- Exact Match -->
+                    <q-checkbox
+                      v-model="advancedSearch.exactMatch"
+                      label="Exact phrase match"
+                      color="primary"
+                    />
+
+                    <!-- None of these words -->
+                    <q-checkbox
+                      v-model="advancedSearch.noneOfWords"
+                      label="None of these words"
+                      color="primary"
+                    />
+
+                    <!-- Case Sensitive -->
+                    <q-checkbox
+                      v-model="advancedSearch.caseSensitive"
+                      label="Case sensitive"
+                      color="primary"
+                    />
+
+                    <!-- Search in Content (only for Documents) -->
+                    <q-checkbox
+                      v-model="advancedSearch.searchInContent"
+                      label="Search in file content"
+                      color="primary"
+                      v-if="advancedSearch.type === 'documents'"
+                    />
+                  </div>
+                </q-expansion-item>
+              </div>
+            </q-card-section>
+
+            <q-card-actions align="right" class="q-pa-sm q-mb-sm">
+              <q-btn flat label="Clear All" @click="clearAdvancedSearch" />
+              <q-btn flat label="Cancel" v-close-popup />
+              <q-btn
+                unelevated
+                label="Search"
+                color="primary"
+                @click="performAdvancedSearch"
+                :loading="searchLoading"
+              />
+            </q-card-actions>
+          </q-card>
+        </q-dialog>
+
         <router-view />
       </q-page-container>
     </q-layout>
@@ -231,15 +401,72 @@ const miniState = ref(true)
 const isHovered = ref(false)
 const search = ref('')
 
+// Advanced Search State
+const showAdvancedSearch = ref(false)
+const searchLoading = ref(false)
+
+// Advanced Search Form Data
+const advancedSearch = ref({
+  query: '',
+  type: 'all',
+  dateFrom: '',
+  dateTo: '',
+  fileType: [],
+  tags: [],
+  sortBy: 'relevance',
+  sortOrder: 'desc',
+  exactMatch: false,
+  noneOfWords: false,
+  caseSensitive: false,
+  searchInContent: false
+})
+
 // Responsive state
 const windowWidth = ref(window.innerWidth)
 const isCompactMode = computed(() => windowWidth.value < 1030)
 
-// Search dropdown options
+// Search dropdown options (for main search bar)
 const searchType = ref('artifacts') // default selection
 const searchOptions = [
   { label: 'Artifacts', value: 'artifacts' },
   { label: 'Documents', value: 'documents' },
+]
+
+// Advanced Search Type Options (for advanced search dialog)
+const advancedSearchTypeOptions = [
+  { label: 'All Items', value: 'all' },
+  { label: 'Artifacts', value: 'artifacts' },
+  { label: 'Documents', value: 'documents' }
+]
+
+// File Type Options for advanced search
+const fileTypeOptions = [
+  { label: 'PDF', value: 'pdf' },
+  { label: 'GLB', value: 'glb' }
+]
+
+const tagOptions = ref([
+  { label: 'Important', value: 'important' },
+  { label: 'Archive', value: 'archive' },
+  { label: 'Personal', value: 'personal' },
+  { label: 'Work', value: 'work' },
+  { label: 'Research', value: 'research' },
+  { label: 'Draft', value: 'draft' },
+  { label: 'Final', value: 'final' }
+])
+
+const sortByOptions = [
+  { label: 'Relevance', value: 'relevance' },
+  { label: 'Name', value: 'name' },
+  { label: 'Date Created', value: 'created' },
+  { label: 'Date Modified', value: 'modified' },
+  { label: 'Size', value: 'size' },
+  { label: 'Type', value: 'type' }
+]
+
+const sortOrderOptions = [
+  { label: 'Descending', value: 'desc' },
+  { label: 'Ascending', value: 'asc' }
 ]
 
 // User and notifications data
@@ -341,7 +568,6 @@ const setActiveItem = (itemName) => {
     return
   } else {
     // Navigate to the corresponding route
-
     const targetRoute = `/${itemName}`
     router.push(targetRoute)
   }
@@ -375,6 +601,130 @@ const performSearch = async () => {
   console.log('Search performed:', query, searchType.value)
 
   search.value = ''
+}
+
+// Advanced Search Functions
+const performAdvancedSearch = async () => {
+  searchLoading.value = true
+
+  try {
+    // Prepare search parameters based on search type
+    const searchParams = {
+      query: advancedSearch.value.query || search.value,
+      type: advancedSearch.value.type,
+      filters: {
+        dateFrom: advancedSearch.value.dateFrom,
+        dateTo: advancedSearch.value.dateTo,
+        exactMatch: advancedSearch.value.exactMatch,
+        noneOfWords: advancedSearch.value.noneOfWords,
+        caseSensitive: advancedSearch.value.caseSensitive
+      },
+      sort: {
+        by: advancedSearch.value.sortBy,
+        order: advancedSearch.value.sortOrder
+      }
+    }
+
+    // Add conditional filters based on search type
+    if (advancedSearch.value.type === 'all') {
+      // For "All Items", include file type filters
+      searchParams.filters.fileTypes = advancedSearch.value.fileType
+    } else if (advancedSearch.value.type === 'artifacts' || advancedSearch.value.type === 'documents') {
+      // For "Artifacts" and "Documents", include tags
+      searchParams.filters.tags = advancedSearch.value.tags
+
+      // Only for documents, include search in content option
+      if (advancedSearch.value.type === 'documents') {
+        searchParams.filters.searchInContent = advancedSearch.value.searchInContent
+      }
+    }
+
+    // Navigate to appropriate page first if needed
+    let targetRoute = ''
+    if (advancedSearch.value.type === 'artifacts') {
+      targetRoute = '/artifacts'
+    } else if (advancedSearch.value.type === 'documents') {
+      targetRoute = '/documents'
+    } else {
+      // For "all", default to artifacts page
+      targetRoute = '/artifacts'
+    }
+
+    if (route.path !== targetRoute) {
+      await router.push(targetRoute)
+    }
+
+    // Perform the advanced search
+    await searchStore.advancedSearch(searchParams)
+
+    // Update the main search input with the query
+    search.value = advancedSearch.value.query
+
+    // Close the dialog
+    showAdvancedSearch.value = false
+
+    // Show success notification
+    $q.notify({
+      type: 'positive',
+      message: 'Advanced search completed',
+      position: 'top'
+    })
+
+    console.log('Advanced search performed:', searchParams)
+  } catch (error) {
+    console.error('Advanced search error:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Search failed. Please try again.',
+      position: 'top'
+    })
+  } finally {
+    searchLoading.value = false
+  }
+}
+
+const clearAdvancedSearch = () => {
+  advancedSearch.value = {
+    query: '',
+    type: 'all',
+    dateFrom: '',
+    dateTo: '',
+    fileType: [],
+    tags: [],
+    sortBy: 'relevance',
+    sortOrder: 'desc',
+    exactMatch: false,
+    noneOfWords: false,
+    caseSensitive: false,
+    searchInContent: false
+  }
+}
+
+const filterTags = (val, update) => {
+  update(() => {
+    if (val === '') {
+      tagOptions.value = [
+        { label: 'Important', value: 'important' },
+        { label: 'Archive', value: 'archive' },
+        { label: 'Personal', value: 'personal' },
+        { label: 'Work', value: 'work' },
+        { label: 'Research', value: 'research' },
+        { label: 'Draft', value: 'draft' },
+        { label: 'Final', value: 'final' }
+      ]
+    } else {
+      const needle = val.toLowerCase()
+      tagOptions.value = [
+        { label: 'Important', value: 'important' },
+        { label: 'Archive', value: 'archive' },
+        { label: 'Personal', value: 'personal' },
+        { label: 'Work', value: 'work' },
+        { label: 'Research', value: 'research' },
+        { label: 'Draft', value: 'draft' },
+        { label: 'Final', value: 'final' }
+      ].filter(tag => tag.label.toLowerCase().includes(needle))
+    }
+  })
 }
 
 const handleLogout = async () => {
@@ -464,9 +814,50 @@ watch(
     } else {
       noToolBar.value = true
     }
+
+    // Update advanced search type based on current page
+    if (newPath.includes('documents')) {
+      advancedSearch.value.type = 'documents'
+    } else if (newPath.includes('artifacts')) {
+      advancedSearch.value.type = 'artifacts'
+    } else {
+      advancedSearch.value.type = 'all'
+    }
   },
   { immediate: true },
 )
+
+// Sync advanced search query with main search
+watch(() => advancedSearch.value.query, (newQuery) => {
+  if (newQuery !== search.value) {
+    search.value = newQuery
+  }
+})
+
+// Sync main search with advanced search query
+watch(search, (newSearch) => {
+  if (newSearch !== advancedSearch.value.query) {
+    advancedSearch.value.query = newSearch
+  }
+})
+
+// Watch for search type changes to clear inappropriate fields
+watch(() => advancedSearch.value.type, (newType) => {
+  // Clear file type when not in "All Items"
+  if (newType !== 'all') {
+    advancedSearch.value.fileType = []
+  }
+
+  // Clear tags when not in "Artifacts" or "Documents"
+  if (newType !== 'artifacts' && newType !== 'documents') {
+    advancedSearch.value.tags = []
+  }
+
+  // Clear search in content when not in "Documents"
+  if (newType !== 'documents') {
+    advancedSearch.value.searchInContent = false
+  }
+})
 
 async function fetchNotifications() {
   const {
@@ -760,10 +1151,50 @@ watch(
 ======================== */
 .search-input {
   width: 100%;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
 }
 
 .search-input :deep(.q-field__control) {
   min-height: 40px;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.search-input :deep(.q-field__native) {
+  color: #333 !important;
+}
+
+.search-input :deep(.q-placeholder) {
+  color: #666 !important;
+}
+
+/* Advanced Search Button */
+.advanced-search-btn {
+  color: #666 !important;
+  transition: all 0.2s ease;
+}
+
+.advanced-search-btn:hover {
+  color: #880000 !important;
+  background-color: rgba(136, 0, 0, 0.1) !important;
+}
+
+/* ========================
+   ADVANCED SEARCH DIALOG
+======================== */
+.advanced-search-dialog {
+  min-width: 600px;
+  max-width: 800px;
+  width: 90vw;
+}
+
+.advanced-options {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  margin-top: 16px;
 }
 
 /* ========================
@@ -874,6 +1305,11 @@ watch(
     min-width: 48px !important;
     max-width: 48px !important;
   }
+
+  .advanced-search-dialog {
+    min-width: 320px;
+    width: 95vw;
+  }
 }
 
 /* Hide sidebar on tablets - sidebar still overlays */
@@ -972,6 +1408,12 @@ watch(
   .q-page-container {
     margin-left: 120px !important;
     padding-left: 0 !important;
+  }
+
+  .advanced-search-dialog {
+    min-width: 280px;
+    width: 100vw;
+    margin: 8px;
   }
 }
 
@@ -1108,7 +1550,7 @@ watch(
   padding: 4px 12px 4px 8px;
 }
 
-/* Full profile display
+/* Full profile display */
 .user-profile-btn:not(.compact) {
   width: 180px;
   min-width: 180px;

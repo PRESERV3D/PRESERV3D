@@ -126,6 +126,14 @@ const routes = [
       },
     ],
   },
+
+  {
+    path: '/phone-camera',
+    name: 'phone-camera',
+    component: () => import('pages/PhoneCameraPage.vue'),
+    meta: { requiresAuth: false },
+  },
+
   {
     path: '/user',
     component: () => import('layouts/LogInSignUpLayout.vue'),

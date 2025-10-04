@@ -1,7 +1,7 @@
 <template>
   <div class="q-pa-md form-container">
     <div class="column items-center">
-      <label class="form-title">SIGN UP</label>
+      <label class="form-title">FACULTY SIGN UP</label>
       <label class="subtitle-logsign">Let's Get You Set Up</label>
     </div>
 
@@ -38,14 +38,25 @@
             ]"
             class="text-box"
           />
-          <label class="labelNames">Contact Number</label>
+          <label class="labelNames">College</label>
+          <q-select
+            dense
+            v-model="form.college"
+            :options="Object.keys(collegeDepartment)"
+            lazy-rules
+            :rules="[(val) => !!val || 'Please select your college.']"
+            class="text-box"
+            @update:model-value="form.department = ''"
+          />
+          <!-- <label class="labelNames">Contact Number</label>
           <q-input
             dense
             v-model="form.contact"
             lazy-rules
             :rules="[(val) => !!val || 'Please enter your contact number.']"
             class="text-box"
-          />
+          /> -->
+
           <div class="column items-center q-mt-xs">
             <q-btn
               class="next-button"
@@ -71,17 +82,6 @@
 
       <div v-if="step === 2">
         <div class="column q-gutter-sm">
-          <label class="labelNames">College</label>
-          <q-select
-            dense
-            v-model="form.college"
-            :options="Object.keys(collegeDepartment)"
-            lazy-rules
-            :rules="[(val) => !!val || 'Please select your college.']"
-            class="text-box"
-            @update:model-value="form.department = ''"
-          />
-
           <div class="row items-center">
             <div class="column q-gutter-sm">
               <label class="labelNames">Department</label>
@@ -125,11 +125,36 @@
             ]"
             class="text-box"
           />
+          <!--Terms and Conditions Checkbox -->
+          <div class="row items-center q-mb-md">
+            <q-checkbox v-model="acceptedterms" dense label="" class="terms-checkbox" />
+            <div class="terms-font q-ml-sm">
+              I understand and agree to the PUP Online Services
+              <a
+                href="https://www.pup.edu.ph/terms/"
+                target="_blank"
+                class="terms-font"
+                style="text-decoration: underline; color: #560505"
+              >
+                Terms of Use
+              </a>
+              and
+              <a
+                href="https://www.pup.edu.ph/privacy/"
+                target="_blank"
+                class="terms-font"
+                style="text-decoration: underline; color: #560505"
+              >
+                Privacy Policy
+              </a>
+            </div>
+          </div>
         </div>
 
         <div class="column items-center">
           <a @click="step--" class="labelNames cursor-pointer q-mb-sm">Back</a>
           <q-btn
+            :disabled="!acceptedterms"
             class="sign-up"
             push
             color="primary"
@@ -177,7 +202,7 @@ const form = ref({
   first_name: '',
   last_name: '',
   email: '',
-  contact: '',
+  // contact: '',
   college: '',
   department: '',
   password: '',
@@ -241,9 +266,10 @@ const passwordStrengthColor = computed(() =>
 
 // Validate step one inputs
 async function validateStepOne() {
-  const { first_name, last_name, email, contact } = form.value
+  const { first_name, last_name, email, college } = form.value //remove contact here
 
-  if (!first_name || !last_name || !email || !contact) {
+  if (!first_name || !last_name || !email || !college) {
+    //remove contact here
     alert('Please fill out all required fields.')
     return
   }
@@ -288,8 +314,8 @@ const checkEmailUnique = async (val) => {
 
 // Register user
 async function registerUser() {
-  const { first_name, last_name, email, contact, college, department, password, confirmPassword } =
-    form.value
+  const { first_name, last_name, email, college, department, password, confirmPassword } =
+    form.value //remove contact here
 
   const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/
   if (!passwordRegex.test(password)) {
@@ -336,7 +362,7 @@ async function registerUser() {
           first_name,
           last_name,
           email,
-          contact,
+          // contact,
           college,
           department,
           created_at: new Date(),
@@ -437,4 +463,7 @@ function handleNotifyDialogClose() {
     dialogResolve.value = null
   }
 }
+
+// Terms and Conditions checkbox state
+const acceptedterms = ref(false)
 </script>

@@ -469,6 +469,7 @@ document-title-2 {
 
 //
 
+.h-fade-title-container,
 .fade-title-container {
   position: relative;
   max-width: 13rem;
@@ -1203,4 +1204,79 @@ document-title-2 {
   border-radius: 10px !important;
   font-family: 'Poppins', sans-serif;
   height: auto;
+}
+
+//global css for pagination
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+}
+
+.pagination-btn {
+  color: #560505;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not([disabled]) {
+  background-color: #560505;
+  color: white;
+}
+
+.pagination-btn[disabled] {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.pagination-numbers {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.page-number {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #666;
+  font-size: 0.9rem;
+  min-width: 32px;
+  text-align: center;
+}
+
+.page-number:hover {
+  background-color: #f5f5f5;
+  color: #560505;
+}
+
+.page-number.active {
+  background-color: #efefef66;
+  color: black;
+  font-weight: 600;
+}
+
+// terms and conditions
+.terms-font {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: #000000;
+  text-align: justify;
+}
+
+.terms-checkbox .q-field__control {
+  border-radius: 10px;
+  border: 1px solid #4d0000;
+  box-shadow: 0 2px 6px rgba(86, 5, 5, 0.22);
+}
+
+// remove underline in login signup fields
+
+.q-field__control:before,
+.q-field__control:after {
+  display: none !important;
 }
