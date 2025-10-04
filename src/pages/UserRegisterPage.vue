@@ -1,7 +1,7 @@
 <template>
   <div class="q-pa-md form-container">
-    <div class="column items-center">
-      <label class="form-title">SIGN UP</label>
+    <div class="column items-center q-mb-lg">
+      <label class="form-title">STUDENT SIGN UP</label>
       <label class="subtitle-logsign">Let's Get You Set Up</label>
     </div>
 
@@ -39,15 +39,27 @@
             ]"
             class="text-box"
           />
-          <label class="labelNames">Contact Number</label>
+
+          <!-- <label class="labelNames">Contact Number</label>
           <q-input
             dense
             v-model="form.contact"
             lazy-rules
             :rules="[(val) => !!val || 'Please enter your contact number.']"
             class="text-box"
+          /> -->
+          <label class="labelNames">College</label>
+          <q-select
+            dense
+            v-model="form.college"
+            :options="Object.keys(collegeDepartment)"
+            lazy-rules
+            :rules="[(val) => !!val || 'Please select your college.']"
+            class="text-box"
+            @update:model-value="form.department = ''"
           />
-          <div class="column items-center q-mt-xs">
+
+          <div class="column items-center q-mt-md">
             <q-btn
               class="next-button"
               push
@@ -72,17 +84,6 @@
 
       <div v-if="step === 2">
         <div class="column q-gutter-sm">
-          <label class="labelNames">College</label>
-          <q-select
-            dense
-            v-model="form.college"
-            :options="Object.keys(collegeDepartment)"
-            lazy-rules
-            :rules="[(val) => !!val || 'Please select your college.']"
-            class="text-box"
-            @update:model-value="form.department = ''"
-          />
-
           <div class="row items-center">
             <div class="col-5">
               <div class="column q-gutter-sm">
@@ -111,7 +112,7 @@
               </div>
             </div>
 
-            <div class="col q-pt-xs">
+            <div class="col labelNames q-pt-xs">
               <q-checkbox v-model="form.is_alumni" dense label="Alumni" class="c-textbox" />
             </div>
           </div>
@@ -145,11 +146,36 @@
             ]"
             class="text-box"
           />
+          <!--Terms and Conditions Checkbox -->
+          <div class="row items-center q-mb-md">
+            <q-checkbox v-model="acceptedterms" dense label="" class="terms-checkbox" />
+            <div class="terms-font q-ml-sm">
+              I understand and agree to the PUP Online Services
+              <a
+                href="https://www.pup.edu.ph/terms/"
+                target="_blank"
+                class="terms-font"
+                style="text-decoration: underline; color: #560505"
+              >
+                Terms of Use
+              </a>
+              and
+              <a
+                href="https://www.pup.edu.ph/privacy/"
+                target="_blank"
+                class="terms-font"
+                style="text-decoration: underline; color: #560505"
+              >
+                Privacy Policy
+              </a>
+            </div>
+          </div>
         </div>
 
         <div class="column items-center">
           <a @click="step--" class="labelNames cursor-pointer q-mb-sm">Back</a>
           <q-btn
+            :disable="!acceptedterms"
             class="sign-up"
             push
             color="primary"
@@ -197,7 +223,7 @@ const form = ref({
   first_name: '',
   last_name: '',
   email: '',
-  contact: '',
+  // contact: '',
   college: '',
   department: '',
   year_section: '',
@@ -263,9 +289,10 @@ const passwordStrengthColor = computed(() =>
 
 // Validate step one inputs
 async function validateStepOne() {
-  const { first_name, last_name, email, contact } = form.value
+  const { first_name, last_name, email, college } = form.value //remove contact here
 
-  if (!first_name || !last_name || !email || !contact) {
+  if (!first_name || !last_name || !email || !college) {
+    //remove contact here
     alert('Please fill out all required fields.')
     return
   }
@@ -308,7 +335,7 @@ async function registerUser() {
     first_name,
     last_name,
     email,
-    contact,
+    // contact,
     college,
     department,
     year_section,
@@ -362,7 +389,7 @@ async function registerUser() {
           first_name,
           last_name,
           email,
-          contact,
+          // contact,
           college,
           department,
           year_section,
@@ -464,4 +491,6 @@ function handleNotifyDialogClose() {
     dialogResolve.value = null
   }
 }
+// Terms and Conditions checkbox state
+const acceptedterms = ref(false)
 </script>
