@@ -1,7 +1,7 @@
 <template>
   <div class="q-pa-md form-container">
     <div class="column items-center">
-      <label class="form-title">SIGN UP</label>
+      <label class="form-title">VISITOR SIGN UP</label>
       <label class="subtitle-logsign">Let's Get You Set Up</label>
     </div>
 
@@ -218,11 +218,36 @@
             ]"
             class="text-box"
           /> -->
+          <!--Terms and Conditions Checkbox -->
+          <div class="row items-center q-mb-md">
+            <q-checkbox v-model="acceptedterms" dense label="" class="terms-checkbox" />
+            <div class="terms-font q-ml-sm">
+              I understand and agree to the PUP Online Services
+              <a
+                href="https://www.pup.edu.ph/terms/"
+                target="_blank"
+                class="terms-font"
+                style="text-decoration: underline; color: #560505"
+              >
+                Terms of Use
+              </a>
+              and
+              <a
+                href="https://www.pup.edu.ph/privacy/"
+                target="_blank"
+                class="terms-font"
+                style="text-decoration: underline; color: #560505"
+              >
+                Privacy Policy
+              </a>
+            </div>
+          </div>
         </div>
 
-        <div class="column items-center q-mt-lg">
+        <div class="column items-center q-mt-sm">
           <a @click="step--" class="labelNames cursor-pointer q-mb-sm">Back</a>
           <q-btn
+            :disable="!acceptedterms"
             class="visitor-signup-btn"
             push
             text-color="primary"
@@ -588,6 +613,8 @@ async function compressPdf(file) {
 
   return compressedFile
 }
+// Terms and Conditions checkbox state
+const acceptedterms = ref(false)
 </script>
 
 <style scoped>
