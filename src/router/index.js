@@ -35,6 +35,25 @@ export default defineRouter(function (/* { store, ssrContext } */) {
 
   // Supabase auth guard here
   Router.beforeEach(async (to, from, next) => {
+    // Allow phone-camera route without authentication - check name and path
+    if (to.name === 'phone-camera' || to.path.includes('/phone-camera')) {
+      console.log('✅ Allowing access to phone-camera page')
+      next()
+      return
+    }
+
+    // Allow public routes
+    const publicRoutes = ['/landing', '/admin/landing', '/forgotpassword', '/resetpassword']
+    if (
+      publicRoutes.includes(to.path) ||
+      to.path.startsWith('/user') ||
+      to.path.startsWith('/admin/login') ||
+      to.path.startsWith('/admin/register')
+    ) {
+      next()
+      return
+    }
+
     const userStore = useUserStore()
 
     if (!userStore.session) {
