@@ -1,9 +1,122 @@
 <template>
   <q-page class="q-pa-md column items-center justify-start">
-    <!-- Camera & Canvas Area -->
+    <!-- Phone Camera Connection Section -->
+    <div v-if="showPhoneSetup" class="phone-setup-card q-mb-lg">
+      <q-card class="q-pa-md" style="max-width: 600px">
+        <q-card-section>
+          <div class="text-h6">Connect Phone Camera</div>
+          <div class="text-caption text-grey-7">
+            Scan QR code or enter connection code on your phone
+          </div>
+        </q-card-section>
 
+        <!-- Connection Code Display -->
+        <q-card-section class="flex flex-center column">
+          <div class="text-h4 text-weight-bold text-primary q-mb-md" style="letter-spacing: 4px">
+            {{ connectionCode }}
+          </div>
+          <div class="text-caption text-grey-7 q-mb-lg">Enter this code on your phone</div>
+
+          <q-separator class="q-mb-md full-width" />
+
+          <div class="text-caption text-grey-7 q-mb-sm">Or scan QR code:</div>
+
+          <!-- Loading state while generating QR -->
+          <div
+            v-if="!iceGatheringComplete"
+            class="flex flex-center column q-mb-md"
+            style="width: 300px; height: 300px; border: 1px solid #ccc; border-radius: 8px"
+          >
+            <q-spinner-dots size="50px" color="primary" />
+            <div class="text-caption text-grey-7 q-mt-md">Preparing connection...</div>
+          </div>
+
+          <canvas
+            v-show="iceGatheringComplete"
+            ref="qrCanvas"
+            width="300"
+            height="300"
+            class="q-mb-md"
+          ></canvas>
+        </q-card-section>
+
+        <q-card-section>
+          <div class="text-subtitle2 q-mb-sm">Or paste answer from phone manually:</div>
+          <q-input
+            v-model="phoneAnswer"
+            filled
+            type="textarea"
+            label="Paste phone answer here"
+            rows="3"
+          />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="cancelPhoneSetup" />
+          <q-btn
+            flat
+            label="Process Answer"
+            color="primary"
+            @click="processPhoneAnswer"
+            :disable="!phoneAnswer"
+          />
+        </q-card-actions>
+
+        <q-card-section v-if="connectionStatus === 'connected'">
+          <q-banner class="bg-positive text-white" rounded>
+            <template v-slot:avatar>
+              <q-icon name="check_circle" />
+            </template>
+            Phone connected successfully! Starting camera...
+          </q-banner>
+        </q-card-section>
+
+        <q-card-section v-else-if="connectionStatus === 'waiting'">
+          <q-banner class="bg-info text-white" rounded>
+            <template v-slot:avatar>
+              <q-spinner-dots size="20px" />
+            </template>
+            Waiting for phone connection...
+          </q-banner>
+        </q-card-section>
+
+        <q-card-section v-else-if="connectionStatus === 'failed'">
+          <q-banner class="bg-negative text-white" rounded>
+            <template v-slot:avatar>
+              <q-icon name="error" />
+            </template>
+            Connection failed. Please try again.
+          </q-banner>
+        </q-card-section>
+      </q-card>
+    </div>
+
+    <!-- Camera Mode Toggle -->
+    <div class="q-mb-md" v-if="!showPhoneSetup">
+      <q-btn-toggle
+        v-model="cameraMode"
+        spread
+        no-caps
+        rounded
+        toggle-color="primary"
+        :options="[
+          { label: '💻 Laptop Camera', value: 'laptop' },
+          { label: '📱 Phone Camera', value: 'phone' },
+        ]"
+        @update:model-value="switchCameraMode"
+      />
+    </div>
+
+    <!-- Camera & Canvas Area -->
     <div class="q-mt-lg items-center justify-center">
-      <video ref="video" autoplay muted playsinline class="camera-preview" style="display: none" />
+      <video
+        ref="video"
+        autoplay
+        muted
+        playsinline
+        :class="cameraMode === 'phone' ? 'camera-preview-portrait' : 'camera-preview'"
+        style="display: none"
+      />
       <canvas ref="canvas" style="display: none" />
     </div>
     <div class="camera-position">
@@ -33,7 +146,6 @@
     </div>
 
     <!-- Hidden file input -->
-
     <input
       ref="fileInput"
       type="file"
@@ -117,9 +229,29 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { jsPDF } from 'jspdf'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import { useWebRTC } from '../composables/useWebRTC'
 
 const route = useRoute()
 const router = useRouter()
+const {
+  remoteStream,
+  initializeHostConnection,
+  disconnectWebRTC,
+  generateConnectionQR,
+  processPhoneAnswer: processAnswer,
+  phoneAnswer,
+  connectionStatus,
+  connectionCode,
+  iceGatheringComplete,
+  isConnectionActive,
+  resumeExistingConnection,
+} = useWebRTC()
+
+// NEW: Camera mode state
+const cameraMode = ref('laptop')
+const showPhoneSetup = ref(false)
+const qrCanvas = ref(null)
+
 const scannedImages = ref([])
 const transformedImage = ref(null)
 const video = ref(null)
@@ -129,6 +261,7 @@ const fileInput = ref(null)
 const corners = ref([])
 let draggingPointIndex = null
 let cleanImage = null
+let localStream = null // Store local camera stream
 
 // Button visibility states
 const showTake = ref(true)
@@ -147,7 +280,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopCamera()
-  // Clean up image URLs
+  disconnectWebRTC()
   scannedImages.value.forEach((imgUrl) => URL.revokeObjectURL(imgUrl))
 })
 
@@ -175,6 +308,93 @@ watch(scannedImages, () => {
   }
 })
 
+// Watch for ICE gathering completion to generate QR code
+watch(iceGatheringComplete, async (isComplete) => {
+  if (isComplete && showPhoneSetup.value && qrCanvas.value) {
+    await generateConnectionQR(qrCanvas.value, import.meta.env.DEV)
+  }
+})
+
+// NEW: Camera mode switching with connection check
+async function switchCameraMode(mode) {
+  if (mode === 'phone') {
+    // Stop local camera before switching
+    stopLocalCamera()
+
+    // Check if we have an existing phone connection
+    if (isConnectionActive()) {
+      console.log('Reusing existing phone connection')
+      showPhoneSetup.value = false // Don't show setup if already connected
+      resumeExistingConnection(video.value)
+    } else {
+      // New connection needed
+      console.log('No active connection, showing setup')
+      showPhoneSetup.value = true
+      await setupPhoneConnection()
+    }
+  } else {
+    // Switching to laptop camera
+    // Don't disconnect WebRTC - just pause the phone stream
+    if (video.value && video.value.srcObject === remoteStream.value) {
+      video.value.pause()
+    }
+    showPhoneSetup.value = false
+    await openCamera()
+  }
+}
+
+async function setupPhoneConnection() {
+  await initializeHostConnection(video.value)
+
+  // The QR code will be generated automatically when ICE gathering completes
+  // via the watch on iceGatheringComplete
+}
+
+function cancelPhoneSetup() {
+  showPhoneSetup.value = false
+  cameraMode.value = 'laptop'
+  // Don't fully disconnect - just switch back to laptop camera
+  openCamera()
+}
+
+async function processPhoneAnswer() {
+  await processAnswer()
+}
+
+// Watch for successful connection
+watch(connectionStatus, (status) => {
+  if (status === 'connected') {
+    setTimeout(() => {
+      if (remoteStream.value && video.value) {
+        video.value.srcObject = remoteStream.value
+        video.value.style.display = 'block'
+        video.value.muted = true
+        video.value
+          .play()
+          .then(() => {
+            showPhoneSetup.value = false // Close the setup dialog
+          })
+          .catch((err) => console.error('Play error:', err))
+      }
+    }, 1000)
+  }
+})
+
+// Also watch remoteStream directly
+watch(remoteStream, (newStream) => {
+  if (newStream && video.value && cameraMode.value === 'phone') {
+    video.value.srcObject = newStream
+    video.value.style.display = 'block'
+    video.value.muted = true
+    video.value
+      .play()
+      .then(() => {
+        showPhoneSetup.value = false
+      })
+      .catch((err) => console.error('Play error:', err))
+  }
+})
+
 // Image selection functions
 function openFileInput() {
   fileInput.value.click()
@@ -193,26 +413,22 @@ async function handleFileSelection(event) {
     return
   }
 
-  // Process each selected image and add directly to scanned images
   for (const file of validImages) {
     try {
       const imageUrl = URL.createObjectURL(file)
       const imageElement = await createImageElement(imageUrl)
 
-      // Create canvas with image
       const canvas = document.createElement('canvas')
       canvas.width = imageElement.width
       canvas.height = imageElement.height
       const ctx = canvas.getContext('2d')
       ctx.drawImage(imageElement, 0, 0)
 
-      // Convert to blob and create URL for scanned images
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 0.9))
       const scannedImageUrl = URL.createObjectURL(blob)
 
       scannedImages.value.push(scannedImageUrl)
 
-      // Clean up original URL
       URL.revokeObjectURL(imageUrl)
     } catch (error) {
       console.error('Error processing image:', error)
@@ -220,7 +436,6 @@ async function handleFileSelection(event) {
     }
   }
 
-  // Clear the file input
   event.target.value = ''
 }
 
@@ -253,32 +468,68 @@ function takePhoto() {
 }
 
 async function openCamera() {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: true,
-  })
+  // If switching from phone to laptop, keep phone connection alive
+  if (cameraMode.value === 'laptop' && remoteStream.value) {
+    // Keep phone connection alive but hide video
+    if (video.value && video.value.srcObject === remoteStream.value) {
+      video.value.pause()
+    }
+  }
 
-  video.value.srcObject = stream
-  video.value.style.display = 'block'
-  video.value.play()
+  // Only open local camera if in laptop mode
+  if (cameraMode.value === 'laptop') {
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
+      })
+
+      video.value.srcObject = localStream
+      video.value.style.display = 'block'
+      video.value.play()
+    } catch (error) {
+      console.error('Camera access error:', error)
+      alert('Unable to access camera. Please check permissions.')
+      return
+    }
+  } else if (cameraMode.value === 'phone' && remoteStream.value) {
+    // Resume phone camera
+    video.value.srcObject = remoteStream.value
+    video.value.style.display = 'block'
+    video.value.play()
+  }
+
   canvas.value.style.display = 'none'
   resultCanvas.value.style.display = 'none'
 
-  // Set canvas size to match video
   video.value.onloadedmetadata = () => {
-    canvas.value.width = video.value.videoWidth
-    canvas.value.height = video.value.videoHeight
-    resultCanvas.value.width = video.value.videoWidth
-    resultCanvas.value.height = video.value.videoHeight
+    const videoWidth = video.value.videoWidth
+    const videoHeight = video.value.videoHeight
+
+    canvas.value.width = videoWidth
+    canvas.value.height = videoHeight
+    resultCanvas.value.width = videoWidth
+    resultCanvas.value.height = videoHeight
   }
 
-  // Add event listeners for corner dragging
   canvas.value.addEventListener('mousedown', onMouseDown)
   canvas.value.addEventListener('mousemove', onMouseMove)
   canvas.value.addEventListener('mouseup', onMouseUp)
 }
 
+function stopLocalCamera() {
+  if (localStream) {
+    localStream.getTracks().forEach((track) => track.stop())
+    localStream = null
+  }
+}
+
 function stopCamera() {
-  if (video.value && video.value.srcObject) {
+  stopLocalCamera()
+
+  if (video.value && video.value.srcObject && video.value.srcObject !== remoteStream.value) {
     const stream = video.value.srcObject
     const tracks = stream.getTracks()
     tracks.forEach((track) => track.stop())
@@ -291,7 +542,6 @@ async function detectEdges() {
   const { width, height } = canvas.value
   const imgData = ctx.getImageData(0, 0, width, height)
 
-  // Create OpenCV Mat
   let src = cv.matFromImageData(imgData)
   let gray = new cv.Mat()
   let blurred = new cv.Mat()
@@ -330,20 +580,18 @@ async function detectEdges() {
   } else {
     alert('No document-like shape found.')
 
-    // Fallback: draw centered square (80% size)
     const marginX = width * 0.1
     const marginY = height * 0.1
     corners.value = [
-      { x: marginX, y: marginY }, // Top-left
-      { x: width - marginX, y: marginY }, // Top-right
-      { x: width - marginX, y: height - marginY }, // Bottom-right
-      { x: marginX, y: height - marginY }, // Bottom-left
+      { x: marginX, y: marginY },
+      { x: width - marginX, y: marginY },
+      { x: width - marginX, y: height - marginY },
+      { x: marginX, y: height - marginY },
     ]
   }
 
   drawCorners()
 
-  // Cleanup
   src.delete()
   gray.delete()
   blurred.delete()
@@ -407,7 +655,6 @@ function onMouseUp() {
 }
 
 function sortCorners(pts) {
-  // Calculate the center
   const center = {
     x: pts.reduce((sum, p) => sum + p.x, 0) / pts.length,
     y: pts.reduce((sum, p) => sum + p.y, 0) / pts.length,
@@ -421,7 +668,6 @@ function sortCorners(pts) {
       return angleA - angleB
     })
     .map((p, i, arr) => {
-      // Ensure top-left is first
       const topLeft = arr.reduce((prev, curr) => (curr.x + curr.y < prev.x + prev.y ? curr : prev))
       const index = arr.indexOf(topLeft)
       return arr[(i + index) % 4]
@@ -436,7 +682,6 @@ async function transformDocument() {
 
   if (corners.value.length !== 4 || !cv) return
 
-  // Create offscreen canvas from cleanImage
   const tempCanvas = document.createElement('canvas')
   tempCanvas.width = cleanImage.width
   tempCanvas.height = cleanImage.height
@@ -445,7 +690,6 @@ async function transformDocument() {
   const src = cv.imread(tempCanvas)
   const [tl, tr, br, bl] = sortCorners(corners.value)
 
-  // Define source and destination points
   const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
     tl.x,
     tl.y,
@@ -476,36 +720,30 @@ async function transformDocument() {
     maxHeight - 1,
   ])
 
-  // Perspective transform
   const M = cv.getPerspectiveTransform(srcTri, dstTri)
   const dst = new cv.Mat()
   const dsize = new cv.Size(maxWidth, maxHeight)
 
   cv.warpPerspective(src, dst, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar())
 
-  // Sharpening kernel
   const sharpened = new cv.Mat()
   const kernel = cv.matFromArray(3, 3, cv.CV_32F, [0, -1, 0, -1, 5, -1, 0, -1, 0])
   cv.filter2D(dst, sharpened, cv.CV_8U, kernel)
 
-  // Show the result
   resultCanvas.value.width = maxWidth
   resultCanvas.value.height = maxHeight
   cv.imshow(resultCanvas.value, dst)
   resultCanvas.value.style.display = 'block'
 
-  // Store the result temporarily (not yet saved)
   const imageBlob = await new Promise((resolve) =>
     resultCanvas.value.toBlob(resolve, 'image/png', 1.0),
   )
   transformedImage.value = URL.createObjectURL(imageBlob)
 
-  // Update button visibility
   showTransform.value = false
   showRetake.value = true
   showSave.value = true
 
-  // Clean up
   kernel.delete()
   sharpened.delete()
   src.delete()
@@ -522,18 +760,15 @@ function rotateTransformedImage() {
   const oldWidth = canvasEl.width
   const oldHeight = canvasEl.height
 
-  // Create a temporary canvas to hold current image
   const tempCanvas = document.createElement('canvas')
   tempCanvas.width = oldWidth
   tempCanvas.height = oldHeight
   const tempCtx = tempCanvas.getContext('2d')
   tempCtx.drawImage(canvasEl, 0, 0)
 
-  // Rotate dimensions
   canvasEl.width = oldHeight
   canvasEl.height = oldWidth
 
-  // Rotate and draw the image
   ctx.clearRect(0, 0, canvasEl.width, canvasEl.height)
   ctx.save()
   ctx.translate(canvasEl.width / 2, canvasEl.height / 2)
@@ -541,7 +776,6 @@ function rotateTransformedImage() {
   ctx.drawImage(tempCanvas, -oldWidth / 2, -oldHeight / 2)
   ctx.restore()
 
-  // Update the image blob for saving/export
   resultCanvas.value.toBlob(
     (blob) => {
       transformedImage.value = URL.createObjectURL(blob)
@@ -614,10 +848,9 @@ async function confirmExport({ uploadPdf = false } = {}) {
     format: 'a4',
   })
 
-  const pageWidth = 210 // A4 width in mm
-  const pageHeight = 297 // A4 height in mm
+  const pageWidth = 210
+  const pageHeight = 297
 
-  // Wait for all images to load
   const loadImage = (src) =>
     new Promise((resolve) => {
       const img = new Image()
@@ -649,7 +882,6 @@ async function confirmExport({ uploadPdf = false } = {}) {
     pdf.addImage(dataUrl, 'JPEG', x, y, width, height)
   })
 
-  // For uploading
   stopCamera()
   const pdfBlob = pdf.output('blob')
   const file = new File([pdfBlob], `${pdfFileName.value}.pdf`, {
@@ -668,6 +900,12 @@ async function confirmExport({ uploadPdf = false } = {}) {
 </script>
 
 <style scoped>
+.phone-setup-card {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 canvas {
   max-width: 80vw;
   height: auto;
@@ -685,11 +923,23 @@ canvas {
   border-radius: 8px;
 }
 
+/* Landscape camera (laptop) */
 .camera-preview {
   width: 100%;
   max-width: 80vw;
   height: auto;
   aspect-ratio: 16 / 9;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+/* Portrait camera (phone) */
+.camera-preview-portrait {
+  width: auto;
+  max-width: 45vw; /* Narrower for portrait */
+  height: 70vh; /* Taller for portrait */
+  max-height: 70vh;
   border: 1px solid #ccc;
   border-radius: 8px;
   object-fit: cover;

@@ -2,8 +2,8 @@
   <q-page class="q-pa-md">
     <div class="q-mt-xs title">Collections</div>
 
-    <div class="q-mb-md subtitle row items-baseline justify-between">
-      <div class="q-ml-sm">Archival Materials grouped into a collection.</div>
+    <div class="q-mb-md subtitle subtitle-btn-row">
+      <div class="q-ml-sm subtitle-text">Archival Materials grouped into a collection.</div>
       <div class="artifact-btn">
         <q-btn-dropdown
           outline
@@ -50,17 +50,37 @@
     <div v-else>
       <div v-if="collections.length > 0" class="box-collections">
         <div
-          v-for="collection in collections"
+          v-for="(collection, index) in collections"
           :key="collection.collection_id"
           class="collection-item"
+          :class="{
+            'hide-on-tablet': index >= 6,
+            'hide-on-mobile': index >= 4
+          }"
         >
           <router-link :to="`/collection/${collection.collection_id}`" class="collection-link">
-            <img
-              :src="collection?.cover_url"
-              :alt="collection?.collection_name"
-              class="book-cover-img"
-              style="object-fit: cover"
-            />
+            <!-- Updated book styling to match collections design -->
+            <div class="book-container">
+              <div class="book-cover">
+                <div class="book-spine"></div>
+                <div class="book-content" :class="{ 'has-image': collection.cover_url }">
+                  <!-- Show uploaded image as background if available -->
+                  <div v-if="collection.cover_url" class="book-image-overlay">
+                    <img
+                      :src="collection.cover_url"
+                      :alt="collection.collection_name"
+                      class="book-background-image"
+                    />
+                  </div>
+                  <!-- Show default icon if no image -->
+                  <div v-else class="book-title-section">
+                    <div class="book-icon">
+                      <q-icon name="collections_bookmark" size="2rem" color="white" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </router-link>
 
           <div class="q-mt-md fade-title-container">
@@ -69,14 +89,13 @@
               style="color: black; font-weight: 600; margin-left: 3rem"
             >
               {{ collection.collection_name }}
-              <!-- ADDED: Pinned icon for Favorites -->
+              <!-- Pinned icon for Favorites -->
               <q-icon
                 v-if="collection.collection_name === 'Favorites'"
                 name="push_pin"
                 class="q-ml-xs text-primary"
                 size="18px"
-              >
-              </q-icon>
+              />
               <div class="tooltip-box">{{ collection.collection_name }}</div>
             </div>
           </div>
@@ -352,9 +371,131 @@ async function addCollection() {
 </script>
 
 <style scoped>
+/* ========================
+ RESPONSIVE BUTTON STYLES
+======================== */
+
+/* Responsive styles for buttons */
+.subtitle-btn-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.subtitle-text {
+  flex: 1;
+  min-width: 200px;
+}
+
+.artifact-btn {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Mobile styles (max-width: 767px) */
+@media (max-width: 767px) {
+  .subtitle-btn-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .subtitle-text {
+    margin-bottom: 1rem;
+  }
+
+  .artifact-btn {
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+  .artifact-btn-style {
+    min-width: 100px;
+    margin: 0.25rem !important;
+  }
+  /* Make filter dropdown responsive */
+  .artifact-btn-style .q-list {
+    width: 90vw !important;
+    max-width: 400px !important;
+  }
+
+  .artifact-btn-style .row {
+    flex-direction: column;
+  }
+
+  .artifact-btn-style .col {
+    margin-bottom: 1rem;
+  }
+
+  .artifact-btn-style q-scroll-area {
+    width: 100% !important;
+  }
+}
+
+/* Tablet styles (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .subtitle-btn-row {
+    align-items: center;
+  }
+
+  .artifact-btn {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+  }
+
+  .artifact-btn-style {
+    margin: 0.25rem 0.25rem 0.25rem 0.5rem !important;
+  }
+
+  .add-new-btn {
+    margin: 0.25rem !important;
+  }
+
+  /* Adjust filter dropdown for tablets */
+  .artifact-btn-style .q-list {
+    width: 35rem !important;
+  }
+}
+
+/* Small desktop styles (1024px - 1199px) */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .artifact-btn-style {
+    margin-left: 0.5rem !important;
+  }
+}
+
+/* Additional responsive adjustments for very small screens */
+@media (max-width: 480px) {
+  .title {
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .artifact-btn {
+    justify-content: space-around;
+    margin-bottom: 2.5rem;
+  }
+
+  .artifact-btn-style,
+  .add-new-btn {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+/* ========================
+ EXISTING STYLES
+======================== */
+
 .box-collections {
   border-radius: 10px;
-  background-color: #ffffff;
+  background: linear-gradient(-80deg, rgb(255, 251, 221) 10%, #fbfae9 30%, #ffffff 70%);
   width: 100%;
   height: auto;
   display: flex;
@@ -364,6 +505,7 @@ async function addCollection() {
   padding-left: 1.5rem;
   gap: 3rem;
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+  justify-content: center;
 }
 
 .collection-item {
@@ -371,23 +513,312 @@ async function addCollection() {
   flex-direction: column;
 }
 
-.collection-image {
-  width: 15rem;
-  height: 14.5rem;
-  object-fit: cover;
-  border-radius: 10px;
+.collection-link {
+  text-decoration: none;
+  color: inherit;
 }
 
-.book-cover-img {
-  width: 14rem;
-  height: 18rem;
-  margin-left: 3rem;
-  border: 3px solid #381c08;
-  border-left: 10px solid #381c08 !important;
+/* Book styling matching the details page */
+.book-container {
+  position: relative;
+  perspective: 1000px;
+  height: 330px;
+}
+
+.book-cover {
+  width: 15rem;
+  height: 21rem;
+  margin-left: 2.1rem;
+  position: relative;
+  background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
   border-radius: 0 15px 15px 0;
   box-shadow:
     0 8px 16px rgba(0, 0, 0, 0.3),
     inset 0 0 20px rgba(0, 0, 0, 0.1),
-    0 0 0 1px rgba(8, 3, 0, 0.3);
+    0 0 0 2px rgba(8, 3, 0, 0.3);
+  transform: rotateY(-5deg) rotateX(2deg);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.book-cover:hover {
+  transform: rotateY(-2deg) rotateX(1deg) translateY(-5px);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.4),
+    inset 0 0 20px rgba(0, 0, 0, 0.1),
+    0 0 0 2px rgba(8, 3, 0, 0.3);
+}
+
+.book-spine {
+  position: absolute;
+  left: -10px;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  background: linear-gradient(to right, #523518 0%, #381c08 100%);
+  border-radius: 0 0 0 12px;
+  box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.3);
+}
+
+.book-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
+  border-radius: 0 15px 15px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.book-content.has-image {
+  background: none !important;
+  padding: 0 !important;
+}
+
+.book-image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 0 15px 15px 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.book-image-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.2) 50%,
+    transparent 100%
+  );
+  z-index: 2;
+  border-top-left-radius: inherit;
+  border-bottom-left-radius: inherit;
+}
+
+.book-background-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.book-title-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.book-icon {
+  color: white;
+}
+
+/* Title styling */
+.fade-title-container {
+  width: 220px;
+  text-align: center;
+}
+
+.fade-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+  position: relative;
+  padding: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.tooltip-box {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+}
+
+.fade-title:hover .tooltip-box {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Upload box styling for dialog */
+.upload-box {
+  width: 11rem;
+  height: 14.5rem;
+  border-radius: 10px;
+  background-color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px dashed #ccc;
+  transition: border-color 0.2s ease;
+}
+
+.upload-box:hover {
+  border-color: #560505;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.upload {
+  text-align: center;
+  color: #666;
+}
+
+.upload-icon {
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ========================
+ RESPONSIVE DESIGN
+======================== */
+
+/* Hide collections based on screen size - similar to documents hiding */
+/* Desktop - show all collections */
+@media (min-width: 1025px) {
+  .collection-item:nth-child(n) {
+    display: flex;
+  }
+
+  .box-collections {
+    justify-content: flex-start;
+  }
+}
+
+/* Tablet view - limit collections display and center remaining */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .hide-on-tablet {
+    display: none;
+  }
+
+  .box-collections {
+    justify-content: center;
+  }
+}
+
+/* Mobile view - further limit collections and center remaining */
+@media (max-width: 768px) {
+  .box-collections {
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 1.5rem 1rem;
+  }
+
+  .book-cover {
+    width: 12rem;
+    height: 16rem;
+  }
+
+  .fade-title-container {
+    width: 12rem;
+  }
+
+  .fade-title {
+    font-size: 0.85rem;
+  }
+
+  .hide-on-mobile {
+    display: none;
+  }
+}
+
+/* Extra small screens - center remaining collections */
+@media (max-width: 480px) {
+  .box-collections {
+    padding: 1rem;
+    gap: 1rem;
+    justify-content: center;
+  }
+
+  .book-cover {
+    width: 10rem;
+    height: 16rem;
+  }
+
+  .fade-title-container {
+    width: 10rem;
+  }
+}
+
+/* General responsive adjustments for larger screens */
+@media (max-width: 1200px) {
+  .box-collections {
+    gap: 2rem;
+    padding: 2rem 1.5rem;
+  }
+}
+
+/* Add New button and other existing styles */
+.add-new-btn {
+  border-radius: 8px;
+  background: #560505;
+  color: white;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.add-new-btn:hover {
+  background: #6b0707;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(86, 5, 5, 0.3);
+}
+
+/* Dialog styles */
+.add-collection-card {
+  min-width: 600px;
+  border-radius: 12px;
+}
+
+.btn-save {
+  background: #560505;
+  color: white;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.btn-save:hover {
+  background: #6b0707;
+}
+
+.field-collection {
+  border-radius: 8px;
 }
 </style>

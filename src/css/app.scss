@@ -469,6 +469,7 @@ document-title-2 {
 
 //
 
+.h-fade-title-container,
 .fade-title-container {
   position: relative;
   max-width: 13rem;
@@ -1256,4 +1257,26 @@ document-title-2 {
   background-color: #efefef66;
   color: black;
   font-weight: 600;
+}
+
+// terms and conditions
+.terms-font {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: #000000;
+  text-align: justify;
+}
+
+.terms-checkbox .q-field__control {
+  border-radius: 10px;
+  border: 1px solid #4d0000;
+  box-shadow: 0 2px 6px rgba(86, 5, 5, 0.22);
+}
+
+// remove underline in login signup fields
+
+.q-field__control:before,
+.q-field__control:after {
+  display: none !important;
 }

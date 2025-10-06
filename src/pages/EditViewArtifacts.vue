@@ -1352,6 +1352,7 @@ async function cancelRelatedLinks() {
 /* Title Section Styles - Matching View Page Exactly */
 
 .title-section {
+  margin-top: 2rem;
   width: 100%;
   text-align: center;
   margin-bottom: 2rem;
@@ -1658,7 +1659,6 @@ async function cancelRelatedLinks() {
 
 /* Additional Design */
 
-
 .artifact-detail-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -1703,8 +1703,8 @@ async function cancelRelatedLinks() {
 }
 
 /* Specific fix for datetime-local input (Date Received) */
-.side-by-side-details .detail-input[type="datetime-local"],
-.side-by-side-details .detail-input :deep(input[type="datetime-local"]) {
+.side-by-side-details .detail-input[type='datetime-local'],
+.side-by-side-details .detail-input :deep(input[type='datetime-local']) {
   max-width: 100% !important;
   min-width: 0 !important;
   width: 100% !important;
@@ -1719,6 +1719,13 @@ async function cancelRelatedLinks() {
   RESPONSIVE DESIGN
 ======================== */
 
+@media screen and (max-width: 1350px) {
+  .artifact-card {
+    width: 600px;
+    height: 600px;
+  }
+}
+
 /* Desktop - 1300px and below */
 @media screen and (max-width: 1300px) {
   .title-input :deep(.q-field__relative) {
@@ -1729,9 +1736,9 @@ async function cancelRelatedLinks() {
     font-size: 3.2rem !important;
   }
   /* Force all two-column layouts to be more responsive */
-  .two-column-details .detail-row {
+  /* .two-column-details .detail-row {
     gap: 1rem;
-  }
+  } */
 
   .two-column-details .detail-label,
   .two-column-details .detail-value {
@@ -1784,6 +1791,7 @@ async function cancelRelatedLinks() {
   .title-input :deep(.q-field__native) {
     font-size: 3rem !important;
   }
+
   .artifact-card {
     width: 500px;
     height: 500px;
@@ -1803,7 +1811,6 @@ async function cancelRelatedLinks() {
   .main-content {
     gap: 1.5rem;
   }
-
 }
 
 /* Large Tablet - 1068px and below */
@@ -1825,7 +1832,6 @@ async function cancelRelatedLinks() {
     width: 420px !important;
     height: 420px !important;
   }
-
 
   .main-content {
     gap: 1rem;
@@ -1955,7 +1961,6 @@ async function cancelRelatedLinks() {
   }
 }
 
-
 @media screen and (max-width: 767px) {
   .artifact-card {
     max-width: 500px;
@@ -1993,7 +1998,6 @@ async function cancelRelatedLinks() {
   .two-column-details .detail-value .a-info-subtitle {
     text-align: left;
   }
-
 
   .side-by-side-details .detail-row {
     flex-direction: column;
@@ -2101,5 +2105,4 @@ async function cancelRelatedLinks() {
     gap: 0.5rem;
   }
 }
-
 </style>

@@ -116,13 +116,13 @@
                         </div>
                       </router-link>
                       <!-- ADDED: Action Icons with Counts -->
-                      <div class="action-icons">
+                      <div class="action-icons q-mr-md" style="margin-top:  -3px;">
                         <!-- View Icon with Count -->
                         <div class="icon-with-count">
-                          <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
-                          <span class="count-text">{{
-                            modelStore.viewCounts[artifact.id] || 0
-                          }}</span>
+                          <q-icon name="visibility" color="grey" size="20px" class="action-icon" />
+                          <span class="count-text" style="font-size: 0.875rem;">{{
+                              modelStore.viewCounts[artifact.id] || 0
+                            }}</span>
                         </div>
                         <!-- Star Icon with Count -->
                         <div class="icon-with-count">
@@ -133,9 +133,9 @@
                             size="20px"
                             @click.stop="toggleFavorite(artifact.id, 'artifact')"
                           />
-                          <span class="count-text">{{
-                            modelStore.starCounts[artifact.id] || 0
-                          }}</span>
+                          <span class="count-text" style="font-size: 0.875rem;">{{
+                              modelStore.starCounts[artifact.id] || 0
+                            }}</span>
                         </div>
                         <q-icon
                           v-if="collection.collection_name !== 'Favorites'"
@@ -207,9 +207,13 @@
 
             <div class="documents-grid">
               <div
-                v-for="document in displayedDocuments"
+                v-for="(document, index) in displayedDocuments"
                 :key="document.id"
                 class="document-card-wrapper"
+                :class="{
+                  'hide-on-tablet': index >= 3,
+                  'hide-on-mobile': index >= 2
+                }"
               >
                 <q-card class="my-card document-preview-card" rounded bordered>
                   <router-link
@@ -251,23 +255,24 @@
                       <div class="action-icons">
                         <!-- View Icon with Count -->
                         <div class="icon-with-count">
-                          <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
-                          <span class="count-text">{{
-                            documentsStore.viewCounts[document.id] || 0
-                          }}</span>
+                          <q-icon name="visibility" color="grey" size="16px" class="action-icon" />
+                          <span class="count-text" style="font-size: 0.75rem">{{
+                              documentsStore.viewCounts[document.id] || 0
+                            }}</span>
                         </div>
                         <!-- Star Icon with Count -->
-                        <div class="icon-with-count">
+                        <div class="icon-with-count"
+                             style="display:flex; align-items:center; gap:1px;">
                           <q-icon
                             :name="document.starred ? 'star' : 'star_border'"
                             :class="{ starred: document.starred }"
-                            size="20px"
+                            size="16px"
                             class="action-icon star-icon"
                             @click.stop="toggleFavorite(document.id, 'document')"
                           />
-                          <span class="count-text">{{
-                            documentsStore.starCounts[document.id] || 0
-                          }}</span>
+                          <span class="count-text" style="font-size: 0.75rem">{{
+                              documentsStore.starCounts[document.id] || 0
+                            }}</span>
                         </div>
                         <q-icon
                           v-if="collection.collection_name !== 'Favorites'"
@@ -423,11 +428,11 @@
     <q-dialog v-model="messageDialogOpen">
       <q-card class="delete-notice">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          messageDialogTitle
-        }}</q-card-section>
+            messageDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-          messageDialogContent
-        }}</q-card-section>
+            messageDialogContent
+          }}</q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Close" class="btn-save" @click="handleMessageDialogClose" />
         </q-card-actions>
@@ -454,11 +459,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          notifyDialogTitle
-        }}</q-card-section>
+            notifyDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-          notifyDialogMessage
-        }}</q-card-section>
+            notifyDialogMessage
+          }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -466,6 +471,8 @@
     </q-dialog>
   </q-page>
 </template>
+
+
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
@@ -688,6 +695,8 @@ async function fetchCollectionItems() {
     }))
   }
 }
+
+
 
 // Log user activity
 async function logClick(itemId, itemType, action) {
@@ -1271,22 +1280,28 @@ function goToAddArtifact() {
 .action-icons {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-right: 1rem;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  min-width: fit-content;
 }
 
 .icon-with-count {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.125rem;
+  flex-shrink: 0;
+  min-width: fit-content;
 }
 
 .count-text {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #666;
+  white-space: nowrap;
+  min-width: 1rem;
+  text-align: center;
 }
 
-/* Documents Grid */
+/* Documents Grid - Now Responsive */
 .documents-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1357,13 +1372,15 @@ function goToAddArtifact() {
   align-items: flex-start;
   margin-bottom: 0.5rem;
   flex: 1;
+  gap: 0.5rem;
 }
 
 .document-title-link {
   text-decoration: none;
   color: inherit;
   flex: 1;
-  margin-right: 0.5rem;
+  margin-right: 0.25rem;
+  min-width: 0;
 }
 
 .document-title {
@@ -1392,10 +1409,11 @@ function goToAddArtifact() {
   white-space: nowrap;
 }
 
-/* Action Icons Styling */
+/* Action Icons Styling - Fixed positioning */
 .action-icon {
   cursor: pointer;
   transition: color 0.2s ease;
+  flex-shrink: 0;
 }
 
 .star-icon.starred {
@@ -1406,6 +1424,37 @@ function goToAddArtifact() {
   color: #560505;
 }
 
+/* Additional responsive fixes for action icons */
+@media (max-width: 768px) {
+  .action-icons {
+    gap: 0.125rem;
+  }
+
+  .icon-with-count {
+    gap: 0.1rem;
+  }
+
+  .count-text {
+    font-size: 0.65rem;
+    min-width: 0.8rem;
+  }
+
+  .action-icon {
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .count-text {
+    font-size: 0.6rem;
+    min-width: 0.7rem;
+  }
+
+  .action-icon {
+    font-size: 14px !important;
+  }
+}
+
 /* Pagination Styles */
 .pagination-container {
   margin-top: 1.5rem;
@@ -1414,34 +1463,91 @@ function goToAddArtifact() {
   width: 100%;
 }
 
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+}
+
+.pagination-btn {
+  color: #560505;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not([disabled]) {
+  background-color: #560505;
+  color: white;
+}
+
+.pagination-btn[disabled] {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
 .pagination-info {
   display: flex;
   align-items: center;
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .collection-container {
-    flex-direction: column;
-  }
+.pagination-numbers {
+  display: flex;
+  gap: 0.5rem;
+}
 
-  .collection-details-section {
-    max-width: none;
-  }
+.page-number {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #666;
+  font-size: 0.9rem;
+  min-width: 32px;
+  text-align: center;
+}
 
+.page-number:hover {
+  background-color: #f5f5f5;
+  color: #560505;
+}
+
+.page-number.active {
+  background-color: #efefef66;
+  color: black;
+  font-weight: 600;
+}
+
+/* ========================
+ RESPONSIVE DESIGN
+======================== */
+
+/* Hide documents based on screen size */
+/* Tablet view - hide 4th document (index 3+) */
+@media (max-width: 1024px) and (min-width: 769px) {
   .documents-grid {
     grid-template-columns: repeat(3, 1fr);
   }
+
+  .hide-on-tablet {
+    display: none;
+  }
 }
 
+/* Mobile view - hide 3rd and 4th documents */
 @media (max-width: 768px) {
-  .two-artifacts-grid {
-    grid-template-columns: 1fr;
-  }
-
   .documents-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
+  }
+
+  .hide-on-mobile {
+    display: none;
+  }
+
+  .two-artifacts-grid {
+    grid-template-columns: 1fr;
   }
 
   .combined-content-section {
@@ -1479,6 +1585,7 @@ function goToAddArtifact() {
   }
 }
 
+/* Extra small screens */
 @media (max-width: 480px) {
   .documents-grid {
     grid-template-columns: 1fr;
@@ -1486,6 +1593,25 @@ function goToAddArtifact() {
 
   .document-preview-container {
     height: 140px;
+  }
+
+  .collection-container {
+    flex-direction: column;
+  }
+
+  .collection-details-section {
+    max-width: none;
+  }
+}
+
+/* General responsive adjustments for larger screens */
+@media (max-width: 1200px) {
+  .collection-container {
+    flex-direction: column;
+  }
+
+  .collection-details-section {
+    max-width: none;
   }
 }
 

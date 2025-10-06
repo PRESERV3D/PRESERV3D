@@ -13,8 +13,10 @@
             <q-btn to="/documents" label="Browse Documents" class="btn-document" no-caps />
           </div>
         </div>
-        <div class="col-5">
-          <q-img src="/img/trophy-document.png" alt="Trophy and Document" class="trophies" />
+        <div class="col-5 gt-sm">
+          <div class="row justify-center justify-md-end">
+            <q-img src="/img/trophy-document.png" alt="Trophy and Document" class="trophies" />
+          </div>
         </div>
       </div>
 
@@ -52,7 +54,8 @@
       </div>
     </div>
 
-    <div class="row q-my-lg">
+    <div class="q-my-lg reports-recently-container">
+      <!-- Reports Section (box-3) -->
       <div class="column box-3 q-px-lg">
         <div class="row item-center justify-between q-mb-sm">
           <p class="q-ml-md title-font-2">Reports</p>
@@ -64,7 +67,6 @@
               no-caps
             />
 
-            <!-- Report Dialog -->
             <q-dialog v-model="reportDialog">
               <q-card class="q-pa-md" style="min-width: 400px">
                 <q-card-section>
@@ -72,34 +74,76 @@
                 </q-card-section>
 
                 <q-card-section>
-                  <!-- Month & Year Selection -->
-                  <div class="q-gutter-md">
+                  <!-- Single / Start selection -->
+                  <div class="text-subtitle2 q-mb-sm">
+                    {{ isRange ? 'From' : 'Select Month' }}
+                  </div>
+                  <div class="q-gutter-md row">
                     <q-select
-                      v-model="selectedMonth"
-                      :options="months"
-                      label="Select Month"
+                      v-model="startMonth"
+                      :options="months(startYear)"
+                      label="Month"
                       dense
                       outlined
+                      emit-value
+                      map-options
+                      class="col"
                     />
-
                     <q-select
-                      v-model="selectedYear"
+                      v-model="startYear"
                       :options="years"
-                      label="Select Year"
+                      label="Year"
                       dense
                       outlined
+                      emit-value
+                      map-options
+                      class="col"
                     />
                   </div>
+
+                  <!-- End selection (only if range) -->
+                  <template v-if="isRange">
+                    <div class="text-subtitle2 q-mt-md q-mb-sm">To</div>
+                    <div class="q-gutter-md row">
+                      <q-select
+                        v-model="endMonth"
+                        :options="months(endYear)"
+                        label="Month"
+                        dense
+                        outlined
+                        emit-value
+                        map-options
+                        class="col"
+                      />
+                      <q-select
+                        v-model="endYear"
+                        :options="years"
+                        label="Year"
+                        dense
+                        outlined
+                        emit-value
+                        map-options
+                        class="col"
+                      />
+                    </div>
+                  </template>
+
+                  <!-- Range toggle -->
+                  <q-checkbox v-model="isRange" label="Select a range of months" class="q-mt-md" />
                 </q-card-section>
 
                 <q-card-actions align="right">
                   <q-btn flat label="Cancel" color="negative" v-close-popup />
-                  <q-btn
-                    label="Generate"
-                    color="primary"
-                    @click="generateReport"
-                    :disable="!selectedMonth || !selectedYear"
-                  />
+
+                  <div v-if="!isGenerateReportLoading">
+                    <q-btn
+                      label="Generate"
+                      color="primary"
+                      :disable="!isValid"
+                      @click="generateReport"
+                    />
+                  </div>
+                  <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
                 </q-card-actions>
               </q-card>
             </q-dialog>
@@ -108,7 +152,7 @@
         <div class="row q-gutter-md q-px-sm">
           <div class="col box-report">
             <div class="number-report">{{ users }}</div>
-            <div class="label">All Active User</div>
+            <div class="label">All Active Users</div>
           </div>
           <div class="col box-report">
             <div class="number-report">{{ artifacts }}</div>
@@ -122,19 +166,25 @@
         <div class="row q-py-md">
           <div class="col-6">
             <p class="q-ml-md sub-font">Users per Month</p>
-            <div class="row q-py-lg justify-center q-gutter-md">
+            <div class="row q-py-sm justify-center q-gutter-md legend-container">
               <!--users-->
-              <div class="box-legend" style="background-color: #880000"></div>
-              <p class="q-ml-sm sub-font" style="font-size: 12px">PUP Students</p>
-              <div class="box-legend" style="background-color: #efaf00"></div>
-              <p class="q-ml-sm sub-font" style="font-size: 12px">PUP Faculty</p>
-              <div class="box-legend" style="background-color: #3d86ff"></div>
-              <p class="q-ml-sm sub-font" style="font-size: 12px">Visitors</p>
-
-              <!-- Users per Month Line Graph -->
-              <div class="users-graph">
-                <canvas ref="usersPerMonth"></canvas>
+              <div class="legend-item">
+                <div class="box-legend" style="background-color: #880000"></div>
+                <p class="sub-font" style="font-size: 12px">PUP Students</p>
               </div>
+              <div class="legend-item">
+                <div class="box-legend" style="background-color: #efaf00"></div>
+                <p class="sub-font" style="font-size: 12px">PUP Faculty</p>
+              </div>
+              <div class="legend-item">
+                <div class="box-legend" style="background-color: #3d86ff"></div>
+                <p class="sub-font" style="font-size: 12px">Visitors</p>
+              </div>
+            </div>
+
+            <!-- Users per Month Line Graph -->
+            <div class="users-graph">
+              <canvas ref="usersPerMonth"></canvas>
             </div>
           </div>
 
@@ -195,6 +245,7 @@
         </div>
       </div>
 
+      <!-- Recently Uploaded Section (box-4) -->
       <div class="box-4">
         <p class="q-ml-lg title-font-2">Recently Uploaded</p>
 
@@ -205,10 +256,10 @@
                 <component
                   :is="isGLB(currentItem?.file_name) ? 'model-viewer' : 'img'"
                   v-bind="
-                    isGLB(currentItem?.file_name)
-                      ? modelViewerProps(currentItem.file_url)
-                      : imgProps(currentItem)
-                  "
+                isGLB(currentItem?.file_name)
+                  ? modelViewerProps(currentItem.file_url)
+                  : imgProps(currentItem)
+              "
                   class="q-mx-auto"
                   style="max-width: 200px; max-height: 240px"
                 />
@@ -220,9 +271,9 @@
                   <router-link
                     v-if="currentItem"
                     :to="{
-                      name: isGLB(currentItem.file_name) ? 'view-artifact' : 'view-document',
-                      params: { id: currentItem.id },
-                    }"
+                  name: isGLB(currentItem.file_name) ? 'view-artifact' : 'view-document',
+                  params: { id: currentItem.id },
+                }"
                     class="sub-font-4"
                     style="text-decoration: none"
                   >
@@ -247,10 +298,10 @@
               round
               class="arrow-button"
               @click="
-                currentIndex =
-                  (currentIndex - 1 + recentStore.recentItems.length) %
-                  recentStore.recentItems.length
-              "
+            currentIndex =
+              (currentIndex - 1 + recentStore.recentItems.length) %
+              recentStore.recentItems.length
+          "
             >
               <q-img src="/icons/arrow_left.png" alt="back" class="btn-arrows" />
             </q-btn>
@@ -393,6 +444,7 @@
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
+import { useQuasar } from 'quasar'
 import '@google/model-viewer'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
@@ -406,8 +458,10 @@ import {
   LinearScale,
   Title,
   CategoryScale,
+  Tooltip,
 } from 'chart.js'
 
+const $q = useQuasar()
 let chartInstance = null
 let usersChartInstance = null
 const activeFilter = ref('all')
@@ -416,21 +470,19 @@ const usersPerMonth = ref(null)
 const artifacts = ref(0)
 const documents = ref(0)
 const users = ref(0)
-const monthLabels = [
-  'Jan',
-  'Feb',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'Aug',
-  'Sept',
-  'Oct',
-  'Nov',
-  'Dec',
-]
-Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale)
+const isGenerateReportLoading = ref(false)
+const monthLabels = Array.from({ length: 12 }, (_, i) =>
+  new Date(2000, i).toLocaleString('default', { month: 'short' }),
+)
+Chart.register(
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  Title,
+  CategoryScale,
+  Tooltip,
+)
 
 let topArtifacts = ref([])
 const topDocuments = ref([])
@@ -444,34 +496,126 @@ const currentItem = computed(() => recentStore.recentItems[currentIndex.value])
 
 // Report Generation
 const reportDialog = ref(false)
-const selectedMonth = ref(null)
-const selectedYear = ref(null)
+const isRange = ref(false)
+const isValid = ref(false)
 
-const allMonths = Array.from({ length: 12 }, (_, i) => {
-  const monthName = new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
-  return { label: monthName, value: i + 1 }
-})
+const startMonth = ref(null)
+const startYear = ref(null)
+const endMonth = ref(null)
+const endYear = ref(null)
 
 const currentYear = new Date().getFullYear()
 const currentMonth = new Date().getMonth() + 1
 
-const months = computed(() => {
-  if (selectedYear.value === currentYear) {
+// all months list
+const allMonths = Array.from({ length: 12 }, (_, i) => {
+  const name = new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
+  return { label: name, value: i + 1 }
+})
+
+const months = (year) => {
+  if (year === currentYear) {
     return allMonths.filter((m) => m.value <= currentMonth)
   }
   return allMonths
+}
+
+// last 5 years
+const years = Array.from({ length: 5 }, (_, i) => {
+  const y = currentYear - i
+  return { label: y.toString(), value: y }
 })
 
-const years = Array.from({ length: 10 }, (_, i) => {
-  const year = currentYear - i
-  return { label: year.toString(), value: year }
-})
+// validation
+watch(
+  [startYear, startMonth, endYear, endMonth, isRange],
+  ([newStartYear, newStartMonth, newEndYear, newEndMonth, newIsRange]) => {
+    // Reset
+    isValid.value = false
 
+    // Future date check
+    if (newIsRange && newStartYear && newStartMonth && newEndYear && newEndMonth) {
+      if (startYear.value === endYear.value && startMonth.value === endMonth.value) {
+        isRange.value = false
+        endMonth.value = null
+        endYear.value = null
+        isValid.value = true
+        $q.notify({
+          type: 'info',
+          message: 'Note: Start and End month are the same. Switched to single month report.',
+        })
+        return
+      } else if (newStartMonth > newEndMonth && newStartYear === newEndYear) {
+        $q.notify({
+          type: 'warning',
+          message: 'Invalid date: End month cannot be earlier than Start month.',
+        })
+        isValid.value = false
+        return
+      } else if (newStartYear > newEndYear) {
+        $q.notify({
+          type: 'warning',
+          message: 'Invalid date: End year cannot be earlier than Start year.',
+        })
+        isValid.value = false
+        return
+      } else {
+        isValid.value = true
+      }
+    }
+
+    if (
+      (newStartYear === currentYear && newStartMonth > currentMonth) ||
+      (newEndYear === currentYear && newEndMonth > currentMonth)
+    ) {
+      $q.notify({
+        type: 'warning',
+        message: 'Invalid date: Selected month cannot be in the future.',
+      })
+      isValid.value = false
+      return
+    }
+
+    // Basic checks
+    if (!newStartYear || !newStartMonth) return
+    if (!newIsRange) {
+      isValid.value = true
+      return
+    }
+    if (!newEndYear || !newEndMonth) return
+  },
+  { immediate: true },
+)
+
+// generate
 const generateReport = async () => {
-  await generateMonthlyReport({
-    month: selectedMonth.value,
-    year: selectedYear.value,
+  isGenerateReportLoading.value = true
+  if (!isRange.value) {
+    // Single Month Report (pass same month/year for start and end)
+    await generateMonthlyReport({
+      startMonth: startMonth.value,
+      startYear: startYear.value,
+      endMonth: startMonth.value,
+      endYear: startYear.value,
+    })
+  } else {
+    // Range Report
+    await generateMonthlyReport({
+      startMonth: startMonth.value,
+      startYear: startYear.value,
+      endMonth: endMonth.value,
+      endYear: endYear.value,
+    })
+  }
+  $q.notify({
+    type: 'positive',
+    message: 'Report generated successfully!',
   })
+  startMonth.value = null
+  startYear.value = null
+  endMonth.value = null
+  endYear.value = null
+  isGenerateReportLoading.value = false
   reportDialog.value = false
 }
 
@@ -516,16 +660,13 @@ onMounted(async () => {
 
 // Fetch visitors with status from DB
 async function fetchVisitors() {
-  const { data, error } = await supabase
-    .from('registration_visitors')
-    .select('*')
-    .order('created_at', { descending: false })
+  const { data, error } = await supabase.from('registration_visitors').select('*')
 
   if (error) {
     console.error('Error fetching visitors:', error.message)
     return
   }
-  rows.value = data
+  rows.value = sortRows(data)
 }
 
 function initChart(data) {
@@ -537,9 +678,18 @@ function initChart(data) {
     },
     options: {
       responsive: true,
+      plugins: {
+        legend: {
+          display: false,
+        },
+      },
       scales: {
         y: {
           beginAtZero: true,
+          suggestedMax: (ctx) => {
+            const max = Math.max(...ctx.chart.data.datasets.flatMap((d) => d.data))
+            return max + 1 // add tick allowance
+          },
           ticks: {
             stepSize: 1,
             precision: 0,
@@ -625,6 +775,11 @@ function initUsersPerMonthChart(data) {
     },
     options: {
       responsive: true,
+      plugins: {
+        legend: {
+          display: false,
+        },
+      },
       scales: {
         y: {
           beginAtZero: true,
@@ -729,7 +884,7 @@ function imgProps(item) {
 
 const pagination = {
   page: 1,
-  rowsPerPage: 8,
+  rowsPerPage: 5,
 }
 
 const rows = ref([])
@@ -759,6 +914,23 @@ const columns = [
   { name: 'end_date', label: 'End Date', align: 'center', field: 'end_date' },
   { name: 'status', label: 'Status', align: 'center', field: 'status' },
 ]
+
+const sortRows = (data) => {
+  return data.sort((a, b) => {
+    const aPriority = getRowPriority(a)
+    const bPriority = getRowPriority(b)
+
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority
+    }
+
+    return new Date(b.created_at) - new Date(a.created_at)
+  })
+}
+
+const getRowPriority = (row) => {
+  return row.status === 'Pending' ? 0 : 1
+}
 
 // function setStatus(row, status) {
 //   row.status = status
@@ -968,8 +1140,16 @@ function generateTempPassword(length = 12) {
 }
 
 .graph {
-  width: 20rem;
+  width: 100%;
+  max-width: 20rem;
   align-self: center;
+  padding: 0 1rem;
+}
+
+.graph canvas {
+  max-width: 100% !important;
+  height: auto !important;
+  width: 100% !important;
 }
 
 .box-legend {
@@ -996,6 +1176,13 @@ function generateTempPassword(length = 12) {
 .users-graph {
   margin-top: 2rem;
   width: 22rem;
+  max-width: 100%;
+}
+
+.users-graph canvas {
+  max-width: 100%;
+  height: auto;
+  width: 100% !important;
 }
 
 .btn-report {
@@ -1086,13 +1273,6 @@ function generateTempPassword(length = 12) {
   pointer-events: none;
 }
 
-/* .referral-box {
-  border-radius: 15px;
-  background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
-  height: 35rem;
-  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
-} */
-
 /*css referral letter*/
 
 .referral-box,
@@ -1146,12 +1326,703 @@ function generateTempPassword(length = 12) {
   width: 25rem;
 }
 
-/* .incomplete-see-all {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  color: #880000;
-  height: 2rem;
-  width: 6rem;
-} */
+
+/* ========================
+ ADMIN DASH RESPONSIVE DESIGN
+======================== */
+
+/* Base styles (mobile first) */
+.dash-title {
+  font-size: 1.5rem; /* 24px */
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+.dash-subtitle {
+  font-size: 0.625rem; /* 10px */
+  width: 70%;
+  line-height: 1.3;
+  margin-bottom: 1rem;
+}
+
+.btn-explore,
+.btn-document {
+  font-size: 0.5rem; /* 8px */
+  padding: 0.25rem 0.5rem;
+  min-height: 2rem;
+  white-space: nowrap;
+}
+
+.title-font-2 {
+  font-size: 0.875rem; /* 14px */
+}
+
+/* Hide trophy section on mobile */
+.col-5 {
+  display: none;
+}
+
+/* Full width main content on mobile */
+.col-7 {
+  width: 100%;
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+/* Button layout adjustments for mobile */
+.row.q-ml-md.q-gutter-lg {
+  margin-left: 0.5rem;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+/* ========================
+   TABLET (48rem / 768px+)
+======================== */
+@media (min-width: 48rem) {
+  .dash-title {
+    font-size: 1.625rem; /* 26px */
+  }
+
+  .dash-subtitle {
+    font-size: 0.75rem; /* 12px */
+    width: 90%;
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 0.8125rem; /* 13px */
+    padding: 0.375rem 0.75rem;
+    min-height: 2.25rem;
+  }
+
+  .title-font-2 {
+    font-size: 0.875rem; /* 14px */
+  }
+
+  .trophies {
+    max-width: 15rem;
+  }
+
+  .row.q-ml-md.q-gutter-lg {
+    margin-left: 1rem;
+    gap: 1rem;
+  }
+}
+
+/* ========================
+   DESKTOP (64rem / 1024px+)
+======================== */
+@media (min-width: 64rem) {
+  .col-5 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 0 0 41.666667%;
+    max-width: 41.666667%;
+  }
+
+  .col-7 {
+    width: auto;
+    flex: 0 0 58.333333%;
+    max-width: 58.333333%;
+  }
+
+  .dash-title {
+    font-size: 1.5rem;
+    line-height: 1.3;
+  }
+
+  .dash-subtitle {
+    font-size: 0.75rem; /* 12px */
+    width: auto;
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 0.8125rem; /* 13px */
+    padding: 0.5rem 1rem;
+    min-height: 2.5rem;
+  }
+
+  .title-font-2 {
+    font-size: 1.125rem; /* 18px */
+  }
+
+  .trophies {
+    height: 15rem; /* Same as index page */
+    width: 15rem;
+    max-width: 100%;
+  }
+
+  .row.q-ml-md.q-gutter-lg {
+    margin-left: 1rem;
+    gap: 1.5rem;
+  }
+}
+
+/* ========================
+   LARGE DESKTOP (90rem / 1440px+)
+======================== */
+@media (min-width: 90rem) {
+  .dash-title {
+    font-size: 2rem; /* 32px */
+  }
+
+  .dash-subtitle {
+    font-size: 1rem; /* 16px */
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 1rem; /* 16px */
+    padding: 0.625rem 1.25rem;
+    min-height: 2.75rem;
+  }
+
+  .title-font-2 {
+    font-size: 1.25rem; /* 20px */
+  }
+
+  .trophies {
+    height: 16rem;
+    width: 16rem;
+  }
+}
+
+/* ========================
+   EXTRA LARGE (120rem / 1920px+)
+======================== */
+@media (min-width: 120rem) {
+  .dash-title {
+    font-size: 2.125rem; /* 34px */
+  }
+
+  .dash-subtitle {
+    font-size: 1.125rem; /* 18px */
+  }
+
+  .btn-explore,
+  .btn-document {
+    font-size: 1.125rem; /* 18px */
+    padding: 0.75rem 1.5rem;
+    min-height: 3rem;
+  }
+
+  .title-font-2 {
+    font-size: 1.375rem; /* 22px */
+  }
+
+  .trophies {
+    height: 17rem;
+    width: 17rem;
+  }
+}
+
+/* ========================
+ BOX LAYOUT RESPONSIVE ADJUSTMENTS
+======================== */
+
+/* Mobile adjustments for box layouts */
+@media (max-width: 767px) {
+  .row.q-gutter-sm {
+    flex-direction: column;
+    gap: 1rem;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .box-1, .box-2 {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .box-1 {
+    padding: 1rem;
+  }
+
+  .box-2 {
+    margin-top: 1rem;
+    padding: 1rem;
+  }
+
+  /* Reset any left margins inside box-2 */
+  .box-2 .q-ml-lg {
+    margin-left: 0.5rem !important;
+  }
+
+  .box-2 .q-ml-sm {
+    margin-left: 0.5rem !important;
+  }
+
+  .q-ml-xl {
+    margin-left: 1rem !important;
+  }
+
+  .q-pa-md {
+    padding: 0.5rem;
+  }
+
+  /* Make buttons stack vertically on very small screens */
+  @media (max-width: 480px) {
+    .row.q-ml-md.q-gutter-lg {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin-left: 0.5rem;
+    }
+
+    .btn-explore,
+    .btn-document {
+      width: 100%;
+      max-width: 200px;
+    }
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .row.q-gutter-sm {
+    gap: 1rem;
+  }
+
+  .trophies {
+    height: 12rem;
+    width: 12rem;
+  }
+}
+
+/* ========================
+ RECENTLY UPLOADED SECTION (box-4)
+======================== */
+
+
+.box-4 {
+  margin-left: 0; /* Remove on mobile */
+  margin-top: 1rem;
+}
+
+/* Tablet (768px+) */
+@media (min-width: 48rem) {
+  .box-4 {
+    margin-left: 1rem;
+  }
+}
+
+/* Desktop (1024px+) - */
+@media (min-width: 64rem) {
+  .box-4 {
+    margin-left: 3rem;
+    height: 35rem;
+  }
+
+  .recent-box {
+    width: 15rem;
+    height: 22rem;
+  }
+
+  .recent-card {
+    width: 13rem;
+    height: 15rem;
+  }
+
+  .arrow-button {
+    width: 50px;
+    height: 50px;
+    margin-top: 3.5rem;
+  }
+
+  .btn-arrows {
+    width: 24px; /* Original value */
+    height: 24px; /* Original value */
+  }
+}
+
+/* Large Desktop (1440px+) - keep originals */
+@media (min-width: 90rem) {
+  .box-4 {
+    margin-left: 3rem;
+    height: 35rem;
+  }
+
+  .recent-box {
+    width: 15rem;
+    height: 22rem;
+  }
+
+  .recent-card {
+    width: 13rem;
+    height: 15rem;
+  }
+}
+
+/* Legend alignment fix */
+.legend-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
+  gap: 1.5rem !important;
+}
+
+.legend-item {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: baseline !important; /* Changed to baseline */
+  gap: 0.5rem !important;
+}
+
+.legend-item .box-legend {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.legend-item p {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap;
+}
+
+/* ========================
+ RESPONSIVE LAYOUT FOR REPORTS AND RECENTLY UPLOADED
+======================== */
+
+/* Default layout (above 1200px) - side by side */
+.reports-recently-container {
+  display: flex;
+  align-items: flex-start; /* Align tops of both boxes */
+  gap: 2rem; /* Increased gap for better spacing */
+  width: 100%;
+}
+
+.box-3 {
+  flex: 1 1 65%; /* Take 60% of available space */
+  min-width: 0;
+  border-radius: 15px;
+  background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+  height: 35rem; /* Match box-4 height */
+}
+
+.box-4 {
+  border-radius: 15px;
+  background: linear-gradient(25deg, #ffffff 35%, #fdf9e7 78%, #fbf4d0 100%);
+  flex: 0 0 33%;
+  width: 35%;
+  height: 35rem;
+  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
+  justify-content: center;
+  margin-left: 0; /* Remove default margin */
+}
+
+/* Stack layout (1200px and below) */
+@media (max-width: 75rem) { /* 1200px */
+  .reports-recently-container {
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .box-3 {
+    width: 100%;
+    flex: none; /* Remove flex constraints */
+    height: auto; /* Allow height to adjust */
+  }
+
+  .box-4 {
+    width: 100%;
+    flex: none; /* Remove flex constraints */
+    margin-left: 0;
+    margin-top: 0;
+  }
+
+  /* Make box-3 content responsive */
+  .box-3 .row.q-py-md {
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .box-3 .col-6 {
+    width: 100%;
+    flex: none;
+  }
+
+  /* Users per Month section responsive */
+  .box-3 .users-graph {
+    width: 100% !important;
+    max-width: 100%;
+    margin-top: 1rem;
+  }
+
+  .box-3 .users-graph canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Legend section responsive */
+  .box-3 .row.q-py-lg.justify-center.q-gutter-md {
+    flex-wrap: wrap;
+    justify-content: flex-start !important;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Most Viewed Artifacts section responsive */
+  .box-3 .fade-title-container {
+    max-width: 12rem !important;
+    min-width: 0; /* Allow shrinking */
+  }
+
+  .box-3 .row.items-center.justify-between {
+    align-items: center !important;
+    flex-wrap: nowrap !important; /* Force single line */
+    gap: 0.5rem;
+  }
+
+  .box-3 .row.q-mb-md.items-center.q-gutter-sm {
+    flex: 1;
+    min-width: 0; /* Allow shrinking */
+    flex-wrap: nowrap !important; /* Keep number and title together */
+    align-items: center !important; /* Keep number and title aligned */
+    justify-content: flex-start !important; /* Keep number at start */
+  }
+
+  .box-3 .number {
+    flex-shrink: 0 !important;
+  }
+
+  .box-3 .fade-title {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .box-3 .q-mr-md.sub-font-2 {
+    flex-shrink: 0; /* Don't shrink the view count */
+    white-space: nowrap; /* Keep view count on one line */
+  }
+
+  /* Adjust recently uploaded content for full width */
+  .recent-box {
+    margin: 0 auto; /* Center the box */
+  }
+}
+
+/* Responsive graph adjustments */
+@media (max-width: 768px) {
+  .graph {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 0.5rem;
+  }
+
+  .graph canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .box-2 {
+    padding: 1rem 0.5rem;
+  }
+
+  .box-2 .row.q-gutter-md.q-ml-sm {
+    margin-left: 0.25rem;
+    gap: 0.5rem;
+  }
+
+  .box-4 {
+    padding: 1rem;
+  }
+
+  .recent-box {
+    width: 12rem;
+    height: 20rem;
+  }
+
+  .recent-card {
+    width: 10rem;
+    height: 13rem;
+  }
+
+  .arrow-button {
+    width: 40px;
+    height: 40px;
+    margin-top: 2rem;
+  }
+
+  .btn-arrows {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Additional mobile responsive for box-3 */
+  .box-3 {
+    padding: 1rem !important;
+  }
+
+  .box-3 .number-report {
+    font-size: 1.5rem;
+  }
+
+  .box-3 .label {
+    font-size: 10px;
+  }
+
+  .box-3 .users-graph {
+    width: 100% !important;
+    margin-top: 0.5rem;
+  }
+
+  .box-3 .row.q-py-lg.justify-center.q-gutter-md {
+    justify-content: center !important;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .box-3 .row.q-py-lg.justify-center.q-gutter-md p {
+    font-size: 10px !important;
+    text-align: center;
+  }
+
+  .box-3 .box-legend {
+    margin-right: 0.25rem !important;
+  }
+
+  /* Most viewed artifacts mobile adjustments */
+  .box-3 .number {
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    flex-shrink: 0 !important;
+    margin-right: 0.5rem !important;
+  }
+
+  .box-3 .sub-font-2 {
+    font-size: 12px !important;
+  }
+
+  .box-3 .fade-title-container {
+    max-width: 6rem !important; /* Even smaller on mobile */
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* Target the specific structure from your HTML */
+  .box-3 div[class*="row items-center justify-between"] {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+  }
+
+  /* Target the left side (number + title) */
+  .box-3 div[class*="row q-mb-md items-center q-gutter-sm"] {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    margin-right: 1rem !important;
+  }
+
+  /* Target the right side (views) specifically */
+  .box-3 div[class*="q-mr-md sub-font-2"] {
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+    margin-right: 1rem !important; /* Add some space from the right edge */
+    white-space: nowrap !important;
+  }
+
+  .box-3 .fade-title-container {
+    max-width: 8rem !important; /* Smaller on mobile */
+  }
+
+  /* Main container for each item row */
+  .box-3 .row.items-center.justify-between {
+    align-items: center !important;
+    flex-wrap: nowrap !important; /* Keep single line on mobile too */
+    display: flex !important;
+    justify-content: space-between !important; /* Keep views on the right */
+  }
+
+  /* Left side: number + title container on mobile */
+  .box-3 .row.q-mb-md.items-center.q-gutter-sm {
+    gap: 0.5rem !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    display: flex !important;
+    flex-direction: row !important; /* Force horizontal layout */
+    text-align: left !important;
+    flex: 1 !important; /* Take available space but leave room for views */
+    min-width: 0 !important; /* Allow shrinking */
+  }
+
+  /* Ensure number stays on the left and aligned */
+  .box-3 .number {
+    flex-shrink: 0 !important;
+    margin-right: 0 !important;
+    align-self: center !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Override any centering from parent containers but keep items aligned */
+  .box-3 .column {
+    align-items: flex-start !important;
+  }
+
+  .box-3 .fade-title {
+    font-size: 11px !important;
+    text-align: left !important;
+    line-height: 1.2 !important;
+    display: inline !important; /* Keep inline */
+  }
+
+  .box-3 .fade-title-container {
+    display: inline-flex !important; /* Inline flex to stay beside number */
+    align-items: center !important;
+    flex-direction: row !important;
+    vertical-align: middle !important;
+  }
+
+  /* Ensure view count stays on the right and aligned */
+  .box-3 .q-mr-md.sub-font-2 {
+    align-self: center !important;
+    line-height: 1.2 !important;
+    margin-left: 0 !important; /* Reset margin */
+    margin-right: 3rem !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important; /* Keep on one line */
+  }
+}
+
+@media (min-width: 610px) and (max-width: 768px) {
+  .graph {
+    width: 100% !important;
+    max-width: 95% !important;
+    padding: 0 1rem;
+  }
+}
+
+/* Reset graph to normal size on larger screens */
+@media (min-width: 769px) {
+  .graph {
+    width: 100% !important;
+    max-width: 20rem !important;
+    padding: 0 1rem;
+  }
+
+  .box-2 {
+    padding: initial;
+  }
+}
 </style>
