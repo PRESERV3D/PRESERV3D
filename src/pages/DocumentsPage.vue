@@ -52,7 +52,7 @@
         <div class="row docs-gap justify-center q-py-sm">
           <div v-for="(doc, index) in topDocuments" :key="index">
             <div class="row q-mb-lg doc-wrapper">
-              <q-card class="my-card docCard" style="transform: rotate(-5deg)">
+              <q-card class="highlightsdocCard">
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
@@ -87,7 +87,7 @@
               </q-card>
 
               <div class="bg-highlights-details">
-                <div class="fade-title-container">
+                <div class="h-fade-title-container">
                   <div class="title-highlight fade-title">
                     {{ doc.metadata.title }}
                     <div class="tooltip-box">{{ doc.metadata.title }}</div>
@@ -300,7 +300,7 @@
 
           <!-- Document in Categories -->
 
-          <div class="row q-gutter-lg q-ma-md justify-between">
+          <div class="doc-container">
             <div v-for="(doc, i) in displayedDocuments" :key="i" class="card-wrapper-2">
               <q-card class="docCard" rounded bordered>
                 <router-link
@@ -452,7 +452,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { useDocumentsStore } from 'stores/documentsStore'
 import { useSearchStore } from 'stores/searchStore'
@@ -1258,7 +1258,7 @@ const handleUpload = async () => {
       $q.notify({ type: 'warning', message: 'Upload canceled.' })
     } else {
       console.error('Unexpected upload error:', err)
-      $q.notify({ type: 'negative', message: 'Upload failed. Please try again.' })
+      $q.notify({ type: 'negative', message: err.message || 'Upload failed. Please try again.' })
     }
   } finally {
     resetUploadState()
@@ -1283,7 +1283,7 @@ function handleForceCancel() {
   }
 
   resetUploadState()
-
+  $q.notify({ type: 'warning', message: 'Upload Cancelled' })
   console.log('All upload processes cancelled')
 }
 
@@ -1780,7 +1780,16 @@ watch(
     })
 
     authorOptions.value = [...authors.values()].sort()
-    categoryOptions.value = [...categories.values()].sort()
+
+    // Remove "All" before sorting and re-insert it at the front
+    const allLabel = categories.get('all')
+    const sortedCategories = [...categories.entries()]
+      .filter(([k]) => k !== 'all')
+      .map(([, v]) => v)
+      .sort()
+
+    categoryOptions.value = [allLabel, ...sortedCategories]
+
     dateOptions.value = [...years].sort((a, b) => b - a)
   },
   { immediate: true },
@@ -1897,7 +1906,30 @@ function applySort(option) {
 
 // pagination state
 const documentsCurrentPage = ref(1)
-const documentsPerPage = ref(10) // 👈 show 10 per page
+const documentsPerPage = ref(12)
+
+function updateDocumentsPerPage() {
+  const width = window.innerWidth
+
+  if (width >= 1920) {
+    documentsPerPage.value = 12
+  } else if (width >= 1475) {
+    documentsPerPage.value = 10
+  } else if (width >= 1240) {
+    documentsPerPage.value = 8
+  } else {
+    documentsPerPage.value = 6
+  }
+}
+
+onMounted(() => {
+  updateDocumentsPerPage()
+  window.addEventListener('resize', updateDocumentsPerPage)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateDocumentsPerPage)
+})
 
 // computed for paginated documents
 // const displayedDocuments = computed(() => {
@@ -2012,6 +2044,32 @@ function goToDocumentsPage(page) {
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
 }
 
+/* .doc-container {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 1rem;
+  justify-content: space-between;
+  gap: 1.5rem;
+} */
+
+/* .doc-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  padding: 2rem;
+  max-width: 1920px;
+  justify-content: center;
+} */
+
+.doc-container {
+  display: grid;
+  grid-template-rows: repeat(2, auto);
+  grid-template-columns: repeat(auto-fit, minmax(220px, max-content));
+  gap: 1rem;
+  justify-content: start;
+  padding: 2rem;
+}
+
 .bg-highlights-details {
   background-color: #880000;
   width: 13rem;
@@ -2080,9 +2138,11 @@ function goToDocumentsPage(page) {
 }
 
 .card-wrapper-2 {
-  flex: 0 1 200px;
+  flex: 0 0 220px;
+  margin: 0 1.5rem;
 }
 
+.highlightsdocCard,
 .docCard {
   width: 12rem;
   height: 16rem;
@@ -2091,6 +2151,10 @@ function goToDocumentsPage(page) {
   box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
   border-radius: 10px;
   background-color: white;
+}
+
+.highlightsdocCard {
+  transform: rotate(-5deg);
 }
 
 .document {
@@ -2130,11 +2194,132 @@ function goToDocumentsPage(page) {
 }
 
 /* Responsiveness */
-@media (max-width: 615px) {
+@media (max-width: 1500px) {
+  .highlightsdocCard {
+    width: 10.5rem;
+    height: 16rem;
+  }
+}
+
+@media (max-width: 1420px) {
+  .bg-highlights-details {
+    width: 12.5rem;
+  }
+
+  .docs-gap {
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 1400px) {
+  .highlightsdocCard {
+    width: 12rem;
+    height: 16rem;
+  }
+
+  .bg-highlights-details {
+    width: 20rem;
+  }
+
+  .docs-gap {
+    gap: 5rem;
+  }
+
+  .h-fade-title-container {
+    max-width: 20rem;
+  }
+}
+
+@media (max-width: 1370px) {
+  .docs-gap {
+    gap: 3rem;
+  }
+}
+
+@media (max-width: 1310px) {
+  .docs-gap {
+    row-gap: 4rem;
+    column-gap: 6rem;
+  }
+}
+
+@media (max-width: 1240px) {
+  .doc-container {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 790px) {
+  .bg-highlights-details {
+    width: 15rem;
+  }
+
+  .h-fade-title-container {
+    max-width: 15rem;
+  }
+}
+
+@media (max-width: 770px) {
+  .doc-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+  }
+}
+
+@media (max-width: 725px) {
+  .bg-highlights-details {
+    width: 13rem;
+  }
+
+  .h-fade-title-container {
+    max-width: 13rem;
+  }
+}
+
+@media (max-width: 670px) {
+  .docs-gap {
+    row-gap: 1.5rem;
+  }
+
   .doc-wrapper {
     flex-direction: column;
     align-items: center;
     text-align: center;
+  }
+
+  .bg-highlights-details {
+    width: 22rem;
+  }
+
+  .highlightsdocCard {
+    transform: none;
+  }
+
+  .h-fade-title-container {
+    max-width: 18rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .bg-highlights-details {
+    width: 18rem;
+  }
+
+  .h-fade-title-container {
+    max-width: 16rem;
+  }
+}
+
+@media (max-width: 550px) {
+  .bg-highlights-details {
+    width: 15rem;
+  }
+
+  .h-fade-title-container {
+    max-width: 13rem;
   }
 }
 </style>

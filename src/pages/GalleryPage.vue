@@ -8,15 +8,12 @@
         </h1>
 
         <div class="gallery-image-container">
-          <q-img
-            src="/img/gallery.png"
-            alt="PRESERV3D Gallery"
-            class="gallery-image"
-          />
+          <q-img src="/img/gallery.png" alt="PRESERV3D Gallery" class="gallery-image" />
         </div>
 
         <p class="hero-subtitle">
-          A virtual gallery that showcases PUP's archival materials, highlighting its rich culture and heritage.
+          A virtual gallery that showcases PUP's archival materials, highlighting its rich culture
+          and heritage.
         </p>
 
         <div class="button-container">
@@ -39,12 +36,7 @@
     <div v-if="showGodot" class="godot-section">
       <div class="godot-container">
         <!-- X Button positioned in upper right -->
-        <q-btn
-          flat
-          icon="close"
-          @click="closeGallery"
-          class="exit-btn"
-        />
+        <q-btn flat icon="close" @click="closeGallery" class="exit-btn" />
 
         <iframe
           ref="godotIframe"
@@ -83,23 +75,28 @@ function startGallery() {
 
   loading.value = true
 
-  // Set up the iframe source
-  const encoded = encodeURIComponent(JSON.stringify(modelUrls.value))
+  // Send optimized data to Godot
+  const optimizedData = modelUrls.value.map((model) => ({
+    url: model.url,
+    title: model.title,
+    author: model.author,
+    summary: model.summary || `${model.title} by ${model.author}`,
+    date: model.date,
+  }))
+
+  const encoded = encodeURIComponent(JSON.stringify(optimizedData))
   godotIframeSrc.value = `/godot_gallery/Gallery.html?models=${encoded}`
 
-  // Show the Godot iframe
   showGodot.value = true
 
-  // Wait for iframe to be rendered, then set up event listener
   setTimeout(() => {
     if (godotIframe.value) {
       godotIframe.value.addEventListener('load', () => {
-        console.log('iframe loaded, sending URLs to Godot')
+        console.log('Godot gallery loaded')
         loading.value = false
-        // Add a small delay to ensure Godot is fully initialized
         setTimeout(() => {
           sendURLsToGodot()
-        }, 1000)
+        }, 500) // Reduced delay
       })
     }
   }, 100)
@@ -136,37 +133,172 @@ function sendURLsToGodot() {
   )
 }
 
-// Load file URLs from Supabase
+// Enhanced caching with change detection
+const CACHE_KEY = 'gallery_models_cache'
+const CACHE_TIMESTAMP_KEY = 'gallery_models_timestamp'
+const CACHE_VERSION_KEY = 'gallery_cache_version'
+const CACHE_HASH_KEY = 'gallery_models_hash'
+const CACHE_VERSION = '1.2'
+const CACHE_DURATION = 60 * 60 * 1000 // 1 hour
+
+// Generate hash from model data to detect changes
+function generateModelsHash(models) {
+  const hashData = models.map((model) => ({
+    id: model.id,
+    url: model.url,
+    title: model.title,
+    author: model.author,
+    date: model.date,
+  }))
+  return btoa(JSON.stringify(hashData))
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .substring(0, 32)
+}
+
+function getValidCachedData() {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY)
+    const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY)
+    const version = localStorage.getItem(CACHE_VERSION_KEY)
+    const cachedHash = localStorage.getItem(CACHE_HASH_KEY)
+
+    if (!cached || !timestamp || version !== CACHE_VERSION || !cachedHash) {
+      clearModelCache()
+      return null
+    }
+
+    const age = Date.now() - parseInt(timestamp)
+    if (age > CACHE_DURATION) {
+      clearModelCache()
+      return null
+    }
+
+    return {
+      models: JSON.parse(cached),
+      hash: cachedHash,
+    }
+  } catch (error) {
+    console.warn('Cache read error:', error)
+    clearModelCache()
+    return null
+  }
+}
+
+function cacheModelData(models) {
+  try {
+    const hash = generateModelsHash(models)
+    localStorage.setItem(CACHE_KEY, JSON.stringify(models))
+    localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
+    localStorage.setItem(CACHE_VERSION_KEY, CACHE_VERSION)
+    localStorage.setItem(CACHE_HASH_KEY, hash)
+    console.log('Models cached successfully with hash:', hash)
+  } catch (error) {
+    console.warn('Cache write error:', error)
+  }
+}
+
+function clearModelCache() {
+  ;[CACHE_KEY, CACHE_TIMESTAMP_KEY, CACHE_VERSION_KEY, CACHE_HASH_KEY].forEach((key) =>
+    localStorage.removeItem(key),
+  )
+}
+
+// Check if cached data is still valid by comparing with fresh data
+async function isCacheStillValid(cachedData) {
+  try {
+    // Fetch fresh data for comparison
+    const { data: freshData, error } = await supabase
+      .from('artifacts_view')
+      .select('item_id, file_url, title, metadata->author, metadata->summary, metadata->date')
+      .order('views', { ascending: false })
+      .limit(10)
+
+    if (error || !freshData?.length) {
+      console.warn('Could not fetch fresh data for cache validation')
+      return true // Keep cache if we can't validate
+    }
+
+    const processedFreshModels = freshData.map((item) => ({
+      id: item.item_id,
+      url: item.file_url,
+      title: item.title || 'Untitled',
+      author: item.author || 'Unknown',
+      summary: item.summary || '',
+      date: item.date || '',
+    }))
+
+    const freshHash = generateModelsHash(processedFreshModels)
+    const cacheIsValid = freshHash === cachedData.hash
+
+    if (!cacheIsValid) {
+      console.log('Cache invalidated - data has changed')
+      console.log('Cached hash:', cachedData.hash)
+      console.log('Fresh hash:', freshHash)
+    }
+
+    return cacheIsValid
+  } catch (error) {
+    console.warn('Error validating cache:', error)
+    return true // Keep cache if validation fails
+  }
+}
+
+// Load file URLs from Supabase with enhanced caching
 async function loadModelUrls() {
   loading.value = true
 
-  const { data, error } = await supabase
-    .from('artifacts_view')
-    .select('file_url, title, metadata')
-    .order('views', { ascending: false })
-    .limit(12)
+  // Check cache first
+  const cachedData = getValidCachedData()
+  if (cachedData) {
+    console.log('Checking if cached data is still valid...')
 
-  loading.value = false
+    // Validate cache against fresh data
+    const cacheValid = await isCacheStillValid(cachedData)
 
-  if (error) {
-    console.error('Failed to fetch file_urls:', error)
-    return
+    if (cacheValid) {
+      modelUrls.value = cachedData.models
+      loading.value = false
+      console.log('Loaded', cachedData.models.length, 'models from valid cache')
+      return
+    } else {
+      console.log('Cache invalidated, fetching fresh data...')
+      clearModelCache()
+    }
   }
 
-  if (!data || data.length === 0) {
-    console.warn('No model URLs found in database')
-    return
-  }
+  try {
+    const { data, error } = await supabase
+      .from('artifacts_view')
+      .select('item_id, file_url, title, metadata->author, metadata->summary, metadata->date')
+      .order('views', { ascending: false })
+      .limit(10)
 
-  modelUrls.value = data.map((item) => ({
-    url: item.file_url,
-    title: item.title ?? 'Untitled',
-    author: item.metadata?.author ?? 'Unknown',
-    summary: item.metadata?.summary ?? 'No summary available',
-    date: item.metadata?.date ?? 'Unknown date',
-  }))
-  console.log('Loaded model URLs:', modelUrls.value.length)
-  console.log('Loaded model URLs:', modelUrls.value)
+    loading.value = false
+
+    if (error) throw error
+
+    if (!data?.length) {
+      console.warn('No models found')
+      return
+    }
+
+    const processedModels = data.map((item) => ({
+      id: item.item_id,
+      url: item.file_url,
+      title: item.title || 'Untitled',
+      author: item.author || 'Unknown',
+      summary: item.summary || '',
+      date: item.date || '',
+    }))
+
+    modelUrls.value = processedModels
+    cacheModelData(processedModels)
+
+    console.log('Loaded', processedModels.length, 'models from database')
+  } catch (error) {
+    console.error('Failed to load models:', error)
+    loading.value = false
+  }
 }
 </script>
 
@@ -182,7 +314,7 @@ async function loadModelUrls() {
 
 .preserv3d-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, rgba(77, 0, 0, 0.90) 0%, #101010 100%);
+  background: linear-gradient(180deg, rgba(77, 0, 0, 0.9) 0%, #101010 100%);
   position: relative;
   overflow-x: hidden;
 }
@@ -240,7 +372,7 @@ async function loadModelUrls() {
 /* Hero Subtitle */
 .hero-subtitle {
   font-size: 1.1rem;
-  color: #FBF4D0;
+  color: #fbf4d0;
   line-height: 1.4;
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
   font-weight: 300;
@@ -336,13 +468,12 @@ async function loadModelUrls() {
   height: 100%;
   border: none;
   background: #000;
-  display: block;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(-20px);
   }
   to {
     opacity: 1;
@@ -353,32 +484,11 @@ async function loadModelUrls() {
 /* Responsive Design */
 @media (max-width: 1024px) {
   .main-title {
-    font-size: 4rem;
+    font-size: 4.5rem;
   }
 
   .hero-content {
     gap: 2rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .hero-section {
-    padding: 2rem 1.5rem;
-  }
-
-  .hero-content {
-    gap: 1.5rem;
-  }
-
-  .main-title {
-    font-size: 3.2rem;
-  }
-
-  .hero-subtitle {
-    font-size: 1rem;
-    padding: 0 1rem;
-    white-space: normal;
-    max-width: 90%;
   }
 
   .start-tour-btn {
@@ -391,6 +501,39 @@ async function loadModelUrls() {
     right: 15px;
     padding: 0.6rem 1.4rem;
     font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-content {
+    gap: 1.2rem;
+  }
+
+  .main-title {
+    font-size: 3.2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.95rem;
+    padding: 0 1rem;
+    white-space: normal;
+    max-width: 90%;
+  }
+
+  .start-tour-btn {
+    font-size: 1rem;
+    padding: 0.9rem 2.5rem;
+  }
+
+  .exit-btn {
+    top: 15px;
+    right: 15px;
+    padding: 0.6rem 1.4rem;
+    font-size: 0.9rem;
+  }
+
+  .godot-container {
+    border: none;
   }
 }
 
