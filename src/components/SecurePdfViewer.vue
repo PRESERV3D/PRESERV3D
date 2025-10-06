@@ -729,7 +729,7 @@ onBeforeUnmount(() => {
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: -5rem;
   pointer-events: none;
   z-index: 9999;
   display: flex;
@@ -740,9 +740,9 @@ onBeforeUnmount(() => {
 }
 
 .watermark-text {
-  font-size: 4rem;
+  font-size: 3.5rem;
   font-weight: bold;
-  color: rgba(136, 0, 0, 0.1);
+  color: rgba(136, 0, 0, 0.13);
   transform: rotate(-45deg);
   user-select: none;
   pointer-events: none;
