@@ -231,6 +231,20 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- Secure PDF Viewer -->
+    <SecurePdfViewer
+      v-model="showPdfViewer"
+      :pdf-url="currentPdfUrl"
+      :document-id="currentDocumentId"
+      :document-title="doc?.metadata?.title"
+      :document-author="doc?.metadata?.author"
+      :user-name="user"
+      :user-email="userStore.session?.user?.email"
+      :viewed-at="new Date().toLocaleString()"
+      watermark-text="PRESERV3D - PUP Library"
+      @close="showPdfViewer = false"
+    />
   </q-page>
 </template>
 
@@ -238,7 +252,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from 'boot/supabase'
-// import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
+import SecurePdfViewer from 'src/components/SecurePdfViewer.vue'
 import { useUserStore } from 'stores/user'
 import { useRouter } from 'vue-router'
 import { useDocumentsStore } from 'stores/documentsStore'
@@ -271,6 +285,11 @@ const notifyDialogMessage = ref('')
 //added for related links
 const showRelatedDialog = ref(false)
 const links = ref([])
+
+// Secure PDF Viewer
+const showPdfViewer = ref(false)
+const currentPdfUrl = ref('')
+const currentDocumentId = route.params.id
 
 function formatDate(dateStr) {
   const date = new Date(dateStr)
@@ -689,7 +708,9 @@ async function handleClickRead(doc) {
     } catch (err) {
       console.error('Error logging view click:', err)
     } finally {
-      window.open(doc.file_url, '_blank')
+      // Open secure PDF viewer instead of new tab
+      currentPdfUrl.value = doc.file_url
+      showPdfViewer.value = true
     }
   }
 }
