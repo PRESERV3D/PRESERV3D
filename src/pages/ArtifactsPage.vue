@@ -223,6 +223,21 @@
             @cancel-click="handleCancel"
           />
 
+          <div>
+            <!-- Category Section -->
+            <div class="row q-mt-md q-gutter-sm">
+              <q-btn
+                v-for="categoryOption in categoryOptions"
+                :key="categoryOption"
+                :label="categoryOption"
+                class="btn-1"
+                :class="{ active: selectedCategories.has(categoryOption) }"
+                unelevated
+                @click="toggleCategory(categoryOption)"
+              />
+            </div>
+          </div>
+
           <!-- <q-dialog v-model="showDialog" persistent>
             <q-card class="add-documentarti-card">
               <q-card-section
