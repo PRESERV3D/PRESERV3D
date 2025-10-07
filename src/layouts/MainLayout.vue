@@ -97,7 +97,7 @@
       <q-page-container>
         <div v-if="noToolBar" class="search-toolbar">
           <div class="responsive-toolbar-container">
-            <!-- Search Bar Container with Internal Dropdown -->
+            <!-- Search Bar Container - hidden on some pages -->
             <div v-if="hasSearchBar" class="search-container">
               <q-input
                 dense
@@ -156,13 +156,16 @@
               </q-input>
             </div>
 
+            <!-- Hidden spacer when search bar is not present -->
+            <div v-else class="search-container-hidden"></div>
+
             <!-- Spacer to push actions to the right -->
             <div class="toolbar-spacer"></div>
 
             <!-- Notifications and user profile -->
-            <div class="toolbar-actions">
+            <div class="toolbar-actions" :class="{ 'no-search': !hasSearchBar }">
               <!-- Notifications Button -->
-              <q-btn flat round dense class="notif-btn">
+              <q-btn flat round dense class="notif-btn" :class="{ 'no-search': !hasSearchBar }">
                 <img src="/icons/notif-icon.png" alt="notifications" class="notif-image" />
                 <q-badge
                   floating
@@ -1587,6 +1590,116 @@ watch(
 .advanced-search-dialog :deep(.q-field--focused .q-field__control) {
   border-color: #880000 !important;
   box-shadow: 0 0 0 1px rgba(136, 0, 0, 0.2) !important;
+}
+
+/* ========================
+   SEARCH BAR VISIBILITY HANDLING
+======================== */
+
+/* Hidden search container that maintains space */
+.search-container-hidden {
+  width: 720px !important;
+  max-width: 100%;
+  margin-right: 2px;
+  visibility: hidden;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.toolbar-actions.no-search {
+  margin-left: 102px; /* profile icon */
+}
+
+/* Reduce gap between notification and profile when search bar is hidden */
+.toolbar-actions.no-search {
+  gap: 0px;
+}
+
+/* ========================
+   RESPONSIVE ADJUSTMENTS FOR HIDDEN SEARCH
+======================== */
+
+/* Ultra-wide screens */
+@media (min-width: 1920px) {
+  .search-container-hidden {
+    width: 1060px !important;
+    min-width: 1060px !important;
+    max-width: 1060px !important;
+  }
+  .notif-btn.no-search {
+    margin-right: 20px;
+  }
+}
+
+/* Large screens  */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .search-container-hidden {
+    width: 790px !important;
+    min-width: 790px !important;
+    max-width: 790px !important;
+  }
+  .notif-btn.no-search {
+    margin-right: 18px;
+  }
+}
+
+/* Medium-large screens */
+@media (min-width: 1300px) and (max-width: 1439px) {
+  .search-container-hidden {
+    width: 710px !important;
+    min-width: 610px !important;
+    max-width: 710px !important;
+  }
+  .notif-btn.no-search {
+    margin-right: 16px;
+  }
+}
+
+
+@media (min-width: 1200px) and (max-width: 1300px) {
+  .search-container-hidden {
+    width: 650px !important;
+    min-width: 550px !important;
+    max-width: 650px !important;
+    flex: none !important;
+  }
+  .notif-btn.no-search {
+    margin-right: 14px;
+  }
+}
+
+/* Compact screens  */
+@media (min-width: 1050px) and (max-width: 1199px) {
+  .search-container-hidden {
+    width: 590px !important;
+    min-width: 490px !important;
+    max-width: 590px !important;
+  }
+  .notif-btn.no-search {
+    margin-right: 12px;
+  }
+}
+
+/* Small screens */
+@media (min-width: 600px) and (max-width: 1049px) {
+  .search-container-hidden {
+    width: 550px !important;
+    min-width: 300px !important;
+    max-width: 550px !important;
+  }
+  .notif-btn.no-search {
+    margin-right: 10px;
+  }
+}
+
+/* Mobile screens */
+@media (max-width: 599px) {
+  .search-container-hidden {
+    display: none;
+  }
+  .toolbar-actions.no-search {
+    margin-left: 0;
+  }
 }
 
 
