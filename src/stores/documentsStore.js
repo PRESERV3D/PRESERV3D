@@ -127,24 +127,50 @@ export const useDocumentsStore = defineStore('documentsStore', {
       }
     },
     sortDocuments(sortOption) {
+      // const { field, order } = this.sortSettings(sortOption.label || sortOption)
+      // if (!field) return
+
+      // console.log('Sorting by:', field, order)
+
+      // this.filteredDocuments = [...this.filteredDocuments].sort((a, b) => {
+      //   const valA =
+      //     field === 'title'
+      //       ? (a.metadata?.title || '').trim().toLowerCase()
+      //       : new Date(a[field] || 0)
+      //   const valB =
+      //     field === 'title'
+      //       ? (b.metadata?.title || '').trim().toLowerCase()
+      //       : new Date(b[field] || 0)
+
+      //   if (field === 'title') {
+      //     return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA)
+      //   }
+      //   return order === 'asc' ? valA - valB : valB - valA
+      // })
+
       const { field, order } = this.sortSettings(sortOption.label || sortOption)
       if (!field) return
 
       console.log('Sorting by:', field, order)
 
       this.filteredDocuments = [...this.filteredDocuments].sort((a, b) => {
-        const valA =
-          field === 'title'
-            ? (a.metadata?.title || '').trim().toLowerCase()
-            : new Date(a[field] || 0)
-        const valB =
-          field === 'title'
-            ? (b.metadata?.title || '').trim().toLowerCase()
-            : new Date(b[field] || 0)
+        let valA, valB
 
         if (field === 'title') {
+          valA = (a.metadata?.title || '').trim().toLowerCase()
+          valB = (b.metadata?.title || '').trim().toLowerCase()
           return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA)
         }
+
+        if (field === 'origin') {
+          valA = new Date(a.metadata?.date || 0)
+          valB = new Date(b.metadata?.date || 0)
+          return order === 'asc' ? valA - valB : valB - valA
+        }
+
+        // Default for uploaded_at, updated_at
+        valA = new Date(a[field] || 0)
+        valB = new Date(b[field] || 0)
         return order === 'asc' ? valA - valB : valB - valA
       })
     },

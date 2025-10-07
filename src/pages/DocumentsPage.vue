@@ -1998,12 +1998,6 @@ const displayedDocuments = computed(() => {
   return docs.slice(start, end)
 })
 
-// total pages
-// const documentsTotalPages = computed(() => {
-//   const docs = searchStore.query ? searchStore.searchedDocuments : documentsStore.filteredDocuments
-
-//   return Math.ceil(docs.length / documentsPerPage.value)
-// })
 const documentsTotalPages = computed(() => {
   const docs = getSortedDocuments.value
   return Math.max(1, Math.ceil(docs.length / documentsPerPage.value))
