@@ -947,20 +947,52 @@ function handleCancel() {
   }
 }
 
-async function handleCancelMetadata(cancelledData) {
-  const fileName = cancelledData?.file_name
-  if (!fileName) return
+// async function handleCancelMetadata(cancelledData) {
+//   const fileName = cancelledData?.file_name
+//   if (!fileName) return
 
+//   try {
+//     const { error } = await supabase.from('documents_metadata').delete().eq('file_name', fileName)
+//     if (error) console.error('Error deleting cancelled metadata:', error)
+//     else console.log('Cancelled metadata removed.')
+//   } catch (err) {
+//     console.error('Failed to cancel and delete metadata:', err)
+//   } finally {
+//     dialog.value = false
+//     uploading.value = false
+//     uploadProgress.value = 0
+//   }
+// }
+
+async function handleCancelMetadata(cancelledData) {
   try {
-    const { error } = await supabase.from('documents_metadata').delete().eq('file_name', fileName)
-    if (error) console.error('Error deleting cancelled metadata:', error)
-    else console.log('Cancelled metadata removed.')
+    const itemId = cancelledData.id
+
+    const { error: deleteItemError } = await supabase
+      .from('documents_metadata')
+      .delete()
+      .eq('id', itemId)
+
+    if (deleteItemError) {
+      console.error('Error deleting cancelled metadata:', deleteItemError)
+    } else {
+      console.log('Cancelled metadata removed successfully.')
+    }
+
+    const { error: deleteLogError } = await supabase
+      .from('item_history')
+      .delete()
+      .eq('item_id', itemId)
+
+    if (deleteLogError) {
+      console.error('Error deleting history log for cancelled item', deleteLogError)
+    } else {
+      console.log('History log removed after cancellation')
+    }
   } catch (err) {
     console.error('Failed to cancel and delete metadata:', err)
   } finally {
     dialog.value = false
-    uploading.value = false
-    uploadProgress.value = 0
   }
 }
 
