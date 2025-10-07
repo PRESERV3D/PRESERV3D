@@ -124,6 +124,18 @@ const routes = [
         name: 'extract-text',
         component: () => import('pages/ExtractText.vue'),
       },
+      {
+        path: 'mprofile',
+        name: 'mprofile',
+        component: () => import('src/pages/UserProfile_Visitor.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'profile',
+        name: 'profile',
+        component: () => import('src/pages/ProfilePage.vue'), // Main profile page
+        meta: { requiresAuth: true },
+      },
     ],
   },
 
