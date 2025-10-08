@@ -316,13 +316,7 @@
 
     <!-- Three Artifacts per Row Grid -->
     <div class="artifacts-grid">
-      <div
-        v-for="(model, i) in searchStore.query
-          ? searchStore.searchedModels
-          : modelStore.filteredModels"
-        :key="i"
-        class="artifact-card-wrapper"
-      >
+      <div v-for="(model, i) in displayedModels" :key="i" class="artifact-card-wrapper">
         <q-card class="my-card" rounded bordered>
           <div class="card">
             <model-viewer
@@ -1766,6 +1760,11 @@ watch(
 )
 
 function applyFilters() {
+  modelsCurrentPage.value = 1
+  if (modelsCurrentPage.value > modelsTotalPages.value) {
+    modelsCurrentPage.value = modelsTotalPages.value
+  }
+
   searchStore.clear()
 
   const filterData = {
@@ -1847,6 +1846,11 @@ function clearCategories() {
 }
 
 function applySort(option) {
+  modelsCurrentPage.value = 1
+  if (modelsCurrentPage.value > modelsTotalPages.value) {
+    modelsCurrentPage.value = modelsTotalPages.value
+  }
+
   searchStore.setSort(option.value)
 
   // Apply sorting on the already fetched results
@@ -1867,9 +1871,7 @@ function updateModelsPerPage() {
   if (width >= 1920) {
     modelsPerPage.value = 12
   } else if (width >= 1475) {
-    modelsPerPage.value = 10
-  } else if (width >= 1240) {
-    modelsPerPage.value = 8
+    modelsPerPage.value = 9
   } else {
     modelsPerPage.value = 6
   }
