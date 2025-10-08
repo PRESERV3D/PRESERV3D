@@ -233,9 +233,12 @@
               </q-card>
 
               <div class="q-mt-md fade-title-container">
-                <div class="q-mt-md sub-font fade-title" style="color: black; font-weight: 800">
+                <div class="sub-font fade-title" style="color: black; font-weight: 800">
                   {{ document.metadata?.title || document.file_name }}
                   <div class="tooltip-box">{{ document.metadata?.title || document.file_name }}</div>
+                </div>
+                <div class="q-mt-sm sub-font-2" style="color: black; font-weight: 200">
+                  {{ document.metadata?.author || 'Unknown Author' }}
                 </div>
               </div>
             </div>
