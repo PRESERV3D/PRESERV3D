@@ -15,7 +15,6 @@
             class="camera-btn"
             @click="$emit('camera-click')"
             no-caps
-            style="color: #560505; border-radius: 4px; padding: 4px 24px"
           />
         </q-card-section>
 

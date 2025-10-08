@@ -695,4 +695,11 @@ const acceptedterms = ref(false)
     height: 2rem;
   }
 }
+
+:deep(.text-box .q-field__control::before),
+:deep(.text-box .q-field__control::after),
+:deep(.text-box-2 .q-field__control::before),
+:deep(.text-box-2 .q-field__control::after) {
+  display: none !important;
+}
 </style>

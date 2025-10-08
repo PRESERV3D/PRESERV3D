@@ -35,6 +35,23 @@ export default defineRouter(function (/* { store, ssrContext } */) {
 
   // Supabase auth guard here
   Router.beforeEach(async (to, from, next) => {
+    const userStore = useUserStore()
+    const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+    const allowedRoles = to.meta.allowedRoles
+    const session = userStore.session
+
+    if (!userStore.session) {
+      await userStore.fetchSession()
+    }
+
+    // Super admin check
+    if (to.name === 'user-management' || to.meta.requiresSuperAdmin) {
+      if (!userStore.profile?.is_super_admin) {
+        next('/admindash')
+        return
+      }
+    }
+
     // Allow phone-camera route without authentication - check name and path
     if (to.name === 'phone-camera' || to.path.includes('/phone-camera')) {
       console.log('✅ Allowing access to phone-camera page')
@@ -53,16 +70,6 @@ export default defineRouter(function (/* { store, ssrContext } */) {
       next()
       return
     }
-
-    const userStore = useUserStore()
-
-    if (!userStore.session) {
-      await userStore.fetchSession()
-    }
-
-    const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
-    const allowedRoles = to.meta.allowedRoles
-    const session = userStore.session
 
     if (requiresAuth && !session) {
       next('/landing')
@@ -93,7 +100,7 @@ export default defineRouter(function (/* { store, ssrContext } */) {
       }
     }
 
-    // Role-based access control
+    // Role-based access control (for non-super-admin routes)
     if (requiresAuth && allowedRoles) {
       const role = session.user.user_metadata?.role
       if (!allowedRoles.includes(role)) {

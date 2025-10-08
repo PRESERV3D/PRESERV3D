@@ -204,7 +204,7 @@ async function registerAdmin() {
           role: 'admin',
           type: 'admin',
         },
-        emailRedirectTo: 'http://localhost:9000/#/user/login',
+        emailRedirectTo: 'http://localhost:9000/user/login',
       },
     })
 
@@ -223,6 +223,7 @@ async function registerAdmin() {
           last_name,
           email,
           contact,
+          is_super_admin: false, // Regular admin registration cannot create super admins
           created_at: new Date(),
         },
       ])

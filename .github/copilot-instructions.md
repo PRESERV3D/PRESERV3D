@@ -73,9 +73,18 @@ Required keys prefixed with `VITE_` for client-side access:
 
 Router guards check `session.user.user_metadata.role` against route `meta.allowedRoles`:
 
+- **Super Admin routes**: `/superadmin` (requires `is_super_admin: true` flag)
 - **Admin routes**: `/admindash`, `/admin/appointments`, `/data-quality`, `/edit/*`
 - **User routes**: `/home`, `/collections`, `/appointment`
 - **Public**: `/landing`, `/admin/landing`, `/user/*`, `/phone-camera` (no auth)
+
+**Super Admin Feature**:
+
+- Super admins can manage all users (students, faculty, visitors, admins)
+- Can create new admin accounts with email verification
+- New admins receive password reset link via Supabase Auth email
+- Access via dedicated `/superadmin` dashboard
+- Database: `registered_admins.is_super_admin` boolean column
 
 ### Dual Upload Flow (Documents vs Artifacts)
 
