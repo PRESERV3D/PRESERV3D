@@ -838,6 +838,8 @@ watch(
       activeItem.value = 'collections'
     } else if (newPath.includes('gallery')) {
       activeItem.value = 'gallery'
+    } else if (newPath.includes('data-quality')) {
+      activeItem.value = 'data-quality'
     } else {
       activeItem.value = ''
     }
