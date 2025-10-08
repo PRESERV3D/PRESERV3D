@@ -66,8 +66,6 @@
                   <span :class="{ 'text-hidden': miniState && !isHovered }" class="nav-text">{{
                     item.label
                   }}</span>
-                    item.label
-                  }}</span>
                 </q-item-section>
               </q-item>
             </q-list>
