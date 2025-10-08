@@ -1,32 +1,30 @@
 <template>
   <q-page class="q-pa-md">
-    <div class="q-mt-xs title">User Management</div>
-    <div class="q-mt-xs q-mb-lg subtitle">Manage all users and administrators</div>
-
-    <!-- Action Buttons -->
-    <div class="row items-center q-ml-sm q-mb-md">
-      <div class="row q-gutter-md">
-        <q-btn
-          label="Create New Admin"
-          icon="person_add"
-          @click="showCreateAdminDialog = true"
-          no-caps
-          class="btn-1 active"
-        />
-        <q-btn
-          icon="refresh"
-          no-caps
-          class="btn-1 active"
-          @click="fetchAllUsers"
-          :loading="loading"
-        >
-          <q-tooltip>Reload all user data</q-tooltip>
-        </q-btn>
+    <div class="row items-center justify-between q-mb-md">
+      <div>
+        <div class="q-mt-xs title">User Management</div>
+        <div class="q-mt-xs q-mb-lg subtitle">
+          {{
+            isSuperAdmin ? 'Manage all users and administrators' : 'Manage visitor registrations'
+          }}
+        </div>
       </div>
     </div>
 
-    <!-- Users Management Tabs -->
+    <!-- Action Buttons -->
+    <div v-if="isSuperAdmin" class="row q-gutter-md q-mb-md">
+      <q-btn
+        label="Create New Admin"
+        icon="person_add"
+        @click="showCreateAdminDialog = true"
+        no-caps
+        class="btn-1 active"
+      />
+    </div>
+
+    <!-- Tabs - Conditional based on admin type -->
     <q-tabs
+      v-if="isSuperAdmin"
       v-model="activeTab"
       dense
       class="text-grey"
@@ -39,11 +37,27 @@
       <q-tab name="students" label="Students" />
       <q-tab name="faculty" label="Faculty" />
       <q-tab name="visitors" label="Visitors" />
+      <q-tab name="registrations" label="Visitor Registrations" />
+    </q-tabs>
+
+    <!-- Tabs for Regular Admin -->
+    <q-tabs
+      v-if="!isSuperAdmin"
+      v-model="activeTab"
+      dense
+      class="text-grey"
+      active-color="primary"
+      indicator-color="primary"
+      align="left"
+      narrow-indicator
+    >
+      <q-tab name="visitors" label="Approved Visitors" />
+      <q-tab name="registrations" label="Visitor Registrations" />
     </q-tabs>
 
     <q-separator />
 
-    <q-tab-panels v-model="activeTab" animated class="q-mt-md">
+    <q-tab-panels v-if="isSuperAdmin" v-model="activeTab" animated class="q-mt-md">
       <!-- Administrators Tab -->
       <q-tab-panel name="admins">
         <q-table
@@ -57,6 +71,11 @@
           bordered
           class="my-sticky-header-table"
         >
+          <template v-slot:top-right>
+            <q-btn icon="refresh" flat round dense @click="fetchAllUsers" :loading="loading">
+              <q-tooltip>Reload Data</q-tooltip>
+            </q-btn>
+          </template>
           <template v-slot:body="props">
             <q-tr :props="props">
               <q-td
@@ -207,6 +226,11 @@
           bordered
           class="my-sticky-header-table"
         >
+          <template v-slot:top-right>
+            <q-btn icon="refresh" flat round dense @click="fetchAllUsers" :loading="loading">
+              <q-tooltip>Reload Data</q-tooltip>
+            </q-btn>
+          </template>
           <template v-slot:body="props">
             <q-tr :props="props">
               <q-td
@@ -327,6 +351,11 @@
           bordered
           class="my-sticky-header-table"
         >
+          <template v-slot:top-right>
+            <q-btn icon="refresh" flat round dense @click="fetchAllUsers" :loading="loading">
+              <q-tooltip>Reload Data</q-tooltip>
+            </q-btn>
+          </template>
           <template v-slot:body="props">
             <q-tr :props="props">
               <q-td
@@ -447,6 +476,11 @@
           bordered
           class="my-sticky-header-table"
         >
+          <template v-slot:top-right>
+            <q-btn icon="refresh" flat round dense @click="fetchAllUsers" :loading="loading">
+              <q-tooltip>Reload Data</q-tooltip>
+            </q-btn>
+          </template>
           <template v-slot:body="props">
             <q-tr :props="props">
               <q-td
@@ -593,7 +627,445 @@
           </template>
         </q-table>
       </q-tab-panel>
+
+      <!-- Visitor Registrations Tab (For Super Admin) -->
+      <q-tab-panel name="registrations">
+        <q-table
+          title="Visitor Registrations"
+          :rows="registrations"
+          :columns="registrationColumns"
+          row-key="id"
+          :loading="loading"
+          :pagination="pagination"
+          flat
+          bordered
+          class="my-sticky-header-table"
+        >
+          <template v-slot:top-right>
+            <q-btn icon="refresh" flat round dense @click="fetchAllUsers" :loading="loading">
+              <q-tooltip>Reload Data</q-tooltip>
+            </q-btn>
+          </template>
+          <template v-slot:body="props">
+            <q-tr :props="props">
+              <q-td
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+                :style="col.style"
+                :align="col.align"
+              >
+                <template v-if="col.name === 'name'">
+                  <span>{{ props.row.first_name }} {{ props.row.last_name }}</span>
+                </template>
+
+                <template v-else-if="col.name === 'letter_url'">
+                  <a
+                    v-if="props.row.letter_url"
+                    :href="props.row.letter_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="view-more-link"
+                  >
+                    Letter
+                  </a>
+                  <span v-else>N/A</span>
+                </template>
+
+                <template v-else-if="col.name === 'status'">
+                  <template v-if="props.row.status === 'Pending'">
+                    <q-btn
+                      flat
+                      dense
+                      round
+                      class="status-btn"
+                      @click="openConfirmDialog(props.row, 'Approved')"
+                    >
+                      <q-icon name="check" color="green" size="18px" />
+                      <q-tooltip>Approve</q-tooltip>
+                    </q-btn>
+                    <q-btn
+                      flat
+                      dense
+                      round
+                      class="status-btn"
+                      @click="openConfirmDialog(props.row, 'Rejected')"
+                    >
+                      <q-icon name="close" color="red" size="18px" />
+                      <q-tooltip>Reject</q-tooltip>
+                    </q-btn>
+                  </template>
+
+                  <template v-else>
+                    <q-badge
+                      :color="props.row.status === 'Approved' ? 'green' : 'red'"
+                      :label="props.row.status"
+                    />
+                  </template>
+                </template>
+
+                <template v-else-if="col.name === 'actions'">
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    :icon="props.expand ? 'expand_less' : 'expand_more'"
+                    @click="props.expand = !props.expand"
+                  >
+                    <q-tooltip>{{ props.expand ? 'Collapse' : 'Expand' }}</q-tooltip>
+                  </q-btn>
+                </template>
+
+                <template v-else>
+                  {{ col.value }}
+                </template>
+              </q-td>
+            </q-tr>
+
+            <!-- Expandable Row -->
+            <q-tr v-show="props.expand" :props="props">
+              <q-td colspan="100%">
+                <div class="q-pa-md" style="background-color: #f5f5f5">
+                  <div class="row q-col-gutter-md">
+                    <div class="col-6">
+                      <div class="text-weight-bold">Full Name:</div>
+                      <div>{{ props.row.first_name }} {{ props.row.last_name }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Email:</div>
+                      <div>{{ props.row.email }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Institution:</div>
+                      <div>{{ props.row.institution || 'N/A' }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Purpose:</div>
+                      <div>{{ props.row.purpose || 'N/A' }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Date Filed:</div>
+                      <div>{{ new Date(props.row.created_at).toLocaleDateString() }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Requested Period:</div>
+                      <div>
+                        {{ props.row.start_date || 'N/A' }} to {{ props.row.end_date || 'N/A' }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </q-td>
+            </q-tr>
+          </template>
+        </q-table>
+      </q-tab-panel>
     </q-tab-panels>
+
+    <!-- Regular Admin View - Approved Visitors and Registrations -->
+    <q-tab-panels v-if="!isSuperAdmin" v-model="activeTab" animated class="q-mt-md">
+      <!-- Visitor Registrations Tab -->
+      <q-tab-panel name="registrations">
+        <q-table
+          title="Visitor Registrations"
+          :rows="registrations"
+          :columns="registrationColumns"
+          row-key="id"
+          :loading="loading"
+          :pagination="pagination"
+          flat
+          bordered
+          class="my-sticky-header-table"
+        >
+          <template v-slot:top-right>
+            <q-btn icon="refresh" flat round dense @click="fetchAllUsers" :loading="loading">
+              <q-tooltip>Reload Data</q-tooltip>
+            </q-btn>
+          </template>
+          <template v-slot:body="props">
+            <q-tr :props="props">
+              <q-td
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+                :style="col.style"
+                :align="col.align"
+              >
+                <template v-if="col.name === 'name'">
+                  <span>{{ props.row.first_name }} {{ props.row.last_name }}</span>
+                </template>
+
+                <template v-else-if="col.name === 'letter_url'">
+                  <a
+                    v-if="props.row.letter_url"
+                    :href="props.row.letter_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="view-more-link"
+                  >
+                    Letter
+                  </a>
+                  <span v-else>N/A</span>
+                </template>
+
+                <template v-else-if="col.name === 'status'">
+                  <template v-if="props.row.status === 'Pending'">
+                    <q-btn
+                      flat
+                      dense
+                      round
+                      class="status-btn"
+                      @click="openConfirmDialog(props.row, 'Approved')"
+                    >
+                      <q-icon name="check" color="green" size="18px" />
+                      <q-tooltip>Approve</q-tooltip>
+                    </q-btn>
+                    <q-btn
+                      flat
+                      dense
+                      round
+                      class="status-btn"
+                      @click="openConfirmDialog(props.row, 'Rejected')"
+                    >
+                      <q-icon name="close" color="red" size="18px" />
+                      <q-tooltip>Reject</q-tooltip>
+                    </q-btn>
+                  </template>
+
+                  <template v-else>
+                    <q-badge
+                      :color="props.row.status === 'Approved' ? 'green' : 'red'"
+                      :label="props.row.status"
+                    />
+                  </template>
+                </template>
+
+                <template v-else-if="col.name === 'actions'">
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    :icon="props.expand ? 'expand_less' : 'expand_more'"
+                    @click="props.expand = !props.expand"
+                  >
+                    <q-tooltip>{{ props.expand ? 'Collapse' : 'Expand' }}</q-tooltip>
+                  </q-btn>
+                </template>
+
+                <template v-else>
+                  {{ col.value }}
+                </template>
+              </q-td>
+            </q-tr>
+
+            <!-- Expandable Row -->
+            <q-tr v-show="props.expand" :props="props">
+              <q-td colspan="100%">
+                <div class="q-pa-md" style="background-color: #f5f5f5">
+                  <div class="row q-col-gutter-md">
+                    <div class="col-6">
+                      <div class="text-weight-bold">Full Name:</div>
+                      <div>{{ props.row.first_name }} {{ props.row.last_name }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Email:</div>
+                      <div>{{ props.row.email }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Institution:</div>
+                      <div>{{ props.row.institution || 'N/A' }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Purpose:</div>
+                      <div>{{ props.row.purpose || 'N/A' }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Date Filed:</div>
+                      <div>{{ new Date(props.row.created_at).toLocaleDateString() }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Requested Period:</div>
+                      <div>
+                        {{ props.row.start_date || 'N/A' }} to {{ props.row.end_date || 'N/A' }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </q-td>
+            </q-tr>
+          </template>
+        </q-table>
+      </q-tab-panel>
+
+      <!-- Approved Visitors Tab -->
+      <q-tab-panel name="visitors">
+        <q-table
+          title="Approved Visitors"
+          :rows="visitors"
+          :columns="visitorColumns"
+          row-key="id"
+          :loading="loading"
+          :pagination="pagination"
+          flat
+          bordered
+          class="my-sticky-header-table"
+        >
+          <template v-slot:top-right>
+            <q-btn icon="refresh" flat round dense @click="fetchAllUsers" :loading="loading">
+              <q-tooltip>Reload Data</q-tooltip>
+            </q-btn>
+          </template>
+          <template v-slot:body="props">
+            <q-tr :props="props">
+              <q-td
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+                :style="col.style"
+                :align="col.align"
+              >
+                <template v-if="col.name === 'name'">
+                  <span>{{ props.row.first_name }} {{ props.row.last_name }}</span>
+                </template>
+
+                <template v-else-if="col.name === 'email'">
+                  <div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis">
+                    {{ props.row.email }}
+                  </div>
+                </template>
+
+                <template v-else-if="col.name === 'account_status'">
+                  <q-badge
+                    :color="
+                      props.row.account_status === 'Active'
+                        ? 'green'
+                        : props.row.account_status === 'Expired'
+                          ? 'red'
+                          : props.row.account_status === 'Inactive'
+                            ? 'orange'
+                            : 'grey'
+                    "
+                    :label="props.row.account_status || 'Active'"
+                  />
+                </template>
+
+                <template v-else-if="col.name === 'end_date'">
+                  {{
+                    props.row.end_date ? new Date(props.row.end_date).toLocaleDateString() : 'N/A'
+                  }}
+                </template>
+
+                <template v-else-if="col.name === 'actions'">
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="event"
+                    color="primary"
+                    size="sm"
+                    @click="openExtendDateDialog(props.row)"
+                    class="q-mr-xs"
+                  >
+                    <q-tooltip>Extend Access</q-tooltip>
+                  </q-btn>
+
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    :icon="props.expand ? 'expand_less' : 'expand_more'"
+                    @click="props.expand = !props.expand"
+                    class="q-mr-xs"
+                  >
+                    <q-tooltip>{{ props.expand ? 'Collapse' : 'Expand' }}</q-tooltip>
+                  </q-btn>
+                </template>
+
+                <template v-else>
+                  {{ col.value }}
+                </template>
+              </q-td>
+            </q-tr>
+
+            <!-- Expandable Row -->
+            <q-tr v-show="props.expand" :props="props">
+              <q-td colspan="100%">
+                <div class="q-pa-md" style="background-color: #f5f5f5">
+                  <div class="row q-col-gutter-md">
+                    <div class="col-6">
+                      <div class="text-weight-bold">Full Name:</div>
+                      <div>{{ props.row.first_name }} {{ props.row.last_name }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Email:</div>
+                      <div>{{ props.row.email }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Institution:</div>
+                      <div>{{ props.row.institution || 'N/A' }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Purpose:</div>
+                      <div>{{ props.row.purpose || 'N/A' }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Access Period:</div>
+                      <div>
+                        {{
+                          props.row.start_date
+                            ? new Date(props.row.start_date).toLocaleDateString()
+                            : 'N/A'
+                        }}
+                        to
+                        {{
+                          props.row.end_date
+                            ? new Date(props.row.end_date).toLocaleDateString()
+                            : 'N/A'
+                        }}
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Last Login:</div>
+                      <div>
+                        {{
+                          props.row.last_login
+                            ? new Date(props.row.last_login).toLocaleString()
+                            : 'Never'
+                        }}
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Approved By:</div>
+                      <div>{{ props.row.approved_by }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Approved At:</div>
+                      <div>{{ new Date(props.row.approved_at).toLocaleString() }}</div>
+                    </div>
+                  </div>
+                </div>
+              </q-td>
+            </q-tr>
+          </template>
+        </q-table>
+      </q-tab-panel>
+    </q-tab-panels>
+
+    <!-- Confirmation Dialog for Approve/Reject -->
+    <q-dialog v-model="showConfirmDialog">
+      <q-card class="conf-box">
+        <q-card-section class="sub-font" style="color: black">
+          Are you sure you want to set this referral letter as {{ confirmAction }}?
+        </q-card-section>
+        <q-card-actions align="center">
+          <q-btn flat label="Yes" class="btn-save" @click="confirmRegistrationAction" />
+          <q-btn flat label="No" class="sub-font-2" style="color: #000000" v-close-popup no-caps />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- Create Admin Dialog -->
     <q-dialog v-model="showCreateAdminDialog">
@@ -774,13 +1246,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { supabase, supabaseAdmin } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 
 const $q = useQuasar()
 const userStore = useUserStore()
+
+// Computed property to check if user is super admin
+const isSuperAdmin = computed(() => {
+  return userStore.profile?.is_super_admin === true
+})
 
 const activeTab = ref('admins')
 const loading = ref(false)
@@ -793,17 +1270,21 @@ const admins = ref([])
 const students = ref([])
 const faculty = ref([])
 const visitors = ref([])
+const registrations = ref([])
 
 const showCreateAdminDialog = ref(false)
 const showDeleteDialog = ref(false)
 const showSuccessDialog = ref(false)
 const showExtendDateDialog = ref(false)
+const showConfirmDialog = ref(false)
 const successTitle = ref('')
 const successMessage = ref('')
 
 const deleteTarget = ref(null)
 const deleteType = ref('')
 const selectedVisitor = ref(null)
+const confirmTarget = ref(null)
+const confirmAction = ref('')
 
 const visitorDates = ref({
   start_date: '',
@@ -897,8 +1378,29 @@ const visitorColumns = [
   { name: 'actions', label: 'Actions', align: 'center', field: 'actions' },
 ]
 
+const registrationColumns = [
+  { name: 'name', label: 'Name', align: 'center', field: 'first_name', sortable: true },
+  { name: 'institution', label: 'Institution', align: 'center', field: 'institution' },
+  { name: 'purpose', label: 'Purpose', align: 'center', field: 'purpose' },
+  { name: 'letter_url', label: 'Letter', align: 'center', field: 'letter_url' },
+  {
+    name: 'created_at',
+    label: 'Date Filed',
+    align: 'center',
+    field: (row) => new Date(row.created_at).toLocaleDateString('en-CA'),
+  },
+  { name: 'start_date', label: 'Start Date', align: 'center', field: 'start_date' },
+  { name: 'end_date', label: 'End Date', align: 'center', field: 'end_date' },
+  { name: 'status', label: 'Status', align: 'center', field: 'status' },
+  { name: 'actions', label: '', align: 'center', field: 'actions' },
+]
+
 onMounted(async () => {
   await fetchAllUsers()
+  // Set default tab for regular admins
+  if (!isSuperAdmin.value) {
+    activeTab.value = 'visitors'
+  }
 })
 
 async function fetchAllUsers() {
@@ -957,6 +1459,17 @@ async function fetchAllUsers() {
 
     if (visitorError) throw visitorError
     visitors.value = visitorData || []
+
+    // Fetch visitor registrations
+    const { data: registrationData, error: registrationError } = await supabase
+      .from('registration_visitors')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (registrationError) throw registrationError
+
+    // Sort registrations - pending first, then by date
+    registrations.value = sortRegistrations(registrationData || [])
   } catch (error) {
     console.error('Error fetching users:', error)
     $q.notify({
@@ -966,6 +1479,15 @@ async function fetchAllUsers() {
   } finally {
     loading.value = false
   }
+}
+
+// Sort registrations - Pending first, then by created_at
+function sortRegistrations(data) {
+  return data.sort((a, b) => {
+    if (a.status === 'Pending' && b.status !== 'Pending') return -1
+    if (a.status !== 'Pending' && b.status === 'Pending') return 1
+    return new Date(b.created_at) - new Date(a.created_at)
+  })
 }
 
 async function createAdmin() {
@@ -1316,6 +1838,111 @@ async function updateVisitorDates() {
     updatingDates.value = false
   }
 }
+
+// Functions for visitor registration approval
+function openConfirmDialog(row, action) {
+  confirmTarget.value = row
+  confirmAction.value = action
+  showConfirmDialog.value = true
+}
+
+async function confirmRegistrationAction() {
+  if (!confirmTarget.value) return
+
+  const row = confirmTarget.value
+  const action = confirmAction.value
+
+  const adminName =
+    `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+
+  try {
+    // Update registration_visitors status
+    const { error: updateError } = await supabase
+      .from('registration_visitors')
+      .update({ status: action })
+      .eq('id', row.id)
+
+    if (updateError) throw updateError
+
+    // If Approved, create user account
+    if (action === 'Approved') {
+      // Generate temporary password
+      const tempPassword = generateTempPassword()
+
+      // Sign up the user in Supabase Auth
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: row.email,
+        password: tempPassword,
+        options: {
+          data: {
+            role: 'user',
+            type: 'visitor',
+          },
+          emailRedirectTo: `${window.location.origin}/resetpassword`,
+        },
+      })
+
+      if (signUpError) throw signUpError
+
+      const now = new Date()
+
+      // Insert into approved_visitors table
+      const { error: insertError } = await supabase.from('approved_visitors').insert([
+        {
+          id: authData.user.id,
+          registration_id: row.id,
+          approved_at: now,
+          approved_by: adminName,
+          email: row.email,
+          first_name: row.first_name,
+          last_name: row.last_name,
+          start_date: row.start_date,
+          end_date: row.end_date,
+          account_status: 'Active',
+        },
+      ])
+
+      if (insertError) throw insertError
+
+      // Insert into all_users table
+      const { error: allUserError } = await supabase.from('all_users').insert([
+        {
+          id: authData.user.id,
+          email: row.email,
+          created_at: now,
+          user_type: 'visitor',
+        },
+      ])
+
+      if (allUserError) throw allUserError
+
+      $q.notify({
+        type: 'positive',
+        message: `Visitor registration approved`,
+        caption: `Confirmation email sent to ${row.email}`,
+      })
+    } else {
+      $q.notify({
+        type: 'info',
+        message: 'Visitor registration rejected',
+      })
+    }
+
+    showConfirmDialog.value = false
+    confirmTarget.value = null
+    confirmAction.value = ''
+
+    // Refresh the data
+    await fetchAllUsers()
+  } catch (error) {
+    console.error('Error processing registration:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to process registration',
+      caption: error.message,
+    })
+  }
+}
 </script>
 
 <style scoped>
@@ -1408,6 +2035,15 @@ async function updateVisitorDates() {
 
 .sub-font-3 {
   font-family: 'Poppins', sans-serif;
+}
+
+.view-more-link {
+  color: #880000;
+  text-decoration: underline;
+}
+
+.status-btn {
+  margin: 0 0.25rem;
 }
 
 @media (max-width: 768px) {
