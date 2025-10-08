@@ -1416,7 +1416,11 @@ async function fetchAllUsers() {
   loading.value = true
   try {
     // Update account statuses before fetching
-    await supabase.rpc('update_account_status')
+    const { error: rpcError } = await supabase.rpc('update_account_status')
+    if (rpcError) {
+      console.error('RPC update_account_status error:', rpcError)
+      // Continue even if RPC fails - don't block user management
+    }
 
     // Fetch admins with email confirmation status from auth.users
     const { data: adminData, error: adminError } = await supabase
@@ -1652,7 +1656,7 @@ async function deleteUser() {
         break
     }
 
-    // Step 1: Delete all related records with FK constraints
+    // Delete all related records with FK constraints
     await supabaseAdmin.from('collections').delete().eq('user_id', userId)
     await supabaseAdmin.from('appointment_booking').delete().eq('user_id', userId)
     await supabaseAdmin.from('notifications').delete().eq('receiver_id', userId)
@@ -1680,15 +1684,15 @@ async function deleteUser() {
       await supabaseAdmin.from('collection_items').delete().in('collection_id', collectionIds)
     }
 
-    // Step 2: Delete from specific user table
+    // Delete from specific user table
     const { error: deleteError } = await supabase.from(tableName).delete().eq('id', userId)
 
     if (deleteError) throw deleteError
 
-    // Step 3: Delete from all_users table
+    // Delete from all_users table
     await supabase.from('all_users').delete().eq('id', userId)
 
-    // Step 4: Delete from Supabase Auth
+    // Delete from Supabase Auth
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
     if (authError) {
