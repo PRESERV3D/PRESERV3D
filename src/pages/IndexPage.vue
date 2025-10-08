@@ -124,7 +124,7 @@
                 />
               </div>
               <q-card-section class="q-pa-sm artifact-card-section">
-                <div class="title-row">
+                <div class="title-row q-mt-sm">
                   <router-link
                     :to="{ name: 'view-artifact', params: { id: model.id } }"
                     class="artifact-title-link"
@@ -2044,4 +2044,13 @@ async function addCollection() {
   border-top-color: rgba(0, 0, 0, 0.85);
 }
 
+.artifact-card-section {
+  min-height: 4.375rem;
+}
+
+.artifact-title {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+}
 </style>
