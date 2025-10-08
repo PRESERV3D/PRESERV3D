@@ -43,7 +43,7 @@ const routes = [
         path: 'user-management',
         name: 'user-management',
         component: () => import('pages/UserManagementPage.vue'),
-        meta: { requiresAuth: true, allowedRoles: ['admin'], requiresSuperAdmin: true },
+        meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
       {
         path: 'documents/:id',

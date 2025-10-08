@@ -44,9 +44,10 @@ export default defineRouter(function (/* { store, ssrContext } */) {
       await userStore.fetchSession()
     }
 
-    // Super admin check
-    if (to.name === 'user-management' || to.meta.requiresSuperAdmin) {
-      if (!userStore.profile?.is_super_admin) {
+    // Super admin check for user management - only restrict the full view
+    if (to.name === 'user-management') {
+      // Allow all admins to access, but the page will control what they see
+      if (!session || session.user.user_metadata?.role !== 'admin') {
         next('/admindash')
         return
       }
