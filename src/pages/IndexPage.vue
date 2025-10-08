@@ -190,50 +190,54 @@
               :key="document.id"
               class="col card-wrapper"
               :class="{
-                'hide-on-tablet': index >= 3,
-                'hide-on-mobile': index >= 2
-              }"
+            'hide-on-tablet': index >= 3,
+            'hide-on-mobile': index >= 2
+          }"
             >
-              <q-card
-                class="my-card collection-card"
-                flat
-                @click="goToDocumentDetailsPage(document.id)"
-              >
-                <div class="book-container">
-                  <div class="book-cover">
-                    <div class="book-spine"></div>
-                    <div class="book-content" :class="{ 'has-image': document.preview_url }">
-                      <!-- Show document preview as background if available -->
-                      <div v-if="document.preview_url" class="book-image-overlay">
-                        <img
-                          :src="document.preview_url"
-                          :alt="document.metadata?.title || document.file_name"
-                          class="book-background-image"
-                        />
-                      </div>
-                      <!-- Show default icon if no preview -->
-                      <div v-else class="book-title-section">
-                        <div class="book-icon">
-                          <q-icon name="description" size="2rem" color="white" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <q-card-section class="q-pa-sm artifact-card-section">
-                  <div class="title-row">
-                    <div class="collection-title-link">
-                      <div
-                        class="text-subtitle2 artifact-title row items-center title-with-tooltip"
-                      >
-                        {{ document.metadata?.title || document.file_name }}
+              <q-card class="docCard" rounded bordered @click="goToDocumentDetailsPage(document.id)">
+                <router-link
+                  :to="{ name: 'view-document', params: { id: document.id } }"
+                  class="document-link"
+                >
+                  <q-img
+                    :src="document.preview_url || '/img/default-document.png'"
+                    :alt="document.metadata?.title || document.file_name"
+                    class="document"
+                  />
+                </router-link>
 
-                        <div class="tooltip-box">{{ document.metadata?.title || document.file_name }}</div>
-                      </div>
-                    </div>
-                  </div>
-                </q-card-section>
+                <div class="q-py-xs doc-align-items">
+                  <!-- View Icon with Count -->
+                  <q-icon name="visibility" color="grey" size="xs" class="action-icon view-icon" />
+                  <span class="count-text">{{ documentsStore.viewCounts[document.id] || 0 }}</span>
+
+                  <!-- Star Icon with Count -->
+                  <q-icon
+                    :name="document.starred ? 'star' : 'star_border'"
+                    :class="{ starred: document.starred }"
+                    size="xs"
+                    class="action-icon star-icon"
+                    @click.stop="toggleFavoriteDocuments(document, 'document')"
+                  />
+                  <span class="count-text">{{ documentsStore.starCounts[document.id] || 0 }}</span>
+
+                  <!-- Bookmark Icon -->
+                  <q-icon
+                    :name="document.bookmarked ? 'bookmark' : 'bookmark_border'"
+                    :class="{ bookmarked: document.bookmarked }"
+                    size="xs"
+                    class="action-icon bookmark-icon"
+                    @click.stop="openBookmarkDialog(document, 'document')"
+                  />
+                </div>
               </q-card>
+
+              <div class="q-mt-md fade-title-container">
+                <div class="q-mt-md sub-font fade-title" style="color: black; font-weight: 800">
+                  {{ document.metadata?.title || document.file_name }}
+                  <div class="tooltip-box">{{ document.metadata?.title || document.file_name }}</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -243,7 +247,7 @@
         </div>
 
         <!-- See All Link -->
-        <div class="row justify-end q-pr-sm" style="margin-top: -1.25rem">
+        <div class="row justify-end q-pr-sm" style="margin-top: 2rem">
           <router-link to="/documents" class="see-all-link">
             See All
             <q-icon name="arrow_forward" size="16px" class="q-ml-xs" />
@@ -251,6 +255,7 @@
         </div>
       </div>
     </div>
+
 
     <!-- Add Collection Dialog -->
     <q-dialog v-model="showDialog" persistent>
@@ -1084,6 +1089,113 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
   }
 }
 
+// Toggle favorites - documents section
+const toggleFavoriteDocuments = async (document, itemType = 'document') => {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (authError || !userId) {
+    console.error('Auth error:', authError)
+    return
+  }
+
+  try {
+    // Find or create Favorites collection
+    let { data: favoritesCollection } = await supabase
+      .from('collections')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    if (!favoritesCollection) {
+      const { data: newCollection, error: insertError } = await supabase
+        .from('collections')
+        .insert([
+          {
+            collection_name: 'Favorites',
+            description: 'Items you marked as favorite will appear here.',
+            user_id: userId,
+            is_default: true,
+            is_locked: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+            cover_url:
+              'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers//favoritescover.png',
+          },
+        ])
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('Insert collection failed:', insertError)
+      } else {
+        favoritesCollection = newCollection
+      }
+    }
+
+    const collectionId = favoritesCollection.collection_id
+    const itemName = document.metadata?.title || document.file_name
+
+    // Check if item already exists
+    const { data: existing } = await supabase
+      .from('collection_items')
+      .select('*')
+      .eq('collection_id', collectionId)
+      .eq('item_id', document.id)
+      .eq('item_type', itemType)
+
+    if (existing.length > 0) {
+      // Remove from favorites
+      await supabase
+        .from('collection_items')
+        .delete()
+        .eq('collection_id', collectionId)
+        .eq('item_id', document.id)
+        .eq('item_type', itemType)
+
+      document.starred = false
+      showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
+    } else {
+      // Add to favorites
+      await supabase.from('collection_items').insert({
+        collection_id: collectionId,
+        item_id: document.id,
+        item_type: itemType,
+      })
+
+      document.starred = true
+      showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
+    }
+
+    // Get star count
+    const { data: metaCheck, error: metaError } = await supabase
+      .from('documents_metadata')
+      .select('id')
+      .eq('id', document.id)
+      .single()
+
+    if (!metaError && metaCheck) {
+      const { data: starData } = await supabase
+        .from('documents_star_count')
+        .select('star_count')
+        .eq('item_id', document.id)
+        .maybeSingle()
+
+      if (starData && starData.star_count !== undefined) {
+        documentsStore.updateStarCount(document.id, starData.star_count)
+      } else {
+        documentsStore.updateStarCount(document.id, 0)
+      }
+    } else {
+      console.error('Document ID not found in documents_metadata:', metaError)
+    }
+  } catch (err) {
+    console.error('Error toggling favorite:', err)
+  }
+}
+
+
 // Toggle favorites - recently viewed items
 const toggleFavoriteRecents = async (item, itemType) => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
@@ -1843,97 +1955,90 @@ async function addCollection() {
   }
 }
 
-/* Added book-related styles for documents */
-.book-container {
+/* Document card styles matching documents page */
+.docCard {
+  width: 12rem;
+  height: 18rem;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(128, 128, 128, 0.8);
+  border-radius: 10px;
+  background-color: white;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.docCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(128, 128, 128, 0.9);
+}
+
+.document-link {
+  text-decoration: none;
+  display: block;
+}
+
+.document {
+  height: 16rem;
+  width: 100%;
+  object-fit: cover;
+  border-bottom: 2px solid #880000;
+}
+
+.doc-align-items {
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
-  height: 300px;
+  gap: 0.2rem;
+  margin-right: 1rem;
+}
+
+.fade-title-container {
+  max-width: 12rem;
+  overflow: hidden;
+}
+
+.fade-title {
+  position: relative;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   cursor: pointer;
 }
 
-.book-cover {
-  width: 200px;
-  height: 280px;
-  position: relative;
-  background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
-  border-radius: 0 15px 15px 0;
-  box-shadow:
-    0 8px 16px rgba(0, 0, 0, 0.3),
-    inset 0 0 20px rgba(0, 0, 0, 0.1),
-    0 0 0 2px rgba(8, 3, 0, 0.3);
-  transform: rotateY(-5deg) rotateX(2deg);
-  transition: all 0.3s ease;
+.fade-title:hover .tooltip-box {
+  visibility: visible;
+  opacity: 1;
 }
 
-.book-spine {
+.tooltip-box {
+  visibility: hidden;
+  opacity: 0;
   position: absolute;
-  left: -6px;
-  top: 0;
-  bottom: 0;
-  width: 12px;
-  background: linear-gradient(to right, #523518 0%, #381c08 100%);
-  border-radius: 0 0 0 12px;
-  box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.3);
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 0.5rem;
+  border-radius: 4px;
+  white-space: normal;
+  max-width: 200px;
+  z-index: 1000;
+  font-size: 0.75rem;
+  transition: opacity 0.3s, visibility 0.3s;
+  pointer-events: none;
 }
 
-.book-content {
-  position: relative;
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  border-radius: 0 15px 15px 0;
-}
-
-.book-content.has-image {
-  background: none !important;
-  padding: 0 !important;
-}
-
-.book-image-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 0 20px 20px 0;
-  overflow: hidden;
-  z-index: 1;
-}
-
-.book-image-overlay::before {
+.tooltip-box::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 20px;
-  height: 100%;
-  background: linear-gradient(
-    to right,
-    rgba(0, 0, 0, 0.4) 0%,
-    rgba(0, 0, 0, 0.2) 50%,
-    transparent 100%
-  );
-  z-index: 2;
-  border-top-left-radius: inherit;
-  border-bottom-left-radius: inherit;
-}
-
-.book-background-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: inherit;
-}
-
-.book-content:not(.has-image) {
-  /* Keep original gradient and styling */
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.85);
 }
 
 </style>
