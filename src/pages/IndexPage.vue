@@ -2053,4 +2053,9 @@ async function addCollection() {
   overflow-wrap: break-word;
   line-height: 1.3;
 }
+
+.layout-container:nth-child(2) .box-3 {
+  min-height: 600px;
+  padding-bottom: 2rem;
+}
 </style>
