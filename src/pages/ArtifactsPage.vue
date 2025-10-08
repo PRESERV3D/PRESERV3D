@@ -1861,9 +1861,7 @@ function updateModelsPerPage() {
   if (width >= 1920) {
     modelsPerPage.value = 12
   } else if (width >= 1475) {
-    modelsPerPage.value = 10
-  } else if (width >= 1240) {
-    modelsPerPage.value = 8
+    modelsPerPage.value = 9
   } else {
     modelsPerPage.value = 6
   }
