@@ -1527,6 +1527,11 @@ async function addCollection() {
   min-height: 2.5rem;
 }
 
+/* When starred */
+.recently-viewed-item.starred {
+  color: #efaf00;
+}
+
 .circular-holder {
   width: 2rem;
   height: 2rem;
