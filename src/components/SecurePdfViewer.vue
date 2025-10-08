@@ -105,11 +105,11 @@
 
 <script setup>
 import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import * as pdfjsLib from 'pdfjs-dist'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
+import * as pdfjsLib from 'pdfjs-dist'
 
-// Configure PDF.js worker - using local worker file for better reliability
+// Configure local PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
 
 const userStore = useUserStore()
@@ -168,8 +168,6 @@ const pageRefs = ref({})
 // Security monitoring
 const screenshotAttempts = ref(0)
 const devToolsOpen = ref(false)
-
-// Track rendering tasks to cancel them if needed
 const renderingTasks = ref({})
 
 // Generate user info text for watermark
@@ -202,8 +200,12 @@ watch(scale, async () => {
   if (pdfDoc.value) {
     // Cancel any ongoing rendering tasks
     Object.values(renderingTasks.value).forEach((task) => {
-      if (task && task.cancel) {
-        task.cancel()
+      try {
+        if (task && typeof task.cancel === 'function') {
+          task.cancel()
+        }
+      } catch (error) {
+        console.debug('Could not cancel rendering task:', error.message)
       }
     })
     renderingTasks.value = {}
@@ -232,8 +234,6 @@ const loadPdf = async () => {
 
     pdfDoc.value = await loadingTask.promise
     numPages.value = pdfDoc.value.numPages
-
-    // Wait for loading to be false first so v-if can render the canvas elements
     loading.value = false
 
     // Wait for DOM to update with all canvas elements
@@ -286,7 +286,14 @@ const renderPage = async (pageNum) => {
   try {
     // Cancel previous rendering task for this page if it exists
     if (renderingTasks.value[pageNum]) {
-      renderingTasks.value[pageNum].cancel()
+      try {
+        if (typeof renderingTasks.value[pageNum].cancel === 'function') {
+          renderingTasks.value[pageNum].cancel()
+        }
+      } catch (error) {
+        // Silently ignore cancellation errors
+        console.debug('Could not cancel previous rendering task:', error.message)
+      }
     }
 
     const page = await pdfDoc.value.getPage(pageNum)

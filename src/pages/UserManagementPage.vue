@@ -4,15 +4,25 @@
     <div class="q-mt-xs q-mb-lg subtitle">Manage all users and administrators</div>
 
     <!-- Action Buttons -->
-    <div class="row q-gutter-md q-mb-lg">
-      <q-btn
-        label="Create New Admin"
-        color="primary"
-        icon="person_add"
-        @click="showCreateAdminDialog = true"
-        no-caps
-        class="btn-create-admin"
-      />
+    <div class="row items-center q-ml-sm q-mb-md">
+      <div class="row q-gutter-md">
+        <q-btn
+          label="Create New Admin"
+          icon="person_add"
+          @click="showCreateAdminDialog = true"
+          no-caps
+          class="btn-1 active"
+        />
+        <q-btn
+          icon="refresh"
+          no-caps
+          class="btn-1 active"
+          @click="fetchAllUsers"
+          :loading="loading"
+        >
+          <q-tooltip>Reload all user data</q-tooltip>
+        </q-btn>
+      </div>
     </div>
 
     <!-- Users Management Tabs -->
@@ -45,47 +55,141 @@
           :pagination="pagination"
           flat
           bordered
-          class="user-table"
+          class="my-sticky-header-table"
         >
-          <template v-slot:body-cell-is_super_admin="props">
-            <q-td :props="props" align="center">
-              <q-badge v-if="props.row.is_super_admin" color="orange" label="Super Admin" />
-              <q-badge v-else color="blue" label="Admin" />
-            </q-td>
-          </template>
-          <template v-slot:body-cell-email_confirmed_at="props">
-            <q-td :props="props" align="center">
-              <q-badge v-if="props.row.email_confirmed_at" color="green" label="Verified" />
-              <q-badge v-else color="red" label="Pending" />
-            </q-td>
-          </template>
-          <template v-slot:body-cell-actions="props">
-            <q-td :props="props" align="center">
-              <q-btn
-                v-if="!props.row.email_confirmed_at"
-                flat
-                dense
-                round
-                icon="email"
-                color="primary"
-                @click="resendConfirmationEmail(props.row)"
-                :loading="resendingEmail === props.row.id"
-                class="q-mr-sm"
+          <template v-slot:body="props">
+            <q-tr :props="props">
+              <q-td
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+                :style="col.style"
+                :align="col.align"
               >
-                <q-tooltip>Resend Confirmation Email</q-tooltip>
-              </q-btn>
-              <q-btn
-                flat
-                dense
-                round
-                icon="delete"
-                color="negative"
-                @click="confirmDeleteUser(props.row, 'admin')"
-                :disable="props.row.is_super_admin && props.row.id === userStore.profile?.id"
-              >
-                <q-tooltip>Delete Admin</q-tooltip>
-              </q-btn>
-            </q-td>
+                <template v-if="col.name === 'name'">
+                  <span>{{ props.row.first_name }} {{ props.row.last_name }}</span>
+                </template>
+
+                <template v-else-if="col.name === 'email'">
+                  <div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis">
+                    {{ props.row.email }}
+                  </div>
+                </template>
+
+                <template v-else-if="col.name === 'is_super_admin'">
+                  <q-badge v-if="props.row.is_super_admin" color="orange" label="Super Admin" />
+                  <q-badge v-else color="blue" label="Admin" />
+                </template>
+
+                <template v-else-if="col.name === 'account_status'">
+                  <q-badge
+                    :color="
+                      props.row.account_status === 'Active'
+                        ? 'green'
+                        : props.row.account_status === 'Inactive'
+                          ? 'orange'
+                          : 'grey'
+                    "
+                    :label="props.row.account_status || 'Active'"
+                  />
+                </template>
+
+                <template v-else-if="col.name === 'email_confirmed_at'">
+                  <q-badge v-if="props.row.email_confirmed_at" color="green" label="Verified" />
+                  <q-badge v-else color="red" label="Pending" />
+                </template>
+
+                <template v-else-if="col.name === 'actions'">
+                  <q-btn
+                    v-if="!props.row.email_confirmed_at"
+                    flat
+                    dense
+                    round
+                    icon="email"
+                    color="primary"
+                    size="sm"
+                    @click="resendConfirmationEmail(props.row)"
+                    :loading="resendingEmail === props.row.id"
+                    class="q-mr-xs"
+                  >
+                    <q-tooltip>Resend Email</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="delete"
+                    color="negative"
+                    size="sm"
+                    @click="confirmDeleteUser(props.row, 'admin')"
+                    :disable="props.row.is_super_admin && props.row.id === userStore.profile?.id"
+                  >
+                    <q-tooltip>Delete</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    :icon="props.expand ? 'expand_less' : 'expand_more'"
+                    @click="props.expand = !props.expand"
+                    class="q-mr-xs"
+                  >
+                    <q-tooltip>{{ props.expand ? 'Collapse' : 'Expand' }}</q-tooltip>
+                  </q-btn>
+                </template>
+
+                <template v-else>
+                  {{ col.value }}
+                </template>
+              </q-td>
+            </q-tr>
+
+            <!-- Expandable Row -->
+            <q-tr v-show="props.expand" :props="props">
+              <q-td colspan="100%">
+                <div class="q-pa-md" style="background-color: #f5f5f5">
+                  <div class="row q-col-gutter-md">
+                    <div class="col-6">
+                      <div class="text-weight-bold">Full Name:</div>
+                      <div>{{ props.row.first_name }} {{ props.row.last_name }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Email:</div>
+                      <div>{{ props.row.email }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Contact:</div>
+                      <div>{{ props.row.contact }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Last Login:</div>
+                      <div>
+                        {{
+                          props.row.last_login
+                            ? new Date(props.row.last_login).toLocaleString()
+                            : 'Never'
+                        }}
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Created:</div>
+                      <div>{{ new Date(props.row.created_at).toLocaleString() }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Email Verified:</div>
+                      <div>
+                        {{
+                          props.row.email_confirmed_at
+                            ? new Date(props.row.email_confirmed_at).toLocaleString()
+                            : 'Not verified'
+                        }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </q-td>
+            </q-tr>
           </template>
         </q-table>
       </q-tab-panel>
@@ -101,21 +205,111 @@
           :pagination="pagination"
           flat
           bordered
-          class="user-table"
+          class="my-sticky-header-table"
         >
-          <template v-slot:body-cell-actions="props">
-            <q-td :props="props" align="center">
-              <q-btn
-                flat
-                dense
-                round
-                icon="delete"
-                color="negative"
-                @click="confirmDeleteUser(props.row, 'student')"
+          <template v-slot:body="props">
+            <q-tr :props="props">
+              <q-td
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+                :style="col.style"
+                :align="col.align"
               >
-                <q-tooltip>Delete User</q-tooltip>
-              </q-btn>
-            </q-td>
+                <template v-if="col.name === 'name'">
+                  <span>{{ props.row.first_name }} {{ props.row.last_name }}</span>
+                </template>
+
+                <template v-else-if="col.name === 'email'">
+                  <div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis">
+                    {{ props.row.email }}
+                  </div>
+                </template>
+
+                <template v-else-if="col.name === 'account_status'">
+                  <q-badge
+                    :color="
+                      props.row.account_status === 'Active'
+                        ? 'green'
+                        : props.row.account_status === 'Inactive'
+                          ? 'orange'
+                          : 'grey'
+                    "
+                    :label="props.row.account_status || 'Active'"
+                  />
+                </template>
+
+                <template v-else-if="col.name === 'actions'">
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="delete"
+                    color="negative"
+                    size="sm"
+                    @click="confirmDeleteUser(props.row, 'student')"
+                  >
+                    <q-tooltip>Delete</q-tooltip>
+                  </q-btn>
+
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    :icon="props.expand ? 'expand_less' : 'expand_more'"
+                    @click="props.expand = !props.expand"
+                    class="q-mr-xs"
+                  >
+                    <q-tooltip>{{ props.expand ? 'Collapse' : 'Expand' }}</q-tooltip>
+                  </q-btn>
+                </template>
+
+                <template v-else>
+                  {{ col.value }}
+                </template>
+              </q-td>
+            </q-tr>
+
+            <!-- Expandable Row -->
+            <q-tr v-show="props.expand" :props="props">
+              <q-td colspan="100%">
+                <div class="q-pa-md" style="background-color: #f5f5f5">
+                  <div class="row q-col-gutter-md">
+                    <div class="col-6">
+                      <div class="text-weight-bold">Full Name:</div>
+                      <div>{{ props.row.first_name }} {{ props.row.last_name }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Email:</div>
+                      <div>{{ props.row.email }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Contact:</div>
+                      <div>{{ props.row.contact }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Last Login:</div>
+                      <div>
+                        {{
+                          props.row.last_login
+                            ? new Date(props.row.last_login).toLocaleString()
+                            : 'Never'
+                        }}
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Registered:</div>
+                      <div>{{ new Date(props.row.created_at).toLocaleString() }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Student Number:</div>
+                      <div>{{ props.row.student_number || 'N/A' }}</div>
+                    </div>
+                  </div>
+                </div>
+              </q-td>
+            </q-tr>
           </template>
         </q-table>
       </q-tab-panel>
@@ -131,21 +325,111 @@
           :pagination="pagination"
           flat
           bordered
-          class="user-table"
+          class="my-sticky-header-table"
         >
-          <template v-slot:body-cell-actions="props">
-            <q-td :props="props" align="center">
-              <q-btn
-                flat
-                dense
-                round
-                icon="delete"
-                color="negative"
-                @click="confirmDeleteUser(props.row, 'faculty')"
+          <template v-slot:body="props">
+            <q-tr :props="props">
+              <q-td
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+                :style="col.style"
+                :align="col.align"
               >
-                <q-tooltip>Delete User</q-tooltip>
-              </q-btn>
-            </q-td>
+                <template v-if="col.name === 'name'">
+                  <span>{{ props.row.first_name }} {{ props.row.last_name }}</span>
+                </template>
+
+                <template v-else-if="col.name === 'email'">
+                  <div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis">
+                    {{ props.row.email }}
+                  </div>
+                </template>
+
+                <template v-else-if="col.name === 'account_status'">
+                  <q-badge
+                    :color="
+                      props.row.account_status === 'Active'
+                        ? 'green'
+                        : props.row.account_status === 'Inactive'
+                          ? 'orange'
+                          : 'grey'
+                    "
+                    :label="props.row.account_status || 'Active'"
+                  />
+                </template>
+
+                <template v-else-if="col.name === 'actions'">
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="delete"
+                    color="negative"
+                    size="sm"
+                    @click="confirmDeleteUser(props.row, 'faculty')"
+                  >
+                    <q-tooltip>Delete</q-tooltip>
+                  </q-btn>
+
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    :icon="props.expand ? 'expand_less' : 'expand_more'"
+                    @click="props.expand = !props.expand"
+                    class="q-mr-xs"
+                  >
+                    <q-tooltip>{{ props.expand ? 'Collapse' : 'Expand' }}</q-tooltip>
+                  </q-btn>
+                </template>
+
+                <template v-else>
+                  {{ col.value }}
+                </template>
+              </q-td>
+            </q-tr>
+
+            <!-- Expandable Row -->
+            <q-tr v-show="props.expand" :props="props">
+              <q-td colspan="100%">
+                <div class="q-pa-md" style="background-color: #f5f5f5">
+                  <div class="row q-col-gutter-md">
+                    <div class="col-6">
+                      <div class="text-weight-bold">Full Name:</div>
+                      <div>{{ props.row.first_name }} {{ props.row.last_name }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Email:</div>
+                      <div>{{ props.row.email }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Contact:</div>
+                      <div>{{ props.row.contact }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Last Login:</div>
+                      <div>
+                        {{
+                          props.row.last_login
+                            ? new Date(props.row.last_login).toLocaleString()
+                            : 'Never'
+                        }}
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Registered:</div>
+                      <div>{{ new Date(props.row.created_at).toLocaleString() }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Employee Number:</div>
+                      <div>{{ props.row.employee_number || 'N/A' }}</div>
+                    </div>
+                  </div>
+                </div>
+              </q-td>
+            </q-tr>
           </template>
         </q-table>
       </q-tab-panel>
@@ -161,21 +445,151 @@
           :pagination="pagination"
           flat
           bordered
-          class="user-table"
+          class="my-sticky-header-table"
         >
-          <template v-slot:body-cell-actions="props">
-            <q-td :props="props" align="center">
-              <q-btn
-                flat
-                dense
-                round
-                icon="delete"
-                color="negative"
-                @click="confirmDeleteUser(props.row, 'visitor')"
+          <template v-slot:body="props">
+            <q-tr :props="props">
+              <q-td
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+                :style="col.style"
+                :align="col.align"
               >
-                <q-tooltip>Delete User</q-tooltip>
-              </q-btn>
-            </q-td>
+                <template v-if="col.name === 'name'">
+                  <span>{{ props.row.first_name }} {{ props.row.last_name }}</span>
+                </template>
+
+                <template v-else-if="col.name === 'email'">
+                  <div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis">
+                    {{ props.row.email }}
+                  </div>
+                </template>
+
+                <template v-else-if="col.name === 'account_status'">
+                  <q-badge
+                    :color="
+                      props.row.account_status === 'Active'
+                        ? 'green'
+                        : props.row.account_status === 'Expired'
+                          ? 'red'
+                          : props.row.account_status === 'Inactive'
+                            ? 'orange'
+                            : 'grey'
+                    "
+                    :label="props.row.account_status || 'Active'"
+                  />
+                </template>
+
+                <template v-else-if="col.name === 'end_date'">
+                  {{
+                    props.row.end_date ? new Date(props.row.end_date).toLocaleDateString() : 'N/A'
+                  }}
+                </template>
+
+                <template v-else-if="col.name === 'actions'">
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="event"
+                    color="primary"
+                    size="sm"
+                    @click="openExtendDateDialog(props.row)"
+                    class="q-mr-xs"
+                  >
+                    <q-tooltip>Extend Access</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    icon="delete"
+                    color="negative"
+                    size="sm"
+                    @click="confirmDeleteUser(props.row, 'visitor')"
+                  >
+                    <q-tooltip>Delete</q-tooltip>
+                  </q-btn>
+
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    :icon="props.expand ? 'expand_less' : 'expand_more'"
+                    @click="props.expand = !props.expand"
+                    class="q-mr-xs"
+                  >
+                    <q-tooltip>{{ props.expand ? 'Collapse' : 'Expand' }}</q-tooltip>
+                  </q-btn>
+                </template>
+
+                <template v-else>
+                  {{ col.value }}
+                </template>
+              </q-td>
+            </q-tr>
+
+            <!-- Expandable Row -->
+            <q-tr v-show="props.expand" :props="props">
+              <q-td colspan="100%">
+                <div class="q-pa-md" style="background-color: #f5f5f5">
+                  <div class="row q-col-gutter-md">
+                    <div class="col-6">
+                      <div class="text-weight-bold">Full Name:</div>
+                      <div>{{ props.row.first_name }} {{ props.row.last_name }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Email:</div>
+                      <div>{{ props.row.email }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Organization:</div>
+                      <div>{{ props.row.organization || 'N/A' }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Purpose:</div>
+                      <div>{{ props.row.purpose || 'N/A' }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Access Period:</div>
+                      <div>
+                        {{
+                          props.row.start_date
+                            ? new Date(props.row.start_date).toLocaleDateString()
+                            : 'N/A'
+                        }}
+                        to
+                        {{
+                          props.row.end_date
+                            ? new Date(props.row.end_date).toLocaleDateString()
+                            : 'N/A'
+                        }}
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Last Login:</div>
+                      <div>
+                        {{
+                          props.row.last_login
+                            ? new Date(props.row.last_login).toLocaleString()
+                            : 'Never'
+                        }}
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Approved By:</div>
+                      <div>{{ props.row.approved_by }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Approved At:</div>
+                      <div>{{ new Date(props.row.approved_at).toLocaleString() }}</div>
+                    </div>
+                  </div>
+                </div>
+              </q-td>
+            </q-tr>
           </template>
         </q-table>
       </q-tab-panel>
@@ -290,6 +704,72 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- Extend Date Dialog -->
+    <q-dialog v-model="showExtendDateDialog">
+      <q-card class="create-admin-card">
+        <q-card-section class="row items-center">
+          <div class="text-h6">Extend Visitor Access Period</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section v-if="selectedVisitor">
+          <div class="q-mb-md">
+            <strong>Visitor:</strong> {{ selectedVisitor.first_name }}
+            {{ selectedVisitor.last_name }}
+          </div>
+          <div class="q-mb-md"><strong>Email:</strong> {{ selectedVisitor.email }}</div>
+          <div class="q-mb-md">
+            <strong>Current Period:</strong>
+            {{
+              selectedVisitor.start_date
+                ? new Date(selectedVisitor.start_date).toLocaleDateString()
+                : 'N/A'
+            }}
+            to
+            {{
+              selectedVisitor.end_date
+                ? new Date(selectedVisitor.end_date).toLocaleDateString()
+                : 'N/A'
+            }}
+          </div>
+
+          <q-form @submit.prevent="updateVisitorDates">
+            <q-input
+              filled
+              v-model="visitorDates.start_date"
+              label="Start Date"
+              type="date"
+              :rules="[(val) => !!val || 'Start date is required']"
+              class="q-mb-md"
+            />
+            <q-input
+              filled
+              v-model="visitorDates.end_date"
+              label="End Date"
+              type="date"
+              :rules="[
+                (val) => !!val || 'End date is required',
+                (val) => val >= visitorDates.start_date || 'End date must be after start date',
+              ]"
+              class="q-mb-md"
+            />
+
+            <q-card-actions align="right">
+              <q-btn flat label="Cancel" v-close-popup no-caps />
+              <q-btn
+                type="submit"
+                label="Update Dates"
+                color="primary"
+                :loading="updatingDates"
+                no-caps
+              />
+            </q-card-actions>
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -307,6 +787,7 @@ const loading = ref(false)
 const creatingAdmin = ref(false)
 const deleting = ref(false)
 const resendingEmail = ref(null)
+const updatingDates = ref(false)
 
 const admins = ref([])
 const students = ref([])
@@ -316,11 +797,18 @@ const visitors = ref([])
 const showCreateAdminDialog = ref(false)
 const showDeleteDialog = ref(false)
 const showSuccessDialog = ref(false)
+const showExtendDateDialog = ref(false)
 const successTitle = ref('')
 const successMessage = ref('')
 
 const deleteTarget = ref(null)
 const deleteType = ref('')
+const selectedVisitor = ref(null)
+
+const visitorDates = ref({
+  start_date: '',
+  end_date: '',
+})
 
 const newAdmin = ref({
   first_name: '',
@@ -336,54 +824,76 @@ const pagination = {
 }
 
 const adminColumns = [
-  { name: 'first_name', label: 'First Name', align: 'center', field: 'first_name', sortable: true },
-  { name: 'last_name', label: 'Last Name', align: 'center', field: 'last_name', sortable: true },
-  { name: 'email', label: 'Email', align: 'center', field: 'email', sortable: true },
-  { name: 'contact', label: 'Contact', align: 'center', field: 'contact' },
+  { name: 'name', label: 'Name', align: 'left', field: 'first_name', sortable: true },
+  {
+    name: 'email',
+    label: 'Email',
+    align: 'left',
+    field: 'email',
+    sortable: true,
+    style: 'max-width: 150px; overflow: hidden; text-overflow: ellipsis;',
+  },
   { name: 'is_super_admin', label: 'Role', align: 'center', field: 'is_super_admin' },
   {
-    name: 'email_confirmed_at',
-    label: 'Email Status',
+    name: 'account_status',
+    label: 'Status',
     align: 'center',
-    field: 'email_confirmed_at',
+    field: 'account_status',
+    sortable: true,
   },
   {
-    name: 'created_at',
-    label: 'Created',
+    name: 'email_confirmed_at',
+    label: 'Email',
     align: 'center',
-    field: (row) => new Date(row.created_at).toLocaleDateString(),
-    sortable: true,
+    field: 'email_confirmed_at',
   },
   { name: 'actions', label: 'Actions', align: 'center', field: 'actions' },
 ]
 
 const userColumns = [
-  { name: 'first_name', label: 'First Name', align: 'center', field: 'first_name', sortable: true },
-  { name: 'last_name', label: 'Last Name', align: 'center', field: 'last_name', sortable: true },
-  { name: 'email', label: 'Email', align: 'center', field: 'email', sortable: true },
-  { name: 'contact', label: 'Contact', align: 'center', field: 'contact' },
+  { name: 'name', label: 'Name', align: 'left', field: 'first_name', sortable: true },
   {
-    name: 'created_at',
-    label: 'Registered',
+    name: 'email',
+    label: 'Email',
+    align: 'left',
+    field: 'email',
+    sortable: true,
+    style: 'max-width: 150px; overflow: hidden; text-overflow: ellipsis;',
+  },
+  {
+    name: 'account_status',
+    label: 'Status',
     align: 'center',
-    field: (row) => new Date(row.created_at).toLocaleDateString(),
+    field: 'account_status',
     sortable: true,
   },
   { name: 'actions', label: 'Actions', align: 'center', field: 'actions' },
 ]
 
 const visitorColumns = [
-  { name: 'first_name', label: 'First Name', align: 'center', field: 'first_name', sortable: true },
-  { name: 'last_name', label: 'Last Name', align: 'center', field: 'last_name', sortable: true },
-  { name: 'email', label: 'Email', align: 'center', field: 'email', sortable: true },
+  { name: 'name', label: 'Name', align: 'left', field: 'first_name', sortable: true },
   {
-    name: 'approved_at',
-    label: 'Approved',
+    name: 'email',
+    label: 'Email',
+    align: 'left',
+    field: 'email',
+    sortable: true,
+    style: 'max-width: 150px; overflow: hidden; text-overflow: ellipsis;',
+  },
+  {
+    name: 'account_status',
+    label: 'Status',
     align: 'center',
-    field: (row) => new Date(row.approved_at).toLocaleDateString(),
+    field: 'account_status',
     sortable: true,
   },
-  { name: 'approved_by', label: 'Approved By', align: 'center', field: 'approved_by' },
+  {
+    name: 'end_date',
+    label: 'End Date',
+    align: 'center',
+    field: (row) => (row.end_date ? new Date(row.end_date).toLocaleDateString() : 'N/A'),
+    sortable: true,
+  },
   { name: 'actions', label: 'Actions', align: 'center', field: 'actions' },
 ]
 
@@ -394,6 +904,9 @@ onMounted(async () => {
 async function fetchAllUsers() {
   loading.value = true
   try {
+    // Update account statuses before fetching
+    await supabase.rpc('update_account_status')
+
     // Fetch admins with email confirmation status from auth.users
     const { data: adminData, error: adminError } = await supabase
       .from('registered_admins')
@@ -608,115 +1121,55 @@ async function deleteUser() {
         break
     }
 
-    console.log('Starting deletion for user:', userId, 'from table:', tableName)
+    // Step 1: Delete all related records with FK constraints
+    await supabaseAdmin.from('collections').delete().eq('user_id', userId)
+    await supabaseAdmin.from('appointment_booking').delete().eq('user_id', userId)
+    await supabaseAdmin.from('notifications').delete().eq('receiver_id', userId)
+    await supabaseAdmin.from('logins').delete().eq('user_id', userId)
 
-    // Step 1: Handle all tables with FK constraints to auth.users
-    // Must be done BEFORE attempting to delete from auth
+    // Anonymize logs for audit trail
+    await supabaseAdmin
+      .from('user_activity_log')
+      .update({ user_type: 'deleted_user' })
+      .eq('user_id', userId)
 
-    // Delete collections (has FK to auth.users)
-    await supabase.from('collections').delete().eq('user_id', userId)
+    await supabaseAdmin
+      .from('security_logs')
+      .update({ user_email: '[deleted]', user_name: '[deleted]' })
+      .eq('user_id', userId)
 
-    // Delete appointments (has FK to auth.users)
-    await supabase.from('appointment_booking').delete().eq('user_id', userId)
-
-    // Delete notifications (has FK to auth.users)
-    await supabase.from('notifications').delete().eq('receiver_id', userId)
-
-    // Keep logs but set user_id to NULL for tracking (if FK allows NULL)
-    // Note: These tables have FK constraints but we anonymize instead of delete
-    try {
-      await supabase
-        .from('user_activity_log')
-        .update({ user_type: 'deleted_user' })
-        .eq('user_id', userId)
-    } catch (e) {
-      console.warn('Could not anonymize activity log:', e)
-    }
-
-    try {
-      await supabase
-        .from('security_logs')
-        .update({
-          user_email: '[deleted]',
-          user_name: '[deleted]',
-        })
-        .eq('user_id', userId)
-    } catch (e) {
-      console.warn('Could not anonymize security logs:', e)
-    }
-
-    // Delete logins (no FK shown in schema but may exist)
-    await supabase.from('logins').delete().eq('user_id', userId)
-
-    // Delete collection items (if user owns collections)
-    const { data: userCollections } = await supabase
+    // Delete collection items
+    const { data: userCollections } = await supabaseAdmin
       .from('collections')
       .select('collection_id')
       .eq('user_id', userId)
 
-    if (userCollections && userCollections.length > 0) {
+    if (userCollections?.length > 0) {
       const collectionIds = userCollections.map((c) => c.collection_id)
-      await supabase.from('collection_items').delete().in('collection_id', collectionIds)
+      await supabaseAdmin.from('collection_items').delete().in('collection_id', collectionIds)
     }
-
-    console.log('Related records processed')
 
     // Step 2: Delete from specific user table
-    console.log(`Deleting from ${tableName} where id = ${userId}`)
-    const { data: deleteData, error: deleteError } = await supabase
-      .from(tableName)
-      .delete()
-      .eq('id', userId)
-      .select()
+    const { error: deleteError } = await supabase.from(tableName).delete().eq('id', userId)
 
-    if (deleteError) {
-      console.error('Error deleting from user table:', deleteError)
-      throw deleteError
-    }
-
-    console.log('Deleted from user table:', deleteData)
+    if (deleteError) throw deleteError
 
     // Step 3: Delete from all_users table
-    console.log(`Deleting from all_users where id = ${userId}`)
-    const { data: allUserDeleteData, error: allUserDeleteError } = await supabase
-      .from('all_users')
-      .delete()
-      .eq('id', userId)
-      .select()
-
-    if (allUserDeleteError) {
-      console.warn('Error deleting from all_users:', allUserDeleteError)
-    } else {
-      console.log('Deleted from all_users:', allUserDeleteData)
-    }
-
-    console.log('Database tables cleaned, attempting auth deletion...')
+    await supabase.from('all_users').delete().eq('id', userId)
 
     // Step 4: Delete from Supabase Auth
-    // This may fail due to FK constraints in auth schema that we can't access
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
     if (authError) {
-      console.error('Auth deletion failed (this is expected if FK constraints exist):', authError)
-
-      // User is deleted from all application tables - they can't login or use the system
-      // The auth record remains but is orphaned and harmless
-      console.log('✅ User removed from application (auth record orphaned but harmless)')
-
+      $q.notify({
+        type: 'warning',
+        message: 'User deleted from system',
+        caption: 'Auth cleanup incomplete but user cannot access the system.',
+      })
+    } else {
       $q.notify({
         type: 'positive',
         message: 'User deleted successfully',
-        caption: 'User removed from system and cannot access the application.',
-        timeout: 4000,
-      })
-    } else {
-      console.log('✅ User completely deleted from all systems including auth')
-
-      $q.notify({
-        type: 'positive',
-        message: 'User completely deleted',
-        caption: 'User removed from all systems.',
-        timeout: 3000,
       })
     }
 
@@ -783,36 +1236,134 @@ async function resendConfirmationEmail(admin) {
     resendingEmail.value = null
   }
 }
+
+function openExtendDateDialog(visitor) {
+  selectedVisitor.value = visitor
+  // Pre-fill with current dates or set defaults
+  visitorDates.value = {
+    start_date: visitor.start_date || new Date().toISOString().split('T')[0],
+    end_date: visitor.end_date || new Date().toISOString().split('T')[0],
+  }
+  showExtendDateDialog.value = true
+}
+
+async function updateVisitorDates() {
+  if (!selectedVisitor.value) return
+
+  updatingDates.value = true
+
+  try {
+    // Calculate new status based on dates
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const endDate = new Date(visitorDates.value.end_date)
+    endDate.setHours(0, 0, 0, 0)
+
+    let newStatus = 'Active'
+    if (endDate < today) {
+      newStatus = 'Expired'
+    }
+
+    // Update the approved_visitors table
+    const { error: updateError } = await supabase
+      .from('approved_visitors')
+      .update({
+        start_date: visitorDates.value.start_date,
+        end_date: visitorDates.value.end_date,
+        account_status: newStatus,
+      })
+      .eq('id', selectedVisitor.value.id)
+
+    if (updateError) throw updateError
+
+    // Also update the registration_visitors table if registration_id exists
+    if (selectedVisitor.value.registration_id) {
+      await supabase
+        .from('registration_visitors')
+        .update({
+          start_date: visitorDates.value.start_date,
+          end_date: visitorDates.value.end_date,
+        })
+        .eq('id', selectedVisitor.value.registration_id)
+    }
+
+    // Try to update account status via RPC (if function exists)
+    try {
+      await supabase.rpc('update_account_status')
+    } catch {
+      console.log('RPC function not available, status updated manually')
+    }
+
+    $q.notify({
+      type: 'positive',
+      message: 'Visitor access period updated successfully',
+      caption: `New period: ${new Date(visitorDates.value.start_date).toLocaleDateString()} to ${new Date(visitorDates.value.end_date).toLocaleDateString()}`,
+    })
+
+    showExtendDateDialog.value = false
+    selectedVisitor.value = null
+
+    // Refresh the visitors list
+    await fetchAllUsers()
+  } catch (error) {
+    console.error('Error updating visitor dates:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to update visitor dates',
+      caption: error.message,
+    })
+  } finally {
+    updatingDates.value = false
+  }
+}
 </script>
 
 <style scoped>
-.btn-create-admin {
-  border-radius: 7px;
-  background-color: rgba(204, 172, 0, 0.7);
-  color: #121212;
+/* Color bottom toolbars inside table */
+::v-deep(.my-sticky-header-table .q-table__bottom) {
   font-size: 14px;
+  background-color: #560505 !important;
+  color: white;
+}
+
+/* Sticky header cells */
+::v-deep(.my-sticky-header-table thead tr th) {
+  padding: 1rem;
+  font-size: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #560505 !important;
+  color: white;
+}
+
+/* When loading (adjust top offset for loading animation if needed) */
+::v-deep(.my-sticky-header-table.q-table--loading thead tr:last-child th) {
+  top: 48px;
+}
+
+/* Prevent content hiding under sticky header on scroll/focus */
+::v-deep(.my-sticky-header-table tbody) {
+  scroll-margin-top: 48px;
+}
+
+::v-deep(.my-sticky-header-table .q-table__bottom .q-btn__content),
+::v-deep(.my-sticky-header-table .q-table__bottom .q-select__dropdown-icon),
+::v-deep(.my-sticky-header-table .q-table__bottom .q-field__native) {
+  color: white !important;
+}
+
+::v-deep(.my-sticky-header-table .q-table__title) {
   font-family: 'Poppins', sans-serif;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 18px;
+  color: #560505;
 }
 
 .create-admin-card {
   min-width: 500px;
   border-radius: 10px;
   font-family: 'Poppins', sans-serif;
-}
-
-.user-table {
-  font-family: 'Poppins', sans-serif;
-  border-radius: 10px;
-  background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
-  box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
-}
-
-::v-deep(.user-table .q-table__title) {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 600;
-  font-size: 18px;
-  color: #560505;
 }
 
 .conf-box {
