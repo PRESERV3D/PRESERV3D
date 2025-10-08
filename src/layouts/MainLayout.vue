@@ -41,7 +41,7 @@
           </div>
 
           <!-- Navigation Section -->
-          <div class="navigation-section">
+          <div class="navigation-section" :class="{ 'hovered-lift': isHovered }">
             <q-list padding :class="{ 'text-center': miniState && !isHovered }">
               <q-item
                 v-for="item in navItems"
@@ -630,14 +630,14 @@ const handleResize = () => {
 // Add a timeout to prevent rapid state changes
 let hoverTimeout = null
 
-const onDrawerMouseEnter = () => {
-  if (hoverTimeout) clearTimeout(hoverTimeout)
-  isHovered.value = true
-  // Only expand if currently in mini state
-  if (miniState.value) {
-    miniState.value = false
-  }
-}
+// const onDrawerMouseEnter = () => {
+//   if (hoverTimeout) clearTimeout(hoverTimeout)
+//   isHovered.value = true
+//   // Only expand if currently in mini state
+//   if (miniState.value) {
+//     miniState.value = false
+//   }
+// }
 
 const onDrawerMouseLeave = () => {
   if (hoverTimeout) clearTimeout(hoverTimeout)
@@ -1061,6 +1061,17 @@ onBeforeUnmount(() => {
   }
 })
 
+const hasBeenHovered = ref(false)
+const onDrawerMouseEnter = () => {
+  if (hoverTimeout) clearTimeout(hoverTimeout)
+  isHovered.value = true
+  hasBeenHovered.value = true
+  // Only expand if currently in mini state
+  if (miniState.value) {
+    miniState.value = false
+  }
+}
+
 watch(
   () => userProfile.value?.role,
   (role) => {
@@ -1123,6 +1134,13 @@ watch(
 /* When expanded (on hover), sidebar overlays content */
 .sidebar-drawer:hover {
   z-index: 2001 !important; /* Higher z-index when expanded */
+}
+
+/* ========================
+   SIDEBAR HOVER LIFT EFFECT
+======================== */
+.navigation-section.hovered-lift {
+  transform: translateY(-40px) !important;
 }
 
 /* ========================
