@@ -96,43 +96,51 @@ export const useModelStore = defineStore('modelStore', {
     },
     sortSettings(sort) {
       switch (sort) {
-        case 'Newest':
-          return { field: 'uploaded_at', order: 'desc' }
-        case 'Oldest':
-          return { field: 'uploaded_at', order: 'asc' }
         case 'Title A-Z':
           return { field: 'title', order: 'asc' }
         case 'Title Z-A':
           return { field: 'title', order: 'desc' }
+        case 'Date Uploaded (Newest First)':
+          return { field: 'uploaded_at', order: 'desc' }
+        case 'Date Uploaded (Oldest First)':
+          return { field: 'uploaded_at', order: 'asc' }
+        case 'Date Modified (Newest First)':
+          return { field: 'updated_at', order: 'desc' }
+        case 'Date Modified (Oldest First)':
+          return { field: 'updated_at', order: 'asc' }
+        case 'Origin Date (Newest First)':
+          return { field: 'origin', order: 'desc' }
+        case 'Origin Date (Oldest First)':
+          return { field: 'origin', order: 'asc' }
         default:
           return { field: null, order: 'asc' }
       }
     },
-    sortByField(sort) {
-      console.log('Sorting artifacts by:', sort)
-      const { field, order } = this.sortSettings(sort)
+    sortModels(sortOption) {
+      const { field, order } = this.sortSettings(sortOption.label || sortOption)
       if (!field) return
 
-      this.sortBy(field, order)
-    },
-    sortBy(field, order) {
-      const getValue = (mod) => {
-        if (field === 'title') return (mod.metadata?.title || '').trim().toLowerCase()
-        if (field === 'uploaded_at') return new Date(mod.uploaded_at || 0)
-        return mod[field]
-      }
+      console.log('Sorting by:', field, order)
 
-      this.filteredModels.sort((a, b) => {
-        const valA = getValue(a)
-        const valB = getValue(b)
+      this.filteredModels = [...this.filteredModels].sort((a, b) => {
+        let valA, valB
 
-        if (field === 'title')
-          return (
-            valA.localeCompare(valB, undefined, { sensitivity: 'base' }) *
-            (order === 'asc' ? 1 : -1)
-          )
-        if (field === 'uploaded_at') return (valA - valB) * (order === 'asc' ? 1 : -1)
-        return 0
+        if (field === 'title') {
+          valA = (a.metadata?.title || '').trim().toLowerCase()
+          valB = (b.metadata?.title || '').trim().toLowerCase()
+          return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA)
+        }
+
+        if (field === 'origin') {
+          valA = new Date(a.metadata?.date || 0)
+          valB = new Date(b.metadata?.date || 0)
+          return order === 'asc' ? valA - valB : valB - valA
+        }
+
+        // Default for uploaded_at, updated_at
+        valA = new Date(a[field] || 0)
+        valB = new Date(b[field] || 0)
+        return order === 'asc' ? valA - valB : valB - valA
       })
     },
     resetFilters() {

@@ -254,7 +254,7 @@
               <q-btn-dropdown
                 outline
                 color="black"
-                :label="`Sort by: ${sortOption}`"
+                :label="`Sort by: ${sortLabel}`"
                 icon="sort"
                 size="sm"
                 class="q-ml-md artifact-btn-style"
@@ -262,15 +262,20 @@
               >
                 <q-list>
                   <q-item
-                    v-for="option in sortOptions"
-                    :key="option"
+                    v-for="option in allSortOptions"
+                    :key="option.label"
                     clickable
                     v-close-popup
-                    class="collection-sort-menu"
                     @click="applySort(option)"
                   >
-                    <q-item-section>{{ option }}</q-item-section>
-                    <q-item-section side v-if="sortOption === option">
+                    <q-item-section>{{ option.label }}</q-item-section>
+                    <q-item-section
+                      side
+                      v-if="
+                        searchStore.sortBy === option.value.sortBy &&
+                        searchStore.sortOrder === option.value.sortOrder
+                      "
+                    >
                       <q-icon name="check" color="primary" />
                     </q-item-section>
                   </q-item>
@@ -457,6 +462,8 @@ import { uploadFileToR2 } from 'boot/r2'
 import { useRouter } from 'vue-router'
 import { processOCRPages } from '/services/ocr_service'
 import { PDFDocument } from 'pdf-lib'
+import { allSortOptions } from 'src/stores/searchStore'
+
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import UploadDialog from 'src/components/UploadDialog.vue'
 import axios from 'axios'
@@ -466,10 +473,12 @@ const searchStore = useSearchStore()
 const documentsStore = useDocumentsStore()
 const userStore = useUserStore()
 
+const sortLabel = computed(() => searchStore.getSortLabel(allSortOptions))
+
 const scannedFile = ref(null)
 const topDocuments = ref([])
-const sortOption = ref('Newest')
-const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
+// const sortOption = ref('Newest')
+// const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
 const categoryOptions = ref([])
 const authorOptions = ref([])
 const dateOptions = ref([])
@@ -564,7 +573,12 @@ onMounted(async () => {
   await documentsStore.fetchViewCounts()
   await documentsStore.fetchStarCounts()
 
-  console.log('Sorting by: ', sortOption.value)
+  // Apply sort if there’s an active option
+  if (searchStore.sortBy) {
+    searchStore.sortResults(searchStore.searchedDocuments)
+  }
+
+  console.log('Applied sorting:', searchStore.sortBy, searchStore.sortOrder)
 })
 
 onUnmounted(() => {
@@ -933,20 +947,52 @@ function handleCancel() {
   }
 }
 
-async function handleCancelMetadata(cancelledData) {
-  const fileName = cancelledData?.file_name
-  if (!fileName) return
+// async function handleCancelMetadata(cancelledData) {
+//   const fileName = cancelledData?.file_name
+//   if (!fileName) return
 
+//   try {
+//     const { error } = await supabase.from('documents_metadata').delete().eq('file_name', fileName)
+//     if (error) console.error('Error deleting cancelled metadata:', error)
+//     else console.log('Cancelled metadata removed.')
+//   } catch (err) {
+//     console.error('Failed to cancel and delete metadata:', err)
+//   } finally {
+//     dialog.value = false
+//     uploading.value = false
+//     uploadProgress.value = 0
+//   }
+// }
+
+async function handleCancelMetadata(cancelledData) {
   try {
-    const { error } = await supabase.from('documents_metadata').delete().eq('file_name', fileName)
-    if (error) console.error('Error deleting cancelled metadata:', error)
-    else console.log('Cancelled metadata removed.')
+    const itemId = cancelledData.id
+
+    const { error: deleteItemError } = await supabase
+      .from('documents_metadata')
+      .delete()
+      .eq('id', itemId)
+
+    if (deleteItemError) {
+      console.error('Error deleting cancelled metadata:', deleteItemError)
+    } else {
+      console.log('Cancelled metadata removed successfully.')
+    }
+
+    const { error: deleteLogError } = await supabase
+      .from('item_history')
+      .delete()
+      .eq('item_id', itemId)
+
+    if (deleteLogError) {
+      console.error('Error deleting history log for cancelled item', deleteLogError)
+    } else {
+      console.log('History log removed after cancellation')
+    }
   } catch (err) {
     console.error('Failed to cancel and delete metadata:', err)
   } finally {
     dialog.value = false
-    uploading.value = false
-    uploadProgress.value = 0
   }
 }
 
@@ -1530,6 +1576,106 @@ function resetForm() {
 }
 
 // Toggle favorite icon
+// const toggleFavorite = async (doc, itemType = 'document') => {
+//   const { data: authData, error: authError } = await supabase.auth.getUser()
+//   const userId = authData?.user?.id
+
+//   if (authError || !userId) {
+//     console.error('Auth error:', authError)
+//     return
+//   }
+
+//   try {
+//     let { data: favoritesCollection } = await supabase
+//       .from('collections')
+//       .select('*')
+//       .eq('user_id', userId)
+//       .eq('collection_name', 'Favorites')
+//       .maybeSingle()
+
+//     if (!favoritesCollection) {
+//       const { data: newCollection, error: insertError } = await supabase
+//         .from('collections')
+//         .insert([
+//           {
+//             collection_name: 'Favorites',
+//             description: 'Items you marked as favorite will appear here.',
+//             user_id: userId,
+//             is_default: true,
+//             is_locked: true,
+//             created_at: new Date(),
+//             updated_at: new Date(),
+//             cover_url:
+//               'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers//favoritescover.png',
+//           },
+//         ])
+//         .select()
+//         .single()
+
+//       if (insertError) {
+//         console.error('Insert collection failed:', insertError)
+//       } else {
+//         favoritesCollection = newCollection
+//       }
+//     }
+
+//     const collectionId = favoritesCollection.collection_id
+//     const itemName = doc.metadata?.title || doc.file_name
+
+//     const { data: existing } = await supabase
+//       .from('collection_items')
+//       .select('*')
+//       .eq('collection_id', collectionId)
+//       .eq('item_id', doc.id)
+//       .eq('item_type', itemType)
+
+//     if (existing.length > 0) {
+//       await supabase
+//         .from('collection_items')
+//         .delete()
+//         .eq('collection_id', collectionId)
+//         .eq('item_id', doc.id)
+//         .eq('item_type', itemType)
+
+//       doc.starred = false
+//       showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
+//     } else {
+//       await supabase.from('collection_items').insert({
+//         collection_id: collectionId,
+//         item_id: doc.id,
+//         item_type: itemType,
+//       })
+
+//       doc.starred = true
+//       showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
+//     }
+
+//     const { data: metaCheck, error: metaError } = await supabase
+//       .from('documents_metadata')
+//       .select('id')
+//       .eq('id', doc.id)
+//       .single()
+
+//     if (!metaError && metaCheck) {
+//       const { data: starData } = await supabase
+//         .from('documents_star_count')
+//         .select('star_count')
+//         .eq('item_id', doc.id)
+//         .maybeSingle()
+
+//       if (starData && starData.star_count !== undefined) {
+//         documentsStore.updateStarCount(doc.id, starData.star_count)
+//       } else {
+//         documentsStore.updateStarCount(doc.id, 0)
+//       }
+//     } else {
+//       console.error('Document ID not found in documents_metadata:', metaError)
+//     }
+//   } catch (err) {
+//     console.error('Error toggling favorite:', err)
+//   }
+// }
+
 const toggleFavorite = async (doc, itemType = 'document') => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   const userId = authData?.user?.id
@@ -1540,6 +1686,7 @@ const toggleFavorite = async (doc, itemType = 'document') => {
   }
 
   try {
+    // Ensure Favorites collection exists
     let { data: favoritesCollection } = await supabase
       .from('collections')
       .select('*')
@@ -1583,7 +1730,9 @@ const toggleFavorite = async (doc, itemType = 'document') => {
       .eq('item_id', doc.id)
       .eq('item_type', itemType)
 
-    if (existing.length > 0) {
+    const isAdding = existing.length === 0
+
+    if (!isAdding) {
       await supabase
         .from('collection_items')
         .delete()
@@ -1591,7 +1740,6 @@ const toggleFavorite = async (doc, itemType = 'document') => {
         .eq('item_id', doc.id)
         .eq('item_type', itemType)
 
-      doc.starred = false
       showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
     } else {
       await supabase.from('collection_items').insert({
@@ -1600,31 +1748,29 @@ const toggleFavorite = async (doc, itemType = 'document') => {
         item_type: itemType,
       })
 
-      doc.starred = true
       showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
     }
 
-    const { data: metaCheck, error: metaError } = await supabase
-      .from('documents_metadata')
-      .select('id')
-      .eq('id', doc.id)
-      .single()
-
-    if (!metaError && metaCheck) {
-      const { data: starData } = await supabase
-        .from('documents_star_count')
-        .select('star_count')
-        .eq('item_id', doc.id)
-        .maybeSingle()
-
-      if (starData && starData.star_count !== undefined) {
-        documentsStore.updateStarCount(doc.id, starData.star_count)
-      } else {
-        documentsStore.updateStarCount(doc.id, 0)
-      }
-    } else {
-      console.error('Document ID not found in documents_metadata:', metaError)
+    // Sync starred status across all lists
+    const updateStarred = (list) => {
+      if (!Array.isArray(list)) return
+      const target = list.find((d) => d.id === doc.id)
+      if (target) target.starred = isAdding
     }
+
+    updateStarred(searchStore.searchedDocuments)
+    updateStarred(documentsStore.filteredDocuments)
+    updateStarred(documentsStore.documents) // master list
+
+    // Update star count
+    const { data: starData } = await supabase
+      .from('documents_star_count')
+      .select('star_count')
+      .eq('item_id', doc.id)
+      .maybeSingle()
+
+    const starCount = starData?.star_count ?? 0
+    documentsStore.updateStarCount(doc.id, starCount)
   } catch (err) {
     console.error('Error toggling favorite:', err)
   }
@@ -1691,7 +1837,16 @@ function applyFilters() {
   }
   console.log('Applying filters:', filterData)
 
-  documentsStore.filterBy(filterData, sortOption.value)
+  // Updated to include the active sort
+  documentsStore.filterBy(filterData, {
+    sortBy: searchStore.sortBy,
+    sortOrder: searchStore.sortOrder,
+  })
+
+  // After filtering, reapply sorting
+  if (searchStore.searchedDocuments.length > 0) {
+    searchStore.sortResults(searchStore.searchedDocuments)
+  }
 }
 
 const clearFilters = () => {
@@ -1771,11 +1926,13 @@ function clearCategories() {
 // }
 
 function applySort(option) {
-  sortOption.value = option
+  searchStore.setSort(option.value)
+
+  // Apply sorting on the already fetched results
   if (searchStore.query) {
-    searchStore.sortResults(option, searchStore.searchedDocuments)
+    searchStore.sortResults(searchStore.searchedDocuments)
   } else {
-    documentsStore.sortByField(option)
+    documentsStore.sortDocuments(option)
   }
 }
 
@@ -1807,18 +1964,75 @@ onBeforeUnmount(() => {
 })
 
 // computed for paginated documents
-const displayedDocuments = computed(() => {
-  const docs = searchStore.query ? searchStore.searchedDocuments : documentsStore.filteredDocuments
+// const displayedDocuments = computed(() => {
+//   const docs = searchStore.query ? searchStore.searchedDocuments : documentsStore.filteredDocuments
 
-  const start = (documentsCurrentPage.value - 1) * documentsPerPage.value
-  return docs.slice(start, start + documentsPerPage.value)
+//   const start = (documentsCurrentPage.value - 1) * documentsPerPage.value
+//   return docs.slice(start, start + documentsPerPage.value)
+// })
+
+// const getBaseDocuments = computed(() => {
+//   // Prefer search results if query exists
+//   if (
+//     searchStore.query &&
+//     Array.isArray(searchStore.searchedDocuments) &&
+//     searchStore.searchedDocuments.length > 0
+//   ) {
+//     return searchStore.searchedDocuments
+//   }
+
+//   // Otherwise, show all documents
+//   if (
+//     Array.isArray(documentsStore.filteredDocuments) &&
+//     documentsStore.filteredDocuments.length > 0
+//   ) {
+//     return documentsStore.filteredDocuments
+//   }
+
+//   // fallback
+//   return []
+// })
+
+const getBaseDocuments = computed(() => {
+  // Prefer filtered/search results if available
+  if (Array.isArray(searchStore.searchedDocuments) && searchStore.searchedDocuments.length > 0) {
+    return searchStore.searchedDocuments
+  }
+
+  // Otherwise, show all filtered documents
+  if (
+    Array.isArray(documentsStore.filteredDocuments) &&
+    documentsStore.filteredDocuments.length > 0
+  ) {
+    return documentsStore.filteredDocuments
+  }
+
+  // fallback
+  return []
 })
 
-// total pages
-const documentsTotalPages = computed(() => {
-  const docs = searchStore.query ? searchStore.searchedDocuments : documentsStore.filteredDocuments
+const getSortedDocuments = computed(() => {
+  const baseDocs = getBaseDocuments.value
 
-  return Math.ceil(docs.length / documentsPerPage.value)
+  if (typeof searchStore.sortResults === 'function') {
+    const sorted = searchStore.sortResults(baseDocs)
+    // ensure it returns a valid array
+    return Array.isArray(sorted) ? sorted : baseDocs
+  }
+
+  return baseDocs
+})
+
+const displayedDocuments = computed(() => {
+  const docs = getSortedDocuments.value
+  const start = (documentsCurrentPage.value - 1) * documentsPerPage.value
+  const end = start + documentsPerPage.value
+  return docs.slice(start, end)
+})
+
+const documentsTotalPages = computed(() => {
+  const docs = getSortedDocuments.value
+  return Math.max(1, Math.ceil(docs.length / documentsPerPage.value))
 })
 
 // pagination controls

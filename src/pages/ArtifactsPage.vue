@@ -169,7 +169,7 @@
           <q-btn-dropdown
             outline
             color="black"
-            :label="`Sort by: ${sortOption}`"
+            :label="`Sort by: ${sortLabel}`"
             icon="sort"
             size="sm"
             class="q-ml-md artifact-btn-style"
@@ -177,15 +177,21 @@
           >
             <q-list>
               <q-item
-                v-for="option in sortOptions"
-                :key="option"
+                v-for="option in allSortOptions"
+                :key="option.label"
                 clickable
                 v-close-popup
                 class="collection-sort-menu"
-                @click="((sortOption = option), applySort(option))"
+                @click="applySort(option)"
               >
-                <q-item-section>{{ option }}</q-item-section>
-                <q-item-section side v-if="sortOption === option">
+                <q-item-section>{{ option.label }}</q-item-section>
+                <q-item-section
+                  side
+                  v-if="
+                    searchStore.sortBy === option.value.sortBy &&
+                    searchStore.sortOrder === option.value.sortOrder
+                  "
+                >
                   <q-icon name="check" color="primary" />
                 </q-item-section>
               </q-item>
@@ -216,6 +222,21 @@
             @upload-click="handleUpload"
             @cancel-click="handleCancel"
           />
+
+          <div>
+            <!-- Category Section -->
+            <div class="row q-mt-md q-gutter-sm">
+              <q-btn
+                v-for="categoryOption in categoryOptions"
+                :key="categoryOption"
+                :label="categoryOption"
+                class="btn-1"
+                :class="{ active: selectedCategories.has(categoryOption) }"
+                unelevated
+                @click="toggleCategory(categoryOption)"
+              />
+            </div>
+          </div>
 
           <!-- <q-dialog v-model="showDialog" persistent>
             <q-card class="add-documentarti-card">
@@ -420,11 +441,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -437,11 +458,44 @@
       @confirm="saveMetadata"
       @cancel="handleCancelMetadata"
     />
+
+    <div class="pagination-controls justify-center">
+      <q-btn
+        flat
+        round
+        icon="chevron_left"
+        :disable="modelsCurrentPage === 1"
+        @click="prevModelsPage"
+        class="pagination-btn"
+        size="sm"
+      />
+
+      <span class="pagination-numbers">
+        <span
+          v-for="page in modelsTotalPages"
+          :key="page"
+          @click="goToModelsPage(page)"
+          :class="['page-number', { active: page === modelsCurrentPage }]"
+        >
+          {{ page }}
+        </span>
+      </span>
+
+      <q-btn
+        flat
+        round
+        icon="chevron_right"
+        :disable="modelsCurrentPage === modelsTotalPages"
+        @click="nextModelsPage"
+        class="pagination-btn"
+        size="sm"
+      />
+    </div>
   </q-page>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch } from 'vue'
 import { useModelStore } from 'stores/modelStore'
 import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
@@ -449,6 +503,7 @@ import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
+import { allSortOptions } from 'src/stores/searchStore'
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import UploadDialog from 'src/components/UploadDialog.vue'
 import '@google/model-viewer'
@@ -464,8 +519,10 @@ const userStore = useUserStore()
 // const categoryFilter = ref(null)
 // const authorFilter = ref(null)
 // const dateFilter = ref(null)
-const sortOption = ref('Newest')
-const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
+// const sortOption = ref('Newest')
+// const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
+
+const sortLabel = computed(() => searchStore.getSortLabel(allSortOptions))
 const itemsToShow = ref('all')
 
 // Filter options - will be populated from data
@@ -500,9 +557,9 @@ const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
 // Computed properties
-const filteredModels = computed(() => {
-  return searchStore.query ? searchStore.searchedModels : modelStore.filteredModels
-})
+// const filteredModels = computed(() => {
+//   return searchStore.query ? searchStore.searchedModels : modelStore.filteredModels
+// })
 
 if (userStore.profile.role === undefined) {
   userStore.fetchProfile()
@@ -525,50 +582,50 @@ function stopRotate(e) {
   el.cameraOrbit = '0deg 75deg 105%' // Reset back to original orientation
 }
 
-const sortedModels = computed(() => {
-  const models = [...filteredModels.value]
+// const sortedModels = computed(() => {
+//   const models = [...filteredModels.value]
 
-  return models.sort((a, b) => {
-    let aValue, bValue
+//   return models.sort((a, b) => {
+//     let aValue, bValue
 
-    switch (sortOption.value) {
-      case 'Newest':
-        aValue = new Date(a.uploaded_at || a.created_at || 0)
-        bValue = new Date(b.uploaded_at || b.created_at || 0)
-        return bValue - aValue
-      case 'Oldest':
-        aValue = new Date(a.uploaded_at || a.created_at || 0)
-        bValue = new Date(b.uploaded_at || b.created_at || 0)
-        return aValue - bValue
-      case 'Title A-Z':
-        aValue = (a.metadata?.title || a.file_name).toLowerCase()
-        bValue = (b.metadata?.title || b.file_name).toLowerCase()
-        return aValue.localeCompare(bValue)
-      case 'Title Z-A':
-        aValue = (a.metadata?.title || a.file_name).toLowerCase()
-        bValue = (b.metadata?.title || b.file_name).toLowerCase()
-        return bValue.localeCompare(aValue)
-      default:
-        return 0
-    }
-  })
-})
+//     switch (sortOption.value) {
+//       case 'Newest':
+//         aValue = new Date(a.uploaded_at || a.created_at || 0)
+//         bValue = new Date(b.uploaded_at || b.created_at || 0)
+//         return bValue - aValue
+//       case 'Oldest':
+//         aValue = new Date(a.uploaded_at || a.created_at || 0)
+//         bValue = new Date(b.uploaded_at || b.created_at || 0)
+//         return aValue - bValue
+//       case 'Title A-Z':
+//         aValue = (a.metadata?.title || a.file_name).toLowerCase()
+//         bValue = (b.metadata?.title || b.file_name).toLowerCase()
+//         return aValue.localeCompare(bValue)
+//       case 'Title Z-A':
+//         aValue = (a.metadata?.title || a.file_name).toLowerCase()
+//         bValue = (b.metadata?.title || b.file_name).toLowerCase()
+//         return bValue.localeCompare(aValue)
+//       default:
+//         return 0
+//     }
+//   })
+// })
 
-const displayedModels = computed(() => {
-  if (itemsToShow.value === 'all') {
-    return sortedModels.value
-  }
-  return sortedModels.value.slice(0, itemsToShow.value)
-})
+// const displayedModels = computed(() => {
+//   if (itemsToShow.value === 'all') {
+//     return sortedModels.value
+//   }
+//   return sortedModels.value.slice(0, itemsToShow.value)
+// })
 
-const hasMoreItems = computed(() => {
-  return itemsToShow.value !== 'all' && sortedModels.value.length > itemsToShow.value
-})
+// const hasMoreItems = computed(() => {
+//   return itemsToShow.value !== 'all' && sortedModels.value.length > itemsToShow.value
+// })
 
-// Methods
-const setItemsToShow = (value) => {
-  itemsToShow.value = value
-}
+// // Methods
+// const setItemsToShow = (value) => {
+//   itemsToShow.value = value
+// }
 
 // Toggle favorite icon
 const toggleFavorite = async (model, itemType = 'artifact') => {
@@ -626,8 +683,9 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
       .eq('item_id', model.id)
       .eq('item_type', itemType)
 
-    if (existing.length > 0) {
-      // Remove from favorites
+    const isAdding = existing.length === 0
+
+    if (!isAdding) {
       await supabase
         .from('collection_items')
         .delete()
@@ -635,44 +693,37 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
         .eq('item_id', model.id)
         .eq('item_type', itemType)
 
-      model.starred = false
       showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
     } else {
-      // Add to favorites
       await supabase.from('collection_items').insert({
         collection_id: collectionId,
         item_id: model.id,
         item_type: itemType,
       })
 
-      model.starred = true
       showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
     }
 
-    // Get star count
-    const { data: metaCheck, error: metaError } = await supabase
-      .from('artifacts_metadata')
-      .select('id')
-      .eq('id', model.id)
-      .single()
-
-    // Star count
-    if (!metaError && metaCheck) {
-      const { data: starData } = await supabase
-        .from('artifacts_star_count')
-        .select('star_count')
-        .eq('item_id', model.id)
-        .maybeSingle()
-
-      if (starData && starData.star_count !== undefined) {
-        modelStore.updateStarCount(model.id, starData.star_count)
-      } else {
-        // If no row exists, star count is 0
-        modelStore.updateStarCount(model.id, 0)
-      }
-    } else {
-      console.error('Model ID not found in artifacts_metadata:', metaError)
+    // Sync starred status across all lists
+    const updateStarred = (list) => {
+      if (!Array.isArray(list)) return
+      const target = list.find((m) => m.id === model.id)
+      if (target) target.starred = isAdding
     }
+
+    updateStarred(searchStore.searchedModels)
+    updateStarred(modelStore.filteredModels)
+    updateStarred(modelStore.models) // master list
+
+    // Update star count
+    const { data: starData } = await supabase
+      .from('artifacts_star_count')
+      .select('star_count')
+      .eq('item_id', model.id)
+      .maybeSingle()
+
+    const starCount = starData?.star_count ?? 0
+    modelStore.updateStarCount(model.id, starCount)
   } catch (err) {
     console.error('Error toggling favorite:', err)
   }
@@ -1004,6 +1055,13 @@ onMounted(async () => {
 
     await modelStore.fetchViewCounts()
     await modelStore.fetchStarCounts()
+
+    // Apply sort if there’s an active option
+    if (searchStore.sortBy) {
+      searchStore.sortResults(searchStore.searchedModels)
+    }
+
+    console.log('Applied sorting:', searchStore.sortBy, searchStore.sortOrder)
   } finally {
     loading.value = false
   }
@@ -1717,7 +1775,16 @@ function applyFilters() {
   }
   console.log('Applying filters:', filterData)
 
-  modelStore.filterBy(filterData, sortOption.value)
+  // Updated to include the active sort
+  modelStore.filterBy(filterData, {
+    sortBy: searchStore.sortBy,
+    sortOrder: searchStore.sortOrder,
+  })
+
+  // After filtering, reapply sorting
+  if (searchStore.searchedModels.length > 0) {
+    searchStore.sortResults(searchStore.searchedModels)
+  }
 }
 
 const clearFilters = () => {
@@ -1780,12 +1847,97 @@ function clearCategories() {
 }
 
 function applySort(option) {
-  sortOption.value = option
+  searchStore.setSort(option.value)
+
+  // Apply sorting on the already fetched results
   if (searchStore.query) {
-    searchStore.sortResults(option, searchStore.searchedModels)
+    searchStore.sortResults(searchStore.searchedModels)
   } else {
-    modelStore.sortByField(option)
+    modelStore.sortModels(option)
   }
+}
+
+// pagination state
+const modelsCurrentPage = ref(1)
+const modelsPerPage = ref(12)
+
+function updateModelsPerPage() {
+  const width = window.innerWidth
+
+  if (width >= 1920) {
+    modelsPerPage.value = 12
+  } else if (width >= 1475) {
+    modelsPerPage.value = 10
+  } else if (width >= 1240) {
+    modelsPerPage.value = 8
+  } else {
+    modelsPerPage.value = 6
+  }
+}
+
+onMounted(() => {
+  updateModelsPerPage()
+  window.addEventListener('resize', updateModelsPerPage)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateModelsPerPage)
+})
+
+const getBaseModels = computed(() => {
+  // Prefer filtered/search results if available
+  if (Array.isArray(searchStore.searchedModels) && searchStore.searchedModels.length > 0) {
+    return searchStore.searchedModels
+  }
+
+  // Otherwise, show all filtered documents
+  if (Array.isArray(modelStore.filteredModels) && modelStore.filteredModels.length > 0) {
+    return modelStore.filteredModels
+  }
+
+  // fallback
+  return []
+})
+
+const getSortedModels = computed(() => {
+  const baseModels = getBaseModels.value
+
+  if (typeof searchStore.sortResults === 'function') {
+    const sorted = searchStore.sortResults(baseModels)
+    // ensure it returns a valid array
+    return Array.isArray(sorted) ? sorted : baseModels
+  }
+
+  return baseModels
+})
+
+const displayedModels = computed(() => {
+  const docs = getSortedModels.value
+  const start = (modelsCurrentPage.value - 1) * modelsPerPage.value
+  const end = start + modelsPerPage.value
+  return docs.slice(start, end)
+})
+
+const modelsTotalPages = computed(() => {
+  const docs = getSortedModels.value
+  return Math.max(1, Math.ceil(docs.length / modelsPerPage.value))
+})
+
+// pagination controls
+function nextModelsPage() {
+  if (modelsCurrentPage.value < modelsTotalPages.value) {
+    modelsCurrentPage.value++
+  }
+}
+
+function prevModelsPage() {
+  if (modelsCurrentPage.value > 1) {
+    modelsCurrentPage.value--
+  }
+}
+
+function goToModelsPage(page) {
+  modelsCurrentPage.value = page
 }
 </script>
 
@@ -1842,8 +1994,6 @@ function applySort(option) {
     flex-wrap: wrap;
     margin-bottom: 2rem;
   }
-
-
 
   .artifact-btn-style {
     min-width: 80px;

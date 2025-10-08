@@ -171,35 +171,23 @@
       </div>
     </div>
 
-    <!-- Collections Section -->
+    <!-- Documents Section (Replacing Collections) -->
     <div class="layout-container q-my-lg">
       <div class="box-3 collections-section q-px-lg">
         <div class="row items-center justify-between q-mb-sm q-mt-sm">
-          <p class="q-ml-lg title-font-2">Collections</p>
-          <!-- Add New button in the upper right -->
-          <div class="row q-gutter-sm items-center q-pr-sm">
-            <q-btn
-              @click="showDialog = true"
-              label="Add New"
-              icon="add_circle"
-              style="min-width: 150px"
-              class="add-new-btn"
-              no-caps
-              unelevated
-            />
-          </div>
+          <p class="q-ml-lg title-font-2">Documents</p>
         </div>
-        <!-- Loading Spinner for Collections -->
-        <div v-if="isLoading" class="text-center q-my-md">
+        <!-- Loading Spinner for Documents -->
+        <div v-if="isLoadingDocuments" class="text-center q-my-md">
           <q-spinner color="primary" size="lg" />
         </div>
 
-        <!-- Collections Display -->
+        <!-- Documents Display -->
         <div v-else>
-          <div v-if="collections.length > 0" class="row q-gutter-xl q-pl-lg q-pr-sm q-mb-sm">
+          <div v-if="documents.length > 0" class="row q-gutter-xl q-pl-lg q-pr-sm q-mb-sm">
             <div
-              v-for="(collection, index) in visibleCollections"
-              :key="collection.collection_id"
+              v-for="(document, index) in visibleDocuments"
+              :key="document.id"
               class="col card-wrapper"
               :class="{
                 'hide-on-tablet': index >= 3,
@@ -209,24 +197,24 @@
               <q-card
                 class="my-card collection-card"
                 flat
-                @click="goToCollectionDetailsPage(collection.collection_id)"
+                @click="goToDocumentDetailsPage(document.id)"
               >
                 <div class="book-container">
                   <div class="book-cover">
                     <div class="book-spine"></div>
-                    <div class="book-content" :class="{ 'has-image': collection.cover_url }">
-                      <!-- Show uploaded image as background if available -->
-                      <div v-if="collection.cover_url" class="book-image-overlay">
+                    <div class="book-content" :class="{ 'has-image': document.preview_url }">
+                      <!-- Show document preview as background if available -->
+                      <div v-if="document.preview_url" class="book-image-overlay">
                         <img
-                          :src="collection.cover_url"
-                          :alt="collection.collection_name"
+                          :src="document.preview_url"
+                          :alt="document.metadata?.title || document.file_name"
                           class="book-background-image"
                         />
                       </div>
-                      <!-- Show default icon if no image -->
+                      <!-- Show default icon if no preview -->
                       <div v-else class="book-title-section">
                         <div class="book-icon">
-                          <q-icon name="collections_bookmark" size="2rem" color="white" />
+                          <q-icon name="description" size="2rem" color="white" />
                         </div>
                       </div>
                     </div>
@@ -238,17 +226,9 @@
                       <div
                         class="text-subtitle2 artifact-title row items-center title-with-tooltip"
                       >
-                        {{ collection.collection_name }}
+                        {{ document.metadata?.title || document.file_name }}
 
-                        <!-- ADDED: Pinned icon for Favorites -->
-                        <q-icon
-                          v-if="collection.collection_name === 'Favorites'"
-                          name="push_pin"
-                          class="q-ml-xs text-primary"
-                          size="18px"
-                        />
-
-                        <div class="tooltip-box">{{ collection.collection_name }}</div>
+                        <div class="tooltip-box">{{ document.metadata?.title || document.file_name }}</div>
                       </div>
                     </div>
                   </div>
@@ -258,13 +238,13 @@
           </div>
 
           <div v-else class="text-center q-mt-md">
-            <p>No collections found.</p>
+            <p>No documents found.</p>
           </div>
         </div>
 
         <!-- See All Link -->
         <div class="row justify-end q-pr-sm" style="margin-top: -1.25rem">
-          <router-link to="/collections" class="see-all-link">
+          <router-link to="/documents" class="see-all-link">
             See All
             <q-icon name="arrow_forward" size="16px" class="q-ml-xs" />
           </router-link>
@@ -416,25 +396,17 @@ const documentsStore = useDocumentsStore()
 
 // Reactive variables
 const collections = ref([])
+const documents = ref([]) // CHANGED: Added documents array
 const recentItems = ref([])
 const isLoading = ref(true)
 const isLoadingModels = ref(true)
+const isLoadingDocuments = ref(true) // CHANGED: Added loading state for documents
 const showDialog = ref(false)
 const fileInput = ref(null)
 const previewImage = ref(null)
 const newCollectionTitle = ref('')
 const newCollectionDesc = ref('')
 const newCollection = ref({ coverFile: null })
-
-// ADDED: Filter and Sort reactive variables from INDEX page
-// const selectedFilter = ref('All')
-// const selectedSort = ref('Recent')
-// // const showFilterMenu = ref(false)
-// const showSortMenu = ref(false)
-
-// ADDED: Filter and sort options from INDEX page
-// const filterOptions = ['All', 'Documents', 'PDFs', 'Images', 'Recent']
-// const sortOptions = ['Recent', 'Alphabetical', 'Author', 'Date Created']
 
 // Get first 3 models for featured display
 const featuredModels = computed(() => {
@@ -460,7 +432,6 @@ const userType = computed(() => userStore.profile?.user_type || 'Unknown')
 // Initialize page
 onMounted(async () => {
   try {
-    // ADDED: Better error handling structure from INDEX page
     const {
       data: { user: authUser },
       error: authError,
@@ -476,13 +447,19 @@ onMounted(async () => {
     await userStore.fetchProfile()
 
     // Load all data
-    await Promise.all([loadCollections(authUser.id), loadRecentViews(authUser.id), loadModels()])
+    await Promise.all([
+      loadCollections(authUser.id),
+      loadRecentViews(authUser.id),
+      loadModels(),
+      loadDocuments() // CHANGED: Added loadDocuments
+    ])
 
     await loadUserCollections()
     await modelStore.fetchViewCounts()
     await modelStore.fetchStarCounts()
+    await documentsStore.fetchViewCounts() // CHANGED: Added documents view counts
+    await documentsStore.fetchStarCounts() // CHANGED: Added documents star counts
   } catch (err) {
-    // ADDED: Top-level error handling from INDEX page
     console.error('Error initializing page:', err)
   }
 })
@@ -490,6 +467,15 @@ onMounted(async () => {
 //COLLECTIONS
 const visibleCollections = computed(() => {
   const list = collections.value
+  if ($q.screen.lt.sm) return list.slice(0, 2)
+  if ($q.screen.lt.md) return list.slice(0, 3)
+  if ($q.screen.lt.lg) return list.slice(0, 4)
+  return list.slice(0, 5)
+})
+
+// CHANGED: Added visibleDocuments computed property
+const visibleDocuments = computed(() => {
+  const list = documents.value
   if ($q.screen.lt.sm) return list.slice(0, 2)
   if ($q.screen.lt.md) return list.slice(0, 3)
   if ($q.screen.lt.lg) return list.slice(0, 4)
@@ -506,7 +492,7 @@ function startRotate(e) {
 function stopRotate(e) {
   const el = e.target
   el.autoRotate = false
-  el.cameraOrbit = '0deg 75deg 105%' // Reset back to original orientation
+  el.cameraOrbit = '0deg 75deg 105%'
 }
 
 const showNotifyDialog = (title, message) => {
@@ -519,7 +505,6 @@ const showNotifyDialog = (title, message) => {
 async function loadCollections(userId) {
   isLoading.value = true
   try {
-    // Try-catch wrapper for better error handling
     const { data, error } = await supabase
       .from('collections')
       .select('collection_name, cover_url, collection_id')
@@ -529,17 +514,37 @@ async function loadCollections(userId) {
     if (error) {
       console.error('Error loading collections:', error)
     } else {
-      // Separate and pin the "Favorites" collection
       const favorites = data.find((c) => c.collection_name === 'Favorites')
       const others = data.filter((c) => c.collection_name !== 'Favorites')
 
-      // Combine and assign to collections
       collections.value = favorites ? [favorites, ...others] : others
     }
   } catch (err) {
     console.error('Error loading collections:', err)
   }
   isLoading.value = false
+}
+
+// CHANGED: Added loadDocuments function
+async function loadDocuments() {
+  isLoadingDocuments.value = true
+  try {
+    const { data, error } = await supabase
+      .from('documents_metadata')
+      .select('id, file_name, metadata, file_url, preview_url, uploaded_at, updated_at')
+      .limit(5)
+      .order('uploaded_at', { ascending: false })
+
+    if (error) {
+      console.error('Error loading documents:', error)
+      return
+    }
+
+    documents.value = data || []
+  } catch (err) {
+    console.error('Failed to load documents:', err)
+  }
+  isLoadingDocuments.value = false
 }
 
 // Load recent views with proper database fields and error handling
@@ -562,16 +567,16 @@ async function loadRecentViews(userId) {
 
     const { data: artifactData = [] } = artifactIds.length
       ? await supabase
-          .from('artifacts_metadata')
-          .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
-          .in('id', artifactIds)
+        .from('artifacts_metadata')
+        .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
+        .in('id', artifactIds)
       : { data: [] }
 
     const { data: documentData = [] } = documentIds.length
       ? await supabase
-          .from('documents_metadata')
-          .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
-          .in('id', documentIds)
+        .from('documents_metadata')
+        .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
+        .in('id', documentIds)
       : { data: [] }
 
     // Fetch user favorites and bookmarks
@@ -628,7 +633,6 @@ async function loadRecentViews(userId) {
 async function loadModels() {
   isLoadingModels.value = true
   try {
-    // Added uploaded_at and updated_at fields like INDEX page
     const { data, error } = await supabase
       .from('artifacts_metadata')
       .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
@@ -813,9 +817,13 @@ async function viewItem(item) {
       router.push(`/documents/${item.id}`)
     }
   } catch (err) {
-    // ADDED: Better error handling
     console.error('Error viewing item:', err)
   }
+}
+
+// CHANGED: Added goToDocumentDetailsPage function
+function goToDocumentDetailsPage(documentId) {
+  router.push(`/documents/${documentId}`)
 }
 
 // ADDED: Collection dialog methods
@@ -1220,21 +1228,10 @@ const toggleFavoriteRecents = async (item, itemType) => {
   }
 }
 
-// FIXED: Added proper filter and sort handler functions
-// const selectFilter = (option) => {
-//   selectedFilter.value = option
-//   showFilterMenu.value = false
+// // Navigation functions
+// function goToCollectionDetailsPage(collectionId) {
+//   router.push(`/collection/${collectionId}`)
 // }
-
-// const selectSort = (option) => {
-//   selectedSort.value = option
-//   showSortMenu.value = false
-// }
-
-// Navigation functions
-function goToCollectionDetailsPage(collectionId) {
-  router.push(`/collection/${collectionId}`)
-}
 
 // Collection management
 function triggerFileInput() {
@@ -1263,7 +1260,6 @@ function resetForm() {
 
 async function addCollection() {
   try {
-    // ADDED: Better error handling structure
     const title = newCollectionTitle.value.trim()
     const description = newCollectionDesc.value.trim()
 
@@ -1313,7 +1309,6 @@ async function addCollection() {
       await loadCollections(authUser.id)
     }
   } catch (err) {
-    // ADDED: Top-level error handling
     console.error('Error adding collection:', err)
   }
 }
@@ -1380,7 +1375,7 @@ async function addCollection() {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 25px; /* Make it much bigger */
+  font-size: 25px;
   z-index: 10;
 }
 
@@ -1506,42 +1501,42 @@ async function addCollection() {
 
 /* Base styles (mobile first) */
 .dash-title {
-  font-size: 1.5rem; /* 24px */
+  font-size: 1.5rem;
 }
 
 .dash-subtitle {
-  font-size: 0.625rem; /* 10px */
+  font-size: 0.625rem;
   width: 70%;
 }
 
 .btn-explore,
 .btn-document {
-  font-size: 0.5rem; /* 8px */
+  font-size: 0.5rem;
 }
 
 .recently-viewed-item {
   padding: 0.25rem 0.375rem 1rem;
   margin-bottom: 0.125rem;
-  min-height: 2.5rem; /* 40px */
+  min-height: 2.5rem;
 }
 
 .circular-holder {
-  width: 2rem; /* 32px */
+  width: 2rem;
   height: 2rem;
 }
 
 .circle-icon-center {
-  font-size: 0.875rem; /* 14px */
+  font-size: 0.875rem;
 }
 
 .artifact-name {
-  font-size: 0.625rem; /* 10px */
+  font-size: 0.625rem;
   line-height: 1.5;
   margin-top: 1.25rem;
 }
 
 .view-info {
-  font-size: 0.5rem; /* 8px */
+  font-size: 0.5rem;
 }
 
 .view-icon,
@@ -1555,7 +1550,7 @@ async function addCollection() {
 }
 
 .my-card {
-  min-height: 11.25rem; /* 180px */
+  min-height: 11.25rem;
   height: fit-content;
 }
 
@@ -1576,12 +1571,12 @@ async function addCollection() {
 }
 
 .trophies {
-  max-width: 12.5rem; /* 200px */
+  max-width: 12.5rem;
 }
 
 
 .title-font-2 {
-  font-size: 0.875rem; /* 14px */
+  font-size: 0.875rem;
 }
 
 /* ========================
@@ -1589,49 +1584,49 @@ async function addCollection() {
 ======================== */
 @media (min-width: 48rem) {
   .dash-title {
-    font-size: 1.625rem; /* 26px */
+    font-size: 1.625rem;
   }
 
   .dash-subtitle {
-    font-size: 0.75rem; /* 12px */
+    font-size: 0.75rem;
     width: 90%;
   }
 
   .btn-explore,
   .btn-document {
-    font-size: 0.8125rem; /* 13px */
+    font-size: 0.8125rem;
   }
 
   .recently-viewed-item {
     padding: 0.8rem 0.6rem;
-    min-height: 3.75rem; /* 60px */
+    min-height: 3.75rem;
   }
 
   .circular-holder {
-    width: 2.25rem; /* 36px */
+    width: 2.25rem;
     height: 2.25rem;
   }
 
   .circle-icon-center {
-    font-size: 1.25rem; /* 20px */
+    font-size: 1.25rem;
   }
 
   .artifact-name {
-    font-size: 0.6875rem; /* 11px */
+    font-size: 0.6875rem;
     line-height: 1.1;
     margin-top: 1.25rem;
   }
 
   .view-info {
-    font-size: 0.5rem; /* 8px */
+    font-size: 0.5rem;
   }
 
   .title-font-2 {
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
   }
 
   .my-card {
-    min-height: 17.5rem; /* 280px */
+    min-height: 17.5rem;
   }
 }
 
@@ -1658,47 +1653,47 @@ async function addCollection() {
   }
 
   .dash-title {
-    font-size: 1.75rem; /* 28px */
+    font-size: 1.75rem;
     width: auto;
   }
 
   .dash-subtitle {
-    font-size: 0.75rem; /* 12px */
+    font-size: 0.75rem;
     width: auto;
   }
 
   .btn-explore,
   .btn-document {
-    font-size: 0.8125rem; /* 13px */
+    font-size: 0.8125rem;
   }
 
   .recently-viewed-item {
     padding: 0.7rem 0.5rem;
-    min-height: 3.4375rem; /* 55px */
+    min-height: 3.4375rem;
   }
 
   .circular-holder {
-    width: 2.625rem; /* 42px */
+    width: 2.625rem;
     height: 2.625rem;
   }
 
   .circle-icon-center {
-    font-size: 1.375rem; /* 22px */
+    font-size: 1.375rem;
   }
 
   .artifact-name {
-    font-size: 0.8125rem; /* 13px */
+    font-size: 0.8125rem;
     margin-top: 0;
   }
 
   .view-info {
-    font-size: 0.625rem; /* 10px */
+    font-size: 0.625rem;
   }
 
   .view-icon,
   .star-icon {
     display: inline;
-    font-size: 0.9375rem; /* 15px */
+    font-size: 0.9375rem;
   }
 
   .action-icons {
@@ -1711,11 +1706,11 @@ async function addCollection() {
   }
 
   .title-font-2 {
-    font-size: 1.125rem; /* 18px */
+    font-size: 1.125rem;
   }
 
   .my-card {
-    min-height: 18.75rem; /* 300px */
+    min-height: 18.75rem;
   }
 
   .artifact-card-section {
@@ -1733,38 +1728,38 @@ async function addCollection() {
 ======================== */
 @media (min-width: 90rem) {
   .dash-title {
-    font-size: 2rem; /* 32px */
+    font-size: 2rem;
   }
 
   .dash-subtitle {
-    font-size: 1rem; /* 16px */
+    font-size: 1rem;
   }
 
   .recently-viewed-item {
     padding: 0.5rem 0.8rem;
-    min-height: 4.0625rem; /* 65px */
+    min-height: 4.0625rem;
   }
 
   .circular-holder {
-    width: 3.125rem; /* 50px */
+    width: 3.125rem;
     height: 3.125rem;
   }
 
   .circle-icon-center {
-    font-size: 1.75rem; /* 28px */
+    font-size: 1.75rem;
   }
 
   .artifact-name {
-    font-size: 0.9375rem; /* 15px */
+    font-size: 0.9375rem;
   }
 
   .view-info {
-    font-size: 0.8125rem; /* 13px */
+    font-size: 0.8125rem;
   }
 
   .view-icon,
   .star-icon {
-    font-size: 1.25rem; /* 20px */
+    font-size: 1.25rem;
   }
 
   .action-icons {
@@ -1776,7 +1771,7 @@ async function addCollection() {
   }
 
   .my-card {
-    min-height: 20rem; /* 320px */
+    min-height: 20rem;
   }
 }
 
@@ -1785,38 +1780,38 @@ async function addCollection() {
 ======================== */
 @media (min-width: 120rem) {
   .dash-title {
-    font-size: 2.125rem; /* 34px */
+    font-size: 2.125rem;
   }
 
   .dash-subtitle {
-    font-size: 1.125rem; /* 18px */
+    font-size: 1.125rem;
   }
 
   .recently-viewed-item {
     padding: 0.6rem 1rem;
-    min-height: 4.375rem; /* 70px */
+    min-height: 4.375rem;
   }
 
   .circular-holder {
-    width: 3.4375rem; /* 55px */
+    width: 3.4375rem;
     height: 3.4375rem;
   }
 
   .circle-icon-center {
-    font-size: 1.875rem; /* 30px */
+    font-size: 1.875rem;
   }
 
   .artifact-name {
-    font-size: 1rem; /* 16px */
+    font-size: 1rem;
   }
 
   .view-info {
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
   }
 
   .view-icon,
   .star-icon {
-    font-size: 1.375rem; /* 22px */
+    font-size: 1.375rem;
   }
 
   .action-icons {
@@ -1828,12 +1823,105 @@ async function addCollection() {
   }
 
   .my-card {
-    min-height: 21.875rem; /* 350px */
+    min-height: 21.875rem;
   }
 
   .artifact-card-section {
     padding: 1rem;
   }
+}
+
+/* Added book-related styles for documents */
+.book-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  cursor: pointer;
+}
+
+.book-cover {
+  width: 200px;
+  height: 280px;
+  position: relative;
+  background: radial-gradient(circle, #b59f9f 0%, #640c0c 90%, #121212 100%);
+  border-radius: 0 15px 15px 0;
+  box-shadow:
+    0 8px 16px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px rgba(0, 0, 0, 0.1),
+    0 0 0 2px rgba(8, 3, 0, 0.3);
+  transform: rotateY(-5deg) rotateX(2deg);
+  transition: all 0.3s ease;
+}
+
+.book-spine {
+  position: absolute;
+  left: -6px;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  background: linear-gradient(to right, #523518 0%, #381c08 100%);
+  border-radius: 0 0 0 12px;
+  box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.3);
+}
+
+.book-content {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border-radius: 0 15px 15px 0;
+}
+
+.book-content.has-image {
+  background: none !important;
+  padding: 0 !important;
+}
+
+.book-image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 0 20px 20px 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.book-image-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.2) 50%,
+    transparent 100%
+  );
+  z-index: 2;
+  border-top-left-radius: inherit;
+  border-bottom-left-radius: inherit;
+}
+
+.book-background-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.book-content:not(.has-image) {
+  /* Keep original gradient and styling */
 }
 
 </style>

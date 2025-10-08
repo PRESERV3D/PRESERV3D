@@ -33,7 +33,7 @@
             :rules="[
               (val) => !!val || 'Please enter your email.',
               // (val) => val.includes('@pup.edu.ph') || 'Please use your PUP email only.',
-              (val) => val.includes('@gmail.com') || 'Please use your gmail only.',
+              (val) => val.includes('@pup.edu.ph') || 'Please use your gmail only.',
               checkEmailUnique,
             ]"
             class="text-box"
@@ -280,8 +280,8 @@ async function validateStepOne() {
   // }
 
   // Only for checking
-  if (!email.includes('@gmail.com')) {
-    alert('Please use gmail only.')
+  if (!email.includes('@pup.edu.ph')) {
+    alert('Please use PUP email only.')
     return
   }
 
