@@ -471,23 +471,17 @@ const userType = computed(() => userProfile.value.user_type || 'Unknown')
 // Add computed property to check roles
 const isUser = computed(() => userRole.value === 'user')
 const isAdmin = computed(() => userRole.value === 'admin')
-const isSuperAdmin = computed(() => userProfile.value.is_super_admin || false)
 
 // Filtered navigation items based on user role
 const navItems = computed(() => {
   return baseNavItems.filter((item) => {
-    // Show super admin only for super admins
-    if (item.name === 'user-management') {
-      return isAdmin.value && isSuperAdmin.value
-    }
-
     // Show collections only for users
     if (item.name === 'collections') {
       return isUser.value
     }
 
-    // Hide data-quality if the user is not admin
-    if (item.name === 'data-quality') {
+    // Show pages only for admins
+    if (item.name === 'data-quality' || item.name === 'user-management') {
       return isAdmin.value
     }
 
