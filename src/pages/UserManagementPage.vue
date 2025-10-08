@@ -51,8 +51,8 @@
       align="left"
       narrow-indicator
     >
-      <q-tab name="visitors" label="Approved Visitors" />
       <q-tab name="registrations" label="Visitor Registrations" />
+      <q-tab name="visitors" label="Approved Visitors" />
     </q-tabs>
 
     <q-separator />
@@ -579,8 +579,8 @@
                       <div>{{ props.row.email }}</div>
                     </div>
                     <div class="col-6">
-                      <div class="text-weight-bold">Organization:</div>
-                      <div>{{ props.row.organization || 'N/A' }}</div>
+                      <div class="text-weight-bold">Institution:</div>
+                      <div>{{ props.row.institution || 'N/A' }}</div>
                     </div>
                     <div class="col-6">
                       <div class="text-weight-bold">Purpose:</div>
@@ -1407,7 +1407,7 @@ onMounted(async () => {
   } else {
     // Set default tab for regular admins
     if (!isSuperAdmin.value) {
-      activeTab.value = 'visitors'
+      activeTab.value = 'registrations'
     }
   }
 })
@@ -1416,7 +1416,10 @@ async function fetchAllUsers() {
   loading.value = true
   try {
     // Update account statuses before fetching
-    await supabase.rpc('update_account_status')
+    const { error: rpcError } = await supabase.rpc('update_account_status')
+    if (rpcError) {
+      console.error('RPC update_account_status error:', rpcError)
+    }
 
     // Fetch admins with email confirmation status from auth.users
     const { data: adminData, error: adminError } = await supabase
@@ -1434,6 +1437,7 @@ async function fetchAllUsers() {
           return {
             ...admin,
             email_confirmed_at: authUser?.user?.email_confirmed_at || null,
+            last_login: authUser?.user?.last_sign_in_at || null,
           }
         }),
       )
@@ -1442,32 +1446,77 @@ async function fetchAllUsers() {
       admins.value = []
     }
 
-    // Fetch students
+    // Fetch students with last_sign_in_at from auth.users
     const { data: studentData, error: studentError } = await supabase
       .from('registered_users')
       .select('*')
       .order('created_at', { ascending: false })
 
     if (studentError) throw studentError
-    students.value = studentData || []
 
-    // Fetch faculty
+    // Add last_sign_in_at to students
+    if (studentData && studentData.length > 0) {
+      const studentsWithLogin = await Promise.all(
+        studentData.map(async (student) => {
+          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(student.id)
+          return {
+            ...student,
+            last_login: authUser?.user?.last_sign_in_at || null,
+          }
+        }),
+      )
+      students.value = studentsWithLogin
+    } else {
+      students.value = []
+    }
+
+    // Fetch faculty with last_sign_in_at from auth.users
     const { data: facultyData, error: facultyError } = await supabase
       .from('registered_faculty')
       .select('*')
       .order('created_at', { ascending: false })
 
     if (facultyError) throw facultyError
-    faculty.value = facultyData || []
 
-    // Fetch visitors
+    // Add last_sign_in_at to faculty
+    if (facultyData && facultyData.length > 0) {
+      const facultyWithLogin = await Promise.all(
+        facultyData.map(async (faculty) => {
+          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(faculty.id)
+          return {
+            ...faculty,
+            last_login: authUser?.user?.last_sign_in_at || null,
+          }
+        }),
+      )
+      faculty.value = facultyWithLogin
+    } else {
+      faculty.value = []
+    }
+
+    // Fetch visitors with last_sign_in_at from auth.users
     const { data: visitorData, error: visitorError } = await supabase
       .from('approved_visitors')
       .select('*')
       .order('approved_at', { ascending: false })
 
     if (visitorError) throw visitorError
-    visitors.value = visitorData || []
+
+    // Add last_sign_in_at to visitors
+    if (visitorData && visitorData.length > 0) {
+      const visitorsWithLogin = await Promise.all(
+        visitorData.map(async (visitor) => {
+          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(visitor.id)
+          return {
+            ...visitor,
+            last_login: authUser?.user?.last_sign_in_at || null,
+          }
+        }),
+      )
+      visitors.value = visitorsWithLogin
+    } else {
+      visitors.value = []
+    }
 
     // Fetch visitor registrations
     const { data: registrationData, error: registrationError } = await supabase
@@ -1652,7 +1701,7 @@ async function deleteUser() {
         break
     }
 
-    // Step 1: Delete all related records with FK constraints
+    // Delete all related records with FK constraints
     await supabaseAdmin.from('collections').delete().eq('user_id', userId)
     await supabaseAdmin.from('appointment_booking').delete().eq('user_id', userId)
     await supabaseAdmin.from('notifications').delete().eq('receiver_id', userId)
@@ -1680,15 +1729,15 @@ async function deleteUser() {
       await supabaseAdmin.from('collection_items').delete().in('collection_id', collectionIds)
     }
 
-    // Step 2: Delete from specific user table
+    // Delete from specific user table
     const { error: deleteError } = await supabase.from(tableName).delete().eq('id', userId)
 
     if (deleteError) throw deleteError
 
-    // Step 3: Delete from all_users table
+    // Delete from all_users table
     await supabase.from('all_users').delete().eq('id', userId)
 
-    // Step 4: Delete from Supabase Auth
+    // Delete from Supabase Auth
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
     if (authError) {
@@ -1708,8 +1757,6 @@ async function deleteUser() {
     deleteTarget.value = null
     deleteType.value = ''
 
-    // Force refresh the users list
-    console.log('Force refreshing user list...')
     loading.value = true
 
     // Clear the arrays first to ensure fresh data
@@ -1720,11 +1767,6 @@ async function deleteUser() {
 
     await fetchAllUsers()
     loading.value = false
-    console.log('User list refreshed, admins count:', admins.value.length)
-    console.log(
-      'Current admin IDs:',
-      admins.value.map((a) => a.id),
-    )
   } catch (error) {
     console.error('Error deleting user:', error)
     $q.notify({
@@ -1905,6 +1947,8 @@ async function confirmRegistrationAction() {
           email: row.email,
           first_name: row.first_name,
           last_name: row.last_name,
+          institution: row.institution,
+          purpose: row.purpose,
           start_date: row.start_date,
           end_date: row.end_date,
           account_status: 'Active',
