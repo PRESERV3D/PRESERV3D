@@ -90,7 +90,7 @@
 
     <!-- New in the Archives Section -->
     <div class="layout-container q-my-lg">
-      <div class="box-3 q-px-lg">
+      <div class="box-3 box-3-artifacts q-px-lg">
         <div class="row item-center justify-between q-mb-sm">
           <p class="q-ml-lg title-font-2">New in the Archives</p>
         </div>
@@ -2054,8 +2054,9 @@ async function addCollection() {
   line-height: 1.3;
 }
 
-.layout-container:nth-child(2) .box-3 {
+.box-3-artifacts {
   min-height: 600px;
-  padding-bottom: 2rem;
+  padding-bottom: 3rem;
 }
+
 </style>
