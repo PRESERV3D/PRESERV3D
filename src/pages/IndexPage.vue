@@ -1453,6 +1453,13 @@ async function addCollection() {
   background-color: rgba(239, 175, 0, 0.1);
 }
 
+/* When starred */
+.star-icon.starred {
+  color: #efaf00;
+}
+
+
+
 
 /* RESPONSIVE ARTIFACTS GRID */
 .artifacts-grid {
