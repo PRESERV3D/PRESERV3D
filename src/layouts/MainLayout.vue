@@ -64,8 +64,8 @@
                 </q-item-section>
                 <q-item-section>
                   <span :class="{ 'text-hidden': miniState && !isHovered }" class="nav-text">{{
-                      item.label
-                    }}</span>
+                    item.label
+                  }}</span>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -256,12 +256,7 @@
                     />
                   </div>
                   <div class="col q-px-none">
-                    <q-input
-                      outlined
-                      v-model="advancedSearch.dateTo"
-                      label="Date To"
-                      type="date"
-                    />
+                    <q-input outlined v-model="advancedSearch.dateTo" label="Date To" type="date" />
                   </div>
                 </div>
 
@@ -318,11 +313,7 @@
                 </div>
 
                 <!-- Advanced Options Toggle -->
-                <q-expansion-item
-                  icon="settings"
-                  label="More Options"
-                  class="advanced-options"
-                >
+                <q-expansion-item icon="settings" label="More Options" class="advanced-options">
                   <div class="q-pa-md q-gutter-md">
                     <!-- Exact Match -->
                     <q-checkbox
@@ -418,7 +409,7 @@ const advancedSearch = ref({
   exactMatch: false,
   noneOfWords: false,
   caseSensitive: false,
-  searchInContent: false
+  searchInContent: false,
 })
 
 // Responsive state
@@ -436,13 +427,13 @@ const searchOptions = [
 const advancedSearchTypeOptions = [
   { label: 'All Items', value: 'all' },
   { label: 'Artifacts', value: 'artifacts' },
-  { label: 'Documents', value: 'documents' }
+  { label: 'Documents', value: 'documents' },
 ]
 
 // File Type Options for advanced search
 const fileTypeOptions = [
   { label: 'PDF', value: 'pdf' },
-  { label: 'GLB', value: 'glb' }
+  { label: 'GLB', value: 'glb' },
 ]
 
 const tagOptions = ref([
@@ -452,7 +443,7 @@ const tagOptions = ref([
   { label: 'Work', value: 'work' },
   { label: 'Research', value: 'research' },
   { label: 'Draft', value: 'draft' },
-  { label: 'Final', value: 'final' }
+  { label: 'Final', value: 'final' },
 ])
 
 const sortByOptions = [
@@ -461,12 +452,12 @@ const sortByOptions = [
   { label: 'Date Created', value: 'created' },
   { label: 'Date Modified', value: 'modified' },
   { label: 'Size', value: 'size' },
-  { label: 'Type', value: 'type' }
+  { label: 'Type', value: 'type' },
 ]
 
 const sortOrderOptions = [
   { label: 'Descending', value: 'desc' },
-  { label: 'Ascending', value: 'asc' }
+  { label: 'Ascending', value: 'asc' },
 ]
 
 // User and notifications data
@@ -477,6 +468,7 @@ let channel = null
 // Base navigation items
 const baseNavItems = [
   { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
+  { name: 'user-management', label: 'User Management', icon: '\\icons\\users.png' },
   { name: 'data-quality', label: 'Data Quality', icon: '\\icons\\data_quality.png' },
   { name: 'appointment', label: 'Appointment', icon: '\\icons\\appointment.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
@@ -494,10 +486,16 @@ const userType = computed(() => userProfile.value.user_type || 'Unknown')
 // Add computed property to check roles
 const isUser = computed(() => userRole.value === 'user')
 const isAdmin = computed(() => userRole.value === 'admin')
+const isSuperAdmin = computed(() => userProfile.value.is_super_admin || false)
 
 // Filtered navigation items based on user role
 const navItems = computed(() => {
   return baseNavItems.filter((item) => {
+    // Show super admin only for super admins
+    if (item.name === 'user-management') {
+      return isAdmin.value && isSuperAdmin.value
+    }
+
     // Show collections only for users
     if (item.name === 'collections') {
       return isUser.value
@@ -617,19 +615,22 @@ const performAdvancedSearch = async () => {
         dateTo: advancedSearch.value.dateTo,
         exactMatch: advancedSearch.value.exactMatch,
         noneOfWords: advancedSearch.value.noneOfWords,
-        caseSensitive: advancedSearch.value.caseSensitive
+        caseSensitive: advancedSearch.value.caseSensitive,
       },
       sort: {
         by: advancedSearch.value.sortBy,
-        order: advancedSearch.value.sortOrder
-      }
+        order: advancedSearch.value.sortOrder,
+      },
     }
 
     // Add conditional filters based on search type
     if (advancedSearch.value.type === 'all') {
       // For "All Items", include file type filters
       searchParams.filters.fileTypes = advancedSearch.value.fileType
-    } else if (advancedSearch.value.type === 'artifacts' || advancedSearch.value.type === 'documents') {
+    } else if (
+      advancedSearch.value.type === 'artifacts' ||
+      advancedSearch.value.type === 'documents'
+    ) {
       // For "Artifacts" and "Documents", include tags
       searchParams.filters.tags = advancedSearch.value.tags
 
@@ -667,7 +668,7 @@ const performAdvancedSearch = async () => {
     $q.notify({
       type: 'positive',
       message: 'Advanced search completed',
-      position: 'top'
+      position: 'top',
     })
 
     console.log('Advanced search performed:', searchParams)
@@ -676,7 +677,7 @@ const performAdvancedSearch = async () => {
     $q.notify({
       type: 'negative',
       message: 'Search failed. Please try again.',
-      position: 'top'
+      position: 'top',
     })
   } finally {
     searchLoading.value = false
@@ -696,7 +697,7 @@ const clearAdvancedSearch = () => {
     exactMatch: false,
     noneOfWords: false,
     caseSensitive: false,
-    searchInContent: false
+    searchInContent: false,
   }
 }
 
@@ -710,7 +711,7 @@ const filterTags = (val, update) => {
         { label: 'Work', value: 'work' },
         { label: 'Research', value: 'research' },
         { label: 'Draft', value: 'draft' },
-        { label: 'Final', value: 'final' }
+        { label: 'Final', value: 'final' },
       ]
     } else {
       const needle = val.toLowerCase()
@@ -721,8 +722,8 @@ const filterTags = (val, update) => {
         { label: 'Work', value: 'work' },
         { label: 'Research', value: 'research' },
         { label: 'Draft', value: 'draft' },
-        { label: 'Final', value: 'final' }
-      ].filter(tag => tag.label.toLowerCase().includes(needle))
+        { label: 'Final', value: 'final' },
+      ].filter((tag) => tag.label.toLowerCase().includes(needle))
     }
   })
 }
@@ -828,11 +829,14 @@ watch(
 )
 
 // Sync advanced search query with main search
-watch(() => advancedSearch.value.query, (newQuery) => {
-  if (newQuery !== search.value) {
-    search.value = newQuery
-  }
-})
+watch(
+  () => advancedSearch.value.query,
+  (newQuery) => {
+    if (newQuery !== search.value) {
+      search.value = newQuery
+    }
+  },
+)
 
 // Sync main search with advanced search query
 watch(search, (newSearch) => {
@@ -842,22 +846,25 @@ watch(search, (newSearch) => {
 })
 
 // Watch for search type changes to clear inappropriate fields
-watch(() => advancedSearch.value.type, (newType) => {
-  // Clear file type when not in "All Items"
-  if (newType !== 'all') {
-    advancedSearch.value.fileType = []
-  }
+watch(
+  () => advancedSearch.value.type,
+  (newType) => {
+    // Clear file type when not in "All Items"
+    if (newType !== 'all') {
+      advancedSearch.value.fileType = []
+    }
 
-  // Clear tags when not in "Artifacts" or "Documents"
-  if (newType !== 'artifacts' && newType !== 'documents') {
-    advancedSearch.value.tags = []
-  }
+    // Clear tags when not in "Artifacts" or "Documents"
+    if (newType !== 'artifacts' && newType !== 'documents') {
+      advancedSearch.value.tags = []
+    }
 
-  // Clear search in content when not in "Documents"
-  if (newType !== 'documents') {
-    advancedSearch.value.searchInContent = false
-  }
-})
+    // Clear search in content when not in "Documents"
+    if (newType !== 'documents') {
+      advancedSearch.value.searchInContent = false
+    }
+  },
+)
 
 async function fetchNotifications() {
   const {
