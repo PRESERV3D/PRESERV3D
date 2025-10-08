@@ -199,7 +199,13 @@
               </q-btn>
 
               <!-- User Profile Button -->
-              <q-btn flat dense class="user-profile-btn" :class="{ compact: isCompactMode }">
+              <q-btn
+                flat
+                dense
+                class="user-profile-btn"
+                :class="{ compact: isCompactMode }"
+                @click="goToProfile"
+              >
                 <q-avatar size="32px">
                   <img src="\img\UserIcon.jpg" />
                 </q-avatar>
@@ -417,6 +423,21 @@ const searchOptions = [
   { label: 'Artifacts', value: 'artifacts' },
   { label: 'Documents', value: 'documents' },
 ]
+
+function goToProfile() {
+  switch (userType.value?.toLowerCase()) {
+    case 'visitor':
+      router.push({ name: 'mprofile' })
+      break
+    case 'admin':
+    case 'faculty':
+    case 'student':
+      router.push({ name: 'profile' })
+      break
+    default:
+      console.warn('Unknown user type:', userType.value)
+  }
+}
 
 const categoryOptions = ref([])
 watch(
