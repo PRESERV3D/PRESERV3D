@@ -579,8 +579,8 @@
                       <div>{{ props.row.email }}</div>
                     </div>
                     <div class="col-6">
-                      <div class="text-weight-bold">Organization:</div>
-                      <div>{{ props.row.organization || 'N/A' }}</div>
+                      <div class="text-weight-bold">Institution:</div>
+                      <div>{{ props.row.institution || 'N/A' }}</div>
                     </div>
                     <div class="col-6">
                       <div class="text-weight-bold">Purpose:</div>
@@ -1947,6 +1947,8 @@ async function confirmRegistrationAction() {
           email: row.email,
           first_name: row.first_name,
           last_name: row.last_name,
+          institution: row.institution,
+          purpose: row.purpose,
           start_date: row.start_date,
           end_date: row.end_date,
           account_status: 'Active',
