@@ -315,3 +315,10 @@ onMounted(() => {
   }
 })
 </script>
+
+<style scoped>
+:deep(.login-text-box .q-field__control::before),
+:deep(.login-text-box .q-field__control::after) {
+  display: none !important;
+}
+</style>
