@@ -536,18 +536,7 @@ const searchOptions = [
 ]
 
 function goToProfile() {
-  switch (userType.value?.toLowerCase()) {
-    case 'visitor':
-      router.push({ name: 'mprofile' })
-      break
-    case 'admin':
-    case 'faculty':
-    case 'student':
-      router.push({ name: 'profile' })
-      break
-    default:
-      console.warn('Unknown user type:', userType.value)
-  }
+  router.push('/profile')
 }
 
 const categoryOptions = ref([])
