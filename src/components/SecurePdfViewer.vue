@@ -105,11 +105,11 @@
 
 <script setup>
 import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import * as pdfjsLib from 'pdfjs-dist'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
+import * as pdfjsLib from 'pdfjs-dist'
 
-// Configure PDF.js worker - using local worker file for better reliability
+// Configure local PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
 
 const userStore = useUserStore()
@@ -168,8 +168,6 @@ const pageRefs = ref({})
 // Security monitoring
 const screenshotAttempts = ref(0)
 const devToolsOpen = ref(false)
-
-// Track rendering tasks to cancel them if needed
 const renderingTasks = ref({})
 
 // Generate user info text for watermark
@@ -207,7 +205,6 @@ watch(scale, async () => {
           task.cancel()
         }
       } catch (error) {
-        // Silently ignore cancellation errors (task may already be complete)
         console.debug('Could not cancel rendering task:', error.message)
       }
     })
@@ -237,8 +234,6 @@ const loadPdf = async () => {
 
     pdfDoc.value = await loadingTask.promise
     numPages.value = pdfDoc.value.numPages
-
-    // Wait for loading to be false first so v-if can render the canvas elements
     loading.value = false
 
     // Wait for DOM to update with all canvas elements
