@@ -51,8 +51,8 @@
       align="left"
       narrow-indicator
     >
-      <q-tab name="visitors" label="Approved Visitors" />
       <q-tab name="registrations" label="Visitor Registrations" />
+      <q-tab name="visitors" label="Approved Visitors" />
     </q-tabs>
 
     <q-separator />
@@ -1407,7 +1407,7 @@ onMounted(async () => {
   } else {
     // Set default tab for regular admins
     if (!isSuperAdmin.value) {
-      activeTab.value = 'visitors'
+      activeTab.value = 'registrations'
     }
   }
 })
