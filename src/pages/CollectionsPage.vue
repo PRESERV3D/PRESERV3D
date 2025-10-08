@@ -169,7 +169,10 @@
             @click="resetForm"
             no-caps
           />
-          <q-btn label="Save" class="q-mr-sm btn-save" @click="addCollection" no-caps />
+          <div v-if="!isGenerateCollectionLoading">
+            <q-btn label="Save" class="q-mr-sm btn-save" @click="addCollection" no-caps />
+          </div>
+          <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -185,6 +188,7 @@ const user = ref({ first_name: '' })
 const collections = ref([])
 const isLoading = ref(true)
 const showDialog = ref(false)
+const isGenerateCollectionLoading = ref(false)
 const fileInput = ref(null)
 const previewImage = ref(null)
 const newCollectionTitle = ref('')
@@ -319,6 +323,8 @@ function resetForm() {
 }
 
 async function addCollection() {
+  isGenerateCollectionLoading.value = true
+
   const title = newCollectionTitle.value.trim()
   const description = newCollectionDesc.value.trim()
 
@@ -366,6 +372,7 @@ async function addCollection() {
     showDialog.value = false
     resetForm()
     await loadCollections(authUser.id)
+    isGenerateCollectionLoading.value = false
   }
 }
 </script>
