@@ -453,6 +453,7 @@ let channel = null
 // Base navigation items
 const baseNavItems = [
   { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
+  { name: 'user-management', label: 'User Management', icon: '\\icons\\users.png' },
   { name: 'data-quality', label: 'Data Quality', icon: '\\icons\\data_quality.png' },
   { name: 'appointment', label: 'Appointment', icon: '\\icons\\appointment.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
@@ -470,10 +471,16 @@ const userType = computed(() => userProfile.value.user_type || 'Unknown')
 // Add computed property to check roles
 const isUser = computed(() => userRole.value === 'user')
 const isAdmin = computed(() => userRole.value === 'admin')
+const isSuperAdmin = computed(() => userProfile.value.is_super_admin || false)
 
 // Filtered navigation items based on user role
 const navItems = computed(() => {
   return baseNavItems.filter((item) => {
+    // Show super admin only for super admins
+    if (item.name === 'user-management') {
+      return isAdmin.value && isSuperAdmin.value
+    }
+
     // Show collections only for users
     if (item.name === 'collections') {
       return isUser.value

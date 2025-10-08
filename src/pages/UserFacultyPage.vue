@@ -32,8 +32,8 @@
             lazy-rules
             :rules="[
               (val) => !!val || 'Please enter your email.',
-              // (val) => val.includes('@pup.edu.ph') || 'Please use your PUP email only.',
-              (val) => val.includes('@pup.edu.ph') || 'Please use your gmail only.',
+              (val) => val.includes('@pup.edu.ph') || 'Please use your PUP email only.',
+              // (val) => val.includes('@pup.edu.ph') || 'Please use your gmail only.',
               checkEmailUnique,
             ]"
             class="text-box"
@@ -467,3 +467,10 @@ function handleNotifyDialogClose() {
 // Terms and Conditions checkbox state
 const acceptedterms = ref(false)
 </script>
+
+<style scoped>
+:deep(.text-box .q-field__control::before),
+:deep(.text-box .q-field__control::after) {
+  display: none !important;
+}
+</style>

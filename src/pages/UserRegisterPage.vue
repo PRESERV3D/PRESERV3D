@@ -494,3 +494,12 @@ function handleNotifyDialogClose() {
 // Terms and Conditions checkbox state
 const acceptedterms = ref(false)
 </script>
+
+<style scoped>
+:deep(.text-box .q-field__control::before),
+:deep(.text-box .q-field__control::after),
+:deep(.c-textbox .q-field__control::before),
+:deep(.c-textbox .q-field__control::after) {
+  display: none !important;
+}
+</style>
