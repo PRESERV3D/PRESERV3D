@@ -128,10 +128,20 @@ export const useUserStore = defineStore('user', {
         .eq('id', userId)
 
       if (adminData?.length > 0) {
-        this.profile = {
-          ...adminData[0],
-          role: 'admin',
-          user_type: 'admin',
+        if (adminData[0].is_super_admin) {
+          this.profile = {
+            ...adminData[0],
+            role: 'admin',
+            user_type: 'super admin',
+            is_super_admin: true,
+          }
+        } else {
+          this.profile = {
+            ...adminData[0],
+            role: 'admin',
+            user_type: 'admin',
+            is_super_admin: false,
+          }
         }
         return
       }
