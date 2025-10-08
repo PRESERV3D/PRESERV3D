@@ -38,6 +38,8 @@ CREATE TABLE public.approved_visitors (
   start_date date,
   end_date date,
   account_status text DEFAULT 'Active'::text CHECK (account_status = ANY (ARRAY['Active'::text, 'Inactive'::text, 'Expired'::text])),
+  institution text,
+  purpose text,
   CONSTRAINT approved_visitors_pkey PRIMARY KEY (id),
   CONSTRAINT approved_visitors_registration_id_fkey FOREIGN KEY (registration_id) REFERENCES public.registration_visitors(id),
   CONSTRAINT approved_visitors_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
