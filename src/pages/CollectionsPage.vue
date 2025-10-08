@@ -55,7 +55,7 @@
           class="collection-item"
           :class="{
             'hide-on-tablet': index >= 6,
-            'hide-on-mobile': index >= 4
+            'hide-on-mobile': index >= 4,
           }"
         >
           <router-link :to="`/collection/${collection.collection_id}`" class="collection-link">
@@ -116,8 +116,8 @@
           </div>
         </q-card-section>
 
-        <q-card-section class="row q-gutter-md" style="gap: 0.5rem">
-          <div class="col-auto q-ml-md">
+        <q-card-section class="row q-gutter-lg justify-center">
+          <div class="col-auto">
             <div class="upload-box" @click="triggerFileInput">
               <img v-if="previewImage" :src="previewImage" alt="Preview" class="preview-image" />
               <div v-else class="upload">
@@ -134,7 +134,7 @@
             </div>
           </div>
 
-          <div class="col-5 q-ml-lg">
+          <div class="col-auto">
             <div class="sub-font-3" style="font-size: 16px; font-weight: 500">COLLECTION NAME</div>
             <q-input
               v-model="newCollectionTitle"
@@ -169,7 +169,10 @@
             @click="resetForm"
             no-caps
           />
-          <q-btn label="Save" class="q-mr-sm btn-save" @click="addCollection" no-caps />
+          <div v-if="!isGenerateCollectionLoading">
+            <q-btn label="Save" class="q-mr-sm btn-save" @click="addCollection" no-caps />
+          </div>
+          <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -185,6 +188,7 @@ const user = ref({ first_name: '' })
 const collections = ref([])
 const isLoading = ref(true)
 const showDialog = ref(false)
+const isGenerateCollectionLoading = ref(false)
 const fileInput = ref(null)
 const previewImage = ref(null)
 const newCollectionTitle = ref('')
@@ -319,6 +323,8 @@ function resetForm() {
 }
 
 async function addCollection() {
+  isGenerateCollectionLoading.value = true
+
   const title = newCollectionTitle.value.trim()
   const description = newCollectionDesc.value.trim()
 
@@ -366,6 +372,7 @@ async function addCollection() {
     showDialog.value = false
     resetForm()
     await loadCollections(authUser.id)
+    isGenerateCollectionLoading.value = false
   }
 }
 </script>
@@ -671,6 +678,17 @@ async function addCollection() {
 }
 
 /* Upload box styling for dialog */
+
+.upload {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  text-align: center;
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+}
+
 .upload-box {
   width: 11rem;
   height: 14.5rem;
@@ -803,8 +821,10 @@ async function addCollection() {
 
 /* Dialog styles */
 .add-collection-card {
-  min-width: 600px;
-  border-radius: 12px;
+  background-color: #fbf4d0;
+  padding: 1rem;
+  min-width: 30rem;
+  border-radius: 12px !important;
 }
 
 .btn-save {
