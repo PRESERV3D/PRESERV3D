@@ -102,8 +102,10 @@
                       class="status-btn"
                       @click="openConfirmDialog(props.row, 'False Positive')"
                     >
-                      <q-icon name="check" color="green" size="18px" />
-                      <q-tooltip>Mark as False Positive</q-tooltip>
+                      <q-icon size="18px">
+                        <img src="icons/false-positive.png" alt="False Positive" style="width: 100%; height: 100%;">
+                        <q-tooltip>Mark as False Positive</q-tooltip>
+                      </q-icon>
                     </q-btn>
                   </template>
 
