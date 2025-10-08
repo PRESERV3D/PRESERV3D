@@ -202,8 +202,13 @@ watch(scale, async () => {
   if (pdfDoc.value) {
     // Cancel any ongoing rendering tasks
     Object.values(renderingTasks.value).forEach((task) => {
-      if (task && task.cancel) {
-        task.cancel()
+      try {
+        if (task && typeof task.cancel === 'function') {
+          task.cancel()
+        }
+      } catch (error) {
+        // Silently ignore cancellation errors (task may already be complete)
+        console.debug('Could not cancel rendering task:', error.message)
       }
     })
     renderingTasks.value = {}
@@ -286,7 +291,14 @@ const renderPage = async (pageNum) => {
   try {
     // Cancel previous rendering task for this page if it exists
     if (renderingTasks.value[pageNum]) {
-      renderingTasks.value[pageNum].cancel()
+      try {
+        if (typeof renderingTasks.value[pageNum].cancel === 'function') {
+          renderingTasks.value[pageNum].cancel()
+        }
+      } catch (error) {
+        // Silently ignore cancellation errors
+        console.debug('Could not cancel previous rendering task:', error.message)
+      }
     }
 
     const page = await pdfDoc.value.getPage(pageNum)
