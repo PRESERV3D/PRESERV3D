@@ -1015,7 +1015,7 @@ async function setupRealtimeNotifications() {
 const notificationRoutes = {
   appointment_booking: '/admin/appointments',
   appointment_status: '/appointment?tab=status',
-  visitor_registration: '/admindash',
+  visitor_registration: '/user-management?tab=registrations',
 }
 // Mark as read and navigate to corresponding page based on type
 async function openNotification(notif) {

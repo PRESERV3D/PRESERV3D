@@ -1250,9 +1250,11 @@ import { ref, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { supabase, supabaseAdmin } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
+import { useRoute } from 'vue-router'
 
 const $q = useQuasar()
 const userStore = useUserStore()
+const route = useRoute()
 
 // Computed property to check if user is super admin
 const isSuperAdmin = computed(() => {
@@ -1397,9 +1399,16 @@ const registrationColumns = [
 
 onMounted(async () => {
   await fetchAllUsers()
-  // Set default tab for regular admins
-  if (!isSuperAdmin.value) {
-    activeTab.value = 'visitors'
+
+  // Check if there's a tab query parameter
+  const tabParam = route.query.tab
+  if (tabParam) {
+    activeTab.value = tabParam
+  } else {
+    // Set default tab for regular admins
+    if (!isSuperAdmin.value) {
+      activeTab.value = 'visitors'
+    }
   }
 })
 
