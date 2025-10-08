@@ -97,7 +97,7 @@
       <q-page-container>
         <div v-if="noToolBar" class="search-toolbar">
           <div class="responsive-toolbar-container">
-            <!-- Search Bar Container with Internal Dropdown -->
+            <!-- Search Bar Container - hidden on some pages -->
             <div v-if="hasSearchBar" class="search-container">
               <q-input
                 dense
@@ -156,13 +156,16 @@
               </q-input>
             </div>
 
+            <!-- Hidden spacer when search bar is not present -->
+            <div v-else class="search-container-hidden"></div>
+
             <!-- Spacer to push actions to the right -->
             <div class="toolbar-spacer"></div>
 
             <!-- Notifications and user profile -->
-            <div class="toolbar-actions">
+            <div class="toolbar-actions" :class="{ 'no-search': !hasSearchBar }">
               <!-- Notifications Button -->
-              <q-btn flat round dense class="notif-btn">
+              <q-btn flat round dense class="notif-btn" :class="{ 'no-search': !hasSearchBar }">
                 <img src="/icons/notif-icon.png" alt="notifications" class="notif-image" />
                 <q-badge
                   floating
@@ -173,31 +176,86 @@
                 >
                   {{ notificationCount }}
                 </q-badge>
-                <q-menu>
-                  <q-list style="min-width: 150px">
-                    <q-item-label header>Notifications</q-item-label>
-                    <q-item v-if="notifications.length === 0">
-                      <q-item-section>No new notifications</q-item-section>
-                    </q-item>
-                    <q-item
-                      v-for="notif in notifications"
-                      :key="notif.id"
-                      clickable
-                      v-ripple
-                      @click="openNotification(notif)"
-                      :class="notif.read ? 'bg-white' : 'bg-grey-3'"
-                    >
-                      <q-item-section>{{ notif.message }}</q-item-section>
-                      <q-item-section side>{{ notif.dateTime }}</q-item-section>
-                    </q-item>
-                    <q-separator />
-                    <q-item clickable class="text-center text-primary">
-                      <q-item-section>View All</q-item-section>
-                    </q-item>
-                  </q-list>
+                <q-menu class="notifications-menu">
+                  <q-card class="notifications-card">
+                    <q-card-section class="notifications-header">
+                      <div class="text-h6">Notifications</div>
+                      <q-btn
+                        flat
+                        dense
+                        round
+                        icon="clear_all"
+                        @click="clearAllNotifications"
+                        class="clear-all-btn"
+                        v-if="notifications.length > 0"
+                      >
+                        <q-tooltip>Clear All</q-tooltip>
+                      </q-btn>
+                    </q-card-section>
+
+                    <q-scroll-area class="notifications-scroll-area">
+                      <q-list class="notifications-list">
+                        <q-item
+                          v-if="notifications.length === 0"
+                          class="no-notifications"
+                        >
+                          <q-item-section avatar>
+                            <q-icon name="notifications_off" color="grey-5" />
+                          </q-item-section>
+                          <q-item-section>
+                            <q-item-label>No new notifications</q-item-label>
+                          </q-item-section>
+                        </q-item>
+
+                        <q-item
+                          v-for="notif in notifications"
+                          :key="notif.id"
+                          clickable
+                          v-ripple
+                          @click="openNotification(notif)"
+                          class="notification-item"
+                          :class="{ unread: !notif.read }"
+                        >
+                          <q-item-section avatar>
+                            <div class="notification-icon">
+                              <q-icon
+                                :name="getNotificationIcon(notif.type)"
+                                :color="notif.read ? 'grey-5' : 'primary'"
+                              />
+                            </div>
+                          </q-item-section>
+
+                          <q-item-section>
+                            <q-item-label class="notification-message" :class="{ 'text-bold': !notif.read }">
+                              {{ notif.message }}
+                            </q-item-label>
+                            <q-item-label caption class="notification-time">
+                              {{ notif.dateTime }}
+                            </q-item-label>
+                          </q-item-section>
+
+                          <q-item-section side top v-if="!notif.read">
+                            <q-badge rounded color="primary" class="unread-dot" />
+                          </q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-scroll-area>
+
+                    <q-separator v-if="notifications.length > 0" />
+
+                    <q-card-actions class="notifications-actions" v-if="notifications.length > 0">
+                      <q-btn
+                        flat
+                        label="Clear All"
+                        color="primary"
+                        class="full-width clear-all-bottom-btn"
+                        @click="clearAllNotifications"
+                        icon="clear_all"
+                      />
+                    </q-card-actions>
+                  </q-card>
                 </q-menu>
               </q-btn>
-
               <!-- User Profile Button -->
               <q-btn
                 flat
@@ -418,6 +476,59 @@ const advancedSearch = ref({
   // sortOrder: 'desc',
 })
 
+// Add clear all notifications function
+const clearAllNotifications = async () => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+
+    // Mark all notifications as read in database
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('receiver_id', user.id)
+      .eq('read', false)
+
+    if (error) {
+      console.error('Error clearing notifications:', error)
+      return
+    }
+
+    // Update local state
+    notifications.value = notifications.value.map(notif => ({
+      ...notif,
+      read: true
+    }))
+    notificationCount.value = 0
+
+    $q.notify({
+      type: 'positive',
+      message: 'All notifications cleared',
+      timeout: 2000
+    })
+  } catch (error) {
+    console.error('Error clearing notifications:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to clear notifications',
+      timeout: 2000
+    })
+  }
+}
+
+// Add notification icon mapping
+const getNotificationIcon = (type) => {
+  const typeMap = {
+    appointment_booking: 'event',
+    appointment_status: 'schedule',
+    visitor_registration: 'person_add',
+    default: 'notifications'
+  }
+  return typeMap[type] || typeMap.default
+}
+
 // Search dropdown options (for main search bar)
 const searchOptions = [
   { label: 'Artifacts', value: 'artifacts' },
@@ -481,23 +592,17 @@ const userType = computed(() => userProfile.value.user_type || 'Unknown')
 // Add computed property to check roles
 const isUser = computed(() => userRole.value === 'user')
 const isAdmin = computed(() => userRole.value === 'admin')
-const isSuperAdmin = computed(() => userProfile.value.is_super_admin || false)
 
 // Filtered navigation items based on user role
 const navItems = computed(() => {
   return baseNavItems.filter((item) => {
-    // Show super admin only for super admins
-    if (item.name === 'user-management') {
-      return isAdmin.value && isSuperAdmin.value
-    }
-
     // Show collections only for users
     if (item.name === 'collections') {
       return isUser.value
     }
 
-    // Hide data-quality if the user is not admin
-    if (item.name === 'data-quality') {
+    // Show pages only for admins
+    if (item.name === 'data-quality' || item.name === 'user-management') {
       return isAdmin.value
     }
 
@@ -744,6 +849,10 @@ watch(
       activeItem.value = 'collections'
     } else if (newPath.includes('gallery')) {
       activeItem.value = 'gallery'
+    } else if (newPath.includes('data-quality')) {
+      activeItem.value = 'data-quality'
+    } else if (newPath.includes('user-management')) {
+      activeItem.value = 'user-management'
     } else {
       activeItem.value = ''
     }
@@ -897,7 +1006,7 @@ async function setupRealtimeNotifications() {
 const notificationRoutes = {
   appointment_booking: '/admin/appointments',
   appointment_status: '/appointment?tab=status',
-  visitor_registration: '/admindash',
+  visitor_registration: '/user-management?tab=registrations',
 }
 // Mark as read and navigate to corresponding page based on type
 async function openNotification(notif) {
@@ -1281,13 +1390,32 @@ watch(
     width: 120px !important;
   }
 
+  /* Keep consistent alignment in both states */
   .navigation-section {
-    text-align: center;
+    text-align: left;
   }
 
-  .nav-item .q-item__section--main,
-  .logout-item .q-item__section--main {
-    display: none !important;
+  /* Center only the icons in mini state */
+  .q-drawer--mini .nav-item,
+  .q-drawer--mini .logout-item {
+    justify-content: center !important;
+    padding: 8px !important;
+  }
+
+  /* Normal padding when expanded */
+  .q-drawer:hover .nav-item,
+  .q-drawer:hover .logout-item {
+    justify-content: flex-start !important;
+    padding: 8px 16px !important;
+  }
+
+  /* Adjust drawer width on hover */
+  .q-drawer:hover {
+    width: 280px !important;
+  }
+
+  .q-drawer:hover .q-drawer__content {
+    width: 280px !important;
   }
 
   /* Content stays in normal position */
@@ -1299,13 +1427,12 @@ watch(
     width: 100% !important;
   }
 }
-
 /* Mobile screens - content needs space for sidebar */
 @media (max-width: 599px) {
   .search-toolbar {
     padding: 12px 16px !important;
-    width: calc(100% - 120px) !important; /* Account for mini sidebar */
-    margin-left: 0 !important; /* Remove extra margin */
+    width: calc(100% - 120px) !important;
+    margin-left: 0 !important;
     position: relative !important;
     top: auto !important;
     right: auto !important;
@@ -1353,28 +1480,32 @@ watch(
     width: 120px !important;
   }
 
+  /* Keep left alignment */
   .navigation-section {
-    text-align: center;
+    text-align: left;
   }
 
-  .nav-item .q-item__section--main,
-  .logout-item .q-item__section--main {
-    display: none !important;
+  /* Center only icons, not text */
+  .q-drawer--mini .nav-item,
+  .q-drawer--mini .logout-item {
+    justify-content: center !important;
   }
 
-  /* Keep the margin for sidebar */
-  .q-page-container {
-    margin-left: 120px !important;
-    padding-left: 0 !important;
+  .q-drawer:hover .nav-item,
+  .q-drawer:hover .logout-item {
+    justify-content: flex-start !important;
   }
 
-  .advanced-search-dialog {
-    min-width: 280px;
-    width: 100vw;
-    margin: 8px;
+
+  /* Expand on hover */
+  .q-drawer:hover {
+    width: 280px !important;
+  }
+
+  .q-drawer:hover .q-drawer__content {
+    width: 280px !important;
   }
 }
-
 /* ========================
    NAVIGATION ITEMS
 ======================== */
@@ -1469,7 +1600,136 @@ watch(
 }
 
 /* ========================
-   NOTIFICATIONS
+   NOTIFICATIONS MENU
+======================== */
+.notifications-menu {
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.notifications-card {
+  width: 380px;
+  max-width: 90vw;
+  border-radius: 12px;
+}
+
+.notifications-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 16px 12px 16px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.notifications-header .text-h6 {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.78);
+  margin: 0;
+}
+
+.clear-all-btn {
+  color: #6c757d !important;
+  padding: 4px !important;
+}
+
+.clear-all-btn:hover {
+  color: #dc3545 !important;
+  background: rgba(220, 53, 69, 0.1) !important;
+}
+
+.notifications-scroll-area {
+  height: 300px;
+  max-height: 50vh;
+}
+
+.notifications-list {
+  padding: 4px 0;
+}
+
+.notification-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+  background-color: rgba(136, 0, 0, 0.05) !important;
+}
+
+.notification-item.unread {
+  background-color: rgba(33, 150, 243, 0.04);
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(136, 0, 0, 0.1);
+}
+
+.notification-item.unread .notification-icon {
+  background: rgba(33, 150, 243, 0.1);
+}
+
+.notification-message {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  word-wrap: break-word;
+}
+
+.notification-time {
+  font-size: 0.75rem !important;
+  color: #6c757d !important;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  min-height: 8px;
+}
+
+.no-notifications {
+  padding: 20px 16px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.no-notifications .q-item__section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.notifications-actions {
+  padding: 8px 16px 12px 16px;
+}
+
+.clear-all-bottom-btn {
+  border-radius: 8px;
+  font-weight: 500;
+  color: #dc3545 !important;
+}
+
+.clear-all-bottom-btn:hover {
+  background: rgba(220, 53, 69, 0.1) !important;
+}
+
+/* ========================
+   NOTIFICATIONS BADGE
 ======================== */
 .notif-btn {
   background-color: #f8f8ff !important;
@@ -1477,21 +1737,40 @@ watch(
   height: 40px;
   backdrop-filter: blur(10px);
   flex-shrink: 0;
+  position: relative;
 }
+
 .notif-btn:hover {
   background-color: #e0e0e0 !important;
 }
+
 .notif-image {
   width: 20px;
   height: 20px;
   object-fit: contain;
 }
+
 .custom-badge {
   font-size: 11px !important;
   font-weight: bold !important;
   min-width: 18px !important;
   height: 18px !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 599px) {
+  .notifications-card {
+    width: 320px;
+  }
+
+  .notification-item {
+    padding: 10px 12px;
+  }
+
+  .notifications-header {
+    padding: 12px 12px 8px 12px;
+  }
 }
 
 /* ========================
@@ -1570,4 +1849,151 @@ watch(
   font-size: 12px !important;
   padding: 4px 8px !important;
 }
+
+/* ========================
+   SEARCH INPUT OUTLINES
+======================== */
+.search-input :deep(.q-field__control) {
+  border: 1px solid #ccc !important;
+  border-radius: 8px;
+  transition: border-color 0.3s ease;
+}
+
+.search-input :deep(.q-field__control:hover) {
+  border-color: #888 !important;
+}
+
+.search-input :deep(.q-field--focused .q-field__control) {
+  border-color: #880000 !important;
+  box-shadow: 0 0 0 1px rgba(136, 0, 0, 0.2) !important;
+}
+
+/* ========================
+   ADVANCED SEARCH DIALOG OUTLINES
+======================== */
+.advanced-search-dialog :deep(.q-field__control) {
+  border: 1px solid #ccc !important;
+  border-radius: 8px;
+}
+
+.advanced-search-dialog :deep(.q-field__control:hover) {
+  border-color: #888 !important;
+}
+
+.advanced-search-dialog :deep(.q-field--focused .q-field__control) {
+  border-color: #880000 !important;
+  box-shadow: 0 0 0 1px rgba(136, 0, 0, 0.2) !important;
+}
+
+/* ========================
+   SEARCH BAR VISIBILITY HANDLING
+======================== */
+
+/* Hidden search container that maintains space */
+.search-container-hidden {
+  width: 720px !important;
+  max-width: 100%;
+  margin-right: 2px;
+  visibility: hidden;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.toolbar-actions.no-search {
+  margin-left: 102px; /* profile icon */
+}
+
+/* Reduce gap between notification and profile when search bar is hidden */
+.toolbar-actions.no-search {
+  gap: 0px;
+}
+
+/* ========================
+   RESPONSIVE ADJUSTMENTS FOR HIDDEN SEARCH
+======================== */
+
+/* Ultra-wide screens */
+@media (min-width: 1920px) {
+  .search-container-hidden {
+    width: 1060px !important;
+    min-width: 1060px !important;
+    max-width: 1060px !important;
+  }
+  .notif-btn.no-search {
+    margin-right: 20px;
+  }
+}
+
+/* Large screens  */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .search-container-hidden {
+    width: 790px !important;
+    min-width: 790px !important;
+    max-width: 790px !important;
+  }
+  .notif-btn.no-search {
+    margin-right: 18px;
+  }
+}
+
+/* Medium-large screens */
+@media (min-width: 1300px) and (max-width: 1439px) {
+  .search-container-hidden {
+    width: 710px !important;
+    min-width: 610px !important;
+    max-width: 710px !important;
+  }
+  .notif-btn.no-search {
+    margin-right: 16px;
+  }
+}
+
+
+@media (min-width: 1200px) and (max-width: 1300px) {
+  .search-container-hidden {
+    width: 650px !important;
+    min-width: 550px !important;
+    max-width: 650px !important;
+    flex: none !important;
+  }
+  .notif-btn.no-search {
+    margin-right: 14px;
+  }
+}
+
+/* Compact screens  */
+@media (min-width: 1050px) and (max-width: 1199px) {
+  .search-container-hidden {
+    width: 590px !important;
+    min-width: 490px !important;
+    max-width: 590px !important;
+  }
+  .notif-btn.no-search {
+    margin-right: 12px;
+  }
+}
+
+/* Small screens */
+@media (min-width: 600px) and (max-width: 1049px) {
+  .search-container-hidden {
+    width: 550px !important;
+    min-width: 300px !important;
+    max-width: 550px !important;
+  }
+  .notif-btn.no-search {
+    margin-right: 10px;
+  }
+}
+
+/* Mobile screens */
+@media (max-width: 599px) {
+  .search-container-hidden {
+    display: none;
+  }
+  .toolbar-actions.no-search {
+    margin-left: 0;
+  }
+}
+
+
 </style>
