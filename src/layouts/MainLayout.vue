@@ -1559,7 +1559,7 @@ watch(
 .text-center .logout-item {
   justify-content: center !important;
   padding: 8px !important;
-  margin-bottom: 16px !important;
+  margin-bottom: 10px !important;
 }
 .text-center .q-item__section--main {
   display: none !important;
