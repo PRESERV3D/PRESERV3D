@@ -257,7 +257,13 @@
                 </q-menu>
               </q-btn>
               <!-- User Profile Button -->
-              <q-btn flat dense class="user-profile-btn" :class="{ compact: isCompactMode }">
+              <q-btn
+                flat
+                dense
+                class="user-profile-btn"
+                :class="{ compact: isCompactMode }"
+                @click="goToProfile"
+              >
                 <q-avatar size="32px">
                   <img src="\img\UserIcon.jpg" />
                 </q-avatar>
@@ -529,6 +535,21 @@ const searchOptions = [
   { label: 'Documents', value: 'documents' },
 ]
 
+function goToProfile() {
+  switch (userType.value?.toLowerCase()) {
+    case 'visitor':
+      router.push({ name: 'mprofile' })
+      break
+    case 'admin':
+    case 'faculty':
+    case 'student':
+      router.push({ name: 'profile' })
+      break
+    default:
+      console.warn('Unknown user type:', userType.value)
+  }
+}
+
 const categoryOptions = ref([])
 watch(
   () => advancedSearch.value.type,
@@ -564,6 +585,7 @@ let channel = null
 // Base navigation items
 const baseNavItems = [
   { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
+  { name: 'user-management', label: 'User Management', icon: '\\icons\\users.png' },
   { name: 'data-quality', label: 'Data Quality', icon: '\\icons\\data_quality.png' },
   { name: 'appointment', label: 'Appointment', icon: '\\icons\\appointment.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
@@ -590,8 +612,8 @@ const navItems = computed(() => {
       return isUser.value
     }
 
-    // Hide data-quality if the user is not admin
-    if (item.name === 'data-quality') {
+    // Show pages only for admins
+    if (item.name === 'data-quality' || item.name === 'user-management') {
       return isAdmin.value
     }
 

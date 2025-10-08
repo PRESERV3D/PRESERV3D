@@ -1828,6 +1828,11 @@ watch(
 )
 
 function applyFilters() {
+  documentsCurrentPage.value = 1
+  if (documentsCurrentPage.value > documentsTotalPages.value) {
+    documentsCurrentPage.value = documentsTotalPages.value
+  }
+
   searchStore.clear()
 
   const filterData = {
@@ -1926,6 +1931,11 @@ function clearCategories() {
 // }
 
 function applySort(option) {
+  documentsCurrentPage.value = 1
+  if (documentsCurrentPage.value > documentsTotalPages.value) {
+    documentsCurrentPage.value = documentsTotalPages.value
+  }
+
   searchStore.setSort(option.value)
 
   // Apply sorting on the already fetched results

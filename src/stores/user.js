@@ -17,14 +17,14 @@ export const useUserStore = defineStore('user', {
         }
       })
 
-      // supabase.auth.onAuthStateChange((_, session) => {
-      //   this.session = session
-      //   if (session?.user) {
-      //     this.fetchUserAndProfile()
-      //   } else {
-      //     this.profile = null
-      //   }
-      // })
+      supabase.auth.onAuthStateChange((_, session) => {
+        this.session = session
+        if (session?.user) {
+          this.fetchUserAndProfile()
+        } else {
+          this.profile = null
+        }
+      })
     },
 
     // Fetch user and profile data when authenticated
@@ -128,10 +128,20 @@ export const useUserStore = defineStore('user', {
         .eq('id', userId)
 
       if (adminData?.length > 0) {
-        this.profile = {
-          ...adminData[0],
-          role: 'admin',
-          user_type: 'admin',
+        if (adminData[0].is_super_admin) {
+          this.profile = {
+            ...adminData[0],
+            role: 'admin',
+            user_type: 'super admin',
+            is_super_admin: true,
+          }
+        } else {
+          this.profile = {
+            ...adminData[0],
+            role: 'admin',
+            user_type: 'admin',
+            is_super_admin: false,
+          }
         }
         return
       }

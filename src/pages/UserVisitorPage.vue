@@ -326,12 +326,29 @@ const startDateOptions = (val) => {
 
   // return diff >= 7 && diff <= differenceInCalendarDays(maxDateObj, today)
 
+  // Cant select dates later than the the chosen end date
   const d = startOfDay(new Date(val))
+
+  if (form.value.end_date) {
+    const end = startOfDay(new Date(form.value.end_date))
+    return d >= today && d <= maxDateObj && d <= end
+  }
+
   return d >= today && d <= maxDateObj
 }
 
 // // Same rule for end date
-const endDateOptions = (val) => startDateOptions(val)
+// const endDateOptions = (val) => startDateOptions(val)
+
+const endDateOptions = (val) => {
+  const d = startOfDay(new Date(val))
+  // Cant select dates earlier than the chosen start date
+  if (form.value.start_date) {
+    const start = startOfDay(new Date(form.value.start_date))
+    return d >= today && d <= maxDateObj && d >= start
+  }
+  return d >= today && d <= maxDateObj
+}
 
 // No date restrictions for date options
 // const startDateOptions = () => true
@@ -694,5 +711,12 @@ const acceptedterms = ref(false)
     min-width: 3rem;
     height: 2rem;
   }
+}
+
+:deep(.text-box .q-field__control::before),
+:deep(.text-box .q-field__control::after),
+:deep(.text-box-2 .q-field__control::before),
+:deep(.text-box-2 .q-field__control::after) {
+  display: none !important;
 }
 </style>
