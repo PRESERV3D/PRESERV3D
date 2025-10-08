@@ -256,10 +256,10 @@
                 <component
                   :is="isGLB(currentItem?.file_name) ? 'model-viewer' : 'img'"
                   v-bind="
-                isGLB(currentItem?.file_name)
-                  ? modelViewerProps(currentItem.file_url)
-                  : imgProps(currentItem)
-              "
+                    isGLB(currentItem?.file_name)
+                      ? modelViewerProps(currentItem.file_url)
+                      : imgProps(currentItem)
+                  "
                   class="q-mx-auto"
                   style="max-width: 200px; max-height: 240px"
                 />
@@ -271,9 +271,9 @@
                   <router-link
                     v-if="currentItem"
                     :to="{
-                  name: isGLB(currentItem.file_name) ? 'view-artifact' : 'view-document',
-                  params: { id: currentItem.id },
-                }"
+                      name: isGLB(currentItem.file_name) ? 'view-artifact' : 'view-document',
+                      params: { id: currentItem.id },
+                    }"
                     class="sub-font-4"
                     style="text-decoration: none"
                   >
@@ -298,10 +298,10 @@
               round
               class="arrow-button"
               @click="
-            currentIndex =
-              (currentIndex - 1 + recentStore.recentItems.length) %
-              recentStore.recentItems.length
-          "
+                currentIndex =
+                  (currentIndex - 1 + recentStore.recentItems.length) %
+                  recentStore.recentItems.length
+              "
             >
               <q-img src="/icons/arrow_left.png" alt="back" class="btn-arrows" />
             </q-btn>
@@ -318,127 +318,6 @@
         </div>
       </div>
     </div>
-    <!-- <div class="referral-box"></div> -->
-    <div class="q-mt-md">
-      <q-table
-        class="referral-box"
-        flat
-        bordered
-        title="Visitor Registrations"
-        :rows="rows"
-        :columns="columns"
-        row-key="id"
-        :pagination="pagination"
-      >
-        <!-- Document column -->
-        <template v-slot:body-cell-letter_url="props">
-          <q-td :props="props" align="center">
-            <a
-              v-if="props.row.letter_url"
-              :href="props.row.letter_url"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="view-more-link"
-            >
-              Letter
-            </a>
-          </q-td>
-        </template>
-
-        <!-- Status column -->
-        <template v-slot:body-cell-status="props">
-          <q-td :props="props" align="center">
-            <!-- If pending -->
-            <template v-if="props.row.status === 'Pending'">
-              <q-btn
-                flat
-                dense
-                round
-                class="status-btn"
-                @click="openConfirmDialog(props.row, 'Approved')"
-              >
-                <q-icon name="check" color="green" size="18px" />
-              </q-btn>
-              <q-btn
-                flat
-                dense
-                round
-                class="status-btn"
-                @click="openConfirmDialog(props.row, 'Rejected')"
-              >
-                <q-icon name="close" color="red" size="18px" />
-              </q-btn>
-            </template>
-
-            <!-- If decided -->
-            <template v-else>
-              <span
-                class="status-text"
-                :class="{
-                  'text-green': props.row.status === 'Approved',
-                  'text-red': props.row.status === 'Rejected',
-                }"
-              >
-                {{ props.row.status }}
-              </span>
-            </template>
-          </q-td>
-        </template>
-      </q-table>
-
-      <!-- Confirmation Dialog -->
-      <q-dialog v-model="confirmDialog.show">
-        <q-card class="conf-box">
-          <q-card-section class="sub-font" style="color: black">
-            Are you sure you want to set this referral letter as {{ confirmDialog.action }}?
-          </q-card-section>
-          <q-card-actions align="center">
-            <q-btn flat label="Yes" class="btn-save" @click="confirmAction" />
-            <q-btn
-              flat
-              label="No"
-              class="sub-font-2"
-              style="color: #000000"
-              v-close-popup
-              no-caps
-            />
-          </q-card-actions>
-        </q-card>
-      </q-dialog>
-      <!-- <div>
-        <div class="q-mt-lg">
-          <q-table
-            class="incomplete-box"
-            flat
-            bordered
-            title="Incomplete Metadata List"
-            :rows="incompleteRows"
-            :columns="incompleteColumns"
-            row-key="id"
-          >
-
-            <template v-slot:body-cell-materialLink="props">
-              <q-td :props="props">
-                <a :href="props.row.materialLink" target="_blank">
-                  <q-icon name="link" color="primary" size="20px" />
-                </a>
-              </q-td>
-            </template>
-
-            <template v-slot:bottom>
-              <div class="q-pa-sm full-width row justify-end">
-                <q-btn
-                  flat
-                  label="SEE ALL"
-                  class="incomplete-see-all"
-                  :to="{ name: 'incomplete-metadata' }"
-                />
-              </div>
-            </template>
-          </q-table>
-        </div>
-      </div> -->
-    </div>
   </q-page>
 </template>
 
@@ -447,7 +326,6 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import '@google/model-viewer'
 import { supabase } from 'boot/supabase'
-import { useUserStore } from 'stores/user'
 import { useRecentStore } from 'stores/recentStore'
 import { generateMonthlyReport } from '/services/report_service.js'
 import {
@@ -654,20 +532,7 @@ onMounted(async () => {
   artifacts.value = artifactsCount
   documents.value = documentsCount
   users.value = userCount
-
-  await fetchVisitors()
 })
-
-// Fetch visitors with status from DB
-async function fetchVisitors() {
-  const { data, error } = await supabase.from('registration_visitors').select('*')
-
-  if (error) {
-    console.error('Error fetching visitors:', error.message)
-    return
-  }
-  rows.value = sortRows(data)
-}
 
 function initChart(data) {
   chartInstance = new Chart(uploadedArchives.value, {
@@ -880,194 +745,6 @@ function imgProps(item) {
     src,
     alt,
   }
-}
-
-const pagination = {
-  page: 1,
-  rowsPerPage: 5,
-}
-
-const rows = ref([])
-
-const columns = [
-  {
-    name: 'name',
-    label: 'Name',
-    align: 'center',
-    field: (row) => `${row.first_name} ${row.last_name}`,
-  },
-  { name: 'institution', label: 'Institution', align: 'center', field: 'institution' },
-  { name: 'purpose', label: 'Purpose', align: 'center', field: 'purpose' },
-  {
-    name: 'letter_url',
-    label: 'Letter',
-    align: 'center',
-    field: 'letter_url',
-  },
-  {
-    name: 'created_at',
-    label: 'Date Filed',
-    align: 'center',
-    field: (row) => new Date(row.created_at).toLocaleDateString('en-CA'),
-  },
-  { name: 'start_date', label: 'Start Date', align: 'center', field: 'start_date' },
-  { name: 'end_date', label: 'End Date', align: 'center', field: 'end_date' },
-  { name: 'status', label: 'Status', align: 'center', field: 'status' },
-]
-
-const sortRows = (data) => {
-  return data.sort((a, b) => {
-    const aPriority = getRowPriority(a)
-    const bPriority = getRowPriority(b)
-
-    if (aPriority !== bPriority) {
-      return aPriority - bPriority
-    }
-
-    return new Date(b.created_at) - new Date(a.created_at)
-  })
-}
-
-const getRowPriority = (row) => {
-  return row.status === 'Pending' ? 0 : 1
-}
-
-// function setStatus(row, status) {
-//   row.status = status
-//   row.showLabel = true
-
-const confirmDialog = ref({
-  show: false,
-  action: '',
-  row: null,
-})
-
-function openConfirmDialog(row, action) {
-  confirmDialog.value.show = true
-  confirmDialog.value.action = action
-  confirmDialog.value.row = row
-}
-
-async function confirmAction() {
-  if (!confirmDialog.value.row) return
-
-  const row = confirmDialog.value.row
-  const action = confirmDialog.value.action
-  const userStore = useUserStore()
-
-  const adminName =
-    `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
-
-  try {
-    // Update registration_visitors status
-    const updateResponse = await supabase
-      .from('registration_visitors')
-      .update({ status: action })
-      .eq('id', row.id)
-      .select()
-
-    console.log('Update response:', updateResponse)
-
-    if (updateResponse.error) {
-      throw updateResponse.error
-    }
-
-    // If Approved, insert into approved_users
-    if (action === 'Approved') {
-      // Sign up the user in Supabase Auth and send confirmation email
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: row.email,
-        password: generateTempPassword(), // generate a temporary password
-        options: {
-          data: {
-            role: 'user',
-            type: 'visitor',
-            // start_date: row.start_date,
-            // end_date: row.end_date,
-          },
-          emailRedirectTo: 'http://localhost:9000/resetpassword',
-        },
-      })
-
-      if (signUpError) {
-        alert(signUpError.message)
-        return
-      }
-
-      console.log('SignUp confirmation email sent:', data)
-
-      const now = new Date()
-
-      const { data: insertData, error: insertError } = await supabase
-        .from('approved_visitors')
-        .insert([
-          {
-            id: data.user.id, // Use user ID from the sign-up response
-            registration_id: row.id,
-            approved_at: now,
-            approved_by: adminName,
-            email: row.email,
-            first_name: row.first_name,
-            last_name: row.last_name,
-          },
-        ])
-
-      if (insertError) {
-        console.error('Error in inserting to approved_users: ', insertError)
-        return
-      }
-
-      console.log('Inserting to approved users successful: ', insertData)
-
-      const { error: allUserError } = await supabase.from('all_users').insert([
-        {
-          id: data.user.id,
-          email: row.email,
-          created_at: now,
-          user_type: 'visitor',
-        },
-      ])
-
-      if (allUserError) {
-        console.error('Error in adding user to all users table: ', allUserError)
-        return
-      }
-
-      confirmDialog.value.show = false
-
-      await fetchVisitors()
-    }
-  } catch (err) {
-    console.error('Error updating status:', err)
-  }
-}
-
-// Generate a temporary password
-function generateTempPassword(length = 12) {
-  const lower = 'abcdefghijklmnopqrstuvwxyz'
-  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-  const numbers = '0123456789'
-  const symbols = '!@#$%^&*()_+-=[]{};\'":|<>?,./`~'
-
-  // At least one character of each type
-  let password = ''
-  password += lower[Math.floor(Math.random() * lower.length)]
-  password += upper[Math.floor(Math.random() * upper.length)]
-  password += numbers[Math.floor(Math.random() * numbers.length)]
-  password += symbols[Math.floor(Math.random() * symbols.length)]
-
-  // Fill the rest randomly from all characters
-  const allChars = lower + upper + numbers + symbols
-  for (let i = 4; i < length; i++) {
-    password += allChars[Math.floor(Math.random() * allChars.length)]
-  }
-
-  // Shuffle the password
-  password = password
-    .split('')
-    .sort(() => 0.5 - Math.random())
-    .join('')
-  return password
 }
 
 //Sample backend for Incomplete metadata
@@ -1326,7 +1003,6 @@ function generateTempPassword(length = 12) {
   width: 25rem;
 }
 
-
 /* ========================
  ADMIN DASH RESPONSIVE DESIGN
 ======================== */
@@ -1532,7 +1208,8 @@ function generateTempPassword(length = 12) {
     margin-right: 0 !important;
   }
 
-  .box-1, .box-2 {
+  .box-1,
+  .box-2 {
     width: 100%;
     margin-left: 0 !important;
     margin-right: 0 !important;
@@ -1596,7 +1273,6 @@ function generateTempPassword(length = 12) {
 /* ========================
  RECENTLY UPLOADED SECTION (box-4)
 ======================== */
-
 
 .box-4 {
   margin-left: 0; /* Remove on mobile */
@@ -1721,7 +1397,8 @@ function generateTempPassword(length = 12) {
 }
 
 /* Stack layout (1200px and below) */
-@media (max-width: 75rem) { /* 1200px */
+@media (max-width: 75rem) {
+  /* 1200px */
   .reports-recently-container {
     flex-direction: column;
     gap: 2rem;
@@ -1913,7 +1590,7 @@ function generateTempPassword(length = 12) {
   }
 
   /* Target the specific structure from your HTML */
-  .box-3 div[class*="row items-center justify-between"] {
+  .box-3 div[class*='row items-center justify-between'] {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
@@ -1923,7 +1600,7 @@ function generateTempPassword(length = 12) {
   }
 
   /* Target the left side (number + title) */
-  .box-3 div[class*="row q-mb-md items-center q-gutter-sm"] {
+  .box-3 div[class*='row q-mb-md items-center q-gutter-sm'] {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
@@ -1933,7 +1610,7 @@ function generateTempPassword(length = 12) {
   }
 
   /* Target the right side (views) specifically */
-  .box-3 div[class*="q-mr-md sub-font-2"] {
+  .box-3 div[class*='q-mr-md sub-font-2'] {
     flex-shrink: 0 !important;
     margin-left: auto !important;
     margin-right: 1rem !important; /* Add some space from the right edge */
