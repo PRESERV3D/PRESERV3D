@@ -176,31 +176,86 @@
                 >
                   {{ notificationCount }}
                 </q-badge>
-                <q-menu>
-                  <q-list style="min-width: 150px">
-                    <q-item-label header>Notifications</q-item-label>
-                    <q-item v-if="notifications.length === 0">
-                      <q-item-section>No new notifications</q-item-section>
-                    </q-item>
-                    <q-item
-                      v-for="notif in notifications"
-                      :key="notif.id"
-                      clickable
-                      v-ripple
-                      @click="openNotification(notif)"
-                      :class="notif.read ? 'bg-white' : 'bg-grey-3'"
-                    >
-                      <q-item-section>{{ notif.message }}</q-item-section>
-                      <q-item-section side>{{ notif.dateTime }}</q-item-section>
-                    </q-item>
-                    <q-separator />
-                    <q-item clickable class="text-center text-primary">
-                      <q-item-section>View All</q-item-section>
-                    </q-item>
-                  </q-list>
+                <q-menu class="notifications-menu">
+                  <q-card class="notifications-card">
+                    <q-card-section class="notifications-header">
+                      <div class="text-h6">Notifications</div>
+                      <q-btn
+                        flat
+                        dense
+                        round
+                        icon="clear_all"
+                        @click="clearAllNotifications"
+                        class="clear-all-btn"
+                        v-if="notifications.length > 0"
+                      >
+                        <q-tooltip>Clear All</q-tooltip>
+                      </q-btn>
+                    </q-card-section>
+
+                    <q-scroll-area class="notifications-scroll-area">
+                      <q-list class="notifications-list">
+                        <q-item
+                          v-if="notifications.length === 0"
+                          class="no-notifications"
+                        >
+                          <q-item-section avatar>
+                            <q-icon name="notifications_off" color="grey-5" />
+                          </q-item-section>
+                          <q-item-section>
+                            <q-item-label>No new notifications</q-item-label>
+                          </q-item-section>
+                        </q-item>
+
+                        <q-item
+                          v-for="notif in notifications"
+                          :key="notif.id"
+                          clickable
+                          v-ripple
+                          @click="openNotification(notif)"
+                          class="notification-item"
+                          :class="{ unread: !notif.read }"
+                        >
+                          <q-item-section avatar>
+                            <div class="notification-icon">
+                              <q-icon
+                                :name="getNotificationIcon(notif.type)"
+                                :color="notif.read ? 'grey-5' : 'primary'"
+                              />
+                            </div>
+                          </q-item-section>
+
+                          <q-item-section>
+                            <q-item-label class="notification-message" :class="{ 'text-bold': !notif.read }">
+                              {{ notif.message }}
+                            </q-item-label>
+                            <q-item-label caption class="notification-time">
+                              {{ notif.dateTime }}
+                            </q-item-label>
+                          </q-item-section>
+
+                          <q-item-section side top v-if="!notif.read">
+                            <q-badge rounded color="primary" class="unread-dot" />
+                          </q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-scroll-area>
+
+                    <q-separator v-if="notifications.length > 0" />
+
+                    <q-card-actions class="notifications-actions" v-if="notifications.length > 0">
+                      <q-btn
+                        flat
+                        label="Clear All"
+                        color="primary"
+                        class="full-width clear-all-bottom-btn"
+                        @click="clearAllNotifications"
+                        icon="clear_all"
+                      />
+                    </q-card-actions>
+                  </q-card>
                 </q-menu>
               </q-btn>
-
               <!-- User Profile Button -->
               <q-btn flat dense class="user-profile-btn" :class="{ compact: isCompactMode }">
                 <q-avatar size="32px">
@@ -414,6 +469,59 @@ const advancedSearch = ref({
   sortBy: 'uploaded',
   // sortOrder: 'desc',
 })
+
+// Add clear all notifications function
+const clearAllNotifications = async () => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+
+    // Mark all notifications as read in database
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('receiver_id', user.id)
+      .eq('read', false)
+
+    if (error) {
+      console.error('Error clearing notifications:', error)
+      return
+    }
+
+    // Update local state
+    notifications.value = notifications.value.map(notif => ({
+      ...notif,
+      read: true
+    }))
+    notificationCount.value = 0
+
+    $q.notify({
+      type: 'positive',
+      message: 'All notifications cleared',
+      timeout: 2000
+    })
+  } catch (error) {
+    console.error('Error clearing notifications:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to clear notifications',
+      timeout: 2000
+    })
+  }
+}
+
+// Add notification icon mapping
+const getNotificationIcon = (type) => {
+  const typeMap = {
+    appointment_booking: 'event',
+    appointment_status: 'schedule',
+    visitor_registration: 'person_add',
+    default: 'notifications'
+  }
+  return typeMap[type] || typeMap.default
+}
 
 // Search dropdown options (for main search bar)
 const searchOptions = [
@@ -1477,7 +1585,136 @@ watch(
 }
 
 /* ========================
-   NOTIFICATIONS
+   NOTIFICATIONS MENU
+======================== */
+.notifications-menu {
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.notifications-card {
+  width: 380px;
+  max-width: 90vw;
+  border-radius: 12px;
+}
+
+.notifications-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 16px 12px 16px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.notifications-header .text-h6 {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.78);
+  margin: 0;
+}
+
+.clear-all-btn {
+  color: #6c757d !important;
+  padding: 4px !important;
+}
+
+.clear-all-btn:hover {
+  color: #dc3545 !important;
+  background: rgba(220, 53, 69, 0.1) !important;
+}
+
+.notifications-scroll-area {
+  height: 300px;
+  max-height: 50vh;
+}
+
+.notifications-list {
+  padding: 4px 0;
+}
+
+.notification-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+  background-color: rgba(136, 0, 0, 0.05) !important;
+}
+
+.notification-item.unread {
+  background-color: rgba(33, 150, 243, 0.04);
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(136, 0, 0, 0.1);
+}
+
+.notification-item.unread .notification-icon {
+  background: rgba(33, 150, 243, 0.1);
+}
+
+.notification-message {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  word-wrap: break-word;
+}
+
+.notification-time {
+  font-size: 0.75rem !important;
+  color: #6c757d !important;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  min-height: 8px;
+}
+
+.no-notifications {
+  padding: 20px 16px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.no-notifications .q-item__section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.notifications-actions {
+  padding: 8px 16px 12px 16px;
+}
+
+.clear-all-bottom-btn {
+  border-radius: 8px;
+  font-weight: 500;
+  color: #dc3545 !important;
+}
+
+.clear-all-bottom-btn:hover {
+  background: rgba(220, 53, 69, 0.1) !important;
+}
+
+/* ========================
+   NOTIFICATIONS BADGE
 ======================== */
 .notif-btn {
   background-color: #f8f8ff !important;
@@ -1485,21 +1722,40 @@ watch(
   height: 40px;
   backdrop-filter: blur(10px);
   flex-shrink: 0;
+  position: relative;
 }
+
 .notif-btn:hover {
   background-color: #e0e0e0 !important;
 }
+
 .notif-image {
   width: 20px;
   height: 20px;
   object-fit: contain;
 }
+
 .custom-badge {
   font-size: 11px !important;
   font-weight: bold !important;
   min-width: 18px !important;
   height: 18px !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 599px) {
+  .notifications-card {
+    width: 320px;
+  }
+
+  .notification-item {
+    padding: 10px 12px;
+  }
+
+  .notifications-header {
+    padding: 12px 12px 8px 12px;
+  }
 }
 
 /* ========================
