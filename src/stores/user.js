@@ -17,14 +17,14 @@ export const useUserStore = defineStore('user', {
         }
       })
 
-      // supabase.auth.onAuthStateChange((_, session) => {
-      //   this.session = session
-      //   if (session?.user) {
-      //     this.fetchUserAndProfile()
-      //   } else {
-      //     this.profile = null
-      //   }
-      // })
+      supabase.auth.onAuthStateChange((_, session) => {
+        this.session = session
+        if (session?.user) {
+          this.fetchUserAndProfile()
+        } else {
+          this.profile = null
+        }
+      })
     },
 
     // Fetch user and profile data when authenticated
