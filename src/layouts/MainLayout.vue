@@ -862,6 +862,8 @@ watch(
       activeItem.value = 'gallery'
     } else if (newPath.includes('data-quality')) {
       activeItem.value = 'data-quality'
+    } else if (newPath.includes('user-management')) {
+      activeItem.value = 'user-management'
     } else {
       activeItem.value = ''
     }
