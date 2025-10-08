@@ -66,6 +66,8 @@
                   <span :class="{ 'text-hidden': miniState && !isHovered }" class="nav-text">{{
                     item.label
                   }}</span>
+                    item.label
+                  }}</span>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -226,65 +228,93 @@
 
             <q-card-section class="q-pt-none">
               <div class="q-gutter-md">
-                <!-- Basic Search -->
-                <q-input
-                  outlined
-                  v-model="advancedSearch.query"
-                  label="Keywords"
-                  placeholder="Enter search terms..."
-                  clearable
-                />
-
                 <!-- Search Type -->
                 <q-select
                   outlined
-                  v-model="advancedSearch.type"
-                  :options="advancedSearchTypeOptions"
+                  v-model="searchType"
+                  :options="searchOptions"
                   label="Search In"
+                  placeholder="Select field..."
                   emit-value
                   map-options
                 />
 
+                <!-- Search For -->
+                <q-select
+                  outlined
+                  v-model="advancedSearch.field"
+                  :options="[
+                    { label: 'General', value: 'general' },
+                    { label: 'Title', value: 'title' },
+                    { label: 'Author(s)', value: 'author' },
+                    { label: 'Summary / Abstract', value: 'summary' },
+                    { label: 'Keywords', value: 'keywords' },
+                  ]"
+                  label="Search For"
+                  emit-value
+                  map-options
+                />
+
+                <!-- Search Input -->
+                <q-input
+                  outlined
+                  v-model="advancedSearch.query"
+                  label="Search Input"
+                  placeholder="Enter search terms..."
+                  clearable
+                />
+
+                <!-- Match Type -->
+                <q-option-group
+                  v-model="advancedSearch.matchType"
+                  type="radio"
+                  color="primary"
+                  inline
+                  :options="[
+                    { label: 'Any of these words', value: 'anyWords' },
+                    { label: 'All of these words', value: 'allWords' },
+                    { label: 'Exact phrase match', value: 'exactMatch' },
+                    { label: 'None of these words', value: 'noneOfWords' },
+                  ]"
+                />
+
                 <!-- Date Range -->
                 <div class="row q-gutter-md q-mx-none">
+                  <p>Item Origin Date</p>
+                  <!-- Date From -->
                   <div class="col q-px-none q-pr-sm">
                     <q-input
                       outlined
                       v-model="advancedSearch.dateFrom"
                       label="Date From"
                       type="date"
+                      :max="advancedSearch.dateTo || today"
                     />
                   </div>
+
+                  <!-- Date To -->
                   <div class="col q-px-none">
-                    <q-input outlined v-model="advancedSearch.dateTo" label="Date To" type="date" />
+                    <q-input
+                      outlined
+                      v-model="advancedSearch.dateTo"
+                      label="Date To"
+                      type="date"
+                      :min="advancedSearch.dateFrom"
+                      :max="today"
+                    />
                   </div>
                 </div>
 
-                <!-- File Type (only for "All Items") -->
+                <!-- Categories (only for artifacts/documents) -->
                 <q-select
                   outlined
-                  v-model="advancedSearch.fileType"
-                  :options="fileTypeOptions"
-                  label="File Type"
+                  v-model="advancedSearch.categories"
+                  :options="categoryOptions"
+                  label="Categories"
                   emit-value
                   map-options
                   multiple
                   use-chips
-                  v-if="advancedSearch.type === 'all'"
-                />
-
-                <!-- Category/Tags (only for "Artifacts" and "Documents") -->
-                <q-select
-                  outlined
-                  v-model="advancedSearch.tags"
-                  :options="tagOptions"
-                  label="Categories/Tags"
-                  emit-value
-                  map-options
-                  multiple
-                  use-chips
-                  use-input
-                  @filter="filterTags"
                   v-if="advancedSearch.type === 'artifacts' || advancedSearch.type === 'documents'"
                 />
 
@@ -293,14 +323,15 @@
                   <div class="col q-px-none q-pr-sm">
                     <q-select
                       outlined
-                      v-model="advancedSearch.sortBy"
-                      :options="sortByOptions"
+                      v-model="selectedSort"
+                      :options="allSortOptions"
                       label="Sort By"
                       emit-value
                       map-options
+                      @update:model-value="onSortChange"
                     />
                   </div>
-                  <div class="col q-px-none">
+                  <!-- <div class="col q-px-none">
                     <q-select
                       outlined
                       v-model="advancedSearch.sortOrder"
@@ -309,42 +340,8 @@
                       emit-value
                       map-options
                     />
-                  </div>
+                  </div> -->
                 </div>
-
-                <!-- Advanced Options Toggle -->
-                <q-expansion-item icon="settings" label="More Options" class="advanced-options">
-                  <div class="q-pa-md q-gutter-md">
-                    <!-- Exact Match -->
-                    <q-checkbox
-                      v-model="advancedSearch.exactMatch"
-                      label="Exact phrase match"
-                      color="primary"
-                    />
-
-                    <!-- None of these words -->
-                    <q-checkbox
-                      v-model="advancedSearch.noneOfWords"
-                      label="None of these words"
-                      color="primary"
-                    />
-
-                    <!-- Case Sensitive -->
-                    <q-checkbox
-                      v-model="advancedSearch.caseSensitive"
-                      label="Case sensitive"
-                      color="primary"
-                    />
-
-                    <!-- Search in Content (only for Documents) -->
-                    <q-checkbox
-                      v-model="advancedSearch.searchInContent"
-                      label="Search in file content"
-                      color="primary"
-                      v-if="advancedSearch.type === 'documents'"
-                    />
-                  </div>
-                </q-expansion-item>
               </div>
             </q-card-section>
 
@@ -377,6 +374,8 @@ import { useSearchStore } from 'src/stores/searchStore'
 import { supabase } from 'boot/supabase'
 import { useDocumentsStore } from 'src/stores/documentsStore'
 import { useDocumentsFilter } from 'src/utils/useFiltering'
+import { allSortOptions } from 'src/stores/searchStore'
+
 const { clearFilters } = useDocumentsFilter()
 
 const $q = useQuasar()
@@ -392,73 +391,61 @@ const miniState = ref(true)
 const isHovered = ref(false)
 const search = ref('')
 
-// Advanced Search State
-const showAdvancedSearch = ref(false)
-const searchLoading = ref(false)
-
-// Advanced Search Form Data
-const advancedSearch = ref({
-  query: '',
-  type: 'all',
-  dateFrom: '',
-  dateTo: '',
-  fileType: [],
-  tags: [],
-  sortBy: 'relevance',
-  sortOrder: 'desc',
-  exactMatch: false,
-  noneOfWords: false,
-  caseSensitive: false,
-  searchInContent: false,
-})
-
 // Responsive state
 const windowWidth = ref(window.innerWidth)
 const isCompactMode = computed(() => windowWidth.value < 1030)
 
+// Advanced Search State
+const showAdvancedSearch = ref(false)
+const searchLoading = ref(false)
+
+const searchType = ref('documents')
+
+// Advanced Search Form Data
+const advancedSearch = ref({
+  field: '',
+  matchType: 'anyWords',
+  query: '',
+  dateFrom: null,
+  dateTo: null,
+  fileType: [],
+  categories: [],
+  sortBy: 'uploaded',
+  // sortOrder: 'desc',
+})
+
 // Search dropdown options (for main search bar)
-const searchType = ref('artifacts') // default selection
 const searchOptions = [
   { label: 'Artifacts', value: 'artifacts' },
   { label: 'Documents', value: 'documents' },
 ]
 
-// Advanced Search Type Options (for advanced search dialog)
-const advancedSearchTypeOptions = [
-  { label: 'All Items', value: 'all' },
-  { label: 'Artifacts', value: 'artifacts' },
-  { label: 'Documents', value: 'documents' },
-]
+const categoryOptions = ref([])
+watch(
+  () => advancedSearch.value.type,
+  async (newType) => {
+    if (newType === 'documents' || newType === 'artifacts') {
+      categoryOptions.value = await searchStore.fetchCategories(newType)
+    } else {
+      categoryOptions.value = []
+    }
+  },
+  { immediate: true },
+)
 
-// File Type Options for advanced search
-const fileTypeOptions = [
-  { label: 'PDF', value: 'pdf' },
-  { label: 'GLB', value: 'glb' },
-]
+// const sortOrderOptions = [
+//   { label: 'Descending', value: 'desc' },
+//   { label: 'Ascending', value: 'asc' },
+// ]
 
-const tagOptions = ref([
-  { label: 'Important', value: 'important' },
-  { label: 'Archive', value: 'archive' },
-  { label: 'Personal', value: 'personal' },
-  { label: 'Work', value: 'work' },
-  { label: 'Research', value: 'research' },
-  { label: 'Draft', value: 'draft' },
-  { label: 'Final', value: 'final' },
-])
+const selectedSort = ref({
+  sortBy: searchStore.sortBy,
+  sortOrder: searchStore.sortOrder,
+})
 
-const sortByOptions = [
-  { label: 'Relevance', value: 'relevance' },
-  { label: 'Name', value: 'name' },
-  { label: 'Date Created', value: 'created' },
-  { label: 'Date Modified', value: 'modified' },
-  { label: 'Size', value: 'size' },
-  { label: 'Type', value: 'type' },
-]
-
-const sortOrderOptions = [
-  { label: 'Descending', value: 'desc' },
-  { label: 'Ascending', value: 'asc' },
-]
+function onSortChange(option) {
+  searchStore.setSort(option)
+}
 
 // User and notifications data
 const notifications = ref([])
@@ -571,7 +558,17 @@ const setActiveItem = (itemName) => {
   }
 }
 
-// Search functionality
+// Date from and to - up to current date only
+function formatDate(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const today = formatDate(new Date())
+
+// Basic Search functionality
 const performSearch = async () => {
   documentsStore.resetFilters()
   clearFilters()
@@ -601,132 +598,78 @@ const performSearch = async () => {
   search.value = ''
 }
 
-// Advanced Search Functions
+// Advanced Search functionality
 const performAdvancedSearch = async () => {
-  searchLoading.value = true
-
   try {
-    // Prepare search parameters based on search type
-    const searchParams = {
-      query: advancedSearch.value.query || search.value,
-      type: advancedSearch.value.type,
-      filters: {
-        dateFrom: advancedSearch.value.dateFrom,
-        dateTo: advancedSearch.value.dateTo,
-        exactMatch: advancedSearch.value.exactMatch,
-        noneOfWords: advancedSearch.value.noneOfWords,
-        caseSensitive: advancedSearch.value.caseSensitive,
+    searchStore.searchedDocuments = []
+    searchStore.searchedModels = []
+
+    const params = {
+      type: searchType.value,
+      field: advancedSearch.value.field,
+      query: advancedSearch.value.query,
+      matchType: advancedSearch.value.matchType,
+      dateRange: {
+        from: advancedSearch.value.dateFrom || null,
+        to: advancedSearch.value.dateTo || null,
       },
-      sort: {
-        by: advancedSearch.value.sortBy,
-        order: advancedSearch.value.sortOrder,
-      },
+      categories: advancedSearch.value.categories || [],
+      sortBy: advancedSearch.value.sortBy,
     }
 
-    // Add conditional filters based on search type
-    if (advancedSearch.value.type === 'all') {
-      // For "All Items", include file type filters
-      searchParams.filters.fileTypes = advancedSearch.value.fileType
-    } else if (
-      advancedSearch.value.type === 'artifacts' ||
-      advancedSearch.value.type === 'documents'
-    ) {
-      // For "Artifacts" and "Documents", include tags
-      searchParams.filters.tags = advancedSearch.value.tags
+    console.log('[Search] Starting advanced search with params:', params)
 
-      // Only for documents, include search in content option
-      if (advancedSearch.value.type === 'documents') {
-        searchParams.filters.searchInContent = advancedSearch.value.searchInContent
-      }
-    }
-
-    // Navigate to appropriate page first if needed
-    let targetRoute = ''
-    if (advancedSearch.value.type === 'artifacts') {
-      targetRoute = '/artifacts'
-    } else if (advancedSearch.value.type === 'documents') {
-      targetRoute = '/documents'
-    } else {
-      // For "all", default to artifacts page
-      targetRoute = '/artifacts'
-    }
-
+    const targetRoute = params.type === 'documents' ? '/documents' : '/artifacts'
     if (route.path !== targetRoute) {
-      await router.push(targetRoute)
+      router.push(targetRoute)
     }
 
-    // Perform the advanced search
-    await searchStore.advancedSearch(searchParams)
-
-    // Update the main search input with the query
-    search.value = advancedSearch.value.query
-
-    // Close the dialog
+    await searchStore.advancedSearch(params)
     showAdvancedSearch.value = false
-
-    // Show success notification
-    $q.notify({
-      type: 'positive',
-      message: 'Advanced search completed',
-      position: 'top',
-    })
-
-    console.log('Advanced search performed:', searchParams)
-  } catch (error) {
-    console.error('Advanced search error:', error)
-    $q.notify({
-      type: 'negative',
-      message: 'Search failed. Please try again.',
-      position: 'top',
-    })
-  } finally {
-    searchLoading.value = false
+  } catch (err) {
+    console.error('[Search] Error during performAdvancedSearch:', err)
   }
 }
 
 const clearAdvancedSearch = () => {
   advancedSearch.value = {
+    type: 'artifacts',
+    field: '',
+    matchType: 'anyWords',
     query: '',
-    type: 'all',
-    dateFrom: '',
-    dateTo: '',
-    fileType: [],
-    tags: [],
-    sortBy: 'relevance',
-    sortOrder: 'desc',
-    exactMatch: false,
-    noneOfWords: false,
-    caseSensitive: false,
-    searchInContent: false,
+    dateFrom: null,
+    dateTo: null,
+    categories: [],
+    sortBy: 'uploaded',
   }
 }
 
-const filterTags = (val, update) => {
-  update(() => {
-    if (val === '') {
-      tagOptions.value = [
-        { label: 'Important', value: 'important' },
-        { label: 'Archive', value: 'archive' },
-        { label: 'Personal', value: 'personal' },
-        { label: 'Work', value: 'work' },
-        { label: 'Research', value: 'research' },
-        { label: 'Draft', value: 'draft' },
-        { label: 'Final', value: 'final' },
-      ]
-    } else {
-      const needle = val.toLowerCase()
-      tagOptions.value = [
-        { label: 'Important', value: 'important' },
-        { label: 'Archive', value: 'archive' },
-        { label: 'Personal', value: 'personal' },
-        { label: 'Work', value: 'work' },
-        { label: 'Research', value: 'research' },
-        { label: 'Draft', value: 'draft' },
-        { label: 'Final', value: 'final' },
-      ].filter((tag) => tag.label.toLowerCase().includes(needle))
-    }
-  })
-}
+// const filterTags = (val, update) => {
+//   update(() => {
+//     if (val === '') {
+//       categoryOptions.value = [
+//         { label: 'Important', value: 'important' },
+//         { label: 'Archive', value: 'archive' },
+//         { label: 'Personal', value: 'personal' },
+//         { label: 'Work', value: 'work' },
+//         { label: 'Research', value: 'research' },
+//         { label: 'Draft', value: 'draft' },
+//         { label: 'Final', value: 'final' },
+//       ]
+//     } else {
+//       const needle = val.toLowerCase()
+//       categoryOptions.value = [
+//         { label: 'Important', value: 'important' },
+//         { label: 'Archive', value: 'archive' },
+//         { label: 'Personal', value: 'personal' },
+//         { label: 'Work', value: 'work' },
+//         { label: 'Research', value: 'research' },
+//         { label: 'Draft', value: 'draft' },
+//         { label: 'Final', value: 'final' },
+//       ].filter((tag) => tag.label.toLowerCase().includes(needle))
+//     }
+//   })
+// }
 
 const handleLogout = async () => {
   try {
@@ -822,7 +765,7 @@ watch(
     } else if (newPath.includes('artifacts')) {
       advancedSearch.value.type = 'artifacts'
     } else {
-      advancedSearch.value.type = 'all'
+      advancedSearch.value.type = 'artifacts' // default
     }
   },
   { immediate: true },
@@ -846,25 +789,25 @@ watch(search, (newSearch) => {
 })
 
 // Watch for search type changes to clear inappropriate fields
-watch(
-  () => advancedSearch.value.type,
-  (newType) => {
-    // Clear file type when not in "All Items"
-    if (newType !== 'all') {
-      advancedSearch.value.fileType = []
-    }
+// watch(
+//   () => advancedSearch.value.type,
+//   (newType) => {
+//     // Clear file type when not in "All Items"
+//     // if (newType !== 'all') {
+//     //   advancedSearch.value.fileType = []
+//     // }
 
-    // Clear tags when not in "Artifacts" or "Documents"
-    if (newType !== 'artifacts' && newType !== 'documents') {
-      advancedSearch.value.tags = []
-    }
+//     // Clear tags when not in "Artifacts" or "Documents"
+//     if (newType !== 'artifacts' && newType !== 'documents') {
+//       advancedSearch.value.tags = []
+//     }
 
-    // Clear search in content when not in "Documents"
-    if (newType !== 'documents') {
-      advancedSearch.value.searchInContent = false
-    }
-  },
-)
+//     // Clear search in content when not in "Documents"
+//     if (newType !== 'documents') {
+//       advancedSearch.value.searchInContent = false
+//     }
+//   },
+// )
 
 async function fetchNotifications() {
   const {
