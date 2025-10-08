@@ -1267,13 +1267,32 @@ watch(
     width: 120px !important;
   }
 
+  /* Keep consistent alignment in both states */
   .navigation-section {
-    text-align: center;
+    text-align: left;
   }
 
-  .nav-item .q-item__section--main,
-  .logout-item .q-item__section--main {
-    display: none !important;
+  /* Center only the icons in mini state */
+  .q-drawer--mini .nav-item,
+  .q-drawer--mini .logout-item {
+    justify-content: center !important;
+    padding: 8px !important;
+  }
+
+  /* Normal padding when expanded */
+  .q-drawer:hover .nav-item,
+  .q-drawer:hover .logout-item {
+    justify-content: flex-start !important;
+    padding: 8px 16px !important;
+  }
+
+  /* Adjust drawer width on hover */
+  .q-drawer:hover {
+    width: 280px !important;
+  }
+
+  .q-drawer:hover .q-drawer__content {
+    width: 280px !important;
   }
 
   /* Content stays in normal position */
@@ -1285,13 +1304,12 @@ watch(
     width: 100% !important;
   }
 }
-
 /* Mobile screens - content needs space for sidebar */
 @media (max-width: 599px) {
   .search-toolbar {
     padding: 12px 16px !important;
-    width: calc(100% - 120px) !important; /* Account for mini sidebar */
-    margin-left: 0 !important; /* Remove extra margin */
+    width: calc(100% - 120px) !important;
+    margin-left: 0 !important;
     position: relative !important;
     top: auto !important;
     right: auto !important;
@@ -1339,28 +1357,32 @@ watch(
     width: 120px !important;
   }
 
+  /* Keep left alignment */
   .navigation-section {
-    text-align: center;
+    text-align: left;
   }
 
-  .nav-item .q-item__section--main,
-  .logout-item .q-item__section--main {
-    display: none !important;
+  /* Center only icons, not text */
+  .q-drawer--mini .nav-item,
+  .q-drawer--mini .logout-item {
+    justify-content: center !important;
   }
 
-  /* Keep the margin for sidebar */
-  .q-page-container {
-    margin-left: 120px !important;
-    padding-left: 0 !important;
+  .q-drawer:hover .nav-item,
+  .q-drawer:hover .logout-item {
+    justify-content: flex-start !important;
   }
 
-  .advanced-search-dialog {
-    min-width: 280px;
-    width: 100vw;
-    margin: 8px;
+
+  /* Expand on hover */
+  .q-drawer:hover {
+    width: 280px !important;
+  }
+
+  .q-drawer:hover .q-drawer__content {
+    width: 280px !important;
   }
 }
-
 /* ========================
    NAVIGATION ITEMS
 ======================== */
