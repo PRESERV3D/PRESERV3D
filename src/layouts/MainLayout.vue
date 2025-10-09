@@ -195,10 +195,7 @@
 
                     <q-scroll-area class="notifications-scroll-area">
                       <q-list class="notifications-list">
-                        <q-item
-                          v-if="notifications.length === 0"
-                          class="no-notifications"
-                        >
+                        <q-item v-if="notifications.length === 0" class="no-notifications">
                           <q-item-section avatar>
                             <q-icon name="notifications_off" color="grey-5" />
                           </q-item-section>
@@ -226,7 +223,10 @@
                           </q-item-section>
 
                           <q-item-section>
-                            <q-item-label class="notification-message" :class="{ 'text-bold': !notif.read }">
+                            <q-item-label
+                              class="notification-message"
+                              :class="{ 'text-bold': !notif.read }"
+                            >
                               {{ notif.message }}
                             </q-item-label>
                             <q-item-label caption class="notification-time">
@@ -497,23 +497,23 @@ const clearAllNotifications = async () => {
     }
 
     // Update local state
-    notifications.value = notifications.value.map(notif => ({
+    notifications.value = notifications.value.map((notif) => ({
       ...notif,
-      read: true
+      read: true,
     }))
     notificationCount.value = 0
 
     $q.notify({
       type: 'positive',
       message: 'All notifications cleared',
-      timeout: 2000
+      timeout: 2000,
     })
   } catch (error) {
     console.error('Error clearing notifications:', error)
     $q.notify({
       type: 'negative',
       message: 'Failed to clear notifications',
-      timeout: 2000
+      timeout: 2000,
     })
   }
 }
@@ -524,7 +524,7 @@ const getNotificationIcon = (type) => {
     appointment_booking: 'event',
     appointment_status: 'schedule',
     visitor_registration: 'person_add',
-    default: 'notifications'
+    default: 'notifications',
   }
   return typeMap[type] || typeMap.default
 }
@@ -787,11 +787,20 @@ const clearAdvancedSearch = () => {
 const handleLogout = async () => {
   try {
     if (confirm('Are you sure you want to logout?')) {
+      // Sign out and wait for completion
       await userStore.signOut()
-      router.push('/user/login')
+
+      // Force navigation after successful logout
+      await router.push('/user/login')
+
+      // Force page reload to clear any cached state
+      window.location.reload()
     }
   } catch (error) {
     console.error('Error signing out:', error)
+    // Even on error, try to navigate to login
+    router.push('/user/login')
+    window.location.reload()
   }
 }
 
@@ -1514,7 +1523,6 @@ watch(
     justify-content: flex-start !important;
   }
 
-
   /* Expand on hover */
   .q-drawer:hover {
     width: 280px !important;
@@ -1966,7 +1974,6 @@ watch(
   }
 }
 
-
 @media (min-width: 1200px) and (max-width: 1300px) {
   .search-container-hidden {
     width: 650px !important;
@@ -2012,6 +2019,4 @@ watch(
     margin-left: 0;
   }
 }
-
-
 </style>
