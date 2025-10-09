@@ -290,7 +290,7 @@
                 </q-card>
               </q-dialog>
 
-              <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
+              <div class="q-ma-md link" @click="showRelatedDialog = true">Show Related Links</div>
               <!-- q-dialog for related links -->
               <q-dialog v-model="showRelatedDialog" persistent>
                 <q-card class="related-box">
