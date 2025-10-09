@@ -298,7 +298,7 @@
                     class="column sub-font-3 items-start"
                     style="font-size: 16px; font-weight: 700"
                   >
-                    Related Links
+                    Show Related Links
                   </q-card-section>
                   <q-separator />
                   <div v-if="loadingRelatedLinks" class="q-pa-md flex flex-center">
