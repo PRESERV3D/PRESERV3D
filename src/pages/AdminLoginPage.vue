@@ -56,15 +56,20 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'src/stores/user'
 
 const userStore = useUserStore()
-await userStore.signOut()
-
 const router = useRouter()
+
+// Clear any existing session when component mounts (not immediately)
+onMounted(async () => {
+  if (userStore.session) {
+    await userStore.signOut()
+  }
+})
 
 const form = ref({
   email: '',
