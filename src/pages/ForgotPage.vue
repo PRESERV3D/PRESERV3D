@@ -21,7 +21,13 @@
           </div>
           <div class="row justify-center q-mt-lg">
             <div v-if="!isSubmitLoading">
-              <q-btn label="Submit" class="btn-submit" @click="sendResetEmail()" no-caps />
+              <q-btn
+                :disabled="!email"
+                label="Submit"
+                class="btn-submit"
+                @click="sendResetEmail()"
+                no-caps
+              />
             </div>
             <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
           </div>
