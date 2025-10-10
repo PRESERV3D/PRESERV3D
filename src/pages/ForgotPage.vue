@@ -20,7 +20,10 @@
             />
           </div>
           <div class="row justify-center q-mt-lg">
-            <q-btn label="Submit" class="btn-submit" @click="sendResetEmail()" no-caps />
+            <div v-if="!isSubmitLoading">
+              <q-btn label="Submit" class="btn-submit" @click="sendResetEmail()" no-caps />
+            </div>
+            <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
           </div>
 
           <q-dialog v-model="showDialog" persistent>
@@ -52,7 +55,7 @@ const email = ref('')
 const message = ref('')
 const showDialog = ref(false)
 const emailSent = ref(false)
-
+const isSubmitLoading = ref(false)
 // Check if email exists
 async function checkEmail() {
   const { data, error } = await supabase
@@ -69,10 +72,12 @@ async function checkEmail() {
 }
 
 async function sendResetEmail() {
+  isSubmitLoading.value = true
   const emailExists = await checkEmail()
   if (!emailExists) {
     message.value = 'Email not found.'
     showDialog.value = true
+    isSubmitLoading.value = false
     return
   }
 
@@ -141,5 +146,10 @@ function handleDialogConfirm() {
   width: 32rem;
   padding: 1rem;
   text-align: center;
+}
+
+:deep(.text-box-2 .q-field__control::before),
+:deep(.text-box-2 .q-field__control::after) {
+  display: none;
 }
 </style>
