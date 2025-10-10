@@ -6,8 +6,8 @@
     >
       <div class="forgot-bigbox">
         <div class="q-my-lg column">
-          <label class="reset-title q-mb-md">Forgot password</label>
-          <div class="row q-gutter-md items-center justify-center">
+          <label class="reset-title q-mb-lg">Forgot password</label>
+          <div class="pad row q-gutter-md items-center justify-center">
             <label class="labelNames">Email: </label>
             <q-input
               filled
@@ -107,8 +107,8 @@ function handleDialogConfirm() {
 
 <style scoped>
 .forgot-bigbox {
-  width: 38rem;
-  height: 13rem;
+  width: auto;
+  height: auto;
   border-radius: 10px;
   background: linear-gradient(
     334deg,
@@ -119,6 +119,7 @@ function handleDialogConfirm() {
     #fffced 105.52%
   );
   box-shadow: -20px 15px 4px 0px rgba(0, 0, 0, 0.45);
+  padding: 1rem;
 }
 
 .reset-title {

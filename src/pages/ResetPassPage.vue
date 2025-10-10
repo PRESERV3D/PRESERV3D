@@ -168,11 +168,6 @@ function handleDialogConfirm() {
   padding: 1rem;
 }
 
-.pad {
-  padding-left: 2.5rem;
-  padding-right: 2.5rem;
-}
-
 .reset-title {
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
