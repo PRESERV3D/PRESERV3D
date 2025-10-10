@@ -57,6 +57,7 @@
             <div class="col flex justify-center">
               <div v-if="!isResetLoading">
                 <q-btn
+                  :disable="isResetLoading || !newPassword || !confirmPassword"
                   label="Submit"
                   class="btn-submit"
                   @click="((resetSent = true), resetPassword())"
@@ -112,8 +113,10 @@ onMounted(() => {
 })
 
 function checkPasswordMatch() {
+  isResetLoading.value = true
   if (newPassword.value !== confirmPassword.value) {
     message.value = 'Passwords do not match.'
+    isResetLoading.value = false
     return false
   }
   return true
