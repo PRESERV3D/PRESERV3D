@@ -1318,9 +1318,9 @@ watch(
 /* Large screens  */
 @media (min-width: 1440px) and (max-width: 1919px) {
   .search-container {
-    width: 790px !important;
-    min-width: 790px !important;
-    max-width: 790px !important;
+    width: 850px !important;
+    min-width: 850px !important;
+    max-width: 850px !important;
   }
   /*  .toolbar-actions {
      gap: 120px;
@@ -1335,9 +1335,9 @@ watch(
  /* Medium-large screens */
 @media (min-width: 1300px) and (max-width: 1439px) {
   .search-container {
-    width: 710px !important;
+    width: 760px !important;
     min-width: 610px !important;
-    max-width: 710px !important;
+    max-width: 760px !important;
   }
   /* .toolbar-actions {
      gap: 110px;
@@ -1352,9 +1352,9 @@ watch(
 /* my screen size */
 @media (min-width: 1200px) and (max-width: 1300px) {
   .search-container {
-    width: 650px !important;
+    width: 700px !important;
     min-width: 550px !important;
-    max-width: 650px !important;
+    max-width: 700px !important;
     flex: none !important;
   }
 
@@ -1373,9 +1373,9 @@ watch(
  /* Compact screens  */
 @media (min-width: 1050px) and (max-width: 1199px) {
   .search-container {
-    width: 590px !important;
+    width: 640px !important;
     min-width: 490px !important;
-    max-width: 590px !important;
+    max-width: 640px !important;
   }
   /*  .toolbar-actions {
      gap: 45px;
@@ -1390,9 +1390,9 @@ watch(
 /* Small screens */
 @media (min-width: 600px) and (max-width: 1049px) {
   .search-container {
-    width: 550px !important;
+    width: 600px !important;
     min-width: 300px !important;
-    max-width: 550px !important;
+    max-width: 600px !important;
   }
   /* .toolbar-actions {
     gap: 30px;
