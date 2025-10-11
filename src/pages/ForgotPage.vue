@@ -5,24 +5,28 @@
       style="background-color: #4d0000; display: flex; justify-content: center; align-items: center"
     >
       <div class="forgot-bigbox">
-        <div class="q-my-lg column">
-          <label class="reset-title q-mb-lg">Forgot Password</label>
-          <div class="pad row q-gutter-md items-center justify-center">
+        <div class="pad q-my-lg column">
+          <label class="reset-title q-mb-sm">Forgot Password</label>
+          <div class="row q-gutter-md items-center justify-center">
             <label class="labelNames">Email: </label>
             <q-input
               filled
               v-model="email"
               placeholder="isko@iskolarngbayan.pup.edu.ph"
               type="email"
+              lazy-rules
+              :rules="[
+                (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) || 'Please enter a valid email.',
+              ]"
               dense
               class="text-box-2"
-              style="width: 30rem"
+              style="width: 30rem; margin-top: 2rem"
             />
           </div>
-          <div class="row justify-center q-mt-lg">
+          <div class="submit-center">
             <div v-if="!isSubmitLoading">
               <q-btn
-                :disabled="!email"
+                :disabled="!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)"
                 label="Submit"
                 class="btn-submit"
                 @click="sendResetEmail()"
@@ -30,6 +34,11 @@
               />
             </div>
             <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
+            <div class="q-mt-sm">
+              <router-link to="/user/login" class="labelNames" style="font-size: 12px">
+                Back to Log In
+              </router-link>
+            </div>
           </div>
 
           <q-dialog v-model="showDialog" persistent>
@@ -99,7 +108,7 @@ async function sendResetEmail() {
       'A password reset email has been sent to your registered email address. Please check your inbox.'
     emailSent.value = true
   }
-
+  isSubmitLoading.value = false
   showDialog.value = true
 }
 
