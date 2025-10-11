@@ -41,7 +41,7 @@
           </div>
 
           <!-- Navigation Section -->
-          <div class="navigation-section" :class="{ 'hovered-lift': isHovered }">
+          <div class="navigation-section" :class="{ 'hovered-lift': isHovered, 'compact-height': isShortScreen, 'very-compact-height': isVeryShortScreen }">
             <q-list padding :class="{ 'text-center': miniState && !isHovered }">
               <q-item
                 v-for="item in navItems"
@@ -454,8 +454,12 @@ const isHovered = ref(false)
 const search = ref('')
 
 // Responsive state
+// Responsive state
 const windowWidth = ref(window.innerWidth)
+const windowHeight = ref(window.innerHeight)
 const isCompactMode = computed(() => windowWidth.value < 1030)
+const isShortScreen = computed(() => windowHeight.value < 768)
+const isVeryShortScreen = computed(() => windowHeight.value < 600)
 
 // Advanced Search State
 const showAdvancedSearch = ref(false)
@@ -614,6 +618,7 @@ const navItems = computed(() => {
 // Window resize handler
 const handleResize = () => {
   windowWidth.value = window.innerWidth
+  windowHeight.value = window.innerHeight
 }
 
 // Add a timeout to prevent rapid state changes
@@ -1142,6 +1147,19 @@ watch(
   transform: translateY(-40px) !important;
 }
 
+/* Reduce lift on short screens to prevent overflow */
+@media (max-height: 768px) {
+  .navigation-section.hovered-lift {
+    transform: translateY(-90px) !important;
+  }
+}
+
+@media (max-height: 650px) {
+  .navigation-section.hovered-lift {
+    transform: translateY(-10px) !important;
+  }
+}
+
 /* ========================
    LOGO
 ======================== */
@@ -1159,13 +1177,21 @@ watch(
   height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.logo-section {
+  flex-shrink: 0;
 }
 
 .navigation-section {
   flex: 1;
   min-height: 0;
   padding: 0 8px;
-  overflow-y: visible;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .logout-section {
@@ -1292,6 +1318,113 @@ watch(
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 8px;
   margin-top: 16px;
+}
+
+
+
+/* ========================
+   HEIGHT-BASED RESPONSIVE ADJUSTMENTS
+======================== */
+
+/* Only for short screens - reduce spacing to fit everything */
+@media (max-height: 700px) {
+  .navigation-section {
+    justify-content: flex-start !important;
+  }
+
+  .nav-item,
+  .logout-item {
+    margin-bottom: 6px !important;
+  }
+
+  .logo-section .q-pa-md.q-mb-md {
+    padding: 12px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .logo-section .q-py-lg {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+
+  .logo-img {
+    max-width: 170px !important;
+    max-height: 68px !important;
+  }
+
+  .icon-wrapper {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .nav-icon {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .nav-text,
+  .logout-text {
+    font-size: 15px !important;
+  }
+
+  .logout-section {
+    padding: 8px !important;
+  }
+
+  .logout-icon {
+    font-size: 18px !important;
+  }
+}
+
+/* Only for very short screens - more compact spacing */
+@media (max-height: 600px) {
+  .navigation-section {
+    justify-content: flex-start !important;
+  }
+
+  .nav-item,
+  .logout-item {
+    margin-bottom: 4px !important;
+    padding: 8px 12px !important;
+  }
+
+  .logo-section .q-pa-md.q-mb-md {
+    padding: 8px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .logo-section .q-py-lg {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+
+  .logo-img {
+    max-width: 140px !important;
+    max-height: 56px !important;
+  }
+
+  .icon-wrapper {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .nav-icon {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .nav-text,
+  .logout-text {
+    font-size: 14px !important;
+  }
+
+  .logout-section {
+    padding: 6px !important;
+  }
+
+  .logout-icon {
+    font-size: 16px !important;
+  }
 }
 
 /* ========================
