@@ -1811,12 +1811,12 @@ watch(
   min-height: 44px;
   display: flex;
   align-items: center;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
-  padding: 4px 12px 4px 8px;
-}
+  /*  transition: all 0.3s ease; */
+    flex-shrink: 0;
+    padding: 4px 12px 4px 8px;
+  }
 
-/* Full profile display */
+  /* Full profile display */
 .user-profile-btn:not(.compact) {
   width: 180px;
   min-width: 180px;
@@ -1929,12 +1929,16 @@ watch(
 }
 
 .toolbar-actions.no-search {
-  margin-left: 102px; /* profile icon */
+  margin-left: 120px; /* profile icon */
 }
 
-/* Reduce gap between notification and profile when search bar is hidden */
+/* Reduce gap between notification and profile when search bar is hidden
 .toolbar-actions.no-search {
   gap: 0px;
+}  */
+
+.toolbar-actions.no-search .user-profile-btn {
+  margin-left: -18px; /* This makes them overlap/closer */
 }
 
 /* ========================
