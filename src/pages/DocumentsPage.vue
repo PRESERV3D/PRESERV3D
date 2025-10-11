@@ -305,7 +305,13 @@
 
           <!-- Document in Categories -->
 
-          <div class="doc-container">
+          <!-- Loading State -->
+          <div v-if="loading" class="loading-container">
+            <q-spinner-dots size="4em" color="primary" />
+            <p class="loading-text">Loading documents...</p>
+          </div>
+
+          <div v-else class="doc-container">
             <div v-for="(doc, i) in displayedDocuments" :key="i" class="card-wrapper-2">
               <q-card class="docCard" rounded bordered>
                 <router-link
@@ -416,6 +422,16 @@
             </q-dialog>
           </div>
 
+          <!-- Empty State -->
+          <div
+            v-if="displayedDocuments.length === 0 && !loading"
+            class="text-center q-mt-xl q-mb-xl"
+          >
+            <q-icon name="folder_open" size="4rem" color="grey-5" />
+            <div class="text-h6 q-mt-md text-grey-6">No documents found</div>
+            <div class="text-body2 text-grey-5">Try adjusting your filters or search terms</div>
+          </div>
+
           <div class="pagination-controls justify-center">
             <q-btn
               flat
@@ -518,6 +534,8 @@ const isAdmin = computed(() => userRole === 'admin')
 const userType = computed(() => userStore.profile.user_type || 'Unknown') // from userstore because some users dont have usertype on auth
 
 onMounted(async () => {
+  loading.value = true
+
   const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
 
   // Get user's favorites for top documents too
@@ -590,6 +608,8 @@ onMounted(async () => {
   }
 
   console.log('Applied sorting:', searchStore.sortBy, searchStore.sortOrder)
+
+  loading.value = false
 })
 
 onUnmounted(() => {
@@ -761,6 +781,8 @@ const fetchAllDocuments = async () => {
     dateOptions.value = Array.from(years).sort((a, b) => b - a)
   } catch (err) {
     console.error('Unexpected error while loading documents:', err)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -2261,6 +2283,24 @@ function goToDocumentsPage(page) {
   background-color: rgba(255, 255, 255, 0.5) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
   transform: translateY(-1px) !important;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  min-height: 300px;
+}
+
+.loading-text {
+  margin-top: 1rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #666;
 }
 
 /* Responsiveness */
