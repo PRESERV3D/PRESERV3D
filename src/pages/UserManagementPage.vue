@@ -1951,7 +1951,8 @@ async function confirmRegistrationAction() {
           purpose: row.purpose,
           start_date: row.start_date,
           end_date: row.end_date,
-          account_status: 'Active',
+          account_status: 'Pending Confirmation',
+          is_temp_password: true,
         },
       ])
 
