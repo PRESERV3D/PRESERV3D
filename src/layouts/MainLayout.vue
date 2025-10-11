@@ -647,9 +647,9 @@ const setActiveItem = (itemName) => {
   activeItem.value = itemName
 
   // Close mobile drawer when navigating
-  if ($q.screen.lt.md) {
-    drawer.value = false
-  }
+  // if ($q.screen.lt.md) {
+  //   drawer.value = false
+  // }
 
   if (itemName === 'home') {
     const role = session.user.user_metadata?.role
@@ -1409,13 +1409,13 @@ watch(
 
 /* Hide sidebar on tablets - sidebar still overlays */
 @media (min-width: 600px) and (max-width: 1024px) {
-  .q-drawer {
-    width: 120px !important;
+    .q-drawer {
+      min-width: 120px !important;
     /* z-index: 2000 !important; */
   }
 
   .sidebar-drawer .q-drawer__content {
-    width: 120px !important;
+    min-width: 120px !important;
   }
 
   /* Keep consistent alignment in both states */
@@ -1460,7 +1460,7 @@ watch(
   .search-toolbar {
     padding: 12px 16px !important;
     width: calc(100% - 120px) !important;
-    margin-left: 0 !important;
+    margin-left: 120px !important;
     position: relative !important;
     top: auto !important;
     right: auto !important;
@@ -1500,12 +1500,12 @@ watch(
 
   /* Keep sidebar visible on mobile but in mini state */
   .q-drawer {
-    width: 120px !important;
+    min-width: 120px !important;
     z-index: 2000 !important;
   }
 
   .sidebar-drawer .q-drawer__content {
-    width: 120px !important;
+    min-width: 120px !important;
   }
 
   /* Keep left alignment */
