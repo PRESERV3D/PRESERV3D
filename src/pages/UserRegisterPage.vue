@@ -7,8 +7,8 @@
 
     <q-form @submit.prevent="registerUser">
       <div v-if="step === 1">
-        <div class="column q-gutter-sm">
-          <label class="labelNames">First Name</label>
+        <div class="column q-gutter-sm q-mt-md">
+          <label class="labelNames">First Name <span class="required">*</span></label>
           <q-input
             dense
             v-model="form.first_name"
@@ -16,7 +16,7 @@
             :rules="[(val) => !!val || 'Please enter your first name.']"
             class="text-box"
           />
-          <label class="labelNames">Last Name</label>
+          <label class="labelNames">Last Name <span class="required">*</span></label>
           <q-input
             dense
             v-model="form.last_name"
@@ -24,9 +24,8 @@
             :rules="[(val) => !!val || 'Please enter your last name.']"
             class="text-box"
           />
-          <label class="labelNames">Email</label>
+          <label class="labelNames">Email <span class="required">*</span></label>
           <q-input
-            filled
             dense
             v-model="form.email"
             type="email"
@@ -48,7 +47,7 @@
             :rules="[(val) => !!val || 'Please enter your contact number.']"
             class="text-box"
           /> -->
-          <label class="labelNames">College</label>
+          <label class="labelNames">College <span class="required">*</span></label>
           <q-select
             dense
             v-model="form.college"
@@ -69,9 +68,14 @@
             >
               <img src="/icons/arrow.png" alt="next" class="btn-icon" />
             </q-btn>
+            <div class="q-mt-md">
+              <router-link to="/user/register-option" class="signup-options q-mt-sm">
+                Back to Sign Up Options
+              </router-link>
+            </div>
           </div>
 
-          <div class="column items-center q-mb-xs">
+          <div class="column items-center">
             <label class="already">
               Already have an account?
               <router-link to="/user/login" name="user-login" class="signup-login-link"
@@ -87,7 +91,7 @@
           <div class="row items-center">
             <div class="col-5">
               <div class="column q-gutter-sm">
-                <label class="labelNames">Department</label>
+                <label class="labelNames">Department <span class="required">*</span></label>
                 <q-select
                   dense
                   v-model="form.department"
@@ -101,11 +105,12 @@
 
             <div class="col-5">
               <div class="column q-gutter-sm">
-                <label class="labelNames">Year & Section</label>
+                <label class="labelNames">Year & Section <span class="required">*</span></label>
                 <q-input
                   dense
                   v-model="form.year_section"
                   lazy-rules
+                  :disable="form.is_alumni"
                   :rules="[(val) => !!val || 'Please enter your year and section.']"
                   class="c-textbox"
                 />
@@ -117,7 +122,7 @@
             </div>
           </div>
 
-          <label class="labelNames">Password</label>
+          <label class="labelNames">Password <span class="required">*</span></label>
           <q-input
             dense
             v-model="form.password"
@@ -134,7 +139,7 @@
             ]"
             class="text-box"
           />
-          <label class="labelNames">Confirm Password</label>
+          <label class="labelNames">Confirm Password <span class="required">*</span></label>
           <q-input
             dense
             v-model="form.confirmPassword"
@@ -212,7 +217,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 
@@ -231,6 +236,16 @@ const form = ref({
   password: '',
   confirmPassword: '',
 })
+
+// Clear year_section when is_alumni is checked
+watch(
+  () => form.value.is_alumni,
+  (newValue) => {
+    if (newValue) {
+      form.value.year_section = ''
+    }
+  },
+)
 
 const collegeDepartment = {
   'College of Computer and Information Sciences': [

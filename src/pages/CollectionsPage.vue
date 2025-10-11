@@ -136,7 +136,7 @@
 
           <div class="col-auto">
             <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
-              COLLECTION NAME<span class="required">*</span>
+              COLLECTION NAME <span class="required">*</span>
             </div>
             <q-input
               v-model="newCollectionTitle"

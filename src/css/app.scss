@@ -269,7 +269,8 @@ document-title-2 {
 }
 
 .signup-login-link:hover,
-.forgot-password-link:hover {
+.forgot-password-link:hover,
+.signup-options:hover {
   text-decoration: underline;
 }
 
@@ -1357,4 +1358,15 @@ document-title-2 {
 .required {
   color: #d32f2f;
   font-weight: 600;
+}
+
+// back to signup options
+
+.signup-options {
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #880000;
+  text-align: center;
+  text-decoration: none;
 }
