@@ -82,7 +82,7 @@ async function loginAdmin() {
   const { email, password } = form.value
 
   try {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
@@ -95,7 +95,10 @@ async function loginAdmin() {
     // Fetch session and profile from your user store
     await userStore.fetchSession()
 
-    if (userStore.profile?.role === 'admin') {
+    // Get role from profile (more reliable than metadata)
+    const role = userStore.profile?.role || data.user?.user_metadata?.role
+
+    if (role === 'admin') {
       alert('Login successful!')
       router.push('/admindash')
     } else {
