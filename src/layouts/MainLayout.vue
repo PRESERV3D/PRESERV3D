@@ -1460,17 +1460,39 @@ watch(
 /* Mobile screens - content needs space for sidebar */
 @media (max-width: 599px) {
   .search-toolbar {
-    padding: 12px 16px !important;
+    padding: 12px 8px !important;
     width: calc(100% - 120px) !important;
-    margin-left: 120px !important;
+    margin-left: 10px !important;
     position: relative !important;
     top: auto !important;
     right: auto !important;
   }
+  .search-input {
+    width: 100% !important;
+  }
+
+  /* Hide only the dropdown select, keep search icon visible */
+  .search-input :deep(.q-select) {
+    display: none !important;
+  }
+
+  /* Ensure search icon stays visible */  =
+.search-input :deep(.q-icon[name="search"]) {
+  display: block !important;
+  margin: 0 8px !important;
+}
+
+  .search-input :deep(.q-field__prepend) {
+    padding-left: 8px !important;
+  }
+
+  .search-input :deep(.q-field__control) {
+    padding-left: 4px !important;
+  }
 
   .responsive-toolbar-container {
     flex-direction: row;
-    gap: 8px;
+    gap: 15px;
     align-items: center;
     justify-content: space-between;
   }
@@ -1478,8 +1500,8 @@ watch(
   .search-container {
     flex: 1 1 auto !important;
     width: auto !important;
-    min-width: 180px !important;
-    max-width: calc(100% - 120px) !important;
+    min-width: 150px !important;
+    max-width: calc(100% - 110px) !important;
     order: 1;
   }
 
@@ -1490,14 +1512,31 @@ watch(
   .toolbar-actions {
     flex: 0 0 auto;
     order: 2;
-    gap: 8px;
+    gap: 4px;
     min-width: 100px;
+    justify-content: flex-end;
+  }
+
+  .notif-btn {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .notif-image {
+    width: 18px !important;
+    height: 18px !important;
   }
 
   .user-profile-btn.compact {
-    width: 48px !important;
-    min-width: 48px !important;
-    max-width: 48px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 6px !important;
+  }
+
+  .user-profile-btn.compact .q-avatar {
+    width: 28px !important;
+    height: 28px !important;
   }
 
   /* Keep sidebar visible on mobile but in mini state */
