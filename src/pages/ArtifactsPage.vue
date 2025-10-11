@@ -212,8 +212,14 @@
           </div>
         </div>
 
+        <!-- Loading State -->
+        <div v-if="loading" class="loading-container">
+          <q-spinner-dots size="4em" color="primary" />
+          <p class="loading-text">Loading artifacts...</p>
+        </div>
+
         <!-- Three Artifacts per Row Grid -->
-        <div class="artifacts-grid">
+        <div v-else class="artifacts-grid">
           <div v-for="(model, i) in displayedModels" :key="i" class="artifact-card-wrapper">
             <q-card class="my-card" rounded bordered>
               <div class="card">
@@ -1905,6 +1911,24 @@ function goToModelsPage(page) {
   word-wrap: break-word;
   overflow-wrap: break-word;
   line-height: 1.3;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  min-height: 300px;
+}
+
+.loading-text {
+  margin-top: 1rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #666;
 }
 
 .artifacts-grid {
