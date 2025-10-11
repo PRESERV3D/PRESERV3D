@@ -38,11 +38,14 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     const userStore = useUserStore()
     const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
     const allowedRoles = to.meta.allowedRoles
-    const session = userStore.session
 
+    // Fetch session if not already loaded
     if (!userStore.session) {
       await userStore.fetchSession()
     }
+
+    // Get the current session
+    const session = userStore.session
 
     // Super admin check for user management - only restrict the full view
     if (to.name === 'user-management') {
