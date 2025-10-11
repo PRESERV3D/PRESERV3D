@@ -18,7 +18,7 @@
         <div class="artifact-card" ref="artifactCard">
           <model-viewer
             ref="artifactViewer"
-            :src="model.file_url"
+            :src="workingModelUrl || model.file_url"
             camera-controls
             loading="lazy"
             shadow-intensity="1"
@@ -497,6 +497,7 @@ import { supabase } from 'boot/supabase'
 import { useModelStore } from 'stores/modelStore'
 import { useUserStore } from 'stores/user'
 import { generateNarration } from '/services/narration_service.js'
+import { convertToWorkingUrl } from 'src/composables/useR2Url'
 import '@google/model-viewer'
 
 const route = useRoute()
@@ -510,6 +511,7 @@ const isAdmin = computed(() => userRole === 'admin')
 
 const model = ref(null)
 const loading = ref(true)
+const workingModelUrl = ref('')
 
 const artifactViewer = ref(null)
 
@@ -963,6 +965,17 @@ onMounted(async () => {
       ...data,
       bookmarked: false,
       starred: false,
+    }
+
+    // Convert stored URL to working presigned URL
+    try {
+      if (data.file_url) {
+        workingModelUrl.value = await convertToWorkingUrl(data.file_url)
+        console.log('✅ Generated working URL for artifact')
+      }
+    } catch (urlError) {
+      console.error('⚠️ Could not generate working URL, using stored URL:', urlError)
+      workingModelUrl.value = data.file_url
     }
 
     if (data.related_links && Array.isArray(data.related_links)) {

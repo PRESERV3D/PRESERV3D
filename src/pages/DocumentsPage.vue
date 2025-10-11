@@ -469,6 +469,7 @@ import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
+import { convertToWorkingUrl } from 'src/composables/useR2Url'
 import { useRouter } from 'vue-router'
 import { processOCRPages } from '/services/ocr_service'
 import { PDFDocument } from 'pdf-lib'
@@ -707,11 +708,32 @@ const fetchAllDocuments = async () => {
       }
     }
 
-    const enhancedDocs = data.map((docs) => ({
-      ...docs,
-      bookmarked: bookmarkedIds.includes(docs.id),
-      starred: favoriteIds.includes(docs.id),
-    }))
+    const enhancedDocs = await Promise.all(
+      data.map(async (docs) => {
+        let workingFileUrl = docs.file_url
+        let workingPreviewUrl = docs.preview_url
+
+        try {
+          // Convert stored URLs to working presigned URLs
+          if (docs.file_url) {
+            workingFileUrl = await convertToWorkingUrl(docs.file_url)
+          }
+          if (docs.preview_url) {
+            workingPreviewUrl = await convertToWorkingUrl(docs.preview_url)
+          }
+        } catch (err) {
+          console.warn('Could not convert URL for document:', docs.id, err)
+        }
+
+        return {
+          ...docs,
+          file_url: workingFileUrl, // Replace with working URL
+          preview_url: workingPreviewUrl, // Replace with working preview URL
+          bookmarked: bookmarkedIds.includes(docs.id),
+          starred: favoriteIds.includes(docs.id),
+        }
+      }),
+    )
 
     documentsStore.setDocuments(enhancedDocs)
 

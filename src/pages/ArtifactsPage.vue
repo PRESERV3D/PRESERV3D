@@ -395,6 +395,7 @@ import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
 import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
+import { convertToWorkingUrl } from 'src/composables/useR2Url'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { allSortOptions } from 'src/stores/searchStore'
@@ -867,11 +868,24 @@ const fetchAllArtifacts = async () => {
       }
 
       // Add some mock data for demonstration compatibility
-      const enhancedModels = data.map((model) => ({
-        ...model,
-        bookmarked: bookmarkedIds.includes(model.id),
-        starred: favoriteIds.includes(model.id),
-      }))
+      const enhancedModels = await Promise.all(
+        data.map(async (model) => {
+          let workingUrl = model.file_url
+          try {
+            // Convert stored URL to working presigned URL
+            workingUrl = await convertToWorkingUrl(model.file_url)
+          } catch (err) {
+            console.warn('Could not convert URL for model:', model.id, err)
+          }
+
+          return {
+            ...model,
+            file_url: workingUrl, // Replace with working URL
+            bookmarked: bookmarkedIds.includes(model.id),
+            starred: favoriteIds.includes(model.id),
+          }
+        }),
+      )
 
       modelStore.setModels(enhancedModels)
 
