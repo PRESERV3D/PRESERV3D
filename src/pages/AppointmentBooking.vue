@@ -47,7 +47,7 @@
           <div class="form-row">
             <div class="form-group-split">
               <div class="form-group half-width">
-                <label class="form-label">Date</label>
+                <label class="form-label">Date<span class="required">*</span></label>
                 <q-input
                   v-model="form.date"
                   dense
@@ -72,7 +72,7 @@
               </div>
 
               <div class="form-group half-width">
-                <label class="form-label">Time</label>
+                <label class="form-label">Time<span class="required">*</span></label>
                 <q-input
                   v-model="form.time"
                   dense
@@ -104,7 +104,7 @@
 
           <div class="form-row">
             <div class="form-group full-width">
-              <label class="form-label">Purpose of Visit</label>
+              <label class="form-label">Purpose of Visit<span class="required">*</span></label>
               <q-input
                 v-model="form.purpose"
                 dense
@@ -130,7 +130,10 @@
 
             <div class="form-group button-group">
               <label class="form-label invisible-label">Action</label>
-              <q-btn type="submit" class="book-btn" push no-caps :loading="loading"> BOOK </q-btn>
+              <div v-if="!isBookLoading">
+                <q-btn type="submit" class="book-btn" push no-caps :loading="loading"> BOOK </q-btn>
+              </div>
+              <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
             </div>
           </div>
         </q-form>
@@ -195,6 +198,7 @@ import { addBusinessDays, addMonths, isWithinInterval, isWeekend } from 'date-fn
 
 const activeTab = ref('information')
 const loading = ref(false)
+const isBookLoading = ref(false)
 const showSuccessModal = ref(false)
 
 const userStore = useUserStore()
@@ -333,6 +337,7 @@ const hourOptions = (hr) => {
 }
 
 async function submitBooking() {
+  isBookLoading.value = true
   const { name, email, date, time, purpose, user_remarks } = form.value
 
   if (!date || !time || !purpose) {
@@ -374,6 +379,7 @@ async function submitBooking() {
 
     console.log('Appointment booking successfully saved.')
     showSuccessModal.value = true
+    isBookLoading.value = false
     resetForm()
   } catch (err) {
     console.log('Error during appointment booking:', err)

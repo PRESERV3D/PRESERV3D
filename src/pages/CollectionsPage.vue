@@ -135,7 +135,9 @@
           </div>
 
           <div class="col-auto">
-            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">COLLECTION NAME</div>
+            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
+              COLLECTION NAME<span class="required">*</span>
+            </div>
             <q-input
               v-model="newCollectionTitle"
               class="field-collection q-mb-md"
@@ -170,7 +172,13 @@
             no-caps
           />
           <div v-if="!isGenerateCollectionLoading">
-            <q-btn label="Save" class="q-mr-sm btn-save" @click="addCollection" no-caps />
+            <q-btn
+              :disable="!newCollectionTitle"
+              label="Save"
+              class="q-mr-sm btn-save"
+              @click="addCollection"
+              no-caps
+            />
           </div>
           <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
         </q-card-actions>
