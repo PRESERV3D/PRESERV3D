@@ -1161,7 +1161,7 @@ watch(
 
 @media (max-height: 650px) {
   .navigation-section.hovered-lift {
-    transform: translateY(-10px) !important;
+    transform: translateY(-30px) !important;
   }
 }
 
