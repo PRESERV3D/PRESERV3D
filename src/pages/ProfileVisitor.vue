@@ -1,9 +1,7 @@
 <template>
   <q-page class="q-pa-md">
     <div class="q-mt-xs title">Visitor Profile</div>
-    <div class="q-mt-xs q-mb-xl subtitle">
-      Manage your account information and preferences.
-    </div>
+    <div class="q-mt-xs q-mb-xl subtitle">Manage your account information and preferences.</div>
 
     <!-- Centered Profile Card -->
     <div class="card-container">
@@ -46,13 +44,7 @@
             <label>Name:</label>
             <div class="info-content">
               <span v-if="!isEditing">{{ visitorData.name }}</span>
-              <q-input
-                v-else
-                v-model="visitorData.name"
-                outlined
-                dense
-                class="edit-input"
-              />
+              <q-input v-else v-model="visitorData.name" outlined dense class="edit-input" />
             </div>
           </div>
 
@@ -89,13 +81,7 @@
             <label>Institution:</label>
             <div class="info-content">
               <span v-if="!isEditing">{{ visitorData.institution }}</span>
-              <q-input
-                v-else
-                v-model="visitorData.institution"
-                outlined
-                dense
-                class="edit-input"
-              />
+              <q-input v-else v-model="visitorData.institution" outlined dense class="edit-input" />
             </div>
           </div>
 
@@ -177,7 +163,10 @@
                 dense
                 placeholder="Confirm new password"
                 :type="showPassword ? 'text' : 'password'"
-                :error="visitorData.password !== visitorData.confirmPassword && visitorData.confirmPassword !== ''"
+                :error="
+                  visitorData.password !== visitorData.confirmPassword &&
+                  visitorData.confirmPassword !== ''
+                "
                 error-message="Passwords do not match"
                 class="edit-input"
               >
@@ -218,12 +207,7 @@
                 @click="saveProfile"
                 :disable="!certificationAccepted || !passwordsMatch"
               />
-              <q-btn
-                flat
-                color="grey-7"
-                label="Cancel"
-                @click="cancelEditing"
-              />
+              <q-btn flat color="grey-7" label="Cancel" @click="cancelEditing" />
             </template>
           </div>
         </div>
@@ -234,7 +218,9 @@
         <q-card class="extension-dialog">
           <q-card-section class="dialog-header">
             <div class="dialog-title">Request Account Extension</div>
-            <div class="text-caption text-grey-7">Please provide the details for your extension request</div>
+            <div class="text-caption text-grey-7">
+              Please provide the details for your extension request
+            </div>
           </q-card-section>
 
           <q-separator />
@@ -289,17 +275,17 @@
                   <span>{{ extensionRequest.supportingDocument.name }}</span>
                 </div>
               </div>
-              <div class="text-caption text-grey-7 q-mt-xs">Accepted formats: PDF, DOC, DOCX, JPG, PNG (Max 5MB)</div>
+              <div class="text-caption text-grey-7 q-mt-xs">
+                Accepted formats: PDF, DOC, DOCX, JPG, PNG (Max 5MB)
+              </div>
             </div>
 
             <div class="certification-section">
-              <q-checkbox
-                v-model="extensionRequest.certificationAccepted"
-                color="primary"
-              >
+              <q-checkbox v-model="extensionRequest.certificationAccepted" color="primary">
                 <template v-slot:default>
                   <div class="certification-text">
-                    I hereby certify that all the information provided are true and correct to the best of my knowledge.
+                    I hereby certify that all the information provided are true and correct to the
+                    best of my knowledge.
                   </div>
                 </template>
               </q-checkbox>
@@ -315,7 +301,11 @@
               label="Submit Request"
               color="primary"
               @click="submitExtensionRequest"
-              :disable="!extensionRequest.certificationAccepted || !extensionRequest.newEndDate || !extensionRequest.reason"
+              :disable="
+                !extensionRequest.certificationAccepted ||
+                !extensionRequest.newEndDate ||
+                !extensionRequest.reason
+              "
             />
           </q-card-actions>
         </q-card>
@@ -351,7 +341,7 @@ export default {
       startDate: '2025-10-01',
       endDate: '2025-12-31',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
     })
 
     const originalVisitorData = { ...visitorData }
@@ -361,7 +351,7 @@ export default {
       newEndDate: '',
       reason: '',
       supportingDocument: null,
-      certificationAccepted: false
+      certificationAccepted: false,
     })
 
     const handleFileSelect = (event) => {
@@ -372,7 +362,7 @@ export default {
           $q.notify({
             type: 'negative',
             message: 'File size must be less than 5MB',
-            position: 'top'
+            position: 'top',
           })
           event.target.value = ''
           return
@@ -403,7 +393,7 @@ export default {
       $q.notify({
         type: 'positive',
         message: 'Profile updated successfully',
-        position: 'top'
+        position: 'top',
       })
 
       isEditing.value = false
@@ -415,7 +405,7 @@ export default {
       $q.notify({
         type: 'info',
         message: 'Profile picture upload functionality',
-        position: 'top'
+        position: 'top',
       })
     }
 
@@ -426,7 +416,7 @@ export default {
       $q.notify({
         type: 'positive',
         message: 'Extension request submitted successfully. Pending approval.',
-        position: 'top'
+        position: 'top',
       })
 
       // Reset extension request
@@ -466,15 +456,13 @@ export default {
       submitExtensionRequest,
       formatDate,
       passwordsMatch,
-      handleFileSelect
+      handleFileSelect,
     }
-  }
+  },
 }
 </script>
 
 <style scoped>
-
-
 .edit-input {
   width: 100%;
 }
@@ -507,7 +495,6 @@ export default {
   resize: none !important;
   line-height: 1.5 !important;
 }
-
 
 .action-buttons {
   display: flex;
@@ -554,11 +541,6 @@ export default {
   color: #424242;
   margin-bottom: 8px;
   font-size: 14px;
-}
-
-.required {
-  color: #d32f2f;
-  font-weight: 600;
 }
 
 .file-upload-section {

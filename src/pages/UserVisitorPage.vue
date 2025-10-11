@@ -246,14 +246,17 @@
 
         <div class="column items-center q-mt-sm">
           <a @click="step--" class="labelNames cursor-pointer q-mb-sm">Back</a>
-          <q-btn
-            :disable="!acceptedterms"
-            class="visitor-signup-btn"
-            push
-            text-color="primary"
-            label="SIGN UP"
-            @click="registerUser"
-          />
+          <div v-if="!isSignUpLoading">
+            <q-btn
+              :disable="!acceptedterms"
+              class="visitor-signup-btn"
+              push
+              text-color="primary"
+              label="SIGN UP"
+              @click="registerUser"
+            />
+          </div>
+          <q-spinner v-else color="primary" size="30px" class="q-mt-sm" />
         </div>
 
         <div class="column items-center q-mt-sm">
@@ -295,6 +298,7 @@ import { addMonths, startOfDay } from 'date-fns'
 const step = ref(1)
 
 const showDialog = ref(false)
+const isSignUpLoading = ref(false)
 
 const form = ref({
   first_name: '',
@@ -418,6 +422,7 @@ const checkEmailUnique = async (val) => {
 
 // Register user
 async function registerUser() {
+  isSignUpLoading.value = true
   const { first_name, last_name, email, contact, institution, purpose, start_date, end_date } =
     form.value
 
@@ -477,6 +482,7 @@ async function registerUser() {
     await adminNotifications(notifMessage)
 
     console.log('Registration successfully submitted.')
+    isSignUpLoading.value = false
     step.value = 3
   } catch (err) {
     console.log('Error during registration:', err)

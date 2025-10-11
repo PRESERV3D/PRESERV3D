@@ -4,17 +4,22 @@
 
 PRESERV3D is a **Quasar + Vue 3 SPA** for managing PUP Library archives. It handles **dual content types**: PDF documents (with NLP-powered metadata extraction) and 3D artifacts (.glb models). The system combines document digitization, 3D visualization, and an appointment booking system for physical visits.
 
+**Repository**: PRESERV3D/PRESERV3D on GitHub  
+**Current Branch**: feature/required-fields
+
 ## Architecture & Tech Stack
 
 ### Frontend: Quasar Framework (Vue 3 + Vite)
 
 - **Entry**: `src/App.vue` initializes session tracking via `useUserStore` and `trackAuthChanges()`
 - **Routing**: `src/router/index.js` with Supabase auth guards - checks `requiresAuth` and `allowedRoles` meta
-- **Boot Files** (`src/boot/`): Initialize global plugins before app mounts
+- **Boot Files** (`src/boot/`): Initialize global plugins before app mounts (order matters in `quasar.config.js`)
+  - `axios.js` - HTTP client configuration
   - `supabase.js` - Auth client with session persistence
   - `r2.js` - Cloudflare R2 storage uploads (handles .glb + PDF files)
   - `model-viewer.js` - Registers `<model-viewer>` custom element for 3D rendering
 - **State**: Pinia stores in `src/stores/` - `user.js` handles multi-table auth (students, faculty, visitors, admins)
+- **Quasar Plugins**: Dialog, Loading, Notify (configured in `quasar.config.js` framework.plugins)
 
 ### Backend Services (Python + Node.js)
 
@@ -36,22 +41,42 @@ PRESERV3D is a **Quasar + Vue 3 SPA** for managing PUP Library archives. It hand
 ### Database: Supabase PostgreSQL
 
 - **Auth Tables**: `registered_users`, `registered_faculty`, `approved_visitors`, `registered_admins`
+  - All auth tables have `id` UUID that links to `auth.users(id)` 
+  - User type determined by which table contains the user's record
+  - `registered_admins.is_super_admin` boolean flag for super admin privileges
 - **Content**: `documents_metadata`, `artifacts_metadata` (both store JSON metadata + file_url)
-- **Quality Control**: `inconsistencies` table tracks metadata validation issues
-- **User Profile Resolution**: `useUserStore.fetchProfile()` queries all auth tables sequentially
+  - Both use JSONB `metadata` column for flexible schema
+  - `search_text` column for full-text search capabilities
+- **Quality Control**: `inconsistencies` table tracks metadata validation issues with status: "Open" / "Resolved"
+- **User Profile Resolution**: `useUserStore.fetchProfile()` queries all auth tables **sequentially** (students → faculty → admins → visitors)
+  - Sets `profile.user_type` based on which table matches: 'student', 'faculty', 'admin', 'super admin', 'visitor'
+  - Always sets `profile.role` to either 'admin' or 'user' (for routing logic)
 
 ## Development Workflows
 
 ### Running the App
 
+**CRITICAL**: NLP service MUST be running for PDF uploads to work. Start both services:
+
 ```powershell
-# Frontend dev server (https://localhost:9000)
+# Terminal 1: Frontend dev server (https://localhost:9000)
 npm run dev  # or: quasar dev
 
-# NLP service (required for PDF uploads)
+# Terminal 2: NLP service (required for PDF uploads)
 cd services
 .\venv\Scripts\activate
 uvicorn nlp_service:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Python Virtual Environment Setup
+
+If NLP service fails with module errors, recreate the venv:
+
+```powershell
+cd services
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
 ### Environment Variables (.env)
@@ -68,6 +93,49 @@ Required keys prefixed with `VITE_` for client-side access:
 - `quasar build` - Production build for Vercel deployment
 
 ## Critical Patterns & Conventions
+
+### Quasar Framework Integration
+
+**Global Plugins** (accessed via `$q` in components):
+
+```javascript
+// Notify - Toast notifications
+$q.notify({ type: 'positive', message: 'Success!', position: 'top' })
+$q.notify({ type: 'negative', message: 'Error occurred', position: 'top' })
+
+// Dialog - Confirmation dialogs
+$q.dialog({ title: 'Confirm', message: 'Are you sure?' }).onOk(() => {})
+
+// Loading - Global loading overlay
+$q.loading.show()
+$q.loading.hide()
+```
+
+**Form Validation Pattern** (Quasar's built-in system):
+
+```vue
+<q-input
+  v-model="form.field"
+  lazy-rules
+  :rules="[
+    (val) => !!val || 'Field is required',
+    (val) => /regex/.test(val) || 'Invalid format',
+    asyncValidationFunction  // Can use async functions
+  ]"
+/>
+```
+
+**Custom Element Registration** (`quasar.config.js`):
+
+```javascript
+viteVuePluginOptions: {
+  template: {
+    compilerOptions: {
+      isCustomElement: (tag) => tag === 'model-viewer'  // Required for 3D viewer
+    }
+  }
+}
+```
 
 ### Role-Based Access Control
 
@@ -95,12 +163,24 @@ Router guards check `session.user.user_metadata.role` against route `meta.allowe
 3. Upload to R2 → `uploadFileToR2(file, 'documents', fileName)`
 4. Save to `documents_metadata` table with `metadata` JSONB column
 
+**Key Pattern**: Always check NLP service health before PDF upload workflows
+
 **Artifacts** (`ArtifactsPage.vue`, `Testing_ArtifactsPage.vue`):
 
 1. Select .glb file (3D model compression commented out - see lines 1088-1157 in ArtifactsPage.vue)
 2. Direct upload to R2 → `uploadFileToR2(file, 'artifacts', fileName)` with `contentType: 'model/gltf-binary'`
 3. Manual metadata entry via `ConfirmMetadata` component
 4. Save to `artifacts_metadata` table
+
+**uploadFileToR2 Signature** (`src/boot/r2.js`):
+
+```javascript
+async function uploadFileToR2(file, folder, fileName) {
+  // Auto-detects MIME type based on extension
+  // For .glb/.gltf: sets contentType to 'model/gltf-binary'
+  // Returns: { error, publicUrl }
+}
+```
 
 ### 3D Model Rendering
 
@@ -122,6 +202,7 @@ Router guards check `session.user.user_metadata.role` against route `meta.allowe
   - Uses PDF.js for client-side rendering
 - **Usage**: `<SecurePdfViewer v-model="show" :pdf-url="url" :document-title="title" :document-author="author" />`
 - **Implementation**: ViewDocumentPage.vue uses this instead of opening PDFs in new tabs
+- **Worker Configuration**: PDF.js worker loaded from `public/pdf.worker.min.mjs` with CDN fallback
 
 ### NLP Pipeline Details
 
@@ -158,6 +239,40 @@ Router guards check `session.user.user_metadata.role` against route `meta.allowe
 - **Services**: Backend logic in root `/services/` directory (Python + Node.js)
 - **Public Assets**: Static files in `/public/` - icons, images, Godot gallery, Draco decoders
 
+## Code Style & Conventions
+
+### Vue Component Patterns
+
+- Use `<script setup>` syntax is NOT used - this project uses Options API
+- Reactive data defined in `data()` function returning object
+- Methods in `methods` object, lifecycle hooks at component level
+- Async validation functions can be used directly in `:rules` arrays
+
+### Variable Naming
+
+- **camelCase**: JavaScript variables, functions, component data properties
+- **PascalCase**: Vue component names (both file names and in templates)
+- **kebab-case**: CSS classes, HTML attributes, route paths
+- **SCREAMING_SNAKE_CASE**: Environment variables (all prefixed with `VITE_`)
+
+### Import Organization
+
+```javascript
+// 1. Vue/Quasar core imports
+import { defineComponent } from 'vue'
+import { useQuasar } from 'quasar'
+
+// 2. External libraries
+import axios from 'axios'
+
+// 3. Local modules (stores, composables, utils)
+import { useUserStore } from 'src/stores/user'
+import { uploadFileToR2 } from 'boot/r2'
+
+// 4. Components (if used)
+import MyComponent from 'src/components/MyComponent.vue'
+```
+
 ## Common Pitfalls & Solutions
 
 ### PDF.js Worker Not Loading
@@ -189,6 +304,11 @@ Router guards check `session.user.user_metadata.role` against route `meta.allowe
 
 **Symptom**: Module not found errors in NLP service
 **Fix**: Re-create venv: `cd services; python -m venv venv; .\venv\Scripts\activate; pip install -r requirements.txt`
+
+### Boot File Order Issues
+
+**Symptom**: Global functions not available in components
+**Fix**: Check `quasar.config.js` boot array order - dependencies must load before consumers (e.g., `supabase` before `r2`)
 
 ## Testing Approach
 
