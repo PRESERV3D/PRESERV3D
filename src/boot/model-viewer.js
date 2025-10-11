@@ -26,7 +26,7 @@ export default ({ app, router }) => {
   const MODEL_VIEWER_ROUTES = [
     'admindash',
     'artifacts',
-    'collections',
+    'collection',
     'gallery',
     'home',
     'view-artifact',

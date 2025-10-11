@@ -56,6 +56,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { supabase } from 'src/boot/supabase'
+import { convertToWorkingUrl } from 'src/composables/useR2Url'
 
 const modelUrls = ref([])
 const godotIframeSrc = ref('')
@@ -218,14 +219,28 @@ async function isCacheStillValid(cachedData) {
       return true // Keep cache if we can't validate
     }
 
-    const processedFreshModels = freshData.map((item) => ({
-      id: item.item_id,
-      url: item.file_url,
-      title: item.title || 'Untitled',
-      author: item.author || 'Unknown',
-      summary: item.summary || '',
-      date: item.date || '',
-    }))
+    const processedFreshModels = await Promise.all(
+      freshData.map(async (item) => {
+        let workingUrl = item.file_url
+
+        try {
+          if (item.file_url) {
+            workingUrl = await convertToWorkingUrl(item.file_url)
+          }
+        } catch (err) {
+          console.warn('Could not convert URL for cache validation:', item.item_id, err)
+        }
+
+        return {
+          id: item.item_id,
+          url: workingUrl,
+          title: item.title || 'Untitled',
+          author: item.author || 'Unknown',
+          summary: item.summary || '',
+          date: item.date || '',
+        }
+      }),
+    )
 
     const freshHash = generateModelsHash(processedFreshModels)
     const cacheIsValid = freshHash === cachedData.hash
@@ -282,14 +297,28 @@ async function loadModelUrls() {
       return
     }
 
-    const processedModels = data.map((item) => ({
-      id: item.item_id,
-      url: item.file_url,
-      title: item.title || 'Untitled',
-      author: item.author || 'Unknown',
-      summary: item.summary || '',
-      date: item.date || '',
-    }))
+    const processedModels = await Promise.all(
+      data.map(async (item) => {
+        let workingUrl = item.file_url
+
+        try {
+          if (item.file_url) {
+            workingUrl = await convertToWorkingUrl(item.file_url)
+          }
+        } catch (err) {
+          console.warn('Could not convert gallery model URL:', item.item_id, err)
+        }
+
+        return {
+          id: item.item_id,
+          url: workingUrl,
+          title: item.title || 'Untitled',
+          author: item.author || 'Unknown',
+          summary: item.summary || '',
+          date: item.date || '',
+        }
+      }),
+    )
 
     modelUrls.value = processedModels
     cacheModelData(processedModels)

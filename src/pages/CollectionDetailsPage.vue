@@ -116,13 +116,13 @@
                         </div>
                       </router-link>
                       <!-- ADDED: Action Icons with Counts -->
-                      <div class="action-icons q-mr-md" style="margin-top:  -3px;">
+                      <div class="action-icons q-mr-md" style="margin-top: -3px">
                         <!-- View Icon with Count -->
                         <div class="icon-with-count">
                           <q-icon name="visibility" color="grey" size="20px" class="action-icon" />
-                          <span class="count-text" style="font-size: 0.875rem;">{{
-                              modelStore.viewCounts[artifact.id] || 0
-                            }}</span>
+                          <span class="count-text" style="font-size: 0.875rem">{{
+                            modelStore.viewCounts[artifact.id] || 0
+                          }}</span>
                         </div>
                         <!-- Star Icon with Count -->
                         <div class="icon-with-count">
@@ -133,9 +133,9 @@
                             size="20px"
                             @click.stop="toggleFavorite(artifact.id, 'artifact')"
                           />
-                          <span class="count-text" style="font-size: 0.875rem;">{{
-                              modelStore.starCounts[artifact.id] || 0
-                            }}</span>
+                          <span class="count-text" style="font-size: 0.875rem">{{
+                            modelStore.starCounts[artifact.id] || 0
+                          }}</span>
                         </div>
                         <q-icon
                           v-if="collection.collection_name !== 'Favorites'"
@@ -212,7 +212,7 @@
                 class="document-card-wrapper"
                 :class="{
                   'hide-on-tablet': index >= 3,
-                  'hide-on-mobile': index >= 2
+                  'hide-on-mobile': index >= 2,
                 }"
               >
                 <q-card class="my-card document-preview-card" rounded bordered>
@@ -257,12 +257,14 @@
                         <div class="icon-with-count">
                           <q-icon name="visibility" color="grey" size="16px" class="action-icon" />
                           <span class="count-text" style="font-size: 0.75rem">{{
-                              documentsStore.viewCounts[document.id] || 0
-                            }}</span>
+                            documentsStore.viewCounts[document.id] || 0
+                          }}</span>
                         </div>
                         <!-- Star Icon with Count -->
-                        <div class="icon-with-count"
-                             style="display:flex; align-items:center; gap:1px;">
+                        <div
+                          class="icon-with-count"
+                          style="display: flex; align-items: center; gap: 1px"
+                        >
                           <q-icon
                             :name="document.starred ? 'star' : 'star_border'"
                             :class="{ starred: document.starred }"
@@ -271,8 +273,8 @@
                             @click.stop="toggleFavorite(document.id, 'document')"
                           />
                           <span class="count-text" style="font-size: 0.75rem">{{
-                              documentsStore.starCounts[document.id] || 0
-                            }}</span>
+                            documentsStore.starCounts[document.id] || 0
+                          }}</span>
                         </div>
                         <q-icon
                           v-if="collection.collection_name !== 'Favorites'"
@@ -428,11 +430,11 @@
     <q-dialog v-model="messageDialogOpen">
       <q-card class="delete-notice">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            messageDialogTitle
-          }}</q-card-section>
+          messageDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-            messageDialogContent
-          }}</q-card-section>
+          messageDialogContent
+        }}</q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Close" class="btn-save" @click="handleMessageDialogClose" />
         </q-card-actions>
@@ -459,11 +461,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -472,14 +474,13 @@
   </q-page>
 </template>
 
-
-
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useModelStore } from 'stores/modelStore'
 import { useDocumentsStore } from 'stores/documentsStore'
 import { useUserStore } from 'stores/user'
 import { uploadFileToR2 } from 'boot/r2'
+import { convertToWorkingUrl } from 'src/composables/useR2Url'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { uid } from 'quasar'
@@ -675,11 +676,31 @@ async function fetchCollectionItems() {
       .select('id, file_name, file_url, preview_url, metadata')
       .in('id', docIds)
 
-    documents.value = (docs || []).map((doc) => ({
-      ...doc,
-      bookmarked: true,
-      starred: favoriteIds.includes(doc.id),
-    }))
+    documents.value = await Promise.all(
+      (docs || []).map(async (doc) => {
+        let workingUrl = doc.file_url
+        let workingPreviewUrl = doc.preview_url
+
+        try {
+          if (doc.file_url) {
+            workingUrl = await convertToWorkingUrl(doc.file_url)
+          }
+          if (doc.preview_url) {
+            workingPreviewUrl = await convertToWorkingUrl(doc.preview_url)
+          }
+        } catch (err) {
+          console.warn('Could not convert document URL:', doc.id, err)
+        }
+
+        return {
+          ...doc,
+          file_url: workingUrl,
+          preview_url: workingPreviewUrl,
+          bookmarked: true,
+          starred: favoriteIds.includes(doc.id),
+        }
+      }),
+    )
   }
 
   if (artIds.length) {
@@ -688,15 +709,28 @@ async function fetchCollectionItems() {
       .select('id, file_name, file_url, metadata')
       .in('id', artIds)
 
-    artifacts.value = (arts || []).map((art) => ({
-      ...art,
-      bookmarked: true,
-      starred: favoriteIds.includes(art.id),
-    }))
+    artifacts.value = await Promise.all(
+      (arts || []).map(async (art) => {
+        let workingUrl = art.file_url
+
+        try {
+          if (art.file_url) {
+            workingUrl = await convertToWorkingUrl(art.file_url)
+          }
+        } catch (err) {
+          console.warn('Could not convert artifact URL:', art.id, err)
+        }
+
+        return {
+          ...art,
+          file_url: workingUrl,
+          bookmarked: true,
+          starred: favoriteIds.includes(art.id),
+        }
+      }),
+    )
   }
 }
-
-
 
 // Log user activity
 async function logClick(itemId, itemType, action) {

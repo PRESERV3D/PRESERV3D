@@ -256,6 +256,7 @@ import SecurePdfViewer from 'src/components/SecurePdfViewer.vue'
 import { useUserStore } from 'stores/user'
 import { useRouter } from 'vue-router'
 import { useDocumentsStore } from 'stores/documentsStore'
+import { convertToWorkingUrl } from 'src/composables/useR2Url'
 
 const documentsStore = useDocumentsStore()
 
@@ -708,8 +709,13 @@ async function handleClickRead(doc) {
     } catch (err) {
       console.error('Error logging view click:', err)
     } finally {
-      // Open secure PDF viewer instead of new tab
-      currentPdfUrl.value = doc.file_url
+      // Convert to working presigned URL before opening viewer
+      try {
+        currentPdfUrl.value = await convertToWorkingUrl(doc.file_url)
+      } catch (urlErr) {
+        console.warn('Could not convert URL, using stored URL:', urlErr)
+        currentPdfUrl.value = doc.file_url
+      }
       showPdfViewer.value = true
     }
   }

@@ -399,6 +399,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
+import { convertToWorkingUrl } from 'src/composables/useR2Url'
 import { useRouter } from 'vue-router'
 import { useUserStore } from 'src/stores/user'
 import { useModelStore } from 'stores/modelStore'
@@ -628,21 +629,32 @@ async function loadRecentViews(userId) {
       idToItem[item.id] = item
     }
 
-    // Combine and check if item is in Favorites
-    recentItems.value = data
-      .map((d) => {
-        const item = idToItem[d.item_id]
-        if (!item?.file_url) return null
+    // Convert URLs and combine with favorites check
+    recentItems.value = await Promise.all(
+      data
+        .map(async (d) => {
+          const item = idToItem[d.item_id]
+          if (!item?.file_url) return null
 
-        const key = `${d.item_type}:${d.item_id}`
-        return {
-          ...item,
-          item_type: d.item_type,
-          clicked_at: d.clicked_at,
-          starred: favoriteKeySet.has(key),
-        }
-      })
-      .filter(Boolean)
+          let workingUrl = item.file_url
+          try {
+            workingUrl = await convertToWorkingUrl(item.file_url)
+          } catch (err) {
+            console.warn('Could not convert recent item URL:', item.id, err)
+          }
+
+          const key = `${d.item_type}:${d.item_id}`
+          return {
+            ...item,
+            file_url: workingUrl,
+            item_type: d.item_type,
+            clicked_at: d.clicked_at,
+            starred: favoriteKeySet.has(key),
+          }
+        })
+        .filter((promise) => promise !== null),
+    )
+    recentItems.value = recentItems.value.filter(Boolean)
   } catch (err) {
     console.error('Error loading recent views:', err)
   }
@@ -721,11 +733,23 @@ async function loadModels() {
       }
     }
 
-    const enhancedModels = data.map((model) => ({
-      ...model,
-      bookmarked: bookmarkedIds.includes(model.id),
-      starred: favoriteIds.includes(model.id),
-    }))
+    const enhancedModels = await Promise.all(
+      data.map(async (model) => {
+        let workingUrl = model.file_url
+        try {
+          workingUrl = await convertToWorkingUrl(model.file_url)
+        } catch (err) {
+          console.warn('Could not convert model URL:', model.id, err)
+        }
+
+        return {
+          ...model,
+          file_url: workingUrl,
+          bookmarked: bookmarkedIds.includes(model.id),
+          starred: favoriteIds.includes(model.id),
+        }
+      }),
+    )
 
     modelStore.setModels(enhancedModels)
   } catch (err) {
