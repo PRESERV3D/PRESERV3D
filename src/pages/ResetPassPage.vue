@@ -6,11 +6,11 @@
     >
       <div class="reset-bigbox">
         <div class="pad q-my-lg column">
-          <label class="reset-title q-mb-md">Reset password</label>
+          <label class="reset-title q-mb-md">Create New Password</label>
 
           <div class="row q-gutter-md items-center justify-between">
             <!-- New password input -->
-            <label class="labelNames">New Password: </label>
+            <label class="labelNames">New Password: <span class="required">*</span></label>
             <q-input
               v-model="newPassword"
               filled
@@ -30,7 +30,7 @@
           </div>
           <div class="row q-gutter-md q-mt-sm items-center justify-between">
             <!-- Confirm password input -->
-            <label class="labelNames">Confirm Password: </label>
+            <label class="labelNames">Confirm Password: <span class="required">*</span></label>
             <q-input
               v-model="confirmPassword"
               filled
