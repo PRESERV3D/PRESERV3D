@@ -845,11 +845,11 @@ function imgProps(item) {
   margin-left: 3rem;
   flex: 1;
   min-width: 0;
-  height: 35rem;
-  height: auto;
+  height: 35rem;  /* ✅ Keep only this height declaration */
   box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
   justify-content: center;
 }
+
 .recent-box {
   width: 15rem;
   height: 22rem;
@@ -1216,7 +1216,6 @@ function imgProps(item) {
 
 .box-4 {
   margin-left: 0; /* Remove on mobile */
-  margin-top: 1rem;
 }
 
 /* Tablet (768px+) */
