@@ -41,7 +41,7 @@
           </div>
 
           <!-- Navigation Section -->
-          <div class="navigation-section" :class="{ 'hovered-lift': isHovered }">
+          <div class="navigation-section" :class="{ 'hovered-lift': isHovered, 'compact-height': isShortScreen, 'very-compact-height': isVeryShortScreen }">
             <q-list padding :class="{ 'text-center': miniState && !isHovered }">
               <q-item
                 v-for="item in navItems"
@@ -160,7 +160,7 @@
             <div v-else class="search-container-hidden"></div>
 
             <!-- Spacer to push actions to the right -->
-            <div class="toolbar-spacer"></div>
+            <div class="toolbar-spacer" style="flex: 1;"></div>
 
             <!-- Notifications and user profile -->
             <div class="toolbar-actions" :class="{ 'no-search': !hasSearchBar }">
@@ -456,8 +456,12 @@ const isHovered = ref(false)
 const search = ref('')
 
 // Responsive state
+// Responsive state
 const windowWidth = ref(window.innerWidth)
+const windowHeight = ref(window.innerHeight)
 const isCompactMode = computed(() => windowWidth.value < 1030)
+const isShortScreen = computed(() => windowHeight.value < 768)
+const isVeryShortScreen = computed(() => windowHeight.value < 600)
 
 // Advanced Search State
 const showAdvancedSearch = ref(false)
@@ -611,6 +615,7 @@ const navItems = computed(() => {
 // Window resize handler
 const handleResize = () => {
   windowWidth.value = window.innerWidth
+  windowHeight.value = window.innerHeight
 }
 
 // Add a timeout to prevent rapid state changes
@@ -1147,6 +1152,19 @@ watch(
   transform: translateY(-40px) !important;
 }
 
+/* Reduce lift on short screens to prevent overflow */
+@media (max-height: 768px) {
+  .navigation-section.hovered-lift {
+    transform: translateY(-40px) !important;
+  }
+}
+
+@media (max-height: 650px) {
+  .navigation-section.hovered-lift {
+    transform: translateY(-30px) !important;
+  }
+}
+
 /* ========================
    LOGO
 ======================== */
@@ -1164,13 +1182,21 @@ watch(
   height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.logo-section {
+  flex-shrink: 0;
 }
 
 .navigation-section {
   flex: 1;
   min-height: 0;
   padding: 0 8px;
-  overflow-y: visible;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .logout-section {
@@ -1224,6 +1250,7 @@ watch(
   align-items: center;
   width: 100%;
   min-height: 44px;
+  justify-content: space-between;
 }
 
 .search-container {
@@ -1233,17 +1260,18 @@ watch(
 }
 
 .toolbar-spacer {
-  flex: 0 0 30px;
-  width: 30px;
+  flex: 1 1 auto;
+  min-width: 30px;
 }
 
 .toolbar-actions {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 100px;
+  gap: 10px;
   min-width: fit-content;
   width: auto;
+  margin-left: auto;
 }
 
 /* ========================
@@ -1297,6 +1325,113 @@ watch(
   margin-top: 16px;
 }
 
+
+
+/* ========================
+   HEIGHT-BASED RESPONSIVE ADJUSTMENTS
+======================== */
+
+/* Only for short screens - reduce spacing to fit everything */
+@media (max-height: 700px) {
+  .navigation-section {
+    justify-content: flex-start !important;
+  }
+
+  .nav-item,
+  .logout-item {
+    margin-bottom: 6px !important;
+  }
+
+  .logo-section .q-pa-md.q-mb-md {
+    padding: 12px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .logo-section .q-py-lg {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+
+  .logo-img {
+    max-width: 170px !important;
+    max-height: 68px !important;
+  }
+
+  .icon-wrapper {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .nav-icon {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .nav-text,
+  .logout-text {
+    font-size: 15px !important;
+  }
+
+  .logout-section {
+    padding: 8px !important;
+  }
+
+  .logout-icon {
+    font-size: 18px !important;
+  }
+}
+
+/* Only for very short screens - more compact spacing */
+@media (max-height: 600px) {
+  .navigation-section {
+    justify-content: flex-start !important;
+  }
+
+  .nav-item,
+  .logout-item {
+    margin-bottom: 4px !important;
+    padding: 8px 12px !important;
+  }
+
+  .logo-section .q-pa-md.q-mb-md {
+    padding: 8px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .logo-section .q-py-lg {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+
+  .logo-img {
+    max-width: 140px !important;
+    max-height: 56px !important;
+  }
+
+  .icon-wrapper {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .nav-icon {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .nav-text,
+  .logout-text {
+    font-size: 14px !important;
+  }
+
+  .logout-section {
+    padding: 6px !important;
+  }
+
+  .logout-icon {
+    font-size: 16px !important;
+  }
+}
+
 /* ========================
    RESPONSIVE BREAKPOINTS
 ======================== */
@@ -1308,9 +1443,9 @@ watch(
     min-width: 1060px !important;
     max-width: 1060px !important;
   }
-  .toolbar-actions {
-    gap: 100px;
-  }
+  /*  .toolbar-actions {
+     gap: 100px;
+   } */
   .user-profile-btn:not(.compact) {
     width: 282px !important;
     min-width: 282px !important;
@@ -1321,30 +1456,30 @@ watch(
 /* Large screens  */
 @media (min-width: 1440px) and (max-width: 1919px) {
   .search-container {
-    width: 790px !important;
-    min-width: 790px !important;
-    max-width: 790px !important;
+    width: 850px !important;
+    min-width: 850px !important;
+    max-width: 850px !important;
   }
-  .toolbar-actions {
-    gap: 120px;
-  }
-  .user-profile-btn:not(.compact) {
-    width: 210px !important;
-    min-width: 210px !important;
-    max-width: 210px !important;
-  }
-}
+  /*  .toolbar-actions {
+     gap: 120px;
+   } */
+   .user-profile-btn:not(.compact) {
+     width: 210px !important;
+     min-width: 210px !important;
+     max-width: 210px !important;
+   }
+ }
 
-/* Medium-large screens */
+ /* Medium-large screens */
 @media (min-width: 1300px) and (max-width: 1439px) {
   .search-container {
-    width: 710px !important;
+    width: 750px !important;
     min-width: 610px !important;
-    max-width: 710px !important;
+    max-width: 750px !important;
   }
-  .toolbar-actions {
-    gap: 110px;
-  }
+  /* .toolbar-actions {
+     gap: 110px;
+   } */
   .user-profile-btn:not(.compact) {
     width: 180px !important;
     min-width: 180px !important;
@@ -1355,34 +1490,34 @@ watch(
 /* my screen size */
 @media (min-width: 1200px) and (max-width: 1300px) {
   .search-container {
-    width: 650px !important;
+    width: 700px !important;
     min-width: 550px !important;
-    max-width: 650px !important;
+    max-width: 700px !important;
     flex: none !important;
   }
 
-  .toolbar-actions {
-    gap: 60px;
-    width: auto;
-  }
+  /* .toolbar-actions {
+     gap: 60px;
+     width: auto;
+   } */
 
-  .user-profile-btn:not(.compact) {
-    width: 180px !important;
-    min-width: 180px !important;
-    max-width: 180px !important;
-  }
-}
+   .user-profile-btn:not(.compact) {
+     width: 180px !important;
+     min-width: 180px !important;
+     max-width: 180px !important;
+   }
+ }
 
-/* Compact screens  */
+ /* Compact screens  */
 @media (min-width: 1050px) and (max-width: 1199px) {
   .search-container {
-    width: 590px !important;
+    width: 640px !important;
     min-width: 490px !important;
-    max-width: 590px !important;
+    max-width: 640px !important;
   }
-  .toolbar-actions {
-    gap: 45px;
-  }
+  /*  .toolbar-actions {
+     gap: 45px;
+   } */
   .user-profile-btn:not(.compact) {
     width: 210px !important;
     min-width: 210px !important;
@@ -1393,13 +1528,13 @@ watch(
 /* Small screens */
 @media (min-width: 600px) and (max-width: 1049px) {
   .search-container {
-    width: 550px !important;
+    width: 600px !important;
     min-width: 300px !important;
-    max-width: 550px !important;
+    max-width: 600px !important;
   }
-  .toolbar-actions {
+  /* .toolbar-actions {
     gap: 30px;
-  }
+  } */
   .user-profile-btn.compact {
     width: 48px !important;
     min-width: 48px !important;
@@ -1414,8 +1549,8 @@ watch(
 
 /* Hide sidebar on tablets - sidebar still overlays */
 @media (min-width: 600px) and (max-width: 1024px) {
-    .q-drawer {
-      min-width: 120px !important;
+  .q-drawer {
+    min-width: 120px !important;
     /* z-index: 2000 !important; */
   }
 
@@ -1463,17 +1598,39 @@ watch(
 /* Mobile screens - content needs space for sidebar */
 @media (max-width: 599px) {
   .search-toolbar {
-    padding: 12px 16px !important;
-    width: calc(100% - 120px) !important;
-    margin-left: 120px !important;
+    padding: 12px 8px !important;
+    width: calc(100% - 40px) !important;
+    margin-left: 10px !important;
     position: relative !important;
     top: auto !important;
     right: auto !important;
   }
+  .search-input {
+    width: 100% !important;
+  }
+
+  /* Hide only the dropdown select, keep search icon visible */
+  .search-input :deep(.q-select) {
+    display: none !important;
+  }
+
+  /* Ensure search icon stays visible */  =
+.search-input :deep(.q-icon[name="search"]) {
+  display: block !important;
+  margin: 0 8px !important;
+}
+
+  .search-input :deep(.q-field__prepend) {
+    padding-left: 8px !important;
+  }
+
+  .search-input :deep(.q-field__control) {
+    padding-left: 4px !important;
+  }
 
   .responsive-toolbar-container {
     flex-direction: row;
-    gap: 8px;
+    gap: 15px;
     align-items: center;
     justify-content: space-between;
   }
@@ -1481,8 +1638,8 @@ watch(
   .search-container {
     flex: 1 1 auto !important;
     width: auto !important;
-    min-width: 180px !important;
-    max-width: calc(100% - 120px) !important;
+    min-width: 150px !important;
+    max-width: calc(100% - 110px) !important;
     order: 1;
   }
 
@@ -1493,14 +1650,39 @@ watch(
   .toolbar-actions {
     flex: 0 0 auto;
     order: 2;
-    gap: 8px;
+    gap: 4px;
     min-width: 100px;
+    justify-content: flex-end;
+  }
+
+  .notif-btn {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .notif-image {
+    width: 18px !important;
+    height: 18px !important;
   }
 
   .user-profile-btn.compact {
-    width: 48px !important;
-    min-width: 48px !important;
-    max-width: 48px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 6px !important;
+  }
+
+  .user-profile-btn.compact .q-avatar {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .search-input :deep(.q-icon) {
+    font-size: 21px !important;
+  }
+
+  .search-input :deep(.q-icon[name="search"]) {
+    margin: 0 4px !important;
   }
 
   /* Keep sidebar visible on mobile but in mini state */
@@ -1814,12 +1996,12 @@ watch(
   min-height: 44px;
   display: flex;
   align-items: center;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
-  padding: 4px 12px 4px 8px;
-}
+  /*  transition: all 0.3s ease; */
+    flex-shrink: 0;
+    padding: 4px 12px 4px 8px;
+  }
 
-/* Full profile display */
+  /* Full profile display */
 .user-profile-btn:not(.compact) {
   width: 180px;
   min-width: 180px;
@@ -1882,40 +2064,7 @@ watch(
   padding: 4px 8px !important;
 }
 
-/* ========================
-   SEARCH INPUT OUTLINES
-======================== */
-.search-input :deep(.q-field__control) {
-  border: 1px solid #ccc !important;
-  border-radius: 8px;
-  transition: border-color 0.3s ease;
-}
 
-.search-input :deep(.q-field__control:hover) {
-  border-color: #888 !important;
-}
-
-.search-input :deep(.q-field--focused .q-field__control) {
-  border-color: #880000 !important;
-  box-shadow: 0 0 0 1px rgba(136, 0, 0, 0.2) !important;
-}
-
-/* ========================
-   ADVANCED SEARCH DIALOG OUTLINES
-======================== */
-.advanced-search-dialog :deep(.q-field__control) {
-  border: 1px solid #ccc !important;
-  border-radius: 8px;
-}
-
-.advanced-search-dialog :deep(.q-field__control:hover) {
-  border-color: #888 !important;
-}
-
-.advanced-search-dialog :deep(.q-field--focused .q-field__control) {
-  border-color: #880000 !important;
-  box-shadow: 0 0 0 1px rgba(136, 0, 0, 0.2) !important;
-}
 
 /* ========================
    SEARCH BAR VISIBILITY HANDLING
@@ -1932,12 +2081,16 @@ watch(
 }
 
 .toolbar-actions.no-search {
-  margin-left: 102px; /* profile icon */
+  margin-left: 120px; /* profile icon */
 }
 
-/* Reduce gap between notification and profile when search bar is hidden */
+/* Reduce gap between notification and profile when search bar is hidden
 .toolbar-actions.no-search {
   gap: 0px;
+}  */
+
+.toolbar-actions.no-search .user-profile-btn {
+  margin-left: -18px; /* This makes them overlap/closer */
 }
 
 /* ========================
