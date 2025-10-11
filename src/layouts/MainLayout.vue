@@ -160,7 +160,7 @@
             <div v-else class="search-container-hidden"></div>
 
             <!-- Spacer to push actions to the right -->
-            <div class="toolbar-spacer"></div>
+            <div class="toolbar-spacer" style="flex: 1;"></div>
 
             <!-- Notifications and user profile -->
             <div class="toolbar-actions" :class="{ 'no-search': !hasSearchBar }">
@@ -1219,6 +1219,7 @@ watch(
   align-items: center;
   width: 100%;
   min-height: 44px;
+  justify-content: space-between;
 }
 
 .search-container {
@@ -1228,8 +1229,8 @@ watch(
 }
 
 .toolbar-spacer {
-  flex: 0 0 30px;
-  width: 30px;
+  flex: 1 1 auto;
+  min-width: 30px;
 }
 
 .toolbar-actions {
@@ -1239,6 +1240,7 @@ watch(
   gap: 100px;
   min-width: fit-content;
   width: auto;
+  margin-left: auto;
 }
 
 /* ========================
@@ -1409,8 +1411,8 @@ watch(
 
 /* Hide sidebar on tablets - sidebar still overlays */
 @media (min-width: 600px) and (max-width: 1024px) {
-    .q-drawer {
-      min-width: 120px !important;
+  .q-drawer {
+    min-width: 120px !important;
     /* z-index: 2000 !important; */
   }
 
