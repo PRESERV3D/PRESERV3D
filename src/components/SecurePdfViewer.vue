@@ -182,6 +182,8 @@ const userInfoText = computed(() => {
 watch(
   () => props.modelValue,
   (newVal) => {
+    console.log('🔵 modelValue changed to:', newVal)
+    console.log('🔵 PDF URL at watch time:', props.pdfUrl)
     isOpen.value = newVal
     if (newVal) {
       loadPdf()
@@ -223,10 +225,22 @@ const setPageRef = (el, pageNum) => {
 }
 
 const loadPdf = async () => {
+  console.log('🔵 loadPdf called')
+  console.log('🔵 PDF URL:', props.pdfUrl)
+  console.log('🔵 Dialog isOpen:', isOpen.value)
+
   loading.value = true
   error.value = null
 
+  if (!props.pdfUrl) {
+    console.error('❌ No PDF URL provided')
+    error.value = 'No PDF URL provided'
+    loading.value = false
+    return
+  }
+
   try {
+    console.log('🔵 Starting PDF.js loading...')
     const loadingTask = pdfjsLib.getDocument({
       url: props.pdfUrl,
       withCredentials: false,
@@ -234,6 +248,7 @@ const loadPdf = async () => {
 
     pdfDoc.value = await loadingTask.promise
     numPages.value = pdfDoc.value.numPages
+    console.log('✅ PDF loaded successfully, pages:', numPages.value)
     loading.value = false
 
     // Wait for DOM to update with all canvas elements
@@ -243,6 +258,7 @@ const loadPdf = async () => {
     await waitForCanvases()
 
     await renderAllPages()
+    console.log('✅ All pages rendered')
 
     // Add scroll listener after PDF is fully loaded
     await nextTick()
@@ -251,7 +267,7 @@ const loadPdf = async () => {
       container.addEventListener('scroll', handleScroll)
     }
   } catch (err) {
-    console.error('Error loading PDF:', err)
+    console.error('❌ Error loading PDF:', err)
     error.value = 'Failed to load PDF document. Please try again.'
     loading.value = false
   }

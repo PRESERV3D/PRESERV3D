@@ -257,6 +257,7 @@ import { useUserStore } from 'stores/user'
 import { useRouter } from 'vue-router'
 import { useDocumentsStore } from 'stores/documentsStore'
 import { convertToWorkingUrl } from 'src/composables/useR2Url'
+import { preloadPreviews } from 'src/utils/urlCache'
 
 const documentsStore = useDocumentsStore()
 
@@ -657,6 +658,21 @@ onMounted(async () => {
       starred: false,
     }
 
+    // Convert URLs to working presigned URLs with caching
+    try {
+      if (data.file_url) {
+        doc.value.file_url = await convertToWorkingUrl(data.file_url)
+      }
+      if (data.preview_url) {
+        doc.value.preview_url = await convertToWorkingUrl(data.preview_url)
+        // Preload preview image for instant display
+        preloadPreviews([doc.value.preview_url])
+      }
+    } catch (urlError) {
+      console.warn('Error converting URLs, using original:', urlError)
+      // Keep original URLs as fallback
+    }
+
     if (data.related_links && Array.isArray(data.related_links)) {
       links.value = data.related_links.map((link, idx) => ({
         id: link.id || Date.now() + idx,
@@ -703,21 +719,33 @@ function openLink(url) {
 }
 
 async function handleClickRead(doc) {
+  console.log('handleClickRead called with doc:', doc)
+
   if (doc && doc.file_url) {
+    console.log('Document file_url:', doc.file_url)
+
     try {
       await logClick(doc.id, 'document', 'read_document')
+      console.log('Click logged successfully')
     } catch (err) {
       console.error('Error logging view click:', err)
-    } finally {
-      // Convert to working presigned URL before opening viewer
-      try {
-        currentPdfUrl.value = await convertToWorkingUrl(doc.file_url)
-      } catch (urlErr) {
-        console.warn('Could not convert URL, using stored URL:', urlErr)
-        currentPdfUrl.value = doc.file_url
-      }
-      showPdfViewer.value = true
     }
+
+    // Convert to working presigned URL before opening viewer
+    try {
+      console.log('Converting URL...')
+      currentPdfUrl.value = await convertToWorkingUrl(doc.file_url)
+      console.log('✅ Converted PDF URL:', currentPdfUrl.value)
+    } catch (urlErr) {
+      console.warn('Could not convert URL, using stored URL:', urlErr)
+      currentPdfUrl.value = doc.file_url
+    }
+
+    console.log('Opening PDF viewer with URL:', currentPdfUrl.value)
+    showPdfViewer.value = true
+    console.log('showPdfViewer set to:', showPdfViewer.value)
+  } else {
+    console.error('No document or file_url found:', doc)
   }
 }
 
