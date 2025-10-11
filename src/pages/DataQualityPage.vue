@@ -103,7 +103,11 @@
                       @click="openConfirmDialog(props.row, 'False Positive')"
                     >
                       <q-icon size="18px">
-                        <img src="icons/false-positive.png" alt="False Positive" style="width: 100%; height: 100%;">
+                        <img
+                          src="icons/false-positive.png"
+                          alt="False Positive"
+                          style="width: 100%; height: 100%"
+                        />
                         <q-tooltip>Mark as False Positive</q-tooltip>
                       </q-icon>
                     </q-btn>
@@ -416,11 +420,10 @@ const manualRescan = async () => {
 
     const result = await response.json()
     if (result.success) {
-      $q.notify({ type: 'positive', message: 'Rescan Successful!' })
       await loadInconsistencies()
     } else {
-      console.log('Rescan failed: ' + result.error)
-      $q.notify({ type: 'negative', message: 'Rescan failed: ' + result.error })
+      console.log('Scan failed: ' + result.error)
+      $q.notify({ type: 'negative', message: 'Scan failed: ' + result.error })
     }
   } catch (err) {
     console.error('Error during manual rescan:', err)

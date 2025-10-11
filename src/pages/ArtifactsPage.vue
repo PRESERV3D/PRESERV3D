@@ -368,11 +368,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -801,10 +801,12 @@ async function logClick(itemId, itemType, action) {
 // Fetch all artifacts from Supabase
 const fetchAllArtifacts = async () => {
   try {
+    // Load first 50 artifacts for faster initial load
     const { data, error } = await supabase
       .from('artifacts_metadata')
       .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
       .order('uploaded_at', { ascending: false })
+      .limit(50)
 
     if (!error) {
       const { data: authData } = await supabase.auth.getUser()
@@ -1813,11 +1815,26 @@ const getSortedModels = computed(() => {
   return baseModels
 })
 
+// Helper function to ensure URLs have protocol
+function normalizeFileUrl(url) {
+  if (!url) return ''
+  // If URL doesn't start with http:// or https://, add https://
+  if (!/^https?:\/\//i.test(url)) {
+    return `https://${url}`
+  }
+  return url
+}
+
 const displayedModels = computed(() => {
   const docs = getSortedModels.value
   const start = (modelsCurrentPage.value - 1) * modelsPerPage.value
   const end = start + modelsPerPage.value
-  return docs.slice(start, end)
+
+  // Normalize file URLs to ensure they have protocol
+  return docs.slice(start, end).map((model) => ({
+    ...model,
+    file_url: normalizeFileUrl(model.file_url),
+  }))
 })
 
 const modelsTotalPages = computed(() => {

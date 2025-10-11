@@ -27,7 +27,12 @@
         <!-- Image - Hidden on small view -->
         <div class="col-12 col-md-5 q-gutter-xs gt-sm">
           <div class="row justify-center justify-md-end">
-            <q-img src="/img/trophy-document.png" alt="Trophy and Document" class="trophies" />
+            <q-img
+              src="/img/trophy-document.png"
+              alt="Trophy and Document"
+              class="trophies"
+              loading="lazy"
+            />
           </div>
         </div>
       </div>
@@ -47,6 +52,7 @@
                   :src="item.file_url || '/img/artifact1.png'"
                   :alt="item.metadata?.title || item.file_name"
                   class="circular-image"
+                  loading="lazy"
                 />
                 <!-- Add span icons within the circle -->
                 <span v-if="item.item_type === 'artifact'" class="circle-icon-center">🏆</span>
@@ -108,7 +114,7 @@
             class="artifact-card-wrapper"
             :class="{
               'hide-on-tablet': i >= 2,
-              'hide-on-mobile': i >= 1
+              'hide-on-mobile': i >= 1,
             }"
           >
             <q-card class="my-card" rounded bordered>
@@ -190,11 +196,16 @@
               :key="document.id"
               class="col card-wrapper"
               :class="{
-            'hide-on-tablet': index >= 3,
-            'hide-on-mobile': index >= 2
-          }"
+                'hide-on-tablet': index >= 3,
+                'hide-on-mobile': index >= 2,
+              }"
             >
-              <q-card class="docCard" rounded bordered @click="goToDocumentDetailsPage(document.id)">
+              <q-card
+                class="docCard"
+                rounded
+                bordered
+                @click="goToDocumentDetailsPage(document.id)"
+              >
                 <router-link
                   :to="{ name: 'view-document', params: { id: document.id } }"
                   class="document-link"
@@ -203,6 +214,7 @@
                     :src="document.preview_url || '/img/default-document.png'"
                     :alt="document.metadata?.title || document.file_name"
                     class="document"
+                    loading="lazy"
                   />
                 </router-link>
 
@@ -235,7 +247,9 @@
               <div class="q-mt-md fade-title-container">
                 <div class="sub-font fade-title" style="color: black; font-weight: 800">
                   {{ document.metadata?.title || document.file_name }}
-                  <div class="tooltip-box">{{ document.metadata?.title || document.file_name }}</div>
+                  <div class="tooltip-box">
+                    {{ document.metadata?.title || document.file_name }}
+                  </div>
                 </div>
                 <div class="q-mt-sm sub-font-2" style="color: black; font-weight: 200">
                   {{ document.metadata?.author || 'Unknown Author' }}
@@ -259,7 +273,6 @@
       </div>
     </div>
 
-
     <!-- Add Collection Dialog -->
     <q-dialog v-model="showDialog" persistent>
       <q-card class="add-collection-card">
@@ -274,7 +287,7 @@
             <div class="upload-box" @click="triggerFileInput">
               <img v-if="previewImage" :src="previewImage" alt="Preview" class="preview-image" />
               <div v-else class="upload">
-                <q-img src="/img/write.png" alt="Upload" class="upload-icon" />
+                <q-img src="/img/write.png" alt="Upload" class="upload-icon" loading="lazy" />
                 <div>Upload Photo</div>
               </div>
               <input
@@ -331,11 +344,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -396,7 +409,6 @@ import { useQuasar } from 'quasar'
 
 const $q = useQuasar()
 
-
 const router = useRouter()
 const userStore = useUserStore()
 const modelStore = useModelStore()
@@ -436,7 +448,6 @@ const notifyDialogMessage = ref('')
 
 const userType = computed(() => userStore.profile?.user_type || 'Unknown')
 
-
 // Initialize page
 onMounted(async () => {
   try {
@@ -459,7 +470,7 @@ onMounted(async () => {
       loadCollections(authUser.id),
       loadRecentViews(authUser.id),
       loadModels(),
-      loadDocuments() // CHANGED: Added loadDocuments
+      loadDocuments(), // CHANGED: Added loadDocuments
     ])
 
     await loadUserCollections()
@@ -575,16 +586,16 @@ async function loadRecentViews(userId) {
 
     const { data: artifactData = [] } = artifactIds.length
       ? await supabase
-        .from('artifacts_metadata')
-        .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
-        .in('id', artifactIds)
+          .from('artifacts_metadata')
+          .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
+          .in('id', artifactIds)
       : { data: [] }
 
     const { data: documentData = [] } = documentIds.length
       ? await supabase
-        .from('documents_metadata')
-        .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
-        .in('id', documentIds)
+          .from('documents_metadata')
+          .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
+          .in('id', documentIds)
       : { data: [] }
 
     // Fetch user favorites and bookmarks
@@ -1198,7 +1209,6 @@ const toggleFavoriteDocuments = async (document, itemType = 'document') => {
   }
 }
 
-
 // Toggle favorites - recently viewed items
 const toggleFavoriteRecents = async (item, itemType) => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
@@ -1573,9 +1583,6 @@ async function addCollection() {
   color: #efaf00;
 }
 
-
-
-
 /* RESPONSIVE ARTIFACTS GRID */
 .artifacts-grid {
   display: grid;
@@ -1588,7 +1595,6 @@ async function addCollection() {
   display: flex;
   flex-direction: column;
 }
-
 
 /* ========================
  ARTIFACTS RESPONSIVE DESIGN
@@ -1700,7 +1706,6 @@ async function addCollection() {
 .trophies {
   max-width: 12.5rem;
 }
-
 
 .title-font-2 {
   font-size: 0.875rem;
@@ -1967,7 +1972,9 @@ async function addCollection() {
   border-radius: 10px;
   background-color: white;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .docCard:hover {
@@ -2030,7 +2037,9 @@ async function addCollection() {
   max-width: 200px;
   z-index: 1000;
   font-size: 0.75rem;
-  transition: opacity 0.3s, visibility 0.3s;
+  transition:
+    opacity 0.3s,
+    visibility 0.3s;
   pointer-events: none;
 }
 
@@ -2058,5 +2067,4 @@ async function addCollection() {
   min-height: 600px;
   padding-bottom: 3rem;
 }
-
 </style>
