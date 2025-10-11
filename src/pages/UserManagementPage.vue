@@ -1251,6 +1251,7 @@ import { useQuasar } from 'quasar'
 import { supabase, supabaseAdmin } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 import { useRoute } from 'vue-router'
+import { createNotification } from '/services/email_service.js'
 
 const $q = useQuasar()
 const userStore = useUserStore()
@@ -1933,7 +1934,17 @@ async function confirmRegistrationAction() {
         },
       })
 
-      if (signUpError) throw signUpError
+      if (signUpError) {
+        console.error('Supabase Auth signup error:', signUpError)
+        throw new Error(
+          `Failed to create user account: ${signUpError.message}. Please check Supabase SMTP settings in the dashboard.`,
+        )
+      }
+
+      // Check if user was created successfully
+      if (!authData?.user?.id) {
+        throw new Error('User account created but no user ID returned')
+      }
 
       const now = new Date()
 
@@ -1970,15 +1981,107 @@ async function confirmRegistrationAction() {
 
       if (allUserError) throw allUserError
 
+      // Create in-app notification for the approved visitor
+      const formatDate = (dateString) => {
+        if (!dateString) return 'Not specified'
+        const date = new Date(dateString)
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      }
+
+      const notificationMessage = `Welcome to PRESERV3D! Your visitor registration has been approved by ${adminName || 'the administrator'}. Access period: ${formatDate(row.start_date)} to ${formatDate(row.end_date)}. Please verify your email to complete your account setup.`
+
+      try {
+        await createNotification(authData.user.id, notificationMessage, 'visitor_registration')
+        console.log('In-app notification created for visitor')
+      } catch (notifErr) {
+        console.error('Failed to create notification:', notifErr)
+        // Non-critical, continue
+      }
+
+      // Send approval email via Edge Function
+      try {
+        const { data: emailData, error: emailError } = await supabase.functions.invoke(
+          'send-visitor-email',
+          {
+            body: {
+              email: row.email,
+              status: 'Approved',
+              visitorInfo: {
+                first_name: row.first_name,
+                last_name: row.last_name,
+                start_date: row.start_date,
+                end_date: row.end_date,
+                adminName: adminName,
+                institution: row.institution,
+                purpose: row.purpose,
+              },
+            },
+          },
+        )
+
+        if (emailError) {
+          console.error('Error sending approval email:', emailError)
+          // Don't throw - account is already created, email is secondary
+          $q.notify({
+            type: 'warning',
+            message: 'Visitor approved but custom email failed to send',
+            caption: 'Supabase verification email was sent successfully',
+          })
+        } else {
+          console.log('Approval email sent:', emailData)
+        }
+      } catch (emailErr) {
+        console.error('Email function error:', emailErr)
+        // Continue - account creation is more important than custom email
+      }
+
       $q.notify({
         type: 'positive',
         message: `Visitor registration approved`,
-        caption: `Confirmation email sent to ${row.email}`,
+        caption: `Verification email sent to ${row.email}`,
       })
     } else {
+      // Send rejection email via Edge Function
+      try {
+        const { data: emailData, error: emailError } = await supabase.functions.invoke(
+          'send-visitor-email',
+          {
+            body: {
+              email: row.email,
+              status: 'Rejected',
+              visitorInfo: {
+                first_name: row.first_name,
+                last_name: row.last_name,
+                adminName: adminName,
+                institution: row.institution,
+                purpose: row.purpose,
+              },
+            },
+          },
+        )
+
+        if (emailError) {
+          console.error('Error sending rejection email:', emailError)
+          $q.notify({
+            type: 'warning',
+            message: 'Registration rejected but notification email failed',
+            caption: 'Please inform the visitor manually',
+          })
+        } else {
+          console.log('Rejection email sent:', emailData)
+        }
+      } catch (emailErr) {
+        console.error('Email function error:', emailErr)
+      }
+
       $q.notify({
         type: 'info',
         message: 'Visitor registration rejected',
+        caption: 'Notification email sent to applicant',
       })
     }
 
