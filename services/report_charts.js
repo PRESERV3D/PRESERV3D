@@ -18,7 +18,14 @@ import {
   Filler,
 } from 'chart.js'
 
-export async function renderReportCharts({ startMonth, startYear, endMonth, endYear }) {
+export async function renderReportCharts({
+  startMonth,
+  startDay,
+  startYear,
+  endMonth,
+  endDay,
+  endYear,
+}) {
   // Register Chart.js components
   Chart.register(
     LineController,
@@ -60,10 +67,6 @@ export async function renderReportCharts({ startMonth, startYear, endMonth, endY
 
   Object.values(canvases).forEach((canvas) => hiddenContainer.appendChild(canvas))
 
-  const monthLabels = Array.from({ length: 12 }, (_, i) =>
-    new Date(2000, i).toLocaleString('default', { month: 'short' }),
-  )
-
   try {
     // Fetch all data
     const [
@@ -78,14 +81,14 @@ export async function renderReportCharts({ startMonth, startYear, endMonth, endY
       topArtifactsData,
       topDocumentsData,
     ] = await Promise.all([
-      prepareMonthlyUsersData(startMonth, startYear, endMonth, endYear),
-      prepareMonthlyUploadsData(endMonth, endYear),
-      prepareUserTypesData(endMonth, endYear),
-      prepareMonthlyAppointmentsData(startMonth, startYear, endMonth, endYear),
-      prepareAppointmentStatusData(startMonth, startYear, endMonth, endYear),
-      prepareStudentDepartmentsData(endMonth, endYear),
-      prepareFacultyDepartmentsData(endMonth, endYear),
-      prepareVisitorInstitutionsData(endMonth, endYear),
+      prepareMonthlyUsersData(startMonth, startDay, startYear, endMonth, endDay, endYear),
+      prepareMonthlyUploadsData(startMonth, startDay, startYear, endMonth, endDay, endYear),
+      prepareUserTypesData(endMonth, endDay, endYear, startMonth, startDay, startYear),
+      prepareMonthlyAppointmentsData(startMonth, startDay, startYear, endMonth, endDay, endYear),
+      prepareAppointmentStatusData(startMonth, startDay, startYear, endMonth, endDay, endYear),
+      prepareStudentDepartmentsData(endMonth, endDay, endYear, startMonth, startDay, startYear),
+      prepareFacultyDepartmentsData(endMonth, endDay, endYear, startMonth, startDay, startYear),
+      prepareVisitorInstitutionsData(endMonth, endDay, endYear, startMonth, startDay, startYear),
       prepareTopArtifactsData(),
       prepareTopDocumentsData(),
     ])
@@ -97,7 +100,7 @@ export async function renderReportCharts({ startMonth, startYear, endMonth, endY
       new Chart(canvases.monthlyUsers, {
         type: 'line',
         data: {
-          labels: monthLabels,
+          labels: monthlyUsersData.monthLabels,
           datasets: [
             {
               label: 'PUP Students',
@@ -152,7 +155,7 @@ export async function renderReportCharts({ startMonth, startYear, endMonth, endY
       new Chart(canvases.monthlyUploads, {
         type: 'bar',
         data: {
-          labels: monthLabels,
+          labels: monthlyUploadsData.monthLabels,
           datasets: [
             {
               label: 'Artifacts',
@@ -215,7 +218,7 @@ export async function renderReportCharts({ startMonth, startYear, endMonth, endY
         new Chart(canvases.monthlyAppointments, {
           type: 'line',
           data: {
-            labels: monthLabels,
+            labels: monthlyAppointmentsData.monthLabels,
             datasets: [
               {
                 label: 'Appointments',
@@ -803,83 +806,127 @@ function getPieChartOptions(title) {
 }
 
 // Data preparation functions
-async function prepareMonthlyUsersData(startMonth, startYear, endMonth, endYear) {
+async function prepareMonthlyUsersData(startMonth, startDay, startYear, endMonth, endDay, endYear) {
   try {
-    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
+    const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
+    const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
+    
     const { data: users } = await supabase
       .from('all_users')
       .select('created_at, user_type')
+      .gte('created_at', startDate)
       .lte('created_at', endDate)
 
-    const studentCounts = Array(12).fill(0)
-    const facultyCounts = Array(12).fill(0)
-    const visitorCounts = Array(12).fill(0)
+    // Generate month labels for the date range
+    const monthLabels = []
+    const studentCounts = []
+    const facultyCounts = []
+    const visitorCounts = []
 
-    if (users) {
-      users.forEach((user) => {
-        const date = new Date(user.created_at)
-        const monthIndex = date.getMonth()
-        if (monthIndex >= 0 && monthIndex < 12) {
-          if (user.user_type === 'student') studentCounts[monthIndex]++
-          else if (user.user_type === 'faculty') facultyCounts[monthIndex]++
-          else if (user.user_type === 'visitor') visitorCounts[monthIndex]++
-        }
-      })
+    const start = new Date(startYear, startMonth - 1, 1)
+    const end = new Date(endYear, endMonth - 1, 1)
+    let current = new Date(start)
+
+    while (current <= end) {
+      const monthLabel = current.toLocaleString('default', { month: 'short', year: 'numeric' })
+      monthLabels.push(monthLabel)
+      
+      const monthStart = new Date(current.getFullYear(), current.getMonth(), 1)
+      const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59)
+
+      const monthUsers = users?.filter(user => {
+        const userDate = new Date(user.created_at)
+        return userDate >= monthStart && userDate <= monthEnd
+      }) || []
+
+      studentCounts.push(monthUsers.filter(u => u.user_type === 'student').length)
+      facultyCounts.push(monthUsers.filter(u => u.user_type === 'faculty').length)
+      visitorCounts.push(monthUsers.filter(u => u.user_type === 'visitor').length)
+
+      current.setMonth(current.getMonth() + 1)
     }
 
-    return { studentCounts, facultyCounts, visitorCounts }
+    return { monthLabels, studentCounts, facultyCounts, visitorCounts }
   } catch (error) {
     console.error('Error preparing users data:', error)
     return {
-      studentCounts: Array(12).fill(0),
-      facultyCounts: Array(12).fill(0),
-      visitorCounts: Array(12).fill(0),
+      monthLabels: [],
+      studentCounts: [],
+      facultyCounts: [],
+      visitorCounts: [],
     }
   }
 }
 
-async function prepareMonthlyUploadsData(endMonth, endYear) {
+async function prepareMonthlyUploadsData(startMonth, startDay, startYear, endMonth, endDay, endYear) {
   try {
-    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
+    const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
+    const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
 
     const [artifactsResult, documentsResult] = await Promise.all([
-      supabase.from('artifacts_metadata').select('uploaded_at').lte('uploaded_at', endDate),
-      supabase.from('documents_metadata').select('uploaded_at').lte('uploaded_at', endDate),
+      supabase
+        .from('artifacts_metadata')
+        .select('uploaded_at')
+        .gte('uploaded_at', startDate)
+        .lte('uploaded_at', endDate),
+      supabase
+        .from('documents_metadata')
+        .select('uploaded_at')
+        .gte('uploaded_at', startDate)
+        .lte('uploaded_at', endDate),
     ])
 
-    const artifactsCounts = Array(12).fill(0)
-    const documentsCounts = Array(12).fill(0)
+    // Generate month labels for the date range
+    const monthLabels = []
+    const artifactsCounts = []
+    const documentsCounts = []
 
-    function incrementCount(data, counter) {
-      if (!data) return
-      data.forEach((item) => {
-        const date = new Date(item.uploaded_at)
-        const monthIndex = date.getMonth()
-        if (monthIndex >= 0 && monthIndex < 12) {
-          counter[monthIndex]++
-        }
-      })
+    const start = new Date(startYear, startMonth - 1, 1)
+    const end = new Date(endYear, endMonth - 1, 1)
+    let current = new Date(start)
+
+    while (current <= end) {
+      const monthLabel = current.toLocaleString('default', { month: 'short', year: 'numeric' })
+      monthLabels.push(monthLabel)
+      
+      const monthStart = new Date(current.getFullYear(), current.getMonth(), 1)
+      const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59)
+
+      const artifactsInMonth = artifactsResult.data?.filter(item => {
+        const uploadDate = new Date(item.uploaded_at)
+        return uploadDate >= monthStart && uploadDate <= monthEnd
+      }).length || 0
+
+      const documentsInMonth = documentsResult.data?.filter(item => {
+        const uploadDate = new Date(item.uploaded_at)
+        return uploadDate >= monthStart && uploadDate <= monthEnd
+      }).length || 0
+
+      artifactsCounts.push(artifactsInMonth)
+      documentsCounts.push(documentsInMonth)
+
+      current.setMonth(current.getMonth() + 1)
     }
 
-    incrementCount(artifactsResult.data, artifactsCounts)
-    incrementCount(documentsResult.data, documentsCounts)
-
-    return { artifactsCounts, documentsCounts }
+    return { monthLabels, artifactsCounts, documentsCounts }
   } catch (error) {
     console.error('Error preparing uploads data:', error)
     return {
-      artifactsCounts: Array(12).fill(0),
-      documentsCounts: Array(12).fill(0),
+      monthLabels: [],
+      artifactsCounts: [],
+      documentsCounts: [],
     }
   }
 }
 
-async function prepareUserTypesData(endMonth, endYear) {
+async function prepareUserTypesData(endMonth, endDay, endYear, startMonth, startDay, startYear) {
   try {
-    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
+    const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
+    const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
     const { data: users } = await supabase
       .from('all_users')
       .select('user_type')
+      .gte('created_at', startDate)
       .lte('created_at', endDate)
       .neq('user_type', 'admin')
 
@@ -898,39 +945,67 @@ async function prepareUserTypesData(endMonth, endYear) {
   }
 }
 
-async function prepareMonthlyAppointmentsData(startMonth, startYear, endMonth, endYear) {
+async function prepareMonthlyAppointmentsData(
+  startMonth,
+  startDay,
+  startYear,
+  endMonth,
+  endDay,
+  endYear,
+) {
   try {
-    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
+    const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
+    const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
 
     const { data: appointments } = await supabase
       .from('appointment_booking')
       .select('created_at')
+      .gte('created_at', startDate)
       .lte('created_at', endDate)
 
-    const appointmentCounts = Array(12).fill(0)
+    // Generate month labels for the date range
+    const monthLabels = []
+    const appointmentCounts = []
 
-    // Counts appointments by month
-    if (appointments) {
-      appointments.forEach((appointment) => {
-        const date = new Date(appointment.created_at)
-        const monthIndex = date.getMonth()
-        if (monthIndex >= 0 && monthIndex < 12) {
-          appointmentCounts[monthIndex]++
-        }
-      })
+    const start = new Date(startYear, startMonth - 1, 1)
+    const end = new Date(endYear, endMonth - 1, 1)
+    let current = new Date(start)
+
+    while (current <= end) {
+      const monthLabel = current.toLocaleString('default', { month: 'short', year: 'numeric' })
+      monthLabels.push(monthLabel)
+      
+      const monthStart = new Date(current.getFullYear(), current.getMonth(), 1)
+      const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59)
+
+      const appointmentsInMonth = appointments?.filter(apt => {
+        const aptDate = new Date(apt.created_at)
+        return aptDate >= monthStart && aptDate <= monthEnd
+      }).length || 0
+
+      appointmentCounts.push(appointmentsInMonth)
+
+      current.setMonth(current.getMonth() + 1)
     }
-    console.log(appointmentCounts)
-    return { appointmentCounts }
+
+    return { monthLabels, appointmentCounts }
   } catch (error) {
     console.error('Error preparing appointments data:', error)
-    return { appointmentCounts: Array(12).fill(0) }
+    return { monthLabels: [], appointmentCounts: [] }
   }
 }
 
-async function prepareAppointmentStatusData(startMonth, startYear, endMonth, endYear) {
+async function prepareAppointmentStatusData(
+  startMonth,
+  startDay,
+  startYear,
+  endMonth,
+  endDay,
+  endYear,
+) {
   try {
-    const startDate = new Date(startYear, startMonth - 1, 1).toISOString()
-    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
+    const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
+    const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
 
     const { data: appointments } = await supabase
       .from('appointment_booking')
@@ -955,12 +1030,21 @@ async function prepareAppointmentStatusData(startMonth, startYear, endMonth, end
   }
 }
 
-async function prepareStudentDepartmentsData(endMonth, endYear) {
+async function prepareStudentDepartmentsData(
+  endMonth,
+  endDay,
+  endYear,
+  startMonth,
+  startDay,
+  startYear,
+) {
   try {
-    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
+    const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
+    const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
     const { data: departments } = await supabase
       .from('registered_users')
       .select('department')
+      .gte('created_at', startDate)
       .lte('created_at', endDate)
 
     const deptCount = {}
@@ -985,12 +1069,21 @@ async function prepareStudentDepartmentsData(endMonth, endYear) {
   }
 }
 
-async function prepareFacultyDepartmentsData(endMonth, endYear) {
+async function prepareFacultyDepartmentsData(
+  endMonth,
+  endDay,
+  endYear,
+  startMonth,
+  startDay,
+  startYear,
+) {
   try {
-    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
+    const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
+    const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
     const { data: departments } = await supabase
       .from('registered_faculty')
       .select('department')
+      .gte('created_at', startDate)
       .lte('created_at', endDate)
 
     const deptCount = {}
@@ -1015,13 +1108,22 @@ async function prepareFacultyDepartmentsData(endMonth, endYear) {
   }
 }
 
-async function prepareVisitorInstitutionsData(endMonth, endYear) {
+async function prepareVisitorInstitutionsData(
+  endMonth,
+  endDay,
+  endYear,
+  startMonth,
+  startDay,
+  startYear,
+) {
   try {
-    const endDate = new Date(endYear, endMonth, 0, 23, 59, 59).toISOString()
+    const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
+    const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
     const { data: institutions } = await supabase
       .from('registration_visitors')
       .select('institution')
       .eq('status', 'Approved')
+      .gte('created_at', startDate)
       .lte('created_at', endDate)
 
     const instCount = {}
@@ -1050,13 +1152,39 @@ async function prepareTopArtifactsData() {
   try {
     const { data: artifactLogs } = await supabase
       .from('user_activity_log')
-      .select('item_id')
+      .select('item_id, user_id')
       .eq('item_type', 'artifact')
       .eq('action', 'view_artifact')
 
+    // Get admin user IDs to exclude from view counts
+    const { data: adminUsers } = await supabase
+      .from('all_users')
+      .select('id')
+      .in('user_type', ['admin', 'super admin'])
+    
+    const adminUserIds = new Set((adminUsers || []).map(a => a.id))
+
+    // Get unique artifact IDs from logs (excluding admin views)
+    const artifactLogIds = [...new Set(
+      (artifactLogs || [])
+        .filter(log => !adminUserIds.has(log.user_id))
+        .map(log => log.item_id)
+    )]
+
+    // Verify which artifacts still exist in the database
+    const { data: existingArtifacts } = await supabase
+      .from('artifacts_metadata')
+      .select('id')
+      .in('id', artifactLogIds)
+
+    const existingArtifactIds = new Set((existingArtifacts || []).map(a => a.id))
+
+    // Count views only for artifacts that still exist and exclude admin views
     const artifactCount = {}
     artifactLogs?.forEach((log) => {
-      artifactCount[log.item_id] = (artifactCount[log.item_id] || 0) + 1
+      if (existingArtifactIds.has(log.item_id) && !adminUserIds.has(log.user_id)) {
+        artifactCount[log.item_id] = (artifactCount[log.item_id] || 0) + 1
+      }
     })
 
     const sortedArtifacts = Object.entries(artifactCount)
@@ -1095,13 +1223,39 @@ async function prepareTopDocumentsData() {
   try {
     const { data: documentLogs } = await supabase
       .from('user_activity_log')
-      .select('item_id')
+      .select('item_id, user_id')
       .eq('item_type', 'document')
       .eq('action', 'view_document')
 
+    // Get admin user IDs to exclude from view counts
+    const { data: adminUsers } = await supabase
+      .from('all_users')
+      .select('id')
+      .in('user_type', ['admin', 'super admin'])
+    
+    const adminUserIds = new Set((adminUsers || []).map(a => a.id))
+
+    // Get unique document IDs from logs (excluding admin views)
+    const documentLogIds = [...new Set(
+      (documentLogs || [])
+        .filter(log => !adminUserIds.has(log.user_id))
+        .map(log => log.item_id)
+    )]
+
+    // Verify which documents still exist in the database
+    const { data: existingDocuments } = await supabase
+      .from('documents_metadata')
+      .select('id')
+      .in('id', documentLogIds)
+
+    const existingDocumentIds = new Set((existingDocuments || []).map(d => d.id))
+
+    // Count views only for documents that still exist and exclude admin views
     const documentCount = {}
     documentLogs?.forEach((log) => {
-      documentCount[log.item_id] = (documentCount[log.item_id] || 0) + 1
+      if (existingDocumentIds.has(log.item_id) && !adminUserIds.has(log.user_id)) {
+        documentCount[log.item_id] = (documentCount[log.item_id] || 0) + 1
+      }
     })
 
     const sortedDocuments = Object.entries(documentCount)
