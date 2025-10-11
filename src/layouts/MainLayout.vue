@@ -435,15 +435,17 @@ import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
 import { supabase } from 'boot/supabase'
 import { useDocumentsStore } from 'src/stores/documentsStore'
-import { useDocumentsFilter } from 'src/utils/useFiltering'
+import { useModelStore } from 'src/stores/modelStore'
+import { useFiltering } from 'src/utils/useFiltering'
 import { allSortOptions } from 'src/stores/searchStore'
 
-const { clearFilters } = useDocumentsFilter()
+const { clearFilters } = useFiltering()
 
 const $q = useQuasar()
 const userStore = useUserStore()
 const searchStore = useSearchStore()
 const documentsStore = useDocumentsStore()
+const modelStore = useModelStore()
 const router = useRouter()
 const route = useRoute()
 const session = userStore.session
@@ -684,6 +686,7 @@ const today = formatDate(new Date())
 // Basic Search functionality
 const performSearch = async () => {
   documentsStore.resetFilters()
+  modelStore.resetFilters()
   clearFilters()
 
   const query = search.value
@@ -701,7 +704,9 @@ const performSearch = async () => {
   }
 
   if (route.path !== targetRoute) {
+    searchStore.clearAll()
     await router.push(targetRoute) // Wait for navigation to complete
+    return
   }
 
   // Set store search type based on dropdown selection
