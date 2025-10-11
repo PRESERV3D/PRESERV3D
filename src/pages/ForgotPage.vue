@@ -6,7 +6,7 @@
     >
       <div class="forgot-bigbox">
         <div class="q-my-lg column">
-          <label class="reset-title q-mb-lg">Forgot password</label>
+          <label class="reset-title q-mb-lg">Forgot Password</label>
           <div class="pad row q-gutter-md items-center justify-center">
             <label class="labelNames">Email: </label>
             <q-input
