@@ -554,11 +554,6 @@ watch(
   { immediate: true },
 )
 
-// const sortOrderOptions = [
-//   { label: 'Descending', value: 'desc' },
-//   { label: 'Ascending', value: 'asc' },
-// ]
-
 const selectedSort = ref({
   sortBy: searchStore.sortBy,
   sortOrder: searchStore.sortOrder,
@@ -831,21 +826,12 @@ onUnmounted(() => {
   if (hoverTimeout) clearTimeout(hoverTimeout)
 })
 
-// Watch search bar input and run query
-// do this according to route
-// watch(search, async (query) => {
-//   if (query === null || query === undefined) {
-//     searchStore.clear()
-//     return
-//   }
-// })
-
 watch(
   () => route.name,
   (newRoute, oldRoute) => {
     // Only clear if leaving from artifacts/documents
     if (['artifacts', 'documents'].includes(oldRoute)) {
-      // Only clear if there’s an actual query value
+      // Only clear if there is an actual query value
       if (search.value && search.value.trim() !== '') {
         search.value = ''
         searchStore.clearAll()
