@@ -228,7 +228,7 @@ const loadPdf = async () => {
   console.log('🔵 loadPdf called')
   console.log('🔵 PDF URL:', props.pdfUrl)
   console.log('🔵 Dialog isOpen:', isOpen.value)
-  
+
   loading.value = true
   error.value = null
 

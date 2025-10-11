@@ -369,6 +369,8 @@ const recentStore = useRecentStore()
 const currentIndex = ref(0)
 const currentItem = computed(() => recentStore.recentItems[currentIndex.value])
 
+console.log(recentStore.recentItems)
+
 // const userStore = useUserStore()
 // const userProfile = computed(() => userStore.profile || {})
 
@@ -738,7 +740,7 @@ function modelViewerProps(url) {
 }
 
 function imgProps(item) {
-  const src = item?.preview_url + '?t=' + Date.now()
+  const src = item?.preview_url
   const alt = item?.metadata?.title || 'No Title'
 
   return {
@@ -746,68 +748,6 @@ function imgProps(item) {
     alt,
   }
 }
-
-//Sample backend for Incomplete metadata
-// const incompleteColumns = [
-//   {
-//     name: 'materialNo',
-//     label: 'Archival Material No.',
-//     align: 'center',
-//     field: 'materialNo',
-//   },
-//   {
-//     name: 'materialType',
-//     label: 'Archival Material Type',
-//     align: 'center',
-//     field: 'materialType',
-//   },
-//   {
-//     name: 'materialName',
-//     label: 'Archival Material Name',
-//     align: 'center',
-//     field: 'materialName',
-//   },
-//   {
-//     name: 'materialIncompleteData',
-//     label: 'Incomplete Data',
-//     align: 'center',
-//     field: 'materialIncompleteData',
-//   },
-
-//   {
-//     name: 'materialLink',
-//     label: 'Archival Material Link',
-//     align: 'center',
-//     field: 'materialLink',
-//   },
-// ]
-
-// const incompleteRows = ref([
-//   {
-//     id: 1,
-//     materialNo: 'AM-001',
-//     materialType: 'Document',
-//     materialName: 'Annual Report',
-//     materialIncompleteData: 'Author, Date',
-//     materialLink: 'http://example.com/notes',
-//   },
-//   {
-//     id: 2,
-//     materialNo: 'AM-002',
-//     materialType: 'Artifact',
-//     materialName: 'Cat Toy',
-//     materialIncompleteData: 'Description',
-//     materialLink: 'http://example.com/cattoy',
-//   },
-//   {
-//     id: 3,
-//     materialNo: 'AM-003',
-//     materialType: 'Artifact',
-//     materialName: 'Campus Plaque',
-//     materialIncompleteData: 'Author',
-//     materialLink: 'http://example.com/campus',
-//   },
-// ])
 </script>
 
 <style scoped>
