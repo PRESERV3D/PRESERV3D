@@ -810,7 +810,7 @@ async function prepareMonthlyUsersData(startMonth, startDay, startYear, endMonth
   try {
     const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
     const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
-    
+
     const { data: users } = await supabase
       .from('all_users')
       .select('created_at, user_type')
@@ -830,18 +830,19 @@ async function prepareMonthlyUsersData(startMonth, startDay, startYear, endMonth
     while (current <= end) {
       const monthLabel = current.toLocaleString('default', { month: 'short', year: 'numeric' })
       monthLabels.push(monthLabel)
-      
+
       const monthStart = new Date(current.getFullYear(), current.getMonth(), 1)
       const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59)
 
-      const monthUsers = users?.filter(user => {
-        const userDate = new Date(user.created_at)
-        return userDate >= monthStart && userDate <= monthEnd
-      }) || []
+      const monthUsers =
+        users?.filter((user) => {
+          const userDate = new Date(user.created_at)
+          return userDate >= monthStart && userDate <= monthEnd
+        }) || []
 
-      studentCounts.push(monthUsers.filter(u => u.user_type === 'student').length)
-      facultyCounts.push(monthUsers.filter(u => u.user_type === 'faculty').length)
-      visitorCounts.push(monthUsers.filter(u => u.user_type === 'visitor').length)
+      studentCounts.push(monthUsers.filter((u) => u.user_type === 'student').length)
+      facultyCounts.push(monthUsers.filter((u) => u.user_type === 'faculty').length)
+      visitorCounts.push(monthUsers.filter((u) => u.user_type === 'visitor').length)
 
       current.setMonth(current.getMonth() + 1)
     }
@@ -858,7 +859,14 @@ async function prepareMonthlyUsersData(startMonth, startDay, startYear, endMonth
   }
 }
 
-async function prepareMonthlyUploadsData(startMonth, startDay, startYear, endMonth, endDay, endYear) {
+async function prepareMonthlyUploadsData(
+  startMonth,
+  startDay,
+  startYear,
+  endMonth,
+  endDay,
+  endYear,
+) {
   try {
     const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
     const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
@@ -888,19 +896,21 @@ async function prepareMonthlyUploadsData(startMonth, startDay, startYear, endMon
     while (current <= end) {
       const monthLabel = current.toLocaleString('default', { month: 'short', year: 'numeric' })
       monthLabels.push(monthLabel)
-      
+
       const monthStart = new Date(current.getFullYear(), current.getMonth(), 1)
       const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59)
 
-      const artifactsInMonth = artifactsResult.data?.filter(item => {
-        const uploadDate = new Date(item.uploaded_at)
-        return uploadDate >= monthStart && uploadDate <= monthEnd
-      }).length || 0
+      const artifactsInMonth =
+        artifactsResult.data?.filter((item) => {
+          const uploadDate = new Date(item.uploaded_at)
+          return uploadDate >= monthStart && uploadDate <= monthEnd
+        }).length || 0
 
-      const documentsInMonth = documentsResult.data?.filter(item => {
-        const uploadDate = new Date(item.uploaded_at)
-        return uploadDate >= monthStart && uploadDate <= monthEnd
-      }).length || 0
+      const documentsInMonth =
+        documentsResult.data?.filter((item) => {
+          const uploadDate = new Date(item.uploaded_at)
+          return uploadDate >= monthStart && uploadDate <= monthEnd
+        }).length || 0
 
       artifactsCounts.push(artifactsInMonth)
       documentsCounts.push(documentsInMonth)
@@ -974,14 +984,15 @@ async function prepareMonthlyAppointmentsData(
     while (current <= end) {
       const monthLabel = current.toLocaleString('default', { month: 'short', year: 'numeric' })
       monthLabels.push(monthLabel)
-      
+
       const monthStart = new Date(current.getFullYear(), current.getMonth(), 1)
       const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0, 23, 59, 59)
 
-      const appointmentsInMonth = appointments?.filter(apt => {
-        const aptDate = new Date(apt.created_at)
-        return aptDate >= monthStart && aptDate <= monthEnd
-      }).length || 0
+      const appointmentsInMonth =
+        appointments?.filter((apt) => {
+          const aptDate = new Date(apt.created_at)
+          return aptDate >= monthStart && aptDate <= monthEnd
+        }).length || 0
 
       appointmentCounts.push(appointmentsInMonth)
 
@@ -1161,15 +1172,17 @@ async function prepareTopArtifactsData() {
       .from('all_users')
       .select('id')
       .in('user_type', ['admin', 'super admin'])
-    
-    const adminUserIds = new Set((adminUsers || []).map(a => a.id))
+
+    const adminUserIds = new Set((adminUsers || []).map((a) => a.id))
 
     // Get unique artifact IDs from logs (excluding admin views)
-    const artifactLogIds = [...new Set(
-      (artifactLogs || [])
-        .filter(log => !adminUserIds.has(log.user_id))
-        .map(log => log.item_id)
-    )]
+    const artifactLogIds = [
+      ...new Set(
+        (artifactLogs || [])
+          .filter((log) => !adminUserIds.has(log.user_id))
+          .map((log) => log.item_id),
+      ),
+    ]
 
     // Verify which artifacts still exist in the database
     const { data: existingArtifacts } = await supabase
@@ -1177,7 +1190,7 @@ async function prepareTopArtifactsData() {
       .select('id')
       .in('id', artifactLogIds)
 
-    const existingArtifactIds = new Set((existingArtifacts || []).map(a => a.id))
+    const existingArtifactIds = new Set((existingArtifacts || []).map((a) => a.id))
 
     // Count views only for artifacts that still exist and exclude admin views
     const artifactCount = {}
@@ -1232,15 +1245,17 @@ async function prepareTopDocumentsData() {
       .from('all_users')
       .select('id')
       .in('user_type', ['admin', 'super admin'])
-    
-    const adminUserIds = new Set((adminUsers || []).map(a => a.id))
+
+    const adminUserIds = new Set((adminUsers || []).map((a) => a.id))
 
     // Get unique document IDs from logs (excluding admin views)
-    const documentLogIds = [...new Set(
-      (documentLogs || [])
-        .filter(log => !adminUserIds.has(log.user_id))
-        .map(log => log.item_id)
-    )]
+    const documentLogIds = [
+      ...new Set(
+        (documentLogs || [])
+          .filter((log) => !adminUserIds.has(log.user_id))
+          .map((log) => log.item_id),
+      ),
+    ]
 
     // Verify which documents still exist in the database
     const { data: existingDocuments } = await supabase
@@ -1248,7 +1263,7 @@ async function prepareTopDocumentsData() {
       .select('id')
       .in('id', documentLogIds)
 
-    const existingDocumentIds = new Set((existingDocuments || []).map(d => d.id))
+    const existingDocumentIds = new Set((existingDocuments || []).map((d) => d.id))
 
     // Count views only for documents that still exist and exclude admin views
     const documentCount = {}

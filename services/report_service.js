@@ -171,11 +171,11 @@ export async function generateMonthlyReport({
   // Process results
   const totalUsers = totalUsersResult.count
   const newUsers = newUsersResult.count
-  
+
   // Active users - validate that users still exist in the database and are not admins
   const loginUserIds = (activeUsersResult.data || []).map((r) => r.user_id)
   const uniqueLoginUserIds = [...new Set(loginUserIds)]
-  
+
   // Query to check which users still exist and exclude admin/super admin
   const { data: existingUsers } = await supabase
     .from('all_users')
@@ -183,8 +183,8 @@ export async function generateMonthlyReport({
     .in('id', uniqueLoginUserIds)
     .neq('user_type', 'admin')
     .neq('user_type', 'super admin')
-  
-  const existingUserIds = new Set((existingUsers || []).map(u => u.id))
+
+  const existingUserIds = new Set((existingUsers || []).map((u) => u.id))
   const activeUsers = existingUserIds.size
 
   // User type statistics
@@ -229,32 +229,26 @@ export async function generateMonthlyReport({
     .from('all_users')
     .select('id')
     .in('user_type', ['admin', 'super admin'])
-  
-  const adminUserIds = new Set((adminUsers || []).map(a => a.id))
+
+  const adminUserIds = new Set((adminUsers || []).map((a) => a.id))
 
   // Top artifacts and documents - only count views for items that still exist and exclude admin views
   // First, get all unique artifact and document IDs from the logs
-  const artifactLogIds = [...new Set((artifactLogsResult.data || []).map(log => log.item_id))]
-  const documentLogIds = [...new Set((documentLogsResult.data || []).map(log => log.item_id))]
+  const artifactLogIds = [...new Set((artifactLogsResult.data || []).map((log) => log.item_id))]
+  const documentLogIds = [...new Set((documentLogsResult.data || []).map((log) => log.item_id))]
 
   // Verify which artifacts and documents still exist in the database
   const [existingArtifactsResult, existingDocumentsResult] = await Promise.all([
     artifactLogIds.length > 0
-      ? supabase
-          .from('artifacts_metadata')
-          .select('id')
-          .in('id', artifactLogIds)
+      ? supabase.from('artifacts_metadata').select('id').in('id', artifactLogIds)
       : Promise.resolve({ data: [] }),
     documentLogIds.length > 0
-      ? supabase
-          .from('documents_metadata')
-          .select('id')
-          .in('id', documentLogIds)
+      ? supabase.from('documents_metadata').select('id').in('id', documentLogIds)
       : Promise.resolve({ data: [] }),
   ])
 
-  const existingArtifactIds = new Set((existingArtifactsResult.data || []).map(a => a.id))
-  const existingDocumentIds = new Set((existingDocumentsResult.data || []).map(d => d.id))
+  const existingArtifactIds = new Set((existingArtifactsResult.data || []).map((a) => a.id))
+  const existingDocumentIds = new Set((existingDocumentsResult.data || []).map((d) => d.id))
 
   // Count views only for items that still exist and exclude admin/super admin views
   const artifactCount = {}
@@ -391,14 +385,18 @@ export async function generateMonthlyReport({
     .from('all_users')
     .select('id')
     .in('user_type', ['admin', 'super admin'])
-  
-  const monthlyAdminUserIds = new Set((monthlyAdminUsers || []).map(a => a.id))
+
+  const monthlyAdminUserIds = new Set((monthlyAdminUsers || []).map((a) => a.id))
 
   // Validate that users, artifacts, and documents still exist in the database
   // Exclude admin and super admin users from statistics
-  const monthlyLoginUserIds = [...new Set((monthlyLoginsData.data || []).map(l => l.user_id))]
-  const monthlyArtifactIds = [...new Set((monthlyArtifactViewsData.data || []).map(v => v.item_id))]
-  const monthlyDocumentIds = [...new Set((monthlyDocumentViewsData.data || []).map(v => v.item_id))]
+  const monthlyLoginUserIds = [...new Set((monthlyLoginsData.data || []).map((l) => l.user_id))]
+  const monthlyArtifactIds = [
+    ...new Set((monthlyArtifactViewsData.data || []).map((v) => v.item_id)),
+  ]
+  const monthlyDocumentIds = [
+    ...new Set((monthlyDocumentViewsData.data || []).map((v) => v.item_id)),
+  ]
 
   const [
     monthlyExistingUsersResult,
@@ -414,22 +412,20 @@ export async function generateMonthlyReport({
           .neq('user_type', 'super admin')
       : Promise.resolve({ data: [] }),
     monthlyArtifactIds.length > 0
-      ? supabase
-          .from('artifacts_metadata')
-          .select('id')
-          .in('id', monthlyArtifactIds)
+      ? supabase.from('artifacts_metadata').select('id').in('id', monthlyArtifactIds)
       : Promise.resolve({ data: [] }),
     monthlyDocumentIds.length > 0
-      ? supabase
-          .from('documents_metadata')
-          .select('id')
-          .in('id', monthlyDocumentIds)
+      ? supabase.from('documents_metadata').select('id').in('id', monthlyDocumentIds)
       : Promise.resolve({ data: [] }),
   ])
 
-  const monthlyExistingUserIds = new Set((monthlyExistingUsersResult.data || []).map(u => u.id))
-  const monthlyExistingArtifactIds = new Set((monthlyExistingArtifactsResult.data || []).map(a => a.id))
-  const monthlyExistingDocumentIds = new Set((monthlyExistingDocumentsResult.data || []).map(d => d.id))
+  const monthlyExistingUserIds = new Set((monthlyExistingUsersResult.data || []).map((u) => u.id))
+  const monthlyExistingArtifactIds = new Set(
+    (monthlyExistingArtifactsResult.data || []).map((a) => a.id),
+  )
+  const monthlyExistingDocumentIds = new Set(
+    (monthlyExistingDocumentsResult.data || []).map((d) => d.id),
+  )
 
   // Create monthly breakdown
   let currentMonth = new Date(start.getFullYear(), start.getMonth(), 1)
@@ -437,7 +433,14 @@ export async function generateMonthlyReport({
 
   while (currentMonth <= lastMonth) {
     const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
-    const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59)
+    const monthEnd = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+    )
 
     const monthName = monthStart.toLocaleString('default', { month: 'long', year: 'numeric' })
 
@@ -448,8 +451,8 @@ export async function generateMonthlyReport({
         return loginDate >= monthStart && loginDate <= monthEnd
       })
       .map((login) => login.user_id)
-      .filter(userId => monthlyExistingUserIds.has(userId))
-    
+      .filter((userId) => monthlyExistingUserIds.has(userId))
+
     const monthActiveUsers = new Set(monthLoginUserIds).size
 
     // New registrations this month by type
@@ -457,11 +460,11 @@ export async function generateMonthlyReport({
       const regDate = new Date(user.created_at)
       return regDate >= monthStart && regDate <= monthEnd
     })
-    
+
     const monthNewUsers = monthUsersData.length
-    const monthNewStudents = monthUsersData.filter(u => u.user_type === 'student').length
-    const monthNewFaculty = monthUsersData.filter(u => u.user_type === 'faculty').length
-    const monthNewVisitors = monthUsersData.filter(u => u.user_type === 'visitor').length
+    const monthNewStudents = monthUsersData.filter((u) => u.user_type === 'student').length
+    const monthNewFaculty = monthUsersData.filter((u) => u.user_type === 'faculty').length
+    const monthNewVisitors = monthUsersData.filter((u) => u.user_type === 'visitor').length
 
     // New artifacts this month
     const monthArtifacts = (monthlyArtifactsData.data || []).filter((artifact) => {
@@ -483,27 +486,37 @@ export async function generateMonthlyReport({
       const aptDate = new Date(apt.created_at)
       return aptDate >= monthStart && aptDate <= monthEnd
     })
-    
+
     const monthAppointments = monthAppointmentsData.length
-    const monthAppointmentsPending = monthAppointmentsData.filter(a => a.status === 'Pending').length
-    const monthAppointmentsApproved = monthAppointmentsData.filter(a => a.status === 'Approved').length
-    const monthAppointmentsRejected = monthAppointmentsData.filter(a => a.status === 'Rejected').length
+    const monthAppointmentsPending = monthAppointmentsData.filter(
+      (a) => a.status === 'Pending',
+    ).length
+    const monthAppointmentsApproved = monthAppointmentsData.filter(
+      (a) => a.status === 'Approved',
+    ).length
+    const monthAppointmentsRejected = monthAppointmentsData.filter(
+      (a) => a.status === 'Rejected',
+    ).length
 
     // Content views this month - only count views for items that still exist and exclude admin views
     const monthArtifactViews = (monthlyArtifactViewsData.data || []).filter((view) => {
       const viewDate = new Date(view.clicked_at)
-      return viewDate >= monthStart && 
-             viewDate <= monthEnd && 
-             monthlyExistingArtifactIds.has(view.item_id) &&
-             !monthlyAdminUserIds.has(view.user_id)
+      return (
+        viewDate >= monthStart &&
+        viewDate <= monthEnd &&
+        monthlyExistingArtifactIds.has(view.item_id) &&
+        !monthlyAdminUserIds.has(view.user_id)
+      )
     }).length
 
     const monthDocumentViews = (monthlyDocumentViewsData.data || []).filter((view) => {
       const viewDate = new Date(view.clicked_at)
-      return viewDate >= monthStart && 
-             viewDate <= monthEnd && 
-             monthlyExistingDocumentIds.has(view.item_id) &&
-             !monthlyAdminUserIds.has(view.user_id)
+      return (
+        viewDate >= monthStart &&
+        viewDate <= monthEnd &&
+        monthlyExistingDocumentIds.has(view.item_id) &&
+        !monthlyAdminUserIds.has(view.user_id)
+      )
     }).length
 
     monthlyBreakdown.push({
@@ -676,12 +689,7 @@ export async function generateMonthlyReport({
       margin: { left: (pageWidth - 150) / 2 },
       startY: currentY,
       head: [['Month', 'Total Uploads', 'Artifacts', 'Documents']],
-      body: monthlyBreakdown.map((m) => [
-        m.month,
-        m.totalUploads,
-        m.artifacts,
-        m.documents,
-      ]),
+      body: monthlyBreakdown.map((m) => [m.month, m.totalUploads, m.artifacts, m.documents]),
     })
     currentY = doc.lastAutoTable.finalY + 10
 
@@ -742,12 +750,7 @@ export async function generateMonthlyReport({
       margin: { left: (pageWidth - 150) / 2 },
       startY: currentY,
       head: [['Month', 'Total Views', 'Artifact Views', 'Document Views']],
-      body: monthlyBreakdown.map((m) => [
-        m.month,
-        m.totalViews,
-        m.artifactViews,
-        m.documentViews,
-      ]),
+      body: monthlyBreakdown.map((m) => [m.month, m.totalViews, m.artifactViews, m.documentViews]),
     })
     currentY = doc.lastAutoTable.finalY + 10
   }
@@ -1000,10 +1003,7 @@ export async function generateMonthlyReport({
     currentY += 5
 
     // Calculate totals and averages
-    const totalActiveUsersAllMonths = monthlyBreakdown.reduce(
-      (sum, m) => sum + m.activeUsers,
-      0,
-    )
+    const totalActiveUsersAllMonths = monthlyBreakdown.reduce((sum, m) => sum + m.activeUsers, 0)
     const avgActiveUsersPerMonth = Math.round(totalActiveUsersAllMonths / monthlyBreakdown.length)
     const peakMonth = monthlyBreakdown.reduce((max, m) =>
       m.activeUsers > max.activeUsers ? m : max,
@@ -1019,9 +1019,7 @@ export async function generateMonthlyReport({
       (sum, m) => sum + m.totalAppointments,
       0,
     )
-    const avgAppointmentsPerMonth = Math.round(
-      totalAppointmentsAllMonths / monthlyBreakdown.length,
-    )
+    const avgAppointmentsPerMonth = Math.round(totalAppointmentsAllMonths / monthlyBreakdown.length)
 
     const totalViewsAllMonths = monthlyBreakdown.reduce((sum, m) => sum + m.totalViews, 0)
     const avgViewsPerMonth = Math.round(totalViewsAllMonths / monthlyBreakdown.length)
