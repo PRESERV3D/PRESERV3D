@@ -720,17 +720,17 @@ function openLink(url) {
 
 async function handleClickRead(doc) {
   console.log('handleClickRead called with doc:', doc)
-  
+
   if (doc && doc.file_url) {
     console.log('Document file_url:', doc.file_url)
-    
+
     try {
       await logClick(doc.id, 'document', 'read_document')
       console.log('Click logged successfully')
     } catch (err) {
       console.error('Error logging view click:', err)
     }
-    
+
     // Convert to working presigned URL before opening viewer
     try {
       console.log('Converting URL...')
@@ -740,7 +740,7 @@ async function handleClickRead(doc) {
       console.warn('Could not convert URL, using stored URL:', urlErr)
       currentPdfUrl.value = doc.file_url
     }
-    
+
     console.log('Opening PDF viewer with URL:', currentPdfUrl.value)
     showPdfViewer.value = true
     console.log('showPdfViewer set to:', showPdfViewer.value)
