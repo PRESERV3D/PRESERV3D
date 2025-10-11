@@ -139,7 +139,7 @@ export const useUserStore = defineStore('user', {
     async signOut() {
       try {
         console.log('🔒 Starting sign out process...')
-        
+
         // Clear local state first
         this.session = null
         this.profile = null
@@ -153,8 +153,8 @@ export const useUserStore = defineStore('user', {
         }
 
         // Clear all Supabase auth storage
-        const authKeys = Object.keys(localStorage).filter((key) =>
-          key.startsWith('sb-') || key.includes('supabase')
+        const authKeys = Object.keys(localStorage).filter(
+          (key) => key.startsWith('sb-') || key.includes('supabase'),
         )
         authKeys.forEach((key) => localStorage.removeItem(key))
 
@@ -171,11 +171,11 @@ export const useUserStore = defineStore('user', {
         // Force clear even on error
         this.session = null
         this.profile = null
-        
+
         // Clear storage even on error
         localStorage.clear()
         sessionStorage.clear()
-        
+
         return true // Return true to allow navigation
       }
     },
