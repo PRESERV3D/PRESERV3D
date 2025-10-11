@@ -37,11 +37,16 @@ export default defineConfig((/* ctx */) => {
         node: 'node20',
       },
 
-      vueRouterMode: 'history', // available values: 'hash', 'history'
+      vueRouterMode: 'history',
+
+      // Production optimizations
+      minify: true,
+      sourcemap: false,
+
       // vueRouterBase,
       // vueDevtools,
       // vueOptionsAPI: false,
-      // rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
+      // rebuildCache: true,
 
       // publicPath: '/',
       // analyze: true,
@@ -52,7 +57,25 @@ export default defineConfig((/* ctx */) => {
       // polyfillModulePreload: true,
       // distDir
 
-      // extendViteConf (viteConf) {},
+      // Code splitting for better caching
+      extendViteConf(viteConf) {
+        viteConf.build = {
+          ...viteConf.build,
+          rollupOptions: {
+            output: {
+              manualChunks: {
+                'vendor-vue': ['vue', 'vue-router', 'pinia'],
+                'vendor-quasar': ['quasar'],
+                'vendor-supabase': ['@supabase/supabase-js'],
+                'vendor-aws': ['@aws-sdk/client-s3'],
+                'vendor-3d': ['@google/model-viewer', 'three'],
+                'vendor-pdf': ['pdfjs-dist', 'pdf-lib'],
+              },
+            },
+          },
+          chunkSizeWarningLimit: 1000,
+        }
+      },
       viteVuePluginOptions: {
         template: {
           compilerOptions: {
