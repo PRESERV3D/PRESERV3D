@@ -57,7 +57,12 @@
                   :to="{ name: 'view-document', params: { id: doc.id } }"
                   class="document-link"
                 >
-                  <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
+                  <q-img
+                    :src="doc.preview_url"
+                    alt="Document Preview"
+                    class="document"
+                    loading="lazy"
+                  />
                 </router-link>
                 <div class="q-py-xs doc-align-items">
                   <!-- View Icon with Count -->
@@ -308,7 +313,12 @@
                   class="document-link"
                   @click="logClick(doc.id, 'document', 'view_document')"
                 >
-                  <q-img :src="doc.preview_url" alt="Document Preview" class="document" />
+                  <q-img
+                    :src="doc.preview_url"
+                    alt="Document Preview"
+                    class="document"
+                    loading="lazy"
+                  />
                 </router-link>
 
                 <div class="q-py-xs doc-align-items">
@@ -627,10 +637,12 @@ async function logClick(itemId, itemType, action) {
 // Fetch all documents from Supabase
 const fetchAllDocuments = async () => {
   try {
+    // Load first 50 documents for faster initial load
     const { data, error } = await supabase
       .from('documents_metadata')
       .select('id, file_name, file_url, preview_url, metadata, uploaded_at, updated_at')
       .order('uploaded_at', { ascending: false })
+      .limit(50)
 
     if (error) {
       console.error('Supabase error fetching documents:', error)

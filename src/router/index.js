@@ -38,20 +38,14 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     const userStore = useUserStore()
     const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
     const allowedRoles = to.meta.allowedRoles
-    const session = userStore.session
 
+    // Fetch session if not already loaded
     if (!userStore.session) {
       await userStore.fetchSession()
     }
 
-    // Super admin check for user management - only restrict the full view
-    if (to.name === 'user-management') {
-      // Allow all admins to access, but the page will control what they see
-      if (!session || session.user.user_metadata?.role !== 'admin') {
-        next('/admindash')
-        return
-      }
-    }
+    // Get the current session
+    const session = userStore.session
 
     // Allow phone-camera route without authentication - check name and path
     if (to.name === 'phone-camera' || to.path.includes('/phone-camera')) {
@@ -77,9 +71,20 @@ export default defineRouter(function (/* { store, ssrContext } */) {
       return
     }
 
+    // Get role from profile store (more reliable) or fall back to user_metadata
+    const role = userStore.profile?.role || session.user.user_metadata?.role
+
+    // Super admin check for user management - only restrict the full view
+    if (to.name === 'user-management') {
+      // Allow all admins to access, but the page will control what they see
+      if (!session || role !== 'admin') {
+        next('/admindash')
+        return
+      }
+    }
+
     // Role-based redirect if landing on root path
     if (to.path === '/') {
-      const role = session.user.user_metadata?.role
       if (role === 'admin') {
         next('/admindash')
         return
@@ -91,7 +96,6 @@ export default defineRouter(function (/* { store, ssrContext } */) {
 
     // Role-based redirect if going to appointment
     if (to.path === '/appointment') {
-      const role = session.user.user_metadata?.role
       if (role === 'admin') {
         next('/admin/appointments')
         return
@@ -103,7 +107,6 @@ export default defineRouter(function (/* { store, ssrContext } */) {
 
     // Role-based access control (for non-super-admin routes)
     if (requiresAuth && allowedRoles) {
-      const role = session.user.user_metadata?.role
       if (!allowedRoles.includes(role)) {
         alert('Unauthorized access')
         next('/')

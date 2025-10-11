@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { supabase } from 'boot/supabase'
+import { fixItemUrlsArray } from 'src/utils/urlHelpers'
 
 export const useRecentStore = defineStore('recent', {
   state: () => ({
@@ -27,8 +28,8 @@ export const useRecentStore = defineStore('recent', {
         }
 
         const combined = [
-          ...artifactsRes.data.map((item) => ({ ...item, type: 'artifact' })),
-          ...documentsRes.data.map((item) => ({ ...item, type: 'document' })),
+          ...fixItemUrlsArray(artifactsRes.data).map((item) => ({ ...item, type: 'artifact' })),
+          ...fixItemUrlsArray(documentsRes.data).map((item) => ({ ...item, type: 'document' })),
         ]
 
         this.recentItems = combined

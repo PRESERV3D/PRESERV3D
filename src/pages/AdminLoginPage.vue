@@ -56,15 +56,20 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'src/stores/user'
 
 const userStore = useUserStore()
-await userStore.signOut()
-
 const router = useRouter()
+
+// Clear any existing session when component mounts (not immediately)
+onMounted(async () => {
+  if (userStore.session) {
+    await userStore.signOut()
+  }
+})
 
 const form = ref({
   email: '',
@@ -77,7 +82,7 @@ async function loginAdmin() {
   const { email, password } = form.value
 
   try {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
@@ -90,7 +95,10 @@ async function loginAdmin() {
     // Fetch session and profile from your user store
     await userStore.fetchSession()
 
-    if (userStore.profile?.role === 'admin') {
+    // Get role from profile (more reliable than metadata)
+    const role = userStore.profile?.role || data.user?.user_metadata?.role
+
+    if (role === 'admin') {
       alert('Login successful!')
       router.push('/admindash')
     } else {

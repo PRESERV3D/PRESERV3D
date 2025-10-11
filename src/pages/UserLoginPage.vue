@@ -100,10 +100,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useQuasar } from 'quasar'
-// import { useUserStore } from 'src/stores/user'
+import { useUserStore } from 'src/stores/user'
 
 const $q = useQuasar()
 const router = useRouter()
+const userStore = useUserStore()
 
 const form = ref({
   email: '',
@@ -239,7 +240,7 @@ async function loginUser() {
       await router.push('/home')
     } else {
       $q.notify({ type: 'warning', message: 'Access denied. Unknown user role.', position: 'top' })
-      await supabase.auth.signOut()
+      await userStore.signOut()
     }
 
     // Ensure Favorites collection exists
