@@ -435,15 +435,17 @@ import { useUserStore } from 'src/stores/user'
 import { useSearchStore } from 'src/stores/searchStore'
 import { supabase } from 'boot/supabase'
 import { useDocumentsStore } from 'src/stores/documentsStore'
-import { useDocumentsFilter } from 'src/utils/useFiltering'
+import { useModelStore } from 'src/stores/modelStore'
+import { useFiltering } from 'src/utils/useFiltering'
 import { allSortOptions } from 'src/stores/searchStore'
 
-const { clearFilters } = useDocumentsFilter()
+const { clearFilters } = useFiltering()
 
 const $q = useQuasar()
 const userStore = useUserStore()
 const searchStore = useSearchStore()
 const documentsStore = useDocumentsStore()
+const modelStore = useModelStore()
 const router = useRouter()
 const route = useRoute()
 const session = userStore.session
@@ -555,11 +557,6 @@ watch(
   },
   { immediate: true },
 )
-
-// const sortOrderOptions = [
-//   { label: 'Descending', value: 'desc' },
-//   { label: 'Ascending', value: 'asc' },
-// ]
 
 const selectedSort = ref({
   sortBy: searchStore.sortBy,
@@ -689,6 +686,7 @@ const today = formatDate(new Date())
 // Basic Search functionality
 const performSearch = async () => {
   documentsStore.resetFilters()
+  modelStore.resetFilters()
   clearFilters()
 
   const query = search.value
@@ -706,14 +704,16 @@ const performSearch = async () => {
   }
 
   if (route.path !== targetRoute) {
+    searchStore.clearAll()
     await router.push(targetRoute) // Wait for navigation to complete
+    return
   }
 
   // Set store search type based on dropdown selection
   await searchStore.search(query, searchType.value)
   console.log('Search performed:', query, searchType.value)
 
-  search.value = ''
+  // search.value = ''
 }
 
 // Advanced Search functionality
@@ -820,10 +820,10 @@ onMounted(() => {
     }
   }
 
-  // Perform search if there's existing search value
-  if (search.value || searchType.value) {
-    performSearch()
-  }
+  // // Perform search if there's existing search value
+  // if (search.value || searchType.value) {
+  //   performSearch()
+  // }
 })
 
 onUnmounted(() => {
@@ -831,14 +831,19 @@ onUnmounted(() => {
   if (hoverTimeout) clearTimeout(hoverTimeout)
 })
 
-// Watch search bar input and run query
-// do this according to route
-watch(search, async (query) => {
-  if (query === null || query === undefined) {
-    searchStore.clear()
-    return
-  }
-})
+watch(
+  () => route.name,
+  (newRoute, oldRoute) => {
+    // Only clear if leaving from artifacts/documents
+    if (['artifacts', 'documents'].includes(oldRoute)) {
+      // Only clear if there is an actual query value
+      if (search.value && search.value.trim() !== '') {
+        search.value = ''
+        searchStore.clearAll()
+      }
+    }
+  },
+)
 
 // Watch for route changes to update active item
 watch(
