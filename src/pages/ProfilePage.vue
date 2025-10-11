@@ -298,12 +298,10 @@ import { useUserStore } from 'src/stores/user'
 
 const userStore = useUserStore()
 const userProfile = computed(() => userStore.profile || {})
-// const userRole = computed(() => userStore.value.role || 'Unknown')
 const userType = computed(() => userProfile.value.user_type || 'Unknown')
 const isSuperAdmin = computed(() => userProfile.value.is_super_admin || false)
 
 const $q = useQuasar()
-
 const profileImage = ref(null)
 const showExtensionDialog = ref(false)
 const hasActiveExtension = ref(false)
@@ -346,73 +344,105 @@ const visitorData = reactive({
   purpose: '',
   startDate: '',
   endDate: '',
+  email: '',
 })
 
 onMounted(async () => {
-  await userStore.fetchProfile()
+  try {
+    await userStore.fetchProfile()
+    console.log('UserType:', userType.value)
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user || !user.email) return
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+    if (userError) {
+      console.error('Auth error:', userError)
+      return
+    }
+    if (!user || !user.email) {
+      console.warn('No authenticated user found')
+      return
+    }
 
-  if (userType.value === 'student') {
-    const { data } = await supabase
-      .from('registered_users')
-      .select('*')
-      .eq('email', user.email)
-      .single()
-    if (data) {
-      studentData.firstName = data.first_name
-      studentData.lastName = data.last_name
-      studentData.email = data.email
-      studentData.college = data.college
-      studentData.department = data.department
-      studentData.yearSection = data.year_section
-      studentData.isAlumni = !!data.is_alumni
+    let data, error
+
+    if (userType.value === 'student') {
+      ;({ data, error } = await supabase
+        .from('registered_users')
+        .select('*')
+        .eq('email', user.email)
+        .single())
+
+      if (error) throw error
+      if (data) {
+        studentData.firstName = data.first_name
+        studentData.lastName = data.last_name
+        studentData.email = data.email
+        studentData.college = data.college
+        studentData.department = data.department
+        studentData.yearSection = data.year_section
+        studentData.isAlumni = !!data.is_alumni
+      }
+    } else if (userType.value === 'faculty') {
+      ;({ data, error } = await supabase
+        .from('registered_faculty')
+        .select('*')
+        .eq('email', user.email)
+        .single())
+
+      if (error) throw error
+      if (data) {
+        facultyData.firstName = data.first_name
+        facultyData.lastName = data.last_name
+        facultyData.email = data.email
+        facultyData.college = data.college
+        facultyData.department = data.department
+      }
+    } else if (userType.value === 'admin') {
+      ;({ data, error } = await supabase
+        .from('registered_admins')
+        .select('*')
+        .eq('email', user.email)
+        .single())
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Admin fetch error:', error)
+        throw error
+      }
+      if (data) {
+        adminData.firstName = data.first_name
+        adminData.lastName = data.last_name
+        adminData.email = data.email
+        adminData.isSuperAdmin = !!data.is_super_admin
+        console.log('Admin data loaded:', data) // Debug log
+      }
+    } else if (userType.value === 'visitor') {
+      ;({ data, error } = await supabase
+        .from('approved_visitors')
+        .select('*')
+        .eq('email', user.email)
+        .single())
+
+      if (error) throw error
+      if (data) {
+        visitorData.firstName = data.first_name
+        visitorData.lastName = data.last_name
+        visitorData.contactNumber = data.contact
+        visitorData.email = data.email
+        visitorData.institution = data.institution
+        visitorData.purpose = data.purpose
+        visitorData.startDate = data.start_date
+        visitorData.endDate = data.end_date
+      }
     }
-  } else if (userType.value === 'faculty') {
-    const { data } = await supabase
-      .from('registered_faculty')
-      .select('*')
-      .eq('email', user.email)
-      .single()
-    if (data) {
-      facultyData.firstName = data.first_name
-      facultyData.lastName = data.last_name
-      facultyData.email = data.email
-      facultyData.college = data.college
-      facultyData.department = data.department
-    }
-  } else if (userType.value === 'admin' || isSuperAdmin) {
-    const { data } = await supabase
-      .from('registered_admins')
-      .select('*')
-      .eq('email', user.email)
-      .single()
-    if (data) {
-      adminData.firstName = data.first_name
-      adminData.lastName = data.last_name
-      adminData.contactNumber = data.contact
-      adminData.email = data.email
-      adminData.isSuperAdmin = !!data.is_super_admin
-    }
-  } else if (userType.value === 'visitor') {
-    const { data } = await supabase
-      .from('registration_visitors')
-      .select('*')
-      .eq('email', user.email)
-      .single()
-    if (data) {
-      visitorData.firstName = data.first_name
-      visitorData.lastName = data.last_name
-      visitorData.contactNumber = data.contact
-      visitorData.email = data.email
-      visitorData.institution = data.institution
-      visitorData.purpose = data.purpose
-      visitorData.startDate = data.start_date
-      visitorData.endDate = data.end_date
-    }
+  } catch (error) {
+    console.error('Error fetching profile:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to load profile information',
+      position: 'top',
+    })
   }
 })
 
