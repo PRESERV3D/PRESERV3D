@@ -400,6 +400,7 @@ import { computed, onMounted, ref } from 'vue'
 import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
 import { convertToWorkingUrl } from 'src/composables/useR2Url'
+import { preloadPreviews } from 'src/utils/urlCache'
 import { useRouter } from 'vue-router'
 import { useUserStore } from 'src/stores/user'
 import { useModelStore } from 'stores/modelStore'
@@ -560,7 +561,36 @@ async function loadDocuments() {
       return
     }
 
-    documents.value = data || []
+    // Convert URLs for documents with preview_url support
+    documents.value = await Promise.all(
+      (data || []).map(async (doc) => {
+        let workingFileUrl = doc.file_url
+        let workingPreviewUrl = doc.preview_url
+
+        try {
+          if (doc.file_url) {
+            workingFileUrl = await convertToWorkingUrl(doc.file_url)
+          }
+          if (doc.preview_url) {
+            workingPreviewUrl = await convertToWorkingUrl(doc.preview_url)
+          }
+        } catch (err) {
+          console.warn('Could not convert document URLs:', doc.id, err)
+        }
+
+        return {
+          ...doc,
+          file_url: workingFileUrl,
+          preview_url: workingPreviewUrl,
+        }
+      }),
+    )
+
+    // Preload preview images for instant display
+    const previewUrls = documents.value.map((d) => d.preview_url).filter(Boolean)
+    if (previewUrls.length > 0) {
+      preloadPreviews(previewUrls)
+    }
   } catch (err) {
     console.error('Failed to load documents:', err)
   }
@@ -595,7 +625,7 @@ async function loadRecentViews(userId) {
     const { data: documentData = [] } = documentIds.length
       ? await supabase
           .from('documents_metadata')
-          .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
+          .select('id, file_name, metadata, file_url, preview_url, uploaded_at, updated_at')
           .in('id', documentIds)
       : { data: [] }
 
@@ -637,16 +667,28 @@ async function loadRecentViews(userId) {
           if (!item?.file_url) return null
 
           let workingUrl = item.file_url
+          let workingPreviewUrl = item.preview_url
+
           try {
             workingUrl = await convertToWorkingUrl(item.file_url)
           } catch (err) {
             console.warn('Could not convert recent item URL:', item.id, err)
           }
 
+          // Convert preview_url for documents
+          if (d.item_type === 'document' && item.preview_url) {
+            try {
+              workingPreviewUrl = await convertToWorkingUrl(item.preview_url)
+            } catch (err) {
+              console.warn('Could not convert preview URL:', item.id, err)
+            }
+          }
+
           const key = `${d.item_type}:${d.item_id}`
           return {
             ...item,
             file_url: workingUrl,
+            preview_url: workingPreviewUrl,
             item_type: d.item_type,
             clicked_at: d.clicked_at,
             starred: favoriteKeySet.has(key),
@@ -655,6 +697,15 @@ async function loadRecentViews(userId) {
         .filter((promise) => promise !== null),
     )
     recentItems.value = recentItems.value.filter(Boolean)
+
+    // Preload preview images for documents in recent items
+    const documentPreviews = recentItems.value
+      .filter((item) => item.item_type === 'document' && item.preview_url)
+      .map((item) => item.preview_url)
+
+    if (documentPreviews.length > 0) {
+      preloadPreviews(documentPreviews)
+    }
   } catch (err) {
     console.error('Error loading recent views:', err)
   }
