@@ -1237,7 +1237,7 @@ watch(
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 100px;
+  gap: 10px;
   min-width: fit-content;
   width: auto;
   margin-left: auto;
@@ -1305,9 +1305,9 @@ watch(
     min-width: 1060px !important;
     max-width: 1060px !important;
   }
-  .toolbar-actions {
-    gap: 100px;
-  }
+  /*  .toolbar-actions {
+     gap: 100px;
+   } */
   .user-profile-btn:not(.compact) {
     width: 282px !important;
     min-width: 282px !important;
@@ -1322,26 +1322,26 @@ watch(
     min-width: 790px !important;
     max-width: 790px !important;
   }
-  .toolbar-actions {
-    gap: 120px;
-  }
-  .user-profile-btn:not(.compact) {
-    width: 210px !important;
-    min-width: 210px !important;
-    max-width: 210px !important;
-  }
-}
+  /*  .toolbar-actions {
+     gap: 120px;
+   } */
+   .user-profile-btn:not(.compact) {
+     width: 210px !important;
+     min-width: 210px !important;
+     max-width: 210px !important;
+   }
+ }
 
-/* Medium-large screens */
+ /* Medium-large screens */
 @media (min-width: 1300px) and (max-width: 1439px) {
   .search-container {
     width: 710px !important;
     min-width: 610px !important;
     max-width: 710px !important;
   }
-  .toolbar-actions {
-    gap: 110px;
-  }
+  /* .toolbar-actions {
+     gap: 110px;
+   } */
   .user-profile-btn:not(.compact) {
     width: 180px !important;
     min-width: 180px !important;
@@ -1358,28 +1358,28 @@ watch(
     flex: none !important;
   }
 
-  .toolbar-actions {
-    gap: 60px;
-    width: auto;
-  }
+  /* .toolbar-actions {
+     gap: 60px;
+     width: auto;
+   } */
 
-  .user-profile-btn:not(.compact) {
-    width: 180px !important;
-    min-width: 180px !important;
-    max-width: 180px !important;
-  }
-}
+   .user-profile-btn:not(.compact) {
+     width: 180px !important;
+     min-width: 180px !important;
+     max-width: 180px !important;
+   }
+ }
 
-/* Compact screens  */
+ /* Compact screens  */
 @media (min-width: 1050px) and (max-width: 1199px) {
   .search-container {
     width: 590px !important;
     min-width: 490px !important;
     max-width: 590px !important;
   }
-  .toolbar-actions {
-    gap: 45px;
-  }
+  /*  .toolbar-actions {
+     gap: 45px;
+   } */
   .user-profile-btn:not(.compact) {
     width: 210px !important;
     min-width: 210px !important;
@@ -1394,9 +1394,9 @@ watch(
     min-width: 300px !important;
     max-width: 550px !important;
   }
-  .toolbar-actions {
+  /* .toolbar-actions {
     gap: 30px;
-  }
+  } */
   .user-profile-btn.compact {
     width: 48px !important;
     min-width: 48px !important;
