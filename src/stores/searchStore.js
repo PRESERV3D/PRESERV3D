@@ -196,16 +196,22 @@ export const useSearchStore = defineStore('search', {
       this.searchedDocuments = []
       console.log('[Store.clear] State cleared. Type is:', this.type)
 
-      try {
-        const favs = await this.fetchFavorites(this.type)
-        console.log('[Store.clear] Favorites fetched:', favs)
-        return favs
-      } catch (err) {
-        console.error('[Store.clear] Error fetching favorites:', err)
-        return []
-      }
+      // try {
+      //   const favs = await this.fetchFavorites(this.type)
+      //   console.log('[Store.clear] Favorites fetched:', favs)
+      //   return favs
+      // } catch (err) {
+      //   console.error('[Store.clear] Error fetching favorites:', err)
+      //   return []
+      // }
     },
-
+    async clearAll() {
+      console.log('[Store.clearAll] Hard clearing all search data...')
+      this.query = ''
+      this.searchedDocuments = []
+      this.searchedModels = []
+      this.type = ''
+    },
     sortSettings(sort) {
       switch (sort) {
         case 'Relevance':
