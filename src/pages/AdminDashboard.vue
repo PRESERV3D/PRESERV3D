@@ -70,66 +70,38 @@
             <q-dialog v-model="reportDialog">
               <q-card class="q-pa-md" style="min-width: 400px">
                 <q-card-section>
-                  <div class="text-h6">Generate Monthly Usage Report</div>
+                  <div class="text-h6">Generate Usage Report</div>
                 </q-card-section>
 
                 <q-card-section>
-                  <!-- Single / Start selection -->
-                  <div class="text-subtitle2 q-mb-sm">
-                    {{ isRange ? 'From' : 'Select Month' }}
-                  </div>
-                  <div class="q-gutter-md row">
-                    <q-select
-                      v-model="startMonth"
-                      :options="months(startYear)"
-                      label="Month"
-                      dense
-                      outlined
-                      emit-value
-                      map-options
-                      class="col"
-                    />
-                    <q-select
-                      v-model="startYear"
-                      :options="years"
-                      label="Year"
-                      dense
-                      outlined
-                      emit-value
-                      map-options
-                      class="col"
-                    />
-                  </div>
-
-                  <!-- End selection (only if range) -->
-                  <template v-if="isRange">
-                    <div class="text-subtitle2 q-mt-md q-mb-sm">To</div>
-                    <div class="q-gutter-md row">
-                      <q-select
-                        v-model="endMonth"
-                        :options="months(endYear)"
-                        label="Month"
-                        dense
+                  <!-- Date Range Selection -->
+                  <div class="row q-gutter-md q-mx-none">
+                    <!-- Date From -->
+                    <div class="col q-px-none q-pr-sm">
+                      <q-input
                         outlined
-                        emit-value
-                        map-options
-                        class="col"
-                      />
-                      <q-select
-                        v-model="endYear"
-                        :options="years"
-                        label="Year"
-                        dense
-                        outlined
-                        emit-value
-                        map-options
-                        class="col"
+                        v-model="startDate"
+                        :label="isRange ? 'Date From' : 'Select Date'"
+                        type="date"
+                        :max="isRange ? endDate || today : today"
                       />
                     </div>
-                  </template>
+
+                    <!-- Date To (only if range) -->
+                    <div class="col q-px-none" v-if="isRange">
+                      <q-input
+                        outlined
+                        v-model="endDate"
+                        label="Date To"
+                        type="date"
+                        :min="startDate"
+                        :max="today"
+                      />
+                    </div>
+                  </div>
 
                   <!-- Range toggle -->
-                  <q-checkbox v-model="isRange" label="Select a range of months" class="q-mt-md" />
+                  <q-checkbox v-model="isRange" label="Select a date range" class="q-mt-md" />
                 </q-card-section>
 
                 <q-card-actions align="right">
@@ -379,90 +351,53 @@ const reportDialog = ref(false)
 const isRange = ref(false)
 const isValid = ref(false)
 
-const startMonth = ref(null)
-const startYear = ref(null)
-const endMonth = ref(null)
-const endYear = ref(null)
+const startDate = ref(null)
+const endDate = ref(null)
 
-const currentYear = new Date().getFullYear()
-const currentMonth = new Date().getMonth() + 1
-
-// all months list
-const allMonths = Array.from({ length: 12 }, (_, i) => {
-  const name = new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
-  return { label: name, value: i + 1 }
-})
-
-const months = (year) => {
-  if (year === currentYear) {
-    return allMonths.filter((m) => m.value <= currentMonth)
-  }
-  return allMonths
+// Helper function to format date as YYYY-MM-DD
+function formatDate(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-// last 5 years
-const years = Array.from({ length: 5 }, (_, i) => {
-  const y = currentYear - i
-  return { label: y.toString(), value: y }
-})
+const today = formatDate(new Date())
 
 // validation
 watch(
-  [startYear, startMonth, endYear, endMonth, isRange],
-  ([newStartYear, newStartMonth, newEndYear, newEndMonth, newIsRange]) => {
+  [startDate, endDate, isRange],
+  ([newStartDate, newEndDate, newIsRange]) => {
     // Reset
     isValid.value = false
 
-    // Future date check
-    if (newIsRange && newStartYear && newStartMonth && newEndYear && newEndMonth) {
-      if (startYear.value === endYear.value && startMonth.value === endMonth.value) {
-        isRange.value = false
-        endMonth.value = null
-        endYear.value = null
-        isValid.value = true
-        $q.notify({
-          type: 'info',
-          message: 'Note: Start and End month are the same. Switched to single month report.',
-        })
-        return
-      } else if (newStartMonth > newEndMonth && newStartYear === newEndYear) {
-        $q.notify({
-          type: 'warning',
-          message: 'Invalid date: End month cannot be earlier than Start month.',
-        })
-        isValid.value = false
-        return
-      } else if (newStartYear > newEndYear) {
-        $q.notify({
-          type: 'warning',
-          message: 'Invalid date: End year cannot be earlier than Start year.',
-        })
-        isValid.value = false
-        return
-      } else {
-        isValid.value = true
-      }
-    }
-
-    if (
-      (newStartYear === currentYear && newStartMonth > currentMonth) ||
-      (newEndYear === currentYear && newEndMonth > currentMonth)
-    ) {
-      $q.notify({
-        type: 'warning',
-        message: 'Invalid date: Selected month cannot be in the future.',
-      })
-      isValid.value = false
-      return
-    }
-
     // Basic checks
-    if (!newStartYear || !newStartMonth) return
+    if (!newStartDate) return
+
+    const start = new Date(newStartDate)
+    const end = new Date(newEndDate)
+
     if (!newIsRange) {
       isValid.value = true
       return
     }
-    if (!newEndYear || !newEndMonth) return
+
+    // Range validation
+    if (!newEndDate) return
+
+    // Check if dates are the same
+    if (start.getTime() === end.getTime()) {
+      isRange.value = false
+      endDate.value = null
+      isValid.value = true
+      $q.notify({
+        type: 'info',
+        message: 'Note: Start and End dates are the same. Switched to single date report.',
+      })
+      return
+    }
+
+    isValid.value = true
   },
   { immediate: true },
 )
@@ -470,31 +405,45 @@ watch(
 // generate
 const generateReport = async () => {
   isGenerateReportLoading.value = true
+
+  // Parse dates to get components
+  const start = new Date(startDate.value)
+  const startMonth = start.getMonth() + 1
+  const startDay = start.getDate()
+  const startYear = start.getFullYear()
+
   if (!isRange.value) {
-    // Single Month Report (pass same month/year for start and end)
+    // Single Date Report
     await generateMonthlyReport({
-      startMonth: startMonth.value,
-      startYear: startYear.value,
-      endMonth: startMonth.value,
-      endYear: startYear.value,
+      startMonth: startMonth,
+      startDay: startDay,
+      startYear: startYear,
+      endMonth: startMonth,
+      endDay: startDay,
+      endYear: startYear,
     })
   } else {
     // Range Report
+    const end = new Date(endDate.value)
+    const endMonth = end.getMonth() + 1
+    const endDay = end.getDate()
+    const endYear = end.getFullYear()
+
     await generateMonthlyReport({
-      startMonth: startMonth.value,
-      startYear: startYear.value,
-      endMonth: endMonth.value,
-      endYear: endYear.value,
+      startMonth: startMonth,
+      startDay: startDay,
+      startYear: startYear,
+      endMonth: endMonth,
+      endDay: endDay,
+      endYear: endYear,
     })
   }
   $q.notify({
     type: 'positive',
     message: 'Report generated successfully!',
   })
-  startMonth.value = null
-  startYear.value = null
-  endMonth.value = null
-  endYear.value = null
+  startDate.value = null
+  endDate.value = null
   isGenerateReportLoading.value = false
   reportDialog.value = false
 }
