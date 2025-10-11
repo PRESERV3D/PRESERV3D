@@ -1539,6 +1539,14 @@ watch(
     height: 28px !important;
   }
 
+  .search-input :deep(.q-icon) {
+    font-size: 21px !important;
+  }
+
+  .search-input :deep(.q-icon[name="search"]) {
+    margin: 0 4px !important;
+  }
+
   /* Keep sidebar visible on mobile but in mini state */
   .q-drawer {
     min-width: 120px !important;
