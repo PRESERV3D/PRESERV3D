@@ -3,11 +3,11 @@
     <div class="row q-gutter-sm">
       <div class="q-mt-xs box-1 row items-center">
         <div class="col-7">
-          <p class="q-ml-xl dash-title">Explore & Manage Cultural Heritage Assets</p>
-          <p class="q-ml-xl dash-subtitle">
+          <div class="q-ml-xl dash-title">Explore & Manage Cultural Heritage Assets</div>
+          <div class="q-ml-xl dash-subtitle">
             Access digital artifacts, document, and research <br />
             tools — all in one place.
-          </p>
+          </div>
           <div class="row q-ml-md q-gutter-lg">
             <q-btn to="/artifacts" label="Explore Artifacts" class="btn-explore" no-caps />
             <q-btn to="/documents" label="Browse Documents" class="btn-document" no-caps />
@@ -57,8 +57,8 @@
     <div class="q-my-lg reports-recently-container">
       <!-- Reports Section (box-3) -->
       <div class="column box-3 q-px-lg">
-        <div class="row item-center justify-between q-mb-sm">
-          <p class="q-ml-md title-font-2">Reports</p>
+        <div class="row item-center justify-between q-pa-xs">
+          <p class="title-font-2">Reports</p>
           <div class="q-mt-md">
             <q-btn
               label="Generate Report"
@@ -135,10 +135,10 @@
             <div class="label">Total Documents</div>
           </div>
         </div>
-        <div class="row q-py-md">
+        <div class="row q-mt-lg">
           <div class="col-6">
-            <p class="q-ml-md sub-font">Users per Month</p>
-            <div class="row q-py-sm justify-center q-gutter-md legend-container">
+            <p class="sub-font">Users per Month</p>
+            <div class="row q-py-sm legend-container">
               <!--users-->
               <div class="legend-item">
                 <div class="box-legend" style="background-color: #880000"></div>
@@ -159,17 +159,12 @@
               <canvas ref="usersPerMonth"></canvas>
             </div>
           </div>
-
           <div class="col-6">
             <div class="q-mb-lg sub-font">Most Viewed Artifacts Materials</div>
             <div class="column">
               <div class="q-mb-md sub-font" style="font-size: 14px">Artifacts</div>
 
-              <div
-                v-for="(item, index) in topArtifacts"
-                :key="index"
-                class="row items-center justify-between"
-              >
+              <div v-for="(item, index) in topArtifacts" :key="index" class="row justify-between">
                 <div class="row q-mb-md items-center q-gutter-sm">
                   <div class="number">{{ index + 1 }}</div>
                   <div class="fade-title-container" style="max-width: 12rem">
@@ -190,11 +185,7 @@
 
               <div class="q-mt-sm q-mb-md sub-font" style="font-size: 14px">Documents</div>
 
-              <div
-                v-for="(item, index) in topDocuments"
-                :key="index"
-                class="row items-center justify-between"
-              >
+              <div v-for="(item, index) in topDocuments" :key="index" class="row justify-between">
                 <div class="row q-mb-md items-center q-gutter-sm">
                   <div class="number">{{ index + 1 }}</div>
                   <div class="fade-title-container" style="max-width: 12rem">
@@ -740,7 +731,7 @@ function imgProps(item) {
 }
 
 .users-graph {
-  margin-top: 2rem;
+  margin: 2rem auto 0 auto;
   width: 22rem;
   max-width: 100%;
 }
@@ -1015,7 +1006,7 @@ function imgProps(item) {
   }
 
   .trophies {
-    height: 15rem; /* Same as index page */
+    height: 15rem;
     width: 15rem;
     max-width: 100%;
   }
@@ -1023,6 +1014,27 @@ function imgProps(item) {
   .row.q-ml-md.q-gutter-lg {
     margin-left: 1rem;
     gap: 1.5rem;
+  }
+
+  .users-graph {
+    width: 19rem;
+  }
+}
+
+/* @media (max-width: 1185px) {
+  .trophies {
+    display: none;
+  }
+} */
+
+/* ========================
+   WIDE DESKTOP (75rem / 1200px+)
+======================== */
+
+@media (max-width: 82rem) {
+  .trophies {
+    height: 12rem;
+    width: 12rem;
   }
 }
 
@@ -1052,6 +1064,10 @@ function imgProps(item) {
   .trophies {
     height: 16rem;
     width: 16rem;
+  }
+
+  .users-graph {
+    width: 22rem;
   }
 }
 
@@ -1588,6 +1604,13 @@ function imgProps(item) {
 
   .box-2 {
     padding: initial;
+  }
+}
+
+@media (min-width: 1551px) and (max-width: 2048px) {
+  .users-graph {
+    width: 100% !important;
+    padding: 0 1rem;
   }
 }
 </style>
