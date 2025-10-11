@@ -399,7 +399,7 @@ onMounted(async () => {
         facultyData.college = data.college
         facultyData.department = data.department
       }
-    } else if (userType.value === 'admin') {
+    } else if (userType.value === 'admin' || isSuperAdmin.value) {
       ;({ data, error } = await supabase
         .from('registered_admins')
         .select('*')
