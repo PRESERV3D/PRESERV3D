@@ -1926,40 +1926,7 @@ watch(
   padding: 4px 8px !important;
 }
 
-/* ========================
-   SEARCH INPUT OUTLINES
-======================== */
-.search-input :deep(.q-field__control) {
-  border: 1px solid #ccc !important;
-  border-radius: 8px;
-  transition: border-color 0.3s ease;
-}
 
-.search-input :deep(.q-field__control:hover) {
-  border-color: #888 !important;
-}
-
-.search-input :deep(.q-field--focused .q-field__control) {
-  border-color: #880000 !important;
-  box-shadow: 0 0 0 1px rgba(136, 0, 0, 0.2) !important;
-}
-
-/* ========================
-   ADVANCED SEARCH DIALOG OUTLINES
-======================== */
-.advanced-search-dialog :deep(.q-field__control) {
-  border: 1px solid #ccc !important;
-  border-radius: 8px;
-}
-
-.advanced-search-dialog :deep(.q-field__control:hover) {
-  border-color: #888 !important;
-}
-
-.advanced-search-dialog :deep(.q-field--focused .q-field__control) {
-  border-color: #880000 !important;
-  box-shadow: 0 0 0 1px rgba(136, 0, 0, 0.2) !important;
-}
 
 /* ========================
    SEARCH BAR VISIBILITY HANDLING
