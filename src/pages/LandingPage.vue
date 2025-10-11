@@ -9,8 +9,7 @@
           <q-img
             src="/img/logo.png"
             alt="Logo"
-            style="width: 70px; height: 70px; flex-shrink: 0; aspect-ratio: 1/1; left: 100%"
-            class="q-px-auto q-mt-sm"
+            class="logo-img q-px-auto q-mt-sm"
           />
         </div>
         <q-space />
@@ -31,16 +30,13 @@
         />
       </q-toolbar>
       <!-- Text -->
-      <div class="main-content" style="position: relative">
-        <div class="q-ma-xl" style="padding-left: 30px">
-          <h4 class="text-secondary text-weight-bold q-mb-none" style="letter-spacing: 0.75px">
+      <div class="main-content">
+        <div class="content-text">
+          <h4 class="text-secondary text-weight-bold q-mb-none hero-title">
             Preserving History.<br />
             Empower Discovery.
           </h4>
-          <p
-            style="color: #fff6c1; letter-spacing: 0.75px; font-size: 14px; font-weight: 300"
-            class="q-mt-md"
-          >
+          <p class="hero-subtitle q-mt-md">
             Step into PUP's past through 3D-modeled artifacts and<br />
             scanned documents built to stand the test of time.
           </p>
@@ -49,47 +45,19 @@
         <q-img
           src="/img/C-trophy.png"
           alt="C Trophy"
-          style="
-            width: 670px;
-            height: auto;
-            position: absolute;
-            bottom: -300px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1;
-            object-fit: contain;
-          "
-          class="q-px-auto"
+          class="trophy-center q-px-auto"
         />
 
         <q-img
           src="/img/L-trophy.png"
           alt="L Trophy"
-          style="
-            width: 325px;
-            height: auto;
-            position: absolute;
-            bottom: -310px;
-            right: 1000px;
-            z-index: 1;
-            object-fit: contain;
-          "
-          class="q-px-auto"
+          class="trophy-left q-px-auto"
         />
 
         <q-img
           src="/img/R-trophy.png"
           alt="R Trophy"
-          style="
-            width: 380px; /* Adjust width as needed */
-            height: auto; /* Let height adjust proportionally */
-            position: absolute;
-            bottom: -300px; /* Adjust this value to move it up or down */
-            left: 1000px; /* Adjust this value to move it left or right */
-            z-index: 1; /* Ensure it overlaps text if needed */
-            object-fit: contain;
-          "
-          class="q-px-auto"
+          class="trophy-right q-px-auto"
         />
         <div class="q-pa-md"></div>
       </div>
@@ -98,7 +66,7 @@
 
     <div class="main-tile">
       <div class="q-pa-md">
-        <h1 class="font-benne text-tertiary text-center" style="letter-spacing: 5px">
+        <h1 class="font-benne text-tertiary text-center brand-title">
           PRESERV<span class="text-secondary">3D</span>
         </h1>
       </div>
@@ -120,12 +88,71 @@
   min-height: 100vh;
 }
 
+.logo-img {
+  width: 4.375rem;
+  height: 4.375rem;
+  flex-shrink: 0;
+  aspect-ratio: 1/1;
+  left: 100%;
+}
+
+.main-content {
+  position: relative;
+}
+
+.content-text {
+  margin: 3rem; /* q-ma-xl equivalent */
+  padding-left: 1.875rem;
+}
+
+.hero-title {
+  letter-spacing: 0.047rem;
+}
+
+.hero-subtitle {
+  color: #fff6c1;
+  letter-spacing: 0.047rem;
+  font-size: 0.875rem;
+  font-weight: 300;
+}
+
+.trophy-center {
+  width: 41.875rem;
+  height: auto;
+  position: absolute;
+  bottom: -18.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  object-fit: contain;
+}
+
+.trophy-left {
+  width: 20.313rem;
+  height: auto;
+  position: absolute;
+  bottom: -19.375rem;
+  right: 62.5rem;
+  z-index: 1;
+  object-fit: contain;
+}
+
+.trophy-right {
+  width: 23.75rem;
+  height: auto;
+  position: absolute;
+  bottom: -18.75rem;
+  left: 62.5rem;
+  z-index: 1;
+  object-fit: contain;
+}
+
 .bottom-shadow-overlay {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 350px;
+  height: 21.875rem;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 20%, transparent 100%);
   z-index: 50;
   pointer-events: none;
@@ -138,16 +165,156 @@
 
 .font-benne {
   font-family: 'Benne', sans-serif;
-  text-shadow: 70px 30px 4px rgba(0, 0, 0, 0.55);
+  text-shadow: 4.375rem 1.875rem 0.25rem rgba(0, 0, 0, 0.55); /* 70px 30px 4px */
+}
+
+.brand-title {
+  letter-spacing: 0.313rem;
 }
 
 .main-tile {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 15px;
+  bottom: 0.938rem;
   z-index: 100;
   width: 100%;
   text-align: center;
+}
+
+/* ========================
+ RESPONSIVE DESIGN
+======================== */
+@media (max-width: 90rem) {
+  .trophy-left {
+    right: 50rem;
+  }
+
+  .trophy-right {
+    left: 50rem;
+  }
+}
+
+@media (max-width: 75rem) {
+  .trophy-left {
+    right: 40rem;
+    width: 18rem;
+  }
+
+  .trophy-right {
+    left: 40rem;
+    width: 21rem;
+  }
+
+  .trophy-center {
+    width: 38rem;
+  }
+}
+
+@media (max-width: 64rem) {
+  .content-text {
+    margin: 2rem;
+    padding-left: 1rem;
+  }
+
+  .trophy-left,
+  .trophy-right {
+    opacity: 0.5;
+  }
+
+  .trophy-left {
+    right: 30rem;
+    width: 15rem;
+  }
+
+  .trophy-right {
+    left: 30rem;
+    width: 18rem;
+  }
+
+  .trophy-center {
+    width: 32rem;
+  }
+}
+
+@media (max-width: 48rem) {
+  .logo-img {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .content-text {
+    margin: 2rem 1.5rem;
+    padding-left: 1rem;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.938rem;
+  }
+
+  .trophy-left,
+  .trophy-right {
+    display: none;
+  }
+
+
+  .bottom-shadow-overlay {
+    height: 18rem;
+  }
+
+  .brand-title {
+    font-size: 5rem;
+    letter-spacing: 0.3rem;
+  }
+
+  .main-tile {
+    bottom: 2.5rem;
+  }
+}
+
+@media (max-width: 30rem) {
+  .logo-img {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .content-text {
+    margin: 1rem;
+    padding-left: 0.5rem;
+  }
+
+  .hero-title {
+    font-size: 1.5rem;
+  }
+
+  .hero-title br {
+    display: none;
+  }
+
+  .hero-subtitle {
+    font-size: 0.813rem;
+  }
+
+  .trophy-center {
+    width: 20rem;
+    bottom: -8rem;
+  }
+
+  .bottom-shadow-overlay {
+    height: 14rem;
+  }
+
+  .brand-title {
+    font-size: 2.5rem;
+    letter-spacing: 0.2rem;
+  }
+
+  .main-tile {
+    bottom: 2rem;
+  }
 }
 </style>

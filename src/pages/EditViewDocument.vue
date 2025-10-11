@@ -290,7 +290,7 @@
                 </q-card>
               </q-dialog>
 
-              <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
+              <div class="q-ma-md link" @click="showRelatedDialog = true">Show Related Links</div>
               <!-- q-dialog for related links -->
               <q-dialog v-model="showRelatedDialog" persistent>
                 <q-card class="related-box">
@@ -298,7 +298,7 @@
                     class="column sub-font-3 items-start"
                     style="font-size: 16px; font-weight: 700"
                   >
-                    Related Links
+                    Show Related Links
                   </q-card-section>
                   <q-separator />
                   <div v-if="loadingRelatedLinks" class="q-pa-md flex flex-center">

@@ -4,393 +4,326 @@
       <h2 class="q-mb-sm title">Artifacts</h2>
       <div class="subtitle-btn-row">
         <h5 class="q-mt-xs q-mb-lg subtitle">Discover preserved treasures in immersive 3D.</h5>
-        <div class="artifact-btn">
-          <span class="showing-text">Showing </span>
-
-          <q-btn-dropdown
-            outline
-            color="black"
-            :label="itemsToShow === 'all' ? 'All' : itemsToShow.toString()"
-            size="sm"
-            class="q-ml-sm artifact-btn-style"
-          >
-            <q-list>
-              <q-item clickable v-close-popup @click="setItemsToShow('all')">
-                <q-item-section>All</q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="setItemsToShow(9)">
-                <q-item-section>9</q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="setItemsToShow(12)">
-                <q-item-section>12</q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="setItemsToShow(18)">
-                <q-item-section>18</q-item-section>
-              </q-item>
-            </q-list>
-          </q-btn-dropdown>
-
-          <!-- Filter Section -->
-          <q-btn-dropdown
-            outline
-            color="black"
-            label="Filter"
-            icon="filter_list"
-            size="sm"
-            class="artifact-btn-style"
-          >
-            <q-list style="width: 40rem">
-              <div class="row q-pa-md">
-                <!-- Authors Column (Left) -->
-                <div class="col q-pr-sm">
-                  <div class="sub-font-3 q-mb-sm">Author</div>
-                  <q-scroll-area style="height: 12rem; width: 12rem">
-                    <q-list dense>
-                      <q-item
-                        v-for="authorOption in authorOptions"
-                        :key="authorOption"
-                        clickable
-                        class="sub-font-2"
-                        style="color: #000000"
-                        @click="toggleAuthor(authorOption)"
-                      >
-                        <q-item-section avatar>
-                          <q-checkbox
-                            :model-value="selectedAuthors.has(authorOption)"
-                            @update:model-value="toggleAuthor(authorOption)"
-                          />
-                        </q-item-section>
-                        <q-item-section>{{ authorOption }}</q-item-section>
-                      </q-item>
-                    </q-list>
-                  </q-scroll-area>
-                  <!-- Clear Authors -->
-                  <q-btn
-                    v-if="selectedAuthors.size > 0"
-                    flat
-                    dense
-                    color="primary"
-                    label="Clear Author"
-                    @click="clearAuthor"
-                    class="q-mt-xs sub-font-3 full-width"
-                  />
-                </div>
-                <!-- Years Column (Right) -->
-                <div class="col">
-                  <div class="sub-font-3 q-mb-sm">Year</div>
-                  <q-scroll-area style="height: 12rem; width: 12rem">
-                    <q-list dense>
-                      <q-item
-                        v-for="dateOption in dateOptions"
-                        :key="dateOption"
-                        clickable
-                        class="sub-font-2"
-                        style="color: #000000"
-                        @click="toggleDate(dateOption)"
-                      >
-                        <q-item-section avatar>
-                          <q-checkbox
-                            :model-value="selectedDates.has(dateOption)"
-                            @update:model-value="toggleDate(dateOption)"
-                          />
-                        </q-item-section>
-                        <q-item-section>{{ dateOption }}</q-item-section>
-                      </q-item>
-                    </q-list>
-                  </q-scroll-area>
-                  <!-- Clear Years -->
-                  <q-btn
-                    v-if="selectedDates.size > 0"
-                    flat
-                    dense
-                    color="primary"
-                    label="Clear Year"
-                    @click="clearDate"
-                    class="q-mt-xs sub-font-3 full-width"
-                  />
-                </div>
-                <!-- Categories Column -->
-                <div class="col">
-                  <div class="sub-font-3 q-mb-sm">Category</div>
-                  <q-scroll-area style="height: 12rem; width: 12rem">
-                    <q-list dense>
-                      <q-item
-                        v-for="categoryOption in categoryOptions"
-                        :key="categoryOption"
-                        clickable
-                        class="sub-font-2"
-                        style="color: #000000"
-                        @click="toggleCategory(categoryOption)"
-                      >
-                        <q-item-section avatar>
-                          <q-checkbox
-                            :model-value="selectedCategories.has(categoryOption)"
-                            @update:model-value="toggleCategory(categoryOption)"
-                          />
-                        </q-item-section>
-                        <q-item-section>{{ categoryOption }}</q-item-section>
-                      </q-item>
-                    </q-list>
-                  </q-scroll-area>
-                  <!-- Clear Categories -->
-                  <q-btn
-                    v-if="
-                      selectedCategories.size > 0 &&
-                      !(selectedCategories.size === 1 && selectedCategories.has('All'))
-                    "
-                    flat
-                    dense
-                    color="primary"
-                    label="Clear Category"
-                    @click="clearCategories"
-                    class="q-mt-xs sub-font-3 full-width"
-                  />
-                </div>
-              </div>
-              <q-separator />
-              <!-- <q-item clickable v-close-popup @click="applyFilters">
-                    <q-item-section class="flex items-center">
-                      <div class="sub-font-3" style="color: #008000; font-weight: 500">
-                        APPLY FILTERS
-                      </div>
-                    </q-item-section>
-                  </q-item> -->
-              <q-item clickable v-close-popup @click="clearFilters">
-                <q-item-section class="flex items-center">
-                  <div class="sub-font-3" style="color: #880000; font-weight: 500">
-                    CLEAR ALL FILTERS
-                  </div>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-btn-dropdown>
-
-          <!-- Sort Section -->
-          <q-btn-dropdown
-            outline
-            color="black"
-            :label="`Sort by: ${sortLabel}`"
-            icon="sort"
-            size="sm"
-            class="q-ml-md artifact-btn-style"
-            dense
-          >
-            <q-list>
-              <q-item
-                v-for="option in allSortOptions"
-                :key="option.label"
-                clickable
-                v-close-popup
-                class="collection-sort-menu"
-                @click="applySort(option)"
-              >
-                <q-item-section>{{ option.label }}</q-item-section>
-                <q-item-section
-                  side
-                  v-if="
-                    searchStore.sortBy === option.value.sortBy &&
-                    searchStore.sortOrder === option.value.sortOrder
-                  "
-                >
-                  <q-icon name="check" color="primary" />
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-btn-dropdown>
-
-          <q-btn
-            v-if="isAdmin"
-            @click="showDialog = true"
-            label="Add New"
-            icon="add_circle"
-            style="min-width: 9.375rem"
-            class="add-new-btn"
-            no-caps
-            unelevated
-          />
-
-          <!-- Upload Dialog -->
-          <UploadDialog
-            v-model="showDialog"
-            upload-type="artifacts"
-            accept=".glb"
-            :show-camera="false"
-            :uploading="uploading"
-            :upload-progress="uploadProgress"
-            @file-selected="onFileSelected"
-            @file-dropped="onFileDropped"
-            @upload-click="handleUpload"
-            @cancel-click="handleCancel"
-          />
-
-          <div>
-            <!-- Category Section -->
-            <div class="row q-mt-md q-gutter-sm">
-              <q-btn
-                v-for="categoryOption in categoryOptions"
-                :key="categoryOption"
-                :label="categoryOption"
-                class="btn-1"
-                :class="{ active: selectedCategories.has(categoryOption) }"
-                unelevated
-                @click="toggleCategory(categoryOption)"
-              />
-            </div>
-          </div>
-
-          <!-- <q-dialog v-model="showDialog" persistent>
-            <q-card class="add-documentarti-card">
-              <q-card-section
-                class="box-upload-docuarti"
-                @dragover.prevent="onDragOver"
-                @dragleave.prevent="onDragLeave"
-                @drop.prevent="onFileDrop"
-                :class="{ 'drag-over': isDragging }"
-              >
-                <q-img
-                  src="/img/drag-drop-icon.png"
-                  alt="Upload-Artifacts"
-                  class="upload-icon-docu"
-                />
-                <div
-                  v-if="!selectedFile"
-                  class="sub-font-3 text-center"
-                  style="font-size: 14px; font-weight: 200"
-                >
-                  <div class="sub-font-3 text-center" style="font-size: 18px; font-weight: 200">
-                    DRAG and DROP files
-                  </div>
-                  or
-                  <a href="#" @click.prevent="triggerFileInput"><strong>Browse Files</strong></a> on
-                  your computer
-                </div>
-                <div v-else class="documentarti-preview text-center">
-                  <q-img src="/img/document-icon.png" alt="Artifacts" class="document-icon" />
-                  <div class="selected-documentarti-name q-mt-md">
-                    {{ selectedFile.name }}
-                  </div>
-                  // Upload progress bar
-                  <q-linear-progress
-                    v-if="uploading"
-                    :value="uploadProgress / 100"
-                    color="primary"
-                    class="q-mt-md full-width"
-                  />
-                </div>
-                <input
-                  type="file"
-                  ref="fileInput"
-                  accept=".glb"
-                  style="display: none"
-                  @change="handleFileChange"
-                />
-              </q-card-section>
-
-              <q-card-actions class="row q-ml-lg justify-between items-center">
-                <div></div>
-                <q-btn
-                  v-if="!uploading"
-                  label="Upload"
-                  class="q-ml-xl q-mt-sm btn-save"
-                  @click="handleUpload"
-                  no-caps
-                />
-
-                <q-spinner v-else color="primary" size="2em" class="q-ml-xl q-mt-sm" />
-
-                <q-btn
-                  flat
-                  label="Cancel"
-                  class="q-mt-sm sub-font-2"
-                  style="color: #000000"
-                  v-close-popup
-                  no-caps
-                  @click="handleCancel"
-                />
-              </q-card-actions>
-            </q-card>
-          </q-dialog> -->
-        </div>
+        <q-btn
+          v-if="isAdmin"
+          @click="showDialog = true"
+          label="Add New"
+          icon="add_circle"
+          style="min-width: 9.375rem"
+          class="add-new-btn"
+          no-caps
+          unelevated
+        />
       </div>
     </div>
 
-    <!-- Three Artifacts per Row Grid -->
-    <div class="artifacts-grid">
-      <div v-for="(model, i) in displayedModels" :key="i" class="artifact-card-wrapper">
-        <q-card class="my-card" rounded bordered>
-          <div class="card">
-            <model-viewer
-              :src="model.file_url"
-              loading="lazy"
-              shadow-intensity="1"
-              class="artifacts"
-              style="width: 100%; height: 400px"
-              @pointerenter="startRotate"
-              @pointerleave="stopRotate"
+    <!-- Upload Dialog -->
+    <UploadDialog
+      v-model="showDialog"
+      upload-type="artifacts"
+      accept=".glb"
+      :show-camera="false"
+      :uploading="uploading"
+      :upload-progress="uploadProgress"
+      @file-selected="onFileSelected"
+      @file-dropped="onFileDropped"
+      @upload-click="handleUpload"
+      @cancel-click="handleCancel"
+    />
+
+    <!-- Box Category (Matching Documents Page Style) -->
+    <div class="box-category">
+      <div class="q-pa-lg">
+        <div class="row q-col-gutter-md items-center justify-between">
+          <div class="title-font-2" style="font-size: 16px; margin-top: 0">Category</div>
+          <div class="row q-gutter-sm col-auto">
+            <!-- Filter Section -->
+            <q-btn-dropdown
+              outline
+              color="black"
+              label="Filter"
+              icon="filter_list"
+              size="sm"
+              class="artifact-btn-style"
+            >
+              <q-list style="width: 40rem">
+                <div class="row q-pa-md">
+                  <!-- Authors Column (Left) -->
+                  <div class="col q-pr-sm">
+                    <div class="sub-font-3 q-mb-sm">Author</div>
+                    <q-scroll-area style="height: 12rem; width: 12rem">
+                      <q-list dense>
+                        <q-item
+                          v-for="authorOption in authorOptions"
+                          :key="authorOption"
+                          clickable
+                          class="sub-font-2"
+                          style="color: #000000"
+                          @click="toggleAuthor(authorOption)"
+                        >
+                          <q-item-section avatar>
+                            <q-checkbox
+                              :model-value="selectedAuthors.has(authorOption)"
+                              @update:model-value="toggleAuthor(authorOption)"
+                            />
+                          </q-item-section>
+                          <q-item-section>{{ authorOption }}</q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-scroll-area>
+                    <!-- Clear Authors -->
+                    <q-btn
+                      v-if="selectedAuthors.size > 0"
+                      flat
+                      dense
+                      color="primary"
+                      label="Clear Author"
+                      @click="clearAuthor"
+                      class="q-mt-xs sub-font-3 full-width"
+                    />
+                  </div>
+                  <!-- Years Column (Right) -->
+                  <div class="col">
+                    <div class="sub-font-3 q-mb-sm">Year</div>
+                    <q-scroll-area style="height: 12rem; width: 12rem">
+                      <q-list dense>
+                        <q-item
+                          v-for="dateOption in dateOptions"
+                          :key="dateOption"
+                          clickable
+                          class="sub-font-2"
+                          style="color: #000000"
+                          @click="toggleDate(dateOption)"
+                        >
+                          <q-item-section avatar>
+                            <q-checkbox
+                              :model-value="selectedDates.has(dateOption)"
+                              @update:model-value="toggleDate(dateOption)"
+                            />
+                          </q-item-section>
+                          <q-item-section>{{ dateOption }}</q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-scroll-area>
+                    <!-- Clear Years -->
+                    <q-btn
+                      v-if="selectedDates.size > 0"
+                      flat
+                      dense
+                      color="primary"
+                      label="Clear Year"
+                      @click="clearDate"
+                      class="q-mt-xs sub-font-3 full-width"
+                    />
+                  </div>
+                  <!-- Categories Column -->
+                  <div class="col">
+                    <div class="sub-font-3 q-mb-sm">Category</div>
+                    <q-scroll-area style="height: 12rem; width: 12rem">
+                      <q-list dense>
+                        <q-item
+                          v-for="categoryOption in categoryOptions"
+                          :key="categoryOption"
+                          clickable
+                          class="sub-font-2"
+                          style="color: #000000"
+                          @click="toggleCategory(categoryOption)"
+                        >
+                          <q-item-section avatar>
+                            <q-checkbox
+                              :model-value="selectedCategories.has(categoryOption)"
+                              @update:model-value="toggleCategory(categoryOption)"
+                            />
+                          </q-item-section>
+                          <q-item-section>{{ categoryOption }}</q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-scroll-area>
+                    <!-- Clear Categories -->
+                    <q-btn
+                      v-if="
+                        selectedCategories.size > 0 &&
+                        !(selectedCategories.size === 1 && selectedCategories.has('All'))
+                      "
+                      flat
+                      dense
+                      color="primary"
+                      label="Clear Category"
+                      @click="clearCategories"
+                      class="q-mt-xs sub-font-3 full-width"
+                    />
+                  </div>
+                </div>
+                <q-separator />
+                <q-item clickable v-close-popup @click="clearFilters">
+                  <q-item-section class="flex items-center">
+                    <div class="sub-font-3" style="color: #880000; font-weight: 500">
+                      CLEAR ALL FILTERS
+                    </div>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+            <!-- Sort Section -->
+            <q-btn-dropdown
+              outline
+              color="black"
+              :label="`Sort by: ${sortLabel}`"
+              icon="sort"
+              size="sm"
+              class="q-ml-md artifact-btn-style"
+              dense
+            >
+              <q-list>
+                <q-item
+                  v-for="option in allSortOptions"
+                  :key="option.label"
+                  clickable
+                  v-close-popup
+                  @click="applySort(option)"
+                >
+                  <q-item-section>{{ option.label }}</q-item-section>
+                  <q-item-section
+                    side
+                    v-if="
+                      searchStore.sortBy === option.value.sortBy &&
+                      searchStore.sortOrder === option.value.sortOrder
+                    "
+                  >
+                    <q-icon name="check" color="primary" />
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+          </div>
+        </div>
+        <div>
+          <!-- Category Section -->
+          <div class="row q-mt-md q-gutter-sm">
+            <q-btn
+              v-for="categoryOption in categoryOptions"
+              :key="categoryOption"
+              :label="categoryOption"
+              class="btn-1"
+              :class="{ active: selectedCategories.has(categoryOption) }"
+              unelevated
+              @click="toggleCategory(categoryOption)"
             />
           </div>
+        </div>
 
-          <q-card-section class="q-pa-sm artifact-card-section">
-            <div class="artifact-title-icon-row q-mt-sm">
-              <router-link
-                :to="{ name: 'view-artifact', params: { id: model.id } }"
-                class="artifact-title-link"
-                @click="logClick(model.id, 'artifact', 'view_artifact')"
-              >
-                <div class="text-subtitle2 artifact-title">
-                  {{ model.metadata?.title || model.file_name }}
-                </div>
-              </router-link>
-              <div class="action-icons">
-                <!-- View Icon with Count -->
-                <div class="icon-with-count">
-                  <q-icon name="visibility" class="action-icon view-icon" size="18px" />
-                  <span class="count-text">{{ modelStore.viewCounts[model.id] || 0 }}</span>
-                </div>
-
-                <!-- Star Icon with Count -->
-                <div class="icon-with-count">
-                  <q-icon
-                    :name="model.starred ? 'star' : 'star_border'"
-                    class="action-icon star-icon"
-                    :class="{ starred: model.starred }"
-                    size="18px"
-                    @click.stop="isAdmin ? null : toggleFavorite(model, 'artifact')"
-                  />
-                  <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
-                </div>
-
-                <!-- Bookmark Icon -->
-                <q-icon
-                  v-if="!isAdmin"
-                  :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
-                  class="action-icon bookmark-icon"
-                  :class="{ bookmarked: model.bookmarked }"
-                  size="18px"
-                  @click.stop="openBookmarkDialog(model, 'artifact')"
+        <!-- Three Artifacts per Row Grid -->
+        <div class="artifacts-grid">
+          <div v-for="(model, i) in displayedModels" :key="i" class="artifact-card-wrapper">
+            <q-card class="my-card" rounded bordered>
+              <div class="card">
+                <model-viewer
+                  :src="model.file_url"
+                  loading="lazy"
+                  shadow-intensity="1"
+                  class="artifacts"
+                  style="width: 100%; height: 400px"
+                  @pointerenter="startRotate"
+                  @pointerleave="stopRotate"
                 />
               </div>
-            </div>
-          </q-card-section>
-        </q-card>
+
+              <q-card-section class="q-pa-sm artifact-card-section">
+                <div class="artifact-title-icon-row q-mt-sm">
+                  <router-link
+                    :to="{ name: 'view-artifact', params: { id: model.id } }"
+                    class="artifact-title-link"
+                    @click="logClick(model.id, 'artifact', 'view_artifact')"
+                  >
+                    <div class="text-subtitle2 artifact-title">
+                      {{ model.metadata?.title || model.file_name }}
+                    </div>
+                  </router-link>
+                  <div class="action-icons">
+                    <!-- View Icon with Count -->
+                    <div class="icon-with-count">
+                      <q-icon name="visibility" class="action-icon view-icon" size="18px" />
+                      <span class="count-text">{{ modelStore.viewCounts[model.id] || 0 }}</span>
+                    </div>
+
+                    <!-- Star Icon with Count -->
+                    <div class="icon-with-count">
+                      <q-icon
+                        :name="model.starred ? 'star' : 'star_border'"
+                        class="action-icon star-icon"
+                        :class="{ starred: model.starred }"
+                        size="18px"
+                        @click.stop="isAdmin ? null : toggleFavorite(model, 'artifact')"
+                      />
+                      <span class="count-text">{{ modelStore.starCounts[model.id] || 0 }}</span>
+                    </div>
+
+                    <!-- Bookmark Icon -->
+                    <q-icon
+                      v-if="!isAdmin"
+                      :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
+                      class="action-icon bookmark-icon"
+                      :class="{ bookmarked: model.bookmarked }"
+                      size="18px"
+                      @click.stop="openBookmarkDialog(model, 'artifact')"
+                    />
+                  </div>
+                </div>
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+
+        <!-- Show All -->
+        <div v-if="hasMoreItems" class="text-center q-mt-lg">
+          <q-btn
+            outline
+            color="primary"
+            :label="`Show All ${sortedModels.length} Items`"
+            @click="setItemsToShow('all')"
+          />
+        </div>
+
+        <!-- Empty State -->
+        <div v-if="displayedModels.length === 0 && !loading" class="text-center q-mt-xl">
+          <q-icon name="inventory_2" size="4rem" color="grey-5" />
+          <div class="text-h6 q-mt-md text-grey-6">No artifacts found</div>
+          <div class="text-body2 text-grey-5">Try adjusting your filters or search terms</div>
+        </div>
+
+        <div class="pagination-controls justify-center">
+          <q-btn
+            flat
+            round
+            icon="chevron_left"
+            :disable="modelsCurrentPage === 1"
+            @click="prevModelsPage"
+            class="pagination-btn"
+            size="sm"
+          />
+
+          <span class="pagination-numbers">
+            <span
+              v-for="page in modelsTotalPages"
+              :key="page"
+              @click="goToModelsPage(page)"
+              :class="['page-number', { active: page === modelsCurrentPage }]"
+            >
+              {{ page }}
+            </span>
+          </span>
+
+          <q-btn
+            flat
+            round
+            icon="chevron_right"
+            :disable="modelsCurrentPage === modelsTotalPages"
+            @click="nextModelsPage"
+            class="pagination-btn"
+            size="sm"
+          />
+        </div>
       </div>
-    </div>
-
-    <!-- Show All -->
-    <div v-if="hasMoreItems" class="text-center q-mt-lg">
-      <q-btn
-        outline
-        color="primary"
-        :label="`Show All ${sortedModels.length} Items`"
-        @click="setItemsToShow('all')"
-      />
-    </div>
-
-    <!-- Empty State -->
-    <div v-if="displayedModels.length === 0 && !loading" class="text-center q-mt-xl">
-      <q-icon name="inventory_2" size="4rem" color="grey-5" />
-      <div class="text-h6 q-mt-md text-grey-6">No artifacts found</div>
-      <div class="text-body2 text-grey-5">Try adjusting your filters or search terms</div>
     </div>
 
     <!-- Bookmark Dialog -->
@@ -435,11 +368,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          notifyDialogTitle
-        }}</q-card-section>
+            notifyDialogTitle
+          }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-          notifyDialogMessage
-        }}</q-card-section>
+            notifyDialogMessage
+          }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -452,39 +385,6 @@
       @confirm="saveMetadata"
       @cancel="handleCancelMetadata"
     />
-
-    <div class="pagination-controls justify-center">
-      <q-btn
-        flat
-        round
-        icon="chevron_left"
-        :disable="modelsCurrentPage === 1"
-        @click="prevModelsPage"
-        class="pagination-btn"
-        size="sm"
-      />
-
-      <span class="pagination-numbers">
-        <span
-          v-for="page in modelsTotalPages"
-          :key="page"
-          @click="goToModelsPage(page)"
-          :class="['page-number', { active: page === modelsCurrentPage }]"
-        >
-          {{ page }}
-        </span>
-      </span>
-
-      <q-btn
-        flat
-        round
-        icon="chevron_right"
-        :disable="modelsCurrentPage === modelsTotalPages"
-        @click="nextModelsPage"
-        class="pagination-btn"
-        size="sm"
-      />
-    </div>
   </q-page>
 </template>
 
@@ -517,7 +417,7 @@ const userStore = useUserStore()
 // const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
 
 const sortLabel = computed(() => searchStore.getSortLabel(allSortOptions))
-const itemsToShow = ref('all')
+// const itemsToShow = ref('all')
 
 // Filter options - will be populated from data
 const categoryOptions = ref([])
@@ -1944,6 +1844,14 @@ function goToModelsPage(page) {
 </script>
 
 <style scoped>
+.box-category {
+  border-radius: 10px;
+  background-color: #ffffff;
+  width: auto;
+  height: auto;
+  box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
+}
+
 .view-icon {
   color: #7c7c7c;
   font-size: 18px;
@@ -1968,117 +1876,16 @@ function goToModelsPage(page) {
   line-height: 1.3;
 }
 
-/* Responsive styles for buttons */
+.artifacts-grid {
+  margin-top: 2rem;
+}
+
+/* Responsive styles */
 .subtitle-btn-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   flex-wrap: wrap;
   gap: 1rem;
-}
-
-.artifact-btn {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-/* Mobile styles (max-width: 767px) */
-@media (max-width: 767px) {
-  .subtitle-btn-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .artifact-btn {
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-bottom: 2rem;
-  }
-
-  .artifact-btn-style {
-    min-width: 80px;
-    margin: 0.25rem !important;
-  }
-
-  .add-new-btn {
-    min-width: 80px !important;
-    margin: 0.25rem !important;
-  }
-
-  /* Make filter dropdown responsive */
-  .artifact-btn-style .q-list {
-    width: 90vw !important;
-    max-width: 400px !important;
-  }
-
-  .artifact-btn-style .row {
-    flex-direction: column;
-  }
-
-  .artifact-btn-style .col {
-    margin-bottom: 1rem;
-  }
-
-  .artifact-btn-style q-scroll-area {
-    width: 100% !important;
-  }
-}
-
-/* Tablet styles (768px - 1023px) */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .subtitle-btn-row {
-    align-items: center;
-  }
-
-  .artifact-btn {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    margin-bottom: 1.5rem;
-  }
-
-  .artifact-btn-style {
-    margin: 0.25rem 0.25rem 0.25rem 0.5rem !important;
-  }
-
-  .add-new-btn {
-    margin: 0.25rem !important;
-  }
-
-  /* Adjust filter dropdown for tablets */
-  .artifact-btn-style .q-list {
-    width: 35rem !important;
-  }
-}
-
-/* Small desktop styles (1024px - 1199px) */
-@media (min-width: 1024px) and (max-width: 1199px) {
-  .artifact-btn-style {
-    margin-left: 0.5rem !important;
-  }
-}
-
-/* Additional responsive adjustments for very small screens */
-@media (max-width: 480px) {
-  .page-header {
-    padding: 0 0.5rem;
-  }
-
-  .title {
-    font-size: 1.5rem;
-    text-align: center;
-  }
-
-  .artifact-btn {
-    justify-content: space-around;
-    margin-bottom: 2.5rem;
-  }
-
-  .artifact-btn-style,
-  .add-new-btn {
-    font-size: 0.75rem;
-    padding: 0.5rem 0.75rem;
-  }
 }
 </style>

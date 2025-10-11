@@ -41,7 +41,7 @@
           </div>
 
           <!-- Navigation Section -->
-          <div class="navigation-section">
+          <div class="navigation-section" :class="{ 'hovered-lift': isHovered }">
             <q-list padding :class="{ 'text-center': miniState && !isHovered }">
               <q-item
                 v-for="item in navItems"
@@ -195,10 +195,7 @@
 
                     <q-scroll-area class="notifications-scroll-area">
                       <q-list class="notifications-list">
-                        <q-item
-                          v-if="notifications.length === 0"
-                          class="no-notifications"
-                        >
+                        <q-item v-if="notifications.length === 0" class="no-notifications">
                           <q-item-section avatar>
                             <q-icon name="notifications_off" color="grey-5" />
                           </q-item-section>
@@ -226,7 +223,10 @@
                           </q-item-section>
 
                           <q-item-section>
-                            <q-item-label class="notification-message" :class="{ 'text-bold': !notif.read }">
+                            <q-item-label
+                              class="notification-message"
+                              :class="{ 'text-bold': !notif.read }"
+                            >
                               {{ notif.message }}
                             </q-item-label>
                             <q-item-label caption class="notification-time">
@@ -497,23 +497,23 @@ const clearAllNotifications = async () => {
     }
 
     // Update local state
-    notifications.value = notifications.value.map(notif => ({
+    notifications.value = notifications.value.map((notif) => ({
       ...notif,
-      read: true
+      read: true,
     }))
     notificationCount.value = 0
 
     $q.notify({
       type: 'positive',
       message: 'All notifications cleared',
-      timeout: 2000
+      timeout: 2000,
     })
   } catch (error) {
     console.error('Error clearing notifications:', error)
     $q.notify({
       type: 'negative',
       message: 'Failed to clear notifications',
-      timeout: 2000
+      timeout: 2000,
     })
   }
 }
@@ -524,7 +524,7 @@ const getNotificationIcon = (type) => {
     appointment_booking: 'event',
     appointment_status: 'schedule',
     visitor_registration: 'person_add',
-    default: 'notifications'
+    default: 'notifications',
   }
   return typeMap[type] || typeMap.default
 }
@@ -574,7 +574,7 @@ let channel = null
 // Base navigation items
 const baseNavItems = [
   { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
-  { name: 'user-management', label: 'User Management', icon: '\\icons\\users.png' },
+  { name: 'user-management', label: 'User Management', icon: '\\icons\\users-m.png' },
   { name: 'data-quality', label: 'Data Quality', icon: '\\icons\\data_quality.png' },
   { name: 'appointment', label: 'Appointment', icon: '\\icons\\appointment.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
@@ -619,14 +619,14 @@ const handleResize = () => {
 // Add a timeout to prevent rapid state changes
 let hoverTimeout = null
 
-const onDrawerMouseEnter = () => {
-  if (hoverTimeout) clearTimeout(hoverTimeout)
-  isHovered.value = true
-  // Only expand if currently in mini state
-  if (miniState.value) {
-    miniState.value = false
-  }
-}
+// const onDrawerMouseEnter = () => {
+//   if (hoverTimeout) clearTimeout(hoverTimeout)
+//   isHovered.value = true
+//   // Only expand if currently in mini state
+//   if (miniState.value) {
+//     miniState.value = false
+//   }
+// }
 
 const onDrawerMouseLeave = () => {
   if (hoverTimeout) clearTimeout(hoverTimeout)
@@ -787,11 +787,20 @@ const clearAdvancedSearch = () => {
 const handleLogout = async () => {
   try {
     if (confirm('Are you sure you want to logout?')) {
+      // Sign out and wait for completion
       await userStore.signOut()
-      router.push('/user/login')
+
+      // Force navigation after successful logout
+      await router.push('/user/login')
+
+      // Force page reload to clear any cached state
+      window.location.reload()
     }
   } catch (error) {
     console.error('Error signing out:', error)
+    // Even on error, try to navigate to login
+    router.push('/user/login')
+    window.location.reload()
   }
 }
 
@@ -1050,6 +1059,17 @@ onBeforeUnmount(() => {
   }
 })
 
+const hasBeenHovered = ref(false)
+const onDrawerMouseEnter = () => {
+  if (hoverTimeout) clearTimeout(hoverTimeout)
+  isHovered.value = true
+  hasBeenHovered.value = true
+  // Only expand if currently in mini state
+  if (miniState.value) {
+    miniState.value = false
+  }
+}
+
 watch(
   () => userProfile.value?.role,
   (role) => {
@@ -1112,6 +1132,13 @@ watch(
 /* When expanded (on hover), sidebar overlays content */
 .sidebar-drawer:hover {
   z-index: 2001 !important; /* Higher z-index when expanded */
+}
+
+/* ========================
+   SIDEBAR HOVER LIFT EFFECT
+======================== */
+.navigation-section.hovered-lift {
+  transform: translateY(-40px) !important;
 }
 
 /* ========================
@@ -1496,7 +1523,6 @@ watch(
     justify-content: flex-start !important;
   }
 
-
   /* Expand on hover */
   .q-drawer:hover {
     width: 280px !important;
@@ -1548,7 +1574,7 @@ watch(
 .text-center .logout-item {
   justify-content: center !important;
   padding: 8px !important;
-  margin-bottom: 16px !important;
+  margin-bottom: 10px !important;
 }
 .text-center .q-item__section--main {
   display: none !important;
@@ -1948,7 +1974,6 @@ watch(
   }
 }
 
-
 @media (min-width: 1200px) and (max-width: 1300px) {
   .search-container-hidden {
     width: 650px !important;
@@ -1994,6 +2019,4 @@ watch(
     margin-left: 0;
   }
 }
-
-
 </style>

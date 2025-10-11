@@ -187,9 +187,31 @@ export const useUserStore = defineStore('user', {
     },
 
     async signOut() {
-      await supabase.auth.signOut()
-      this.session = null
-      this.profile = null
+      try {
+        // Clear local state first
+        this.session = null
+        this.profile = null
+
+        // Sign out from Supabase with proper scope
+        const { error } = await supabase.auth.signOut({ scope: 'local' })
+
+        if (error) {
+          console.error('Error during sign out:', error)
+          throw error
+        }
+
+        // Additional cleanup - clear any cached session data
+        localStorage.removeItem('supabase.auth.token')
+        sessionStorage.clear()
+
+        return true
+      } catch (error) {
+        console.error('Sign out failed:', error)
+        // Force clear even on error
+        this.session = null
+        this.profile = null
+        throw error
+      }
     },
   },
 })

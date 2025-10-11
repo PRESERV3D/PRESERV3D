@@ -6,8 +6,8 @@
     >
       <div class="forgot-bigbox">
         <div class="q-my-lg column">
-          <label class="reset-title q-mb-md">Forgot password</label>
-          <div class="row q-gutter-md items-center justify-center">
+          <label class="reset-title q-mb-lg">Forgot password</label>
+          <div class="pad row q-gutter-md items-center justify-center">
             <label class="labelNames">Email: </label>
             <q-input
               filled
@@ -20,7 +20,16 @@
             />
           </div>
           <div class="row justify-center q-mt-lg">
-            <q-btn label="Submit" class="btn-submit" @click="sendResetEmail()" no-caps />
+            <div v-if="!isSubmitLoading">
+              <q-btn
+                :disabled="!email"
+                label="Submit"
+                class="btn-submit"
+                @click="sendResetEmail()"
+                no-caps
+              />
+            </div>
+            <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
           </div>
 
           <q-dialog v-model="showDialog" persistent>
@@ -52,7 +61,7 @@ const email = ref('')
 const message = ref('')
 const showDialog = ref(false)
 const emailSent = ref(false)
-
+const isSubmitLoading = ref(false)
 // Check if email exists
 async function checkEmail() {
   const { data, error } = await supabase
@@ -69,10 +78,12 @@ async function checkEmail() {
 }
 
 async function sendResetEmail() {
+  isSubmitLoading.value = true
   const emailExists = await checkEmail()
   if (!emailExists) {
     message.value = 'Email not found.'
     showDialog.value = true
+    isSubmitLoading.value = false
     return
   }
 
@@ -102,8 +113,8 @@ function handleDialogConfirm() {
 
 <style scoped>
 .forgot-bigbox {
-  width: 38rem;
-  height: 13rem;
+  width: auto;
+  height: auto;
   border-radius: 10px;
   background: linear-gradient(
     334deg,
@@ -114,6 +125,7 @@ function handleDialogConfirm() {
     #fffced 105.52%
   );
   box-shadow: -20px 15px 4px 0px rgba(0, 0, 0, 0.45);
+  padding: 1rem;
 }
 
 .reset-title {
@@ -141,5 +153,10 @@ function handleDialogConfirm() {
   width: 32rem;
   padding: 1rem;
   text-align: center;
+}
+
+:deep(.text-box-2 .q-field__control::before),
+:deep(.text-box-2 .q-field__control::after) {
+  display: none;
 }
 </style>
