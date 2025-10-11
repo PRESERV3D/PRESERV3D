@@ -827,6 +827,7 @@ onUnmounted(() => {
 })
 
 // Watch search bar input and run query
+// do this according to route
 watch(search, async (query) => {
   if (query === null || query === undefined) {
     searchStore.clear()
@@ -1410,7 +1411,7 @@ watch(
 @media (min-width: 600px) and (max-width: 1024px) {
   .q-drawer {
     width: 120px !important;
-    z-index: 2000 !important;
+    /* z-index: 2000 !important; */
   }
 
   .sidebar-drawer .q-drawer__content {
