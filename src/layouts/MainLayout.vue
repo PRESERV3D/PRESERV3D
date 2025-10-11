@@ -1155,7 +1155,7 @@ watch(
 /* Reduce lift on short screens to prevent overflow */
 @media (max-height: 768px) {
   .navigation-section.hovered-lift {
-    transform: translateY(-90px) !important;
+    transform: translateY(-40px) !important;
   }
 }
 
