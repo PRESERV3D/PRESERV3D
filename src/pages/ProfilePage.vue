@@ -415,7 +415,7 @@ onMounted(async () => {
         adminData.lastName = data.last_name
         adminData.email = data.email
         adminData.isSuperAdmin = !!data.is_super_admin
-        console.log('Admin data loaded:', data) // Debug log
+        console.log('Admin data loaded:', data)
       }
     } else if (userType.value === 'visitor') {
       ;({ data, error } = await supabase

@@ -37,9 +37,11 @@ CREATE TABLE public.approved_visitors (
   last_name text,
   start_date date,
   end_date date,
-  account_status text DEFAULT 'Active'::text CHECK (account_status = ANY (ARRAY['Active'::text, 'Inactive'::text, 'Expired'::text])),
+  account_status text DEFAULT ''::text,
   institution text,
   purpose text,
+  is_temp_password boolean,
+  contact text,
   CONSTRAINT approved_visitors_pkey PRIMARY KEY (id),
   CONSTRAINT approved_visitors_registration_id_fkey FOREIGN KEY (registration_id) REFERENCES public.registration_visitors(id),
   CONSTRAINT approved_visitors_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
@@ -131,6 +133,16 @@ CREATE TABLE public.documents_metadata (
   related_links jsonb,
   CONSTRAINT documents_metadata_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.email_logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  recipient text NOT NULL,
+  subject text,
+  status text,
+  sent_at timestamp with time zone DEFAULT now(),
+  email_id text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT email_logs_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.inconsistencies (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   record_id uuid NOT NULL,
@@ -190,6 +202,7 @@ CREATE TABLE public.registered_admins (
   contact text NOT NULL,
   is_super_admin boolean DEFAULT false,
   account_status text DEFAULT 'Active'::text CHECK (account_status = ANY (ARRAY['Active'::text, 'Inactive'::text])),
+  is_temp_password boolean,
   CONSTRAINT registered_admins_pkey PRIMARY KEY (id),
   CONSTRAINT registered_admins_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
