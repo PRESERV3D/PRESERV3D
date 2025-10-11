@@ -1,8 +1,9 @@
 /**
- * Composable for handling R2 URLs - converts stored URLs to working presigned URLs
+ * Composable for handling R2 and Supabase Storage URLs - converts stored URLs to working presigned URLs
  */
 import { getPresignedUrl, getR2Url } from 'src/boot/r2'
 import { preloadUrls, preloadPreviews } from 'src/utils/urlCache'
+import { convertSupabaseUrl, isSupabaseStorageUrl } from 'src/utils/supabaseCache'
 
 /**
  * Extract the key (folder/filename) from a stored R2 URL
@@ -46,7 +47,8 @@ function extractKeyFromUrl(url) {
 }
 
 /**
- * Convert a stored R2 URL to a working presigned URL
+ * Convert a stored URL to a working presigned URL
+ * Automatically detects if it's an R2 or Supabase URL
  * @param {string} storedUrl - The URL stored in the database
  * @returns {Promise<string>} - Working presigned URL
  */
@@ -55,14 +57,24 @@ export async function convertToWorkingUrl(storedUrl) {
     throw new Error('No URL provided')
   }
 
-  // Extract the key from the stored URL
+  // Check if it's a Supabase Storage URL
+  if (isSupabaseStorageUrl(storedUrl)) {
+    try {
+      return await convertSupabaseUrl(storedUrl)
+    } catch (error) {
+      console.error('Error converting Supabase URL:', error)
+      throw error
+    }
+  }
+
+  // Otherwise, treat as R2 URL
   const key = extractKeyFromUrl(storedUrl)
 
   if (!key) {
     throw new Error('Could not extract key from URL: ' + storedUrl)
   }
 
-  // Generate a presigned URL
+  // Generate a presigned URL for R2
   try {
     return await getPresignedUrl(key)
   } catch (error) {

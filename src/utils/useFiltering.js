@@ -7,7 +7,7 @@ const documentsStore = useDocumentsStore()
 const searchStore = useSearchStore()
 const modelStore = useModelStore()
 
-export function useDocumentsFilter() {
+export function useFiltering() {
   const selectedAuthors = ref(new Set())
   const selectedDates = ref(new Set())
   const selectedCategories = ref(new Set(['All']))
