@@ -47,7 +47,7 @@
           <div class="form-row">
             <div class="form-group-split">
               <div class="form-group half-width">
-                <label class="form-label">Date<span class="required">*</span></label>
+                <label class="form-label">Date <span class="required">*</span></label>
                 <q-input
                   v-model="form.date"
                   dense
@@ -72,7 +72,7 @@
               </div>
 
               <div class="form-group half-width">
-                <label class="form-label">Time<span class="required">*</span></label>
+                <label class="form-label">Time <span class="required">*</span></label>
                 <q-input
                   v-model="form.time"
                   dense
@@ -104,7 +104,7 @@
 
           <div class="form-row">
             <div class="form-group full-width">
-              <label class="form-label">Purpose of Visit<span class="required">*</span></label>
+              <label class="form-label">Purpose of Visit <span class="required">*</span></label>
               <q-input
                 v-model="form.purpose"
                 dense
