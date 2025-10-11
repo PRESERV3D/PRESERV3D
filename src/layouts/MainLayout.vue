@@ -41,7 +41,7 @@
           </div>
 
           <!-- Navigation Section -->
-          <div class="navigation-section">
+          <div class="navigation-section" :class="{ 'hovered-lift': isHovered }">
             <q-list padding :class="{ 'text-center': miniState && !isHovered }">
               <q-item
                 v-for="item in navItems"
@@ -574,7 +574,7 @@ let channel = null
 // Base navigation items
 const baseNavItems = [
   { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
-  { name: 'user-management', label: 'User Management', icon: '\\icons\\users.png' },
+  { name: 'user-management', label: 'User Management', icon: '\\icons\\users-m.png' },
   { name: 'data-quality', label: 'Data Quality', icon: '\\icons\\data_quality.png' },
   { name: 'appointment', label: 'Appointment', icon: '\\icons\\appointment.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
@@ -619,14 +619,14 @@ const handleResize = () => {
 // Add a timeout to prevent rapid state changes
 let hoverTimeout = null
 
-const onDrawerMouseEnter = () => {
-  if (hoverTimeout) clearTimeout(hoverTimeout)
-  isHovered.value = true
-  // Only expand if currently in mini state
-  if (miniState.value) {
-    miniState.value = false
-  }
-}
+// const onDrawerMouseEnter = () => {
+//   if (hoverTimeout) clearTimeout(hoverTimeout)
+//   isHovered.value = true
+//   // Only expand if currently in mini state
+//   if (miniState.value) {
+//     miniState.value = false
+//   }
+// }
 
 const onDrawerMouseLeave = () => {
   if (hoverTimeout) clearTimeout(hoverTimeout)
@@ -787,11 +787,20 @@ const clearAdvancedSearch = () => {
 const handleLogout = async () => {
   try {
     if (confirm('Are you sure you want to logout?')) {
+      // Sign out and wait for completion
       await userStore.signOut()
-      router.push('/user/login')
+
+      // Force navigation after successful logout
+      await router.push('/user/login')
+
+      // Force page reload to clear any cached state
+      window.location.reload()
     }
   } catch (error) {
     console.error('Error signing out:', error)
+    // Even on error, try to navigate to login
+    router.push('/user/login')
+    window.location.reload()
   }
 }
 
@@ -1051,6 +1060,17 @@ onBeforeUnmount(() => {
   }
 })
 
+const hasBeenHovered = ref(false)
+const onDrawerMouseEnter = () => {
+  if (hoverTimeout) clearTimeout(hoverTimeout)
+  isHovered.value = true
+  hasBeenHovered.value = true
+  // Only expand if currently in mini state
+  if (miniState.value) {
+    miniState.value = false
+  }
+}
+
 watch(
   () => userProfile.value?.role,
   (role) => {
@@ -1113,6 +1133,13 @@ watch(
 /* When expanded (on hover), sidebar overlays content */
 .sidebar-drawer:hover {
   z-index: 2001 !important; /* Higher z-index when expanded */
+}
+
+/* ========================
+   SIDEBAR HOVER LIFT EFFECT
+======================== */
+.navigation-section.hovered-lift {
+  transform: translateY(-40px) !important;
 }
 
 /* ========================
@@ -1384,7 +1411,7 @@ watch(
 @media (min-width: 600px) and (max-width: 1024px) {
   .q-drawer {
     width: 120px !important;
-    z-index: 2000 !important;
+    /* z-index: 2000 !important; */
   }
 
   .sidebar-drawer .q-drawer__content {
@@ -1548,7 +1575,7 @@ watch(
 .text-center .logout-item {
   justify-content: center !important;
   padding: 8px !important;
-  margin-bottom: 16px !important;
+  margin-bottom: 10px !important;
 }
 .text-center .q-item__section--main {
   display: none !important;

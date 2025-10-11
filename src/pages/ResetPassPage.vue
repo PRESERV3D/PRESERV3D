@@ -5,56 +5,67 @@
       style="background-color: #4d0000; display: flex; justify-content: center; align-items: center"
     >
       <div class="reset-bigbox">
-        <div class="q-my-lg column">
+        <div class="pad q-my-lg column">
           <label class="reset-title q-mb-md">Reset password</label>
-          <div class="q-ml-xl">
-            <div class="row q-gutter-md items-center">
-              <!-- New password input -->
-              <label class="labelNames">New Password: </label>
-              <q-input
-                v-model="newPassword"
-                filled
-                dense
-                :type="showPassword ? 'text' : 'password'"
-                class="text-box-2"
-                style="width: 23rem; margin-left: 2.6rem"
-              >
-                <template v-slot:append>
-                  <q-icon
-                    :name="showPassword ? 'visibility' : 'visibility_off'"
-                    class="cursor-pointer"
-                    @click="showPassword = !showPassword"
-                  />
-                </template>
-              </q-input>
 
-              <!-- Confirm password input -->
-              <label class="labelNames">Confirm Password: </label>
-              <q-input
-                v-model="confirmPassword"
-                filled
-                dense
-                :type="showConfirmPassword ? 'text' : 'password'"
-                class="text-box-2"
-                style="width: 23rem"
-              >
-                <template v-slot:append>
-                  <q-icon
-                    :name="showConfirmPassword ? 'visibility' : 'visibility_off'"
-                    class="cursor-pointer"
-                    @click="showConfirmPassword = !showConfirmPassword"
-                  />
-                </template>
-              </q-input>
-            </div>
+          <div class="row q-gutter-md items-center justify-between">
+            <!-- New password input -->
+            <label class="labelNames">New Password: </label>
+            <q-input
+              v-model="newPassword"
+              filled
+              dense
+              :type="showPassword ? 'text' : 'password'"
+              class="text-box-2"
+              style="width: 23rem"
+            >
+              <template v-slot:append>
+                <q-icon
+                  :name="showPassword ? 'visibility' : 'visibility_off'"
+                  class="cursor-pointer"
+                  @click="showPassword = !showPassword"
+                />
+              </template>
+            </q-input>
           </div>
-          <div class="row justify-center q-mt-lg">
-            <q-btn
-              label="Submit"
-              class="btn-submit"
-              @click="((resetSent = true), resetPassword())"
-              no-caps
-            />
+          <div class="row q-gutter-md q-mt-sm items-center justify-between">
+            <!-- Confirm password input -->
+            <label class="labelNames">Confirm Password: </label>
+            <q-input
+              v-model="confirmPassword"
+              filled
+              dense
+              :type="showConfirmPassword ? 'text' : 'password'"
+              class="text-box-2"
+              style="width: 23rem"
+            >
+              <template v-slot:append>
+                <q-icon
+                  :name="showConfirmPassword ? 'visibility' : 'visibility_off'"
+                  class="cursor-pointer"
+                  @click="showConfirmPassword = !showConfirmPassword"
+                />
+              </template>
+            </q-input>
+          </div>
+          <div class="row items-center q-mt-lg">
+            <div class="col-auto">
+              <router-link to="/user/login" class="labelNames" style="font-size: 12px">
+                Back to Log In
+              </router-link>
+            </div>
+            <div class="col flex justify-center">
+              <div v-if="!isResetLoading">
+                <q-btn
+                  :disable="isResetLoading || !newPassword || !confirmPassword"
+                  label="Submit"
+                  class="btn-submit"
+                  @click="((resetSent = true), resetPassword())"
+                  no-caps
+                />
+              </div>
+              <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
+            </div>
           </div>
 
           <q-dialog v-model="resetSent" persistent>
@@ -88,6 +99,7 @@ const confirmPassword = ref('')
 const message = ref('')
 const resetSent = ref(false)
 const resetSuccess = ref(false)
+const isResetLoading = ref(false)
 
 onMounted(() => {
   const hash = window.location.hash
@@ -101,8 +113,10 @@ onMounted(() => {
 })
 
 function checkPasswordMatch() {
+  isResetLoading.value = true
   if (newPassword.value !== confirmPassword.value) {
     message.value = 'Passwords do not match.'
+    isResetLoading.value = false
     return false
   }
   return true
@@ -110,11 +124,24 @@ function checkPasswordMatch() {
 
 // Supabase will auto-login user if they came via reset email
 async function resetPassword() {
+  isResetLoading.value = true
   if (!checkPasswordMatch()) {
     resetSent.value = true
     return
   }
 
+  // Get current user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    message.value = 'No authenticated user found'
+    resetSuccess.value = false
+    resetSent.value = true
+    return
+  }
+
+  // Update password
   const { error } = await supabase.auth.updateUser({
     password: newPassword.value,
   })
@@ -125,8 +152,34 @@ async function resetPassword() {
   } else {
     message.value = 'Password has been reset.'
     resetSuccess.value = true
+    isResetLoading.value = false
   }
 
+  // Update is_temp_password based on user role
+  const role = user.user_metadata?.role
+
+  if (role === 'admin') {
+    const { error: adminError } = await supabase
+      .from('registered_admins')
+      .update({ is_temp_password: false })
+      .eq('id', user.id)
+
+    if (adminError) {
+      console.error('Error updating admin temp password status:', adminError)
+    }
+  } else if (role === 'visitor') {
+    const { error: visitorError } = await supabase
+      .from('approved_visitors')
+      .update({ is_temp_password: false })
+      .eq('id', user.id)
+
+    if (visitorError) {
+      console.error('Error updating visitor temp password status:', visitorError)
+    }
+  }
+
+  message.value = 'Password has been reset.'
+  resetSuccess.value = true
   resetSent.value = true
 }
 
@@ -140,8 +193,8 @@ function handleDialogConfirm() {
 
 <style scoped>
 .reset-bigbox {
-  width: 38rem;
-  height: 16.5rem;
+  width: auto;
+  height: auto;
   border-radius: 10px;
   background: linear-gradient(
     334deg,
@@ -152,6 +205,7 @@ function handleDialogConfirm() {
     #fffced 105.52%
   );
   box-shadow: -20px 15px 4px 0px rgba(0, 0, 0, 0.45);
+  padding: 1rem;
 }
 
 .reset-title {
@@ -179,5 +233,10 @@ function handleDialogConfirm() {
   width: 17rem;
   padding: 1rem;
   text-align: center;
+}
+
+:deep(.text-box-2 .q-field__control::before),
+:deep(.text-box-2 .q-field__control::after) {
+  display: none;
 }
 </style>
