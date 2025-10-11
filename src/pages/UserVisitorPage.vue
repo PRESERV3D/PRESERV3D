@@ -7,8 +7,8 @@
 
     <q-form @submit.prevent="registerUser">
       <div v-if="step === 1">
-        <div class="column q-gutter-sm">
-          <label class="labelNames">First Name</label>
+        <div class="column q-gutter-sm q-mt-md">
+          <label class="labelNames">First Name <span class="required">*</span></label>
           <q-input
             dense
             v-model="form.first_name"
@@ -16,7 +16,7 @@
             :rules="[(val) => !!val || 'Please enter your first name.']"
             class="text-box"
           />
-          <label class="labelNames">Last Name</label>
+          <label class="labelNames">Last Name <span class="required">*</span></label>
           <q-input
             dense
             v-model="form.last_name"
@@ -24,7 +24,7 @@
             :rules="[(val) => !!val || 'Please enter your last name.']"
             class="text-box"
           />
-          <label class="labelNames">Email</label>
+          <label class="labelNames">Email <span class="required">*</span></label>
           <q-input
             dense
             v-model="form.email"
@@ -37,7 +37,7 @@
             ]"
             class="text-box"
           />
-          <label class="labelNames">Contact Number</label>
+          <label class="labelNames">Contact Number <span class="required">*</span></label>
           <q-input
             dense
             v-model="form.contact"
@@ -49,9 +49,14 @@
             <q-btn class="visitor-next-btn" push @click="validateStepOne">
               <img src="/icons/visitor-arrow-next.png" alt="next" class="btn-icon" />
             </q-btn>
+            <div class="q-mt-md">
+              <router-link to="/user/register-option" class="signup-options q-mt-sm">
+                Back to Sign Up Options
+              </router-link>
+            </div>
           </div>
 
-          <div class="column items-center q-mb-xs">
+          <div class="column items-center">
             <label class="already">
               Already have an account?
               <router-link to="/user/login" name="user-login" class="signup-login-link"
@@ -66,7 +71,7 @@
         <div class="column q-mt-md q-gutter-sm">
           <div class="row q-mt-lg">
             <div class="col q-gutter-sm">
-              <label class="labelNames">Institution</label>
+              <label class="labelNames">Institution <span class="required">*</span></label>
               <q-input
                 dense
                 v-model="form.institution"
@@ -76,9 +81,8 @@
               />
             </div>
             <div class="col q-ml-md q-gutter-sm">
-              <label class="labelNames">Purpose</label>
+              <label class="labelNames">Purpose <span class="required">*</span></label>
               <q-input
-                filled
                 dense
                 v-model="form.purpose"
                 lazy-rules
@@ -89,7 +93,9 @@
           </div>
 
           <div class="row q-my-md items-center justify-between">
-            <label class="labelNames">Request/Referral Letter:</label>
+            <label class="labelNames"
+              >Request/Referral Letter: <span class="required">*</span></label
+            >
 
             <div class="column q-gutter-sm">
               <q-btn
@@ -129,7 +135,7 @@
           <!--Date Validation Field-->
           <div class="row q-mt-lg">
             <div class="col q-gutter-sm">
-              <label class="labelNames">Start Date</label>
+              <label class="labelNames">Start Date <span class="required">*</span></label>
               <q-input
                 dense
                 v-model="form.start_date"
@@ -162,7 +168,7 @@
               </q-input>
             </div>
             <div class="col q-ml-md q-gutter-sm">
-              <label class="labelNames">End Date</label>
+              <label class="labelNames">End Date <span class="required">*</span></label>
               <q-input
                 dense
                 v-model="form.end_date"
