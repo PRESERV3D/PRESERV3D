@@ -7,7 +7,6 @@
       <div class="reset-bigbox">
         <div class="pad q-my-lg column">
           <label class="reset-title q-mb-md">Create New Password</label>
-
           <div class="row q-gutter-md items-center justify-between">
             <!-- New password input -->
             <label class="labelNames">New Password: <span class="required">*</span></label>
@@ -28,7 +27,7 @@
               </template>
             </q-input>
           </div>
-          <div class="row q-gutter-md q-mt-sm items-center justify-between">
+          <div class="row q-gutter-md q-mt-sm q-mb-md items-center justify-between">
             <!-- Confirm password input -->
             <label class="labelNames">Confirm Password: <span class="required">*</span></label>
             <q-input
@@ -48,23 +47,22 @@
               </template>
             </q-input>
           </div>
-          <div class="row items-center q-mt-lg">
-            <div class="col-auto">
+
+          <div class="submit-center">
+            <div v-if="!isResetLoading">
+              <q-btn
+                :disable="isResetLoading || !newPassword || !confirmPassword"
+                label="Submit"
+                class="btn-submit"
+                @click="((resetSent = true), resetPassword())"
+                no-caps
+              />
+            </div>
+            <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
+            <div class="q-mt-sm">
               <router-link to="/user/login" class="labelNames" style="font-size: 12px">
                 Back to Log In
               </router-link>
-            </div>
-            <div class="col flex justify-center">
-              <div v-if="!isResetLoading">
-                <q-btn
-                  :disable="isResetLoading || !newPassword || !confirmPassword"
-                  label="Submit"
-                  class="btn-submit"
-                  @click="((resetSent = true), resetPassword())"
-                  no-caps
-                />
-              </div>
-              <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
             </div>
           </div>
 
