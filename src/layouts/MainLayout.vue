@@ -1461,7 +1461,7 @@ watch(
 @media (max-width: 599px) {
   .search-toolbar {
     padding: 12px 8px !important;
-    width: calc(100% - 120px) !important;
+    width: calc(100% - 40px) !important;
     margin-left: 10px !important;
     position: relative !important;
     top: auto !important;
