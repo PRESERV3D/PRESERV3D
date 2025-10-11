@@ -293,7 +293,6 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
-import { supabase } from 'boot/supabase'
 import { useUserStore } from 'src/stores/user'
 
 const userStore = useUserStore()
@@ -349,95 +348,51 @@ const visitorData = reactive({
 
 onMounted(async () => {
   try {
-    await userStore.fetchProfile()
+    // Ensure profile is loaded (if not already)
+    if (!userStore.profile) {
+      await userStore.fetchProfile()
+    }
+
+    const profile = userStore.profile
     console.log('UserType:', userType.value)
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-    if (userError) {
-      console.error('Auth error:', userError)
-      return
-    }
-    if (!user || !user.email) {
-      console.warn('No authenticated user found')
+    if (!profile) {
+      console.warn('No profile data found')
       return
     }
 
-    let data, error
-
+    // Use data already loaded in the store - no additional queries needed!
     if (userType.value === 'student') {
-      ;({ data, error } = await supabase
-        .from('registered_users')
-        .select('*')
-        .eq('email', user.email)
-        .single())
-
-      if (error) throw error
-      if (data) {
-        studentData.firstName = data.first_name
-        studentData.lastName = data.last_name
-        studentData.email = data.email
-        studentData.college = data.college
-        studentData.department = data.department
-        studentData.yearSection = data.year_section
-        studentData.isAlumni = !!data.is_alumni
-      }
+      studentData.firstName = profile.first_name || ''
+      studentData.lastName = profile.last_name || ''
+      studentData.email = profile.email || ''
+      studentData.college = profile.college || ''
+      studentData.department = profile.department || ''
+      studentData.yearSection = profile.year_section || ''
+      studentData.isAlumni = !!profile.is_alumni
     } else if (userType.value === 'faculty') {
-      ;({ data, error } = await supabase
-        .from('registered_faculty')
-        .select('*')
-        .eq('email', user.email)
-        .single())
-
-      if (error) throw error
-      if (data) {
-        facultyData.firstName = data.first_name
-        facultyData.lastName = data.last_name
-        facultyData.email = data.email
-        facultyData.college = data.college
-        facultyData.department = data.department
-      }
-    } else if (userType.value === 'admin') {
-      ;({ data, error } = await supabase
-        .from('registered_admins')
-        .select('*')
-        .eq('email', user.email)
-        .single())
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Admin fetch error:', error)
-        throw error
-      }
-      if (data) {
-        adminData.firstName = data.first_name
-        adminData.lastName = data.last_name
-        adminData.email = data.email
-        adminData.isSuperAdmin = !!data.is_super_admin
-        console.log('Admin data loaded:', data) // Debug log
-      }
+      facultyData.firstName = profile.first_name || ''
+      facultyData.lastName = profile.last_name || ''
+      facultyData.email = profile.email || ''
+      facultyData.college = profile.college || ''
+      facultyData.department = profile.department || ''
+    } else if (userType.value === 'admin' || userType.value === 'super admin') {
+      adminData.firstName = profile.first_name || ''
+      adminData.lastName = profile.last_name || ''
+      adminData.email = profile.email || ''
+      adminData.isSuperAdmin = !!profile.is_super_admin
     } else if (userType.value === 'visitor') {
-      ;({ data, error } = await supabase
-        .from('approved_visitors')
-        .select('*')
-        .eq('email', user.email)
-        .single())
-
-      if (error) throw error
-      if (data) {
-        visitorData.firstName = data.first_name
-        visitorData.lastName = data.last_name
-        visitorData.contactNumber = data.contact
-        visitorData.email = data.email
-        visitorData.institution = data.institution
-        visitorData.purpose = data.purpose
-        visitorData.startDate = data.start_date
-        visitorData.endDate = data.end_date
-      }
+      visitorData.firstName = profile.first_name || ''
+      visitorData.lastName = profile.last_name || ''
+      visitorData.contactNumber = profile.contact || ''
+      visitorData.email = profile.email || ''
+      visitorData.institution = profile.institution || ''
+      visitorData.purpose = profile.purpose || ''
+      visitorData.startDate = profile.start_date || ''
+      visitorData.endDate = profile.end_date || ''
     }
   } catch (error) {
-    console.error('Error fetching profile:', error)
+    console.error('Error loading profile:', error)
     $q.notify({
       type: 'negative',
       message: 'Failed to load profile information',
@@ -582,29 +537,29 @@ const changeProfilePicture = () => {
   width: 100%;
 }
 
-.edit-input >>> .q-field__control {
+.edit-input :deep(.q-field__control) {
   background-color: #ffffff !important;
   border: 2px solid #e0e0e0 !important;
   border-radius: 4px !important;
   min-height: 44px !important;
 }
 
-.edit-input >>> .q-field__control:hover {
+.edit-input :deep(.q-field__control:hover) {
   border-color: #1976d2 !important;
 }
 
-.edit-input >>> .q-field__control:focus-within {
+.edit-input :deep(.q-field__control:focus-within) {
   border-color: #1976d2 !important;
   box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1) !important;
 }
 
-.edit-input >>> .q-field__native {
+.edit-input :deep(.q-field__native) {
   padding: 4px !important;
   color: #333 !important;
   font-size: 14px !important;
 }
 
-.edit-input >>> textarea.q-field__native {
+.edit-input :deep(textarea.q-field__native) {
   min-height: 80px !important;
   padding: 4px !important;
   resize: none !important;
