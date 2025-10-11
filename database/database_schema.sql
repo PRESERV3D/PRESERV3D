@@ -40,6 +40,8 @@ CREATE TABLE public.approved_visitors (
   account_status text DEFAULT 'Active'::text CHECK (account_status = ANY (ARRAY['Active'::text, 'Inactive'::text, 'Expired'::text])),
   institution text,
   purpose text,
+  is_temp_password boolean,
+  contact text,
   CONSTRAINT approved_visitors_pkey PRIMARY KEY (id),
   CONSTRAINT approved_visitors_registration_id_fkey FOREIGN KEY (registration_id) REFERENCES public.registration_visitors(id),
   CONSTRAINT approved_visitors_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
@@ -190,6 +192,7 @@ CREATE TABLE public.registered_admins (
   contact text NOT NULL,
   is_super_admin boolean DEFAULT false,
   account_status text DEFAULT 'Active'::text CHECK (account_status = ANY (ARRAY['Active'::text, 'Inactive'::text])),
+  is_temp_password boolean,
   CONSTRAINT registered_admins_pkey PRIMARY KEY (id),
   CONSTRAINT registered_admins_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
