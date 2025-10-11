@@ -224,6 +224,7 @@ async function registerAdmin() {
           email,
           contact,
           is_super_admin: false, // Regular admin registration cannot create super admins
+          is__temp_password: true,
           created_at: new Date(),
         },
       ])

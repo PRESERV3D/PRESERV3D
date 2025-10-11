@@ -115,6 +115,18 @@ async function resetPassword() {
     return
   }
 
+  // Get current user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    message.value = 'No authenticated user found'
+    resetSuccess.value = false
+    resetSent.value = true
+    return
+  }
+
+  // Update password
   const { error } = await supabase.auth.updateUser({
     password: newPassword.value,
   })
@@ -122,11 +134,35 @@ async function resetPassword() {
   if (error) {
     message.value = error.message
     resetSuccess.value = false
-  } else {
-    message.value = 'Password has been reset.'
-    resetSuccess.value = true
+    resetSent.value = true
+    return
   }
 
+  // Update is_temp_password based on user role
+  const role = user.user_metadata?.role
+
+  if (role === 'admin') {
+    const { error: adminError } = await supabase
+      .from('registered_admins')
+      .update({ is_temp_password: false })
+      .eq('id', user.id)
+
+    if (adminError) {
+      console.error('Error updating admin temp password status:', adminError)
+    }
+  } else if (role === 'visitor') {
+    const { error: visitorError } = await supabase
+      .from('approved_visitors')
+      .update({ is_temp_password: false })
+      .eq('id', user.id)
+
+    if (visitorError) {
+      console.error('Error updating visitor temp password status:', visitorError)
+    }
+  }
+
+  message.value = 'Password has been reset.'
+  resetSuccess.value = true
   resetSent.value = true
 }
 
