@@ -708,7 +708,7 @@ const performSearch = async () => {
   await searchStore.search(query, searchType.value)
   console.log('Search performed:', query, searchType.value)
 
-  search.value = ''
+  // search.value = ''
 }
 
 // Advanced Search functionality
@@ -815,10 +815,10 @@ onMounted(() => {
     }
   }
 
-  // Perform search if there's existing search value
-  if (search.value || searchType.value) {
-    performSearch()
-  }
+  // // Perform search if there's existing search value
+  // if (search.value || searchType.value) {
+  //   performSearch()
+  // }
 })
 
 onUnmounted(() => {
@@ -828,12 +828,26 @@ onUnmounted(() => {
 
 // Watch search bar input and run query
 // do this according to route
-watch(search, async (query) => {
-  if (query === null || query === undefined) {
-    searchStore.clear()
-    return
-  }
-})
+// watch(search, async (query) => {
+//   if (query === null || query === undefined) {
+//     searchStore.clear()
+//     return
+//   }
+// })
+
+watch(
+  () => route.name,
+  (newRoute, oldRoute) => {
+    // Only clear if leaving from artifacts/documents
+    if (['artifacts', 'documents'].includes(oldRoute)) {
+      // Only clear if there’s an actual query value
+      if (search.value && search.value.trim() !== '') {
+        search.value = ''
+        searchStore.clearAll()
+      }
+    }
+  },
+)
 
 // Watch for route changes to update active item
 watch(
