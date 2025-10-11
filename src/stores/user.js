@@ -138,29 +138,45 @@ export const useUserStore = defineStore('user', {
 
     async signOut() {
       try {
+        console.log('🔒 Starting sign out process...')
+
         // Clear local state first
         this.session = null
         this.profile = null
 
-        // Sign out from Supabase with proper scope
-        const { error } = await supabase.auth.signOut({ scope: 'local' })
+        // Sign out from Supabase (use 'global' to clear all sessions across devices)
+        const { error } = await supabase.auth.signOut({ scope: 'global' })
 
         if (error) {
-          console.error('Error during sign out:', error)
-          throw error
+          console.error('Error during Supabase sign out:', error)
+          // Don't throw - continue with cleanup
         }
 
-        // Additional cleanup - clear any cached session data
-        localStorage.removeItem('supabase.auth.token')
+        // Clear all Supabase auth storage
+        const authKeys = Object.keys(localStorage).filter(
+          (key) => key.startsWith('sb-') || key.includes('supabase'),
+        )
+        authKeys.forEach((key) => localStorage.removeItem(key))
+
+        // Clear session storage
         sessionStorage.clear()
 
+        // Clear any remaining auth tokens
+        localStorage.removeItem('supabase.auth.token')
+
+        console.log('✅ Sign out completed successfully')
         return true
       } catch (error) {
         console.error('Sign out failed:', error)
         // Force clear even on error
         this.session = null
         this.profile = null
-        throw error
+
+        // Clear storage even on error
+        localStorage.clear()
+        sessionStorage.clear()
+
+        return true // Return true to allow navigation
       }
     },
   },

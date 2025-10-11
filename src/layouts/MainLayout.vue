@@ -41,7 +41,14 @@
           </div>
 
           <!-- Navigation Section -->
-          <div class="navigation-section" :class="{ 'hovered-lift': isHovered, 'compact-height': isShortScreen, 'very-compact-height': isVeryShortScreen }">
+          <div
+            class="navigation-section"
+            :class="{
+              'hovered-lift': isHovered,
+              'compact-height': isShortScreen,
+              'very-compact-height': isVeryShortScreen,
+            }"
+          >
             <q-list padding :class="{ 'text-center': miniState && !isHovered }">
               <q-item
                 v-for="item in navItems"
@@ -160,7 +167,7 @@
             <div v-else class="search-container-hidden"></div>
 
             <!-- Spacer to push actions to the right -->
-            <div class="toolbar-spacer" style="flex: 1;"></div>
+            <div class="toolbar-spacer" style="flex: 1"></div>
 
             <!-- Notifications and user profile -->
             <div class="toolbar-actions" :class="{ 'no-search': !hasSearchBar }">
@@ -792,20 +799,54 @@ const clearAdvancedSearch = () => {
 const handleLogout = async () => {
   try {
     if (confirm('Are you sure you want to logout?')) {
+      console.log('🔒 User confirmed logout')
+
+      // Show loading indicator
+      $q.loading.show({
+        message: 'Logging out...',
+      })
+
       // Sign out and wait for completion
       await userStore.signOut()
 
-      // Force navigation after successful logout
-      await router.push('/user/login')
+      // Hide loading
+      $q.loading.hide()
 
-      // Force page reload to clear any cached state
-      window.location.reload()
+      console.log('✅ Logout successful, redirecting...')
+
+      // Determine which login page to redirect to based on current location
+      const redirectPath = router.currentRoute.value.path.startsWith('/admin')
+        ? '/admin/landing'
+        : '/landing'
+
+      // Clear router history and navigate
+      await router.replace(redirectPath)
+
+      // Force page reload to clear any cached state and reset Vue app
+      setTimeout(() => {
+        window.location.href = redirectPath
+      }, 100)
     }
   } catch (error) {
-    console.error('Error signing out:', error)
-    // Even on error, try to navigate to login
-    router.push('/user/login')
-    window.location.reload()
+    console.error('❌ Error during logout:', error)
+    $q.loading.hide()
+
+    // Show error notification
+    $q.notify({
+      type: 'warning',
+      message: 'Logout completed with errors',
+      caption: 'Clearing session and redirecting...',
+    })
+
+    // Even on error, force logout by clearing everything and redirecting
+    localStorage.clear()
+    sessionStorage.clear()
+
+    const redirectPath = router.currentRoute.value.path.startsWith('/admin')
+      ? '/admin/landing'
+      : '/landing'
+
+    window.location.href = redirectPath
   }
 }
 
@@ -1325,8 +1366,6 @@ watch(
   margin-top: 16px;
 }
 
-
-
 /* ========================
    HEIGHT-BASED RESPONSIVE ADJUSTMENTS
 ======================== */
@@ -1463,14 +1502,14 @@ watch(
   /*  .toolbar-actions {
      gap: 120px;
    } */
-   .user-profile-btn:not(.compact) {
-     width: 210px !important;
-     min-width: 210px !important;
-     max-width: 210px !important;
-   }
- }
+  .user-profile-btn:not(.compact) {
+    width: 210px !important;
+    min-width: 210px !important;
+    max-width: 210px !important;
+  }
+}
 
- /* Medium-large screens */
+/* Medium-large screens */
 @media (min-width: 1300px) and (max-width: 1439px) {
   .search-container {
     width: 750px !important;
@@ -1501,14 +1540,14 @@ watch(
      width: auto;
    } */
 
-   .user-profile-btn:not(.compact) {
-     width: 180px !important;
-     min-width: 180px !important;
-     max-width: 180px !important;
-   }
- }
+  .user-profile-btn:not(.compact) {
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
+  }
+}
 
- /* Compact screens  */
+/* Compact screens  */
 @media (min-width: 1050px) and (max-width: 1199px) {
   .search-container {
     width: 640px !important;
@@ -1614,11 +1653,11 @@ watch(
     display: none !important;
   }
 
-  /* Ensure search icon stays visible */  =
-.search-input :deep(.q-icon[name="search"]) {
-  display: block !important;
-  margin: 0 8px !important;
-}
+  /* Ensure search icon stays visible */
+  .search-input :deep(.q-icon[name='search']) {
+    display: block !important;
+    margin: 0 8px !important;
+  }
 
   .search-input :deep(.q-field__prepend) {
     padding-left: 8px !important;
@@ -1681,7 +1720,7 @@ watch(
     font-size: 21px !important;
   }
 
-  .search-input :deep(.q-icon[name="search"]) {
+  .search-input :deep(.q-icon[name='search']) {
     margin: 0 4px !important;
   }
 
@@ -1997,11 +2036,11 @@ watch(
   display: flex;
   align-items: center;
   /*  transition: all 0.3s ease; */
-    flex-shrink: 0;
-    padding: 4px 12px 4px 8px;
-  }
+  flex-shrink: 0;
+  padding: 4px 12px 4px 8px;
+}
 
-  /* Full profile display */
+/* Full profile display */
 .user-profile-btn:not(.compact) {
   width: 180px;
   min-width: 180px;
@@ -2063,8 +2102,6 @@ watch(
   font-size: 12px !important;
   padding: 4px 8px !important;
 }
-
-
 
 /* ========================
    SEARCH BAR VISIBILITY HANDLING
