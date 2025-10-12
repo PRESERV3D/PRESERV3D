@@ -908,9 +908,38 @@ async function processFileWithNLP(file, fileName) {
   formData.append('file', file)
   formData.append('filename', fileName)
 
-  return await axios.post(getNlpEndpoint('/process-text'), formData, {
-    signal: nlpAbortController?.signal,
-  })
+  const nlpUrl = getNlpEndpoint('/process-text')
+  console.log('[DocumentsPage] Calling NLP endpoint:', nlpUrl, 'filename:', fileName)
+
+  // Try to log FormData entries (note: file entries will show File objects)
+  try {
+    for (const entry of formData.entries()) {
+      // entry is [key, value]
+      const key = entry[0]
+      const val = entry[1]
+      // For File objects, log the name; otherwise log the value directly
+      console.log('[DocumentsPage] FormData:', key, val && val.name ? val.name : val)
+    }
+  } catch (err) {
+    console.warn('[DocumentsPage] Could not enumerate FormData entries:', err)
+  }
+
+  try {
+    const resp = await axios.post(nlpUrl, formData, {
+      signal: nlpAbortController?.signal,
+      // Do NOT set Content-Type here; let the browser set the proper multipart boundary
+    })
+    console.log('[DocumentsPage] NLP response status:', resp.status)
+    console.log('[DocumentsPage] NLP response data:', resp.data)
+    return resp
+  } catch (err) {
+    console.error(
+      '[DocumentsPage] NLP request failed:',
+      err?.response?.status,
+      err?.response?.data ?? err.message,
+    )
+    throw err
+  }
 }
 
 // async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData) {
