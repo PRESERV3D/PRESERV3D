@@ -29,6 +29,11 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'upload',
+        component: () => import('pages/UploadPage.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'admindash',
         name: 'admin-home',
         component: () => import('pages/AdminDashboard.vue'),

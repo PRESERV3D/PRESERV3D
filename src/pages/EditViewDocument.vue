@@ -1110,10 +1110,7 @@ async function fetchRelatedLinks(title, author, categories, date) {
 
     loadingRelatedLinks.value = true
 
-    const endpoint = getNlpEndpoint('/related-links')
-    console.log('NLP endpoint being called:', endpoint)
-
-    const { data } = await axios.get(endpoint, {
+    const { data } = await axios.get(getNlpEndpoint('/related-links'), {
       params: {
         title,
         author,
