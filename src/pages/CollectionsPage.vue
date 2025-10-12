@@ -9,8 +9,6 @@
         </div>
     </div>
 
-
-
       <div class="artifact-btn">
         <q-btn-dropdown
           outline
@@ -46,7 +44,6 @@
           unelevated
         />
       </div>
-
 
     <!-- Loading Spinner -->
     <div v-if="isLoading" class="text-center q-my-md">
