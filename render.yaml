@@ -2,8 +2,9 @@ services:
   - type: web
     name: preserv3d-nlp-service
     env: python
-    region: singapore
+    region: oregon
     plan: free
+    rootDir: services
     buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm
     startCommand: uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
     envVars:
