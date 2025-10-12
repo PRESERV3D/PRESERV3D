@@ -23,7 +23,14 @@ app = FastAPI()
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:9000", "https://preserv3d.vercel.app"],
+    allow_origins=[
+        "http://localhost:9000",
+        "https://localhost:9000",
+        "https://preserv3d.vercel.app",
+        "https://*.vercel.app",  # All Vercel preview deployments
+        "https://*.onrender.com",  # Render domains
+        os.getenv("FRONTEND_URL", "")  # Environment variable for custom frontend URL
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

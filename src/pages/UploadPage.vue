@@ -27,6 +27,7 @@ import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import { supabase } from 'boot/supabase'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
+import { getNlpEndpoint } from 'src/utils/nlpConfig'
 
 const selectedFile = ref(null)
 const dialog = ref(false)
@@ -71,7 +72,7 @@ const handleUpload = async () => {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await axios.post('http://localhost:8000/process-text', formData, {
+      const response = await axios.post(getNlpEndpoint('/process-text'), formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
 
