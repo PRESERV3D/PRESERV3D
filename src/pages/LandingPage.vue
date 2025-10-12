@@ -345,38 +345,6 @@
   }
 }
 
-/* Medium height screens - between default and short */
-@media (min-height: 43.75rem) and (max-height: 53.9rem) {
-  .trophy-center {
-    width: 38rem;
-    bottom: -16rem;
-  }
-
-  .trophy-left {
-    width: 18rem;
-    bottom: -16rem;
-  }
-
-  .trophy-right {
-    width: 21rem;
-    bottom: -16rem;
-  }
-
-  .bottom-shadow-overlay {
-    height: 20rem;
-  }
-
-  .main-tile {
-    font-size: 94px;
-    bottom: 1.5rem;
-  }
-  .hero-title {
-    font-size: 32px;
-  }
-  .hero-subtitle {
-    font-size: 12px;
-  }
-}
 
 /* Shorter screens - keep trophies closer */
 @media (max-height: 43.75rem) {
