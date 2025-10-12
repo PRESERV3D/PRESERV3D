@@ -86,6 +86,7 @@
   background-position: center center;
   background-repeat: no-repeat;
   min-height: 100vh;
+  background-attachment: fixed
 }
 
 .logo-img {
@@ -315,6 +316,104 @@
 
   .main-tile {
     bottom: 2rem;
+  }
+}
+
+/* ========================
+ HEIGHT ADJUSTMENTS
+======================== */
+
+@media (min-height: 54rem) {
+  .trophy-center {
+    bottom: -24.45rem;
+  }
+
+  .trophy-left {
+    bottom: -24rem;
+  }
+
+  .trophy-right {
+    bottom: -23rem;
+  }
+
+  .bottom-shadow-overlay {
+    height: 29rem;
+  }
+
+  .main-tile {
+    bottom: 5rem;
+  }
+}
+
+/* Medium height screens - between default and short */
+@media (min-height: 43.75rem) and (max-height: 53.9rem) {
+  .trophy-center {
+    width: 38rem;
+    bottom: -16rem;
+  }
+
+  .trophy-left {
+    width: 18rem;
+    bottom: -16rem;
+  }
+
+  .trophy-right {
+    width: 21rem;
+    bottom: -16rem;
+  }
+
+  .bottom-shadow-overlay {
+    height: 20rem;
+  }
+
+  .main-tile {
+    bottom: 1.5rem;
+  }
+}
+
+/* Shorter screens - keep trophies closer */
+@media (max-height: 43.75rem) {
+  .trophy-center {
+    bottom: -14rem;
+  }
+
+  .trophy-left {
+    bottom: -14rem;
+  }
+
+  .trophy-right {
+    bottom: -14rem;
+  }
+
+  .bottom-shadow-overlay {
+    height: 18rem;
+  }
+
+  .main-tile {
+    bottom: 0.5rem;
+  }
+}
+
+/* Very short heights */
+@media (max-height: 31.25rem) {
+  .trophy-center {
+    bottom: -10rem;
+  }
+
+  .trophy-left {
+    bottom: -10rem;
+  }
+
+  .trophy-right {
+    bottom: -10rem;
+  }
+
+  .bottom-shadow-overlay {
+    height: 14rem;
+  }
+
+  .main-tile {
+    bottom: 0.3rem;
   }
 }
 </style>
