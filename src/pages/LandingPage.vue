@@ -367,21 +367,31 @@
   }
 
   .main-tile {
+    font-size: 94px;
     bottom: 1.5rem;
+  }
+  .hero-title {
+    font-size: 32px;
+  }
+  .hero-subtitle {
+    font-size: 12px;
   }
 }
 
 /* Shorter screens - keep trophies closer */
 @media (max-height: 43.75rem) {
   .trophy-center {
+    width: 36rem;
     bottom: -14rem;
   }
 
   .trophy-left {
+    width: 16rem;
     bottom: -14rem;
   }
 
   .trophy-right {
+    width: 19rem;
     bottom: -14rem;
   }
 
@@ -390,7 +400,15 @@
   }
 
   .main-tile {
+    font-size: 92px;
     bottom: 0.5rem;
+  }
+
+  .hero-title {
+    font-size: 30px;
+  }
+  .hero-subtitle {
+    font-size: 10px;
   }
 }
 
