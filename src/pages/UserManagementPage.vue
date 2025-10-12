@@ -1055,12 +1055,25 @@
     </q-tab-panels>
 
     <!-- Confirmation Dialog for Approve/Reject -->
-    <q-dialog v-model="showConfirmDialog">
+    <q-dialog v-model="showConfirmDialog" persistent>
       <q-card class="conf-box">
-        <q-card-section class="sub-font" style="color: black">
+        <q-card-section v-if="!isProcessingRegistration" class="sub-font" style="color: black">
           Are you sure you want to set this referral letter as {{ confirmAction }}?
         </q-card-section>
-        <q-card-actions align="center">
+        <q-card-section v-else class="column items-center q-gutter-md" style="min-height: 100px">
+          <q-spinner-dots color="primary" size="50px" />
+          <div class="sub-font-2" style="color: #560505">
+            {{ confirmAction === 'Approved' ? 'Approving visitor...' : 'Rejecting visitor...' }}
+          </div>
+          <div class="sub-font-2" style="color: #666; font-size: 12px">
+            {{
+              confirmAction === 'Approved'
+                ? 'Creating account and sending emails...'
+                : 'Sending notification...'
+            }}
+          </div>
+        </q-card-section>
+        <q-card-actions v-if="!isProcessingRegistration" align="center">
           <q-btn flat label="Yes" class="btn-save" @click="confirmRegistrationAction" />
           <q-btn flat label="No" class="sub-font-2" style="color: #000000" v-close-popup no-caps />
         </q-card-actions>
@@ -1280,6 +1293,7 @@ const showDeleteDialog = ref(false)
 const showSuccessDialog = ref(false)
 const showExtendDateDialog = ref(false)
 const showConfirmDialog = ref(false)
+const isProcessingRegistration = ref(false)
 const successTitle = ref('')
 const successMessage = ref('')
 
@@ -1907,6 +1921,8 @@ async function confirmRegistrationAction() {
   const adminName =
     `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
 
+  isProcessingRegistration.value = true
+
   try {
     // Update registration_visitors status
     const { error: updateError } = await supabase
@@ -2098,6 +2114,8 @@ async function confirmRegistrationAction() {
       message: 'Failed to process registration',
       caption: error.message,
     })
+  } finally {
+    isProcessingRegistration.value = false
   }
 }
 </script>
