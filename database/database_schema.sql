@@ -28,23 +28,18 @@ CREATE TABLE public.appointment_booking (
   CONSTRAINT appointment_booking_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.approved_visitors (
-  id uuid NOT NULL DEFAULT auth.uid(),
+  user_id uuid NOT NULL DEFAULT auth.uid(),
   registration_id uuid NOT NULL,
   approved_at timestamp with time zone DEFAULT now(),
   approved_by text,
   email text,
-  first_name text,
-  last_name text,
   start_date date,
   end_date date,
-  account_status text DEFAULT ''::text,
-  institution text,
-  purpose text,
   is_temp_password boolean,
-  contact text,
-  CONSTRAINT approved_visitors_pkey PRIMARY KEY (id),
+  approval_id uuid NOT NULL,
+  CONSTRAINT approved_visitors_pkey PRIMARY KEY (approval_id),
   CONSTRAINT approved_visitors_registration_id_fkey FOREIGN KEY (registration_id) REFERENCES public.registration_visitors(id),
-  CONSTRAINT approved_visitors_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+  CONSTRAINT approved_visitors_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.artifacts_metadata (
   file_name text,

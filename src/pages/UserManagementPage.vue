@@ -1416,12 +1416,6 @@ onMounted(async () => {
 async function fetchAllUsers() {
   loading.value = true
   try {
-    // Update account statuses before fetching
-    const { error: rpcError } = await supabase.rpc('update_account_status')
-    if (rpcError) {
-      console.error('RPC update_account_status error:', rpcError)
-    }
-
     // Fetch admins with email confirmation status from auth.users
     const { data: adminData, error: adminError } = await supabase
       .from('registered_admins')
@@ -1495,21 +1489,40 @@ async function fetchAllUsers() {
       faculty.value = []
     }
 
-    // Fetch visitors with last_sign_in_at from auth.users
+    // Fetch visitors using the approved_visitors_status view (includes account_status calculation)
     const { data: visitorData, error: visitorError } = await supabase
-      .from('approved_visitors')
-      .select('*')
-      .order('approved_at', { ascending: false })
+      .from('approved_visitors_status')
+      .select(
+        `
+        *,
+        registration:registration_visitors(
+          first_name,
+          last_name,
+          contact,
+          institution,
+          purpose
+        )
+      `,
+      )
+      .order('start_date', { ascending: false })
 
     if (visitorError) throw visitorError
 
-    // Add last_sign_in_at to visitors
+    // Add last_sign_in_at and flatten registration data
     if (visitorData && visitorData.length > 0) {
       const visitorsWithLogin = await Promise.all(
         visitorData.map(async (visitor) => {
-          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(visitor.id)
+          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(visitor.user_id)
+
           return {
             ...visitor,
+            id: visitor.user_id, // For compatibility with existing code
+            first_name: visitor.registration?.first_name,
+            last_name: visitor.registration?.last_name,
+            contact: visitor.registration?.contact,
+            institution: visitor.registration?.institution,
+            purpose: visitor.registration?.purpose,
+            // account_status is already calculated by the view
             last_login: authUser?.user?.last_sign_in_at || null,
           }
         }),
@@ -1827,26 +1840,14 @@ async function updateVisitorDates() {
   updatingDates.value = true
 
   try {
-    // Calculate new status based on dates
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const endDate = new Date(visitorDates.value.end_date)
-    endDate.setHours(0, 0, 0, 0)
-
-    let newStatus = 'Active'
-    if (endDate < today) {
-      newStatus = 'Expired'
-    }
-
-    // Update the approved_visitors table
+    // Update the approved_visitors table (account_status is calculated by the view)
     const { error: updateError } = await supabase
       .from('approved_visitors')
       .update({
         start_date: visitorDates.value.start_date,
         end_date: visitorDates.value.end_date,
-        account_status: newStatus,
       })
-      .eq('id', selectedVisitor.value.id)
+      .eq('user_id', selectedVisitor.value.id)
 
     if (updateError) throw updateError
 
@@ -1861,12 +1862,7 @@ async function updateVisitorDates() {
         .eq('id', selectedVisitor.value.registration_id)
     }
 
-    // Try to update account status via RPC (if function exists)
-    try {
-      await supabase.rpc('update_account_status')
-    } catch {
-      console.log('RPC function not available, status updated manually')
-    }
+    // Account status is automatically updated by the approved_visitors_status view
 
     $q.notify({
       type: 'positive',
@@ -1948,21 +1944,16 @@ async function confirmRegistrationAction() {
 
       const now = new Date()
 
-      // Insert into approved_visitors table
+      // Insert into approved_visitors table (simplified schema)
       const { error: insertError } = await supabase.from('approved_visitors').insert([
         {
-          id: authData.user.id,
+          user_id: authData.user.id,
           registration_id: row.id,
           approved_at: now,
           approved_by: adminName,
           email: row.email,
-          first_name: row.first_name,
-          last_name: row.last_name,
-          institution: row.institution,
-          purpose: row.purpose,
           start_date: row.start_date,
           end_date: row.end_date,
-          account_status: 'Pending Confirmation',
           is_temp_password: true,
         },
       ])
