@@ -8,24 +8,26 @@ export function generateNarration(model) {
 
   // Title + Recipient
   if (model.metadata?.title && model.metadata?.author) {
-    lines.push(`Before us is the "${model.metadata.title}", presented to ${model.metadata.author}.`)
+    lines.push(`Before us is the "${model.metadata.title}", a piece that carries both recognition and pride. It was made possible through the efforts of ${model.metadata.author},  whose name still echoes in our university’s history.`)
   } else if (model.metadata?.title) {
-    lines.push(`Here we see the "${model.metadata.title}", a symbol of recognition and pride.`)
+    lines.push(`Here we see the "${model.metadata.title}", a remarkable entry in the collection that represents the stories and milestones that shaped our community.`)
   } else if (model.metadata?.author) {
     lines.push(
-      `This piece was awarded to ${model.metadata.author}, a leader whose name still echoes in our university’s history.`,
+      `This item is attributed to ${model.metadata.author}, whose name still echoes in our university’s history.`,
     )
+  } else {
+    lines.push(`This piece is part of the university’s collection, representing the stories and achievements that make up our shared history.`)
   }
 
   // Date
   if (artifactYear) {
     if (isRecent) {
       lines.push(
-        `This piece was presented in ${artifactYear}, a more recent addition to our heritage.`,
+        `This piece was presented in ${artifactYear}, it’s one of the more recent additions to our archives, showing how creativity and service continue to grow within the academe.`,
       )
     } else {
       lines.push(
-        `It was awarded in ${artifactYear}, during a time of important milestones for the university.`,
+        `Dating back to ${artifactYear}, it connects us to a time that helped shape the institution’s identity and traditions.`,
       )
     }
   }
@@ -33,7 +35,7 @@ export function generateNarration(model) {
   // Summary
   if (model.metadata?.summary) {
     lines.push(
-      `The artifact tells the story of ${model.metadata.summary}, capturing the spirit of service and leadership that defined that era.`,
+      `It highlights ${model.metadata.summary}, preserving a piece of history that continues to inspire those who come across it. `,
     )
   }
 
@@ -49,6 +51,8 @@ export function generateNarration(model) {
     lines.push(
       `It eventually found its way to us through ${model.donated_by}, preserving its story within these walls.`,
     )
+  } else {
+    lines.push('Ensuring that its story will never be forgotten.')
   }
 
   if (model.date_received && (!model.donated_by || model.donated_by === '[Donor/Lender Name]')) {
