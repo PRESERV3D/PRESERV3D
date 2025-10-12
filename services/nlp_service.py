@@ -173,24 +173,48 @@ def extract_keywords_hf(text, top_n=10):
 
 def summarize_text_hf(text, max_length=200, min_length=50):
     """Generate summary using HF API with fallback"""
-    result = call_hf_api(HF_SUMMARIZER, {
-        "inputs": text[:4000],
-        "parameters": {
-            "max_length": max_length,
-            "min_length": min_length,
-            "do_sample": False
+    # Try HF API with decreasing input sizes to avoid model tokenization/position errors
+    max_input_sizes = [4000, 2000, 1000, 500]
+
+    # Ensure sensible parameter bounds
+    try:
+        if min_length >= max_length:
+            min_length = max(1, max_length - 10)
+    except Exception:
+        min_length = max(1, min_length)
+
+    for size in max_input_sizes:
+        hf_input = text[:size]
+        if not hf_input or not hf_input.strip():
+            continue
+
+        payload = {
+            "inputs": hf_input,
+            "parameters": {
+                "max_length": max_length,
+                "min_length": min_length,
+                "do_sample": False,
+            },
         }
-    })
-    
-    if result and isinstance(result, list) and len(result) > 0:
-        return result[0].get('summary_text', '')
-    
-    # Fallback: Create simple extractive summary
+
+        try:
+            result = call_hf_api(HF_SUMMARIZER, payload)
+        except Exception as e:
+            print("Summarizer call raised an exception:", e)
+            result = None
+
+        if result and isinstance(result, list) and len(result) > 0:
+            # Return the first summary_text if available
+            return result[0].get('summary_text', '')
+
+        # If HF returned an error like index out of range, try again with smaller input
+        print(f"Summarizer attempt with input size {size} returned no result, trying smaller input...")
+
+    # Final fallback: Extractive summary from the start of the document
     print("Using extractive summary fallback")
-    sentences = re.split(r'[.!?]\s+', text[:2000])
-    # Take first 3-5 sentences as summary
+    sentences = re.split(r'[.!?]\s+', text[:1000])
     summary_sentences = sentences[:min(5, len(sentences))]
-    return ' '.join(summary_sentences) + '.'
+    return ' '.join(summary_sentences).strip() + ('.' if summary_sentences else '')
 
 @app.post("/process-text")
 async def process_pdf(
