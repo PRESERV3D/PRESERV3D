@@ -813,6 +813,7 @@ const handleLogout = async () => {
         flat: true,
       },
       persistent: true,
+      class: 'logout-confirmation-dialog',
     })
       .onOk(async () => {
         // User clicked "Logout" - proceed with logout
@@ -2255,5 +2256,53 @@ watch(
   .toolbar-actions.no-search {
     margin-left: 0;
   }
+}
+
+/* ========================
+   LOGOUT CONFIRMATION DIALOG
+======================== */
+.logout-confirmation-dialog .q-card {
+  width: 25rem;
+  height: 14rem;
+  border-radius: 15px !important;
+  background-color: #fbf4d0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+  padding: 1rem;
+}
+
+.logout-confirmation-dialog .q-dialog__title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: #560505;
+}
+
+.logout-confirmation-dialog .q-dialog__message {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: #560505;
+}
+
+.logout-confirmation-dialog .q-btn {
+  min-width: 4rem;
+  height: 2rem;
+  border-radius: 5px;
+  background-color: #880000 !important;
+  color: #fbf4d0 !important;
+  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  padding: 0.25rem 1rem;
+  text-transform: uppercase;
+}
+
+.logout-confirmation-dialog .q-btn:hover {
+  background-color: #6d0000 !important;
 }
 </style>

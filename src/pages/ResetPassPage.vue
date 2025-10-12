@@ -104,8 +104,9 @@ onMounted(() => {
   const params = new URLSearchParams(hash.replace('#', ''))
 
   if (params.get('error_code') === 'otp_expired') {
-    message.value = 'Your password reset link has expired. Please request a new one.'
-    resetSuccess.value = true
+    message.value =
+      'Your password reset link has expired. Please request a new password reset link from the forgot password page.'
+    resetSuccess.value = false
     resetSent.value = true
   }
 })
@@ -113,7 +114,7 @@ onMounted(() => {
 function checkPasswordMatch() {
   isResetLoading.value = true
   if (newPassword.value !== confirmPassword.value) {
-    message.value = 'Passwords do not match.'
+    message.value = 'Passwords do not match. Please ensure both passwords are identical.'
     isResetLoading.value = false
     return false
   }
@@ -124,6 +125,8 @@ function checkPasswordMatch() {
 async function resetPassword() {
   isResetLoading.value = true
   if (!checkPasswordMatch()) {
+    // Use nextTick to ensure message is set before showing dialog
+    await new Promise((resolve) => setTimeout(resolve, 0))
     resetSent.value = true
     return
   }
@@ -133,8 +136,12 @@ async function resetPassword() {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    message.value = 'No authenticated user found'
+    message.value =
+      'Session expired or invalid. Please request a new password reset link from the forgot password page.'
     resetSuccess.value = false
+    isResetLoading.value = false
+    // Use nextTick to ensure message is set before showing dialog
+    await new Promise((resolve) => setTimeout(resolve, 0))
     resetSent.value = true
     return
   }
@@ -145,10 +152,10 @@ async function resetPassword() {
   })
 
   if (error) {
-    message.value = error.message
+    message.value = `Failed to reset password: ${error.message}`
     resetSuccess.value = false
   } else {
-    message.value = 'Password has been reset.'
+    message.value = 'Password reset successful! You can now log in with your new password.'
     resetSuccess.value = true
     isResetLoading.value = false
   }
@@ -176,8 +183,8 @@ async function resetPassword() {
     }
   }
 
-  message.value = 'Password has been reset.'
-  resetSuccess.value = true
+  // Use nextTick to ensure message is set before showing dialog
+  await new Promise((resolve) => setTimeout(resolve, 0))
   resetSent.value = true
 }
 
