@@ -562,12 +562,10 @@ function formatDate(dateStr) {
 const isSpeaking = ref(false)
 let currentUtterance = null
 
-
 const initVoices = () => {
   return new Promise((resolve) => {
     let voices = window.speechSynthesis.getVoices()
     if (voices.length > 0) {
-
       resolve(voices)
     } else {
       window.speechSynthesis.onvoiceschanged = () => {
@@ -602,7 +600,6 @@ const toggleTextToSpeech = async () => {
   currentUtterance.pitch = 1.7
   currentUtterance.volume = 1.0
 
-
   const voices = window.speechSynthesis.getVoices()
 
   const femaleVoicePatterns = [
@@ -614,24 +611,24 @@ const toggleTextToSpeech = async () => {
     'Moira',
     'Tessa',
     'Google UK English Female',
-    'female'
+    'female',
   ]
 
   let selectedVoice = null
   for (const pattern of femaleVoicePatterns) {
-    selectedVoice = voices.find(v =>
-      v.lang.startsWith('en') &&
-      (v.name.toLowerCase().includes(pattern.toLowerCase()) ||
-        v.name.toLowerCase().includes('female'))
+    selectedVoice = voices.find(
+      (v) =>
+        v.lang.startsWith('en') &&
+        (v.name.toLowerCase().includes(pattern.toLowerCase()) ||
+          v.name.toLowerCase().includes('female')),
     )
     if (selectedVoice) break
   }
 
   // Fallback
   if (!selectedVoice) {
-    selectedVoice = voices.find(v =>
-      v.lang.startsWith('en') &&
-      v.name.toLowerCase().includes('female')
+    selectedVoice = voices.find(
+      (v) => v.lang.startsWith('en') && v.name.toLowerCase().includes('female'),
     )
   }
 

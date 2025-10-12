@@ -2,10 +2,10 @@
 
 ## Project Overview
 
-PRESERV3D is a **Quasar + Vue 3 SPA** for managing PUP Library archives. It handles **dual content types**: PDF documents (with NLP-powered metadata extraction) and 3D artifacts (.glb models). The system combines document digitization, 3D visualization, and an appointment booking system for physical visits.
+PRESERV3D is a **Quasar + Vue 3 SPA** for managing PUP Library archives. It handles **dual content types**: PDF documents (with NLP-powered metadata extraction) and 3D artifacts (.glb models). The system combines document digitization, 3D visualization, an appointment booking system, and visitor registration workflow.
 
 **Repository**: PRESERV3D/PRESERV3D on GitHub  
-**Current Branch**: feature/required-fields
+**Tech Stack**: Quasar 2.16 + Vue 3.4 (Options API) + Vite + Supabase PostgreSQL + Cloudflare R2 + Python FastAPI (NLP)
 
 ## Architecture & Tech Stack
 
@@ -14,10 +14,11 @@ PRESERV3D is a **Quasar + Vue 3 SPA** for managing PUP Library archives. It hand
 - **Entry**: `src/App.vue` initializes session tracking via `useUserStore` and `trackAuthChanges()`
 - **Routing**: `src/router/index.js` with Supabase auth guards - checks `requiresAuth` and `allowedRoles` meta
 - **Boot Files** (`src/boot/`): Initialize global plugins before app mounts (order matters in `quasar.config.js`)
-  - `axios.js` - HTTP client configuration
-  - `supabase.js` - Auth client with session persistence
-  - `r2.js` - Cloudflare R2 storage uploads (handles .glb + PDF files)
-  - `model-viewer.js` - Registers `<model-viewer>` custom element for 3D rendering
+  - **Load order**: `['axios', 'supabase', 'r2', 'model-viewer']` - dependencies must load before consumers
+  - `axios.js` - HTTP client configuration, exposes `$axios` and `$api` globally
+  - `supabase.js` - Auth client with session persistence, exposes `$supabase` and `$supabaseAdmin`
+  - `r2.js` - Cloudflare R2 storage uploads, exposes `$r2Upload`, `$getR2Url`, `$getPresignedUrl`
+  - `model-viewer.js` - Registers `<model-viewer>` custom element, exposes `$loadModelViewer` for lazy loading
 - **State**: Pinia stores in `src/stores/` - `user.js` handles multi-table auth (students, faculty, visitors, admins)
 - **Quasar Plugins**: Dialog, Loading, Notify (configured in `quasar.config.js` framework.plugins)
 
@@ -41,16 +42,27 @@ PRESERV3D is a **Quasar + Vue 3 SPA** for managing PUP Library archives. It hand
 ### Database: Supabase PostgreSQL
 
 - **Auth Tables**: `registered_users`, `registered_faculty`, `approved_visitors`, `registered_admins`
-  - All auth tables have `id` UUID that links to `auth.users(id)` 
+  - All auth tables have `id` UUID that links to `auth.users(id)`
   - User type determined by which table contains the user's record
   - `registered_admins.is_super_admin` boolean flag for super admin privileges
+  - `account_status` column: 'Active' / 'Inactive' / 'Expired' (visitors only)
 - **Content**: `documents_metadata`, `artifacts_metadata` (both store JSON metadata + file_url)
   - Both use JSONB `metadata` column for flexible schema
   - `search_text` column for full-text search capabilities
+  - `related_links` JSONB column for web scraper results
+- **Visitor Registration Flow**: `registration_visitors` → `approved_visitors` (admin approval required)
+  - Registration includes: letter upload (R2), start/end dates, institution, purpose
+  - Admins can approve/reject via `UserManagementPage.vue`
+  - Notifications sent to all admins on new registration (`notifications` table)
 - **Quality Control**: `inconsistencies` table tracks metadata validation issues with status: "Open" / "Resolved"
-- **User Profile Resolution**: `useUserStore.fetchProfile()` queries all auth tables **sequentially** (students → faculty → admins → visitors)
+- **Collections**: `collections` + `collection_items` for organizing documents/artifacts by user
+  - `is_default` and `is_locked` flags for system collections
+- **User Profile Resolution**: `useUserStore.fetchProfile()` queries all auth tables **in parallel** (Promise.all)
+  - Priority order: students → faculty → admins → visitors
   - Sets `profile.user_type` based on which table matches: 'student', 'faculty', 'admin', 'super admin', 'visitor'
   - Always sets `profile.role` to either 'admin' or 'user' (for routing logic)
+- **Audit Trail**: `item_history` table tracks all changes to documents/artifacts (who, when, what changed)
+- **Activity Tracking**: `user_activity_log` and `logins` tables for analytics
 
 ## Development Workflows
 
@@ -120,7 +132,7 @@ $q.loading.hide()
   :rules="[
     (val) => !!val || 'Field is required',
     (val) => /regex/.test(val) || 'Invalid format',
-    asyncValidationFunction  // Can use async functions
+    asyncValidationFunction, // Can use async functions
   ]"
 />
 ```
@@ -131,7 +143,7 @@ $q.loading.hide()
 viteVuePluginOptions: {
   template: {
     compilerOptions: {
-      isCustomElement: (tag) => tag === 'model-viewer'  // Required for 3D viewer
+      isCustomElement: (tag) => tag === 'model-viewer' // Required for 3D viewer
     }
   }
 }
@@ -141,18 +153,29 @@ viteVuePluginOptions: {
 
 Router guards check `session.user.user_metadata.role` against route `meta.allowedRoles`:
 
-- **Super Admin routes**: `/superadmin` (requires `is_super_admin: true` flag)
+- **Super Admin routes**: `/superadmin`, `/user-management` (requires `is_super_admin: true` flag)
 - **Admin routes**: `/admindash`, `/admin/appointments`, `/data-quality`, `/edit/*`
 - **User routes**: `/home`, `/collections`, `/appointment`
 - **Public**: `/landing`, `/admin/landing`, `/user/*`, `/phone-camera` (no auth)
 
-**Super Admin Feature**:
+**Super Admin vs Regular Admin**:
 
-- Super admins can manage all users (students, faculty, visitors, admins)
-- Can create new admin accounts with email verification
-- New admins receive password reset link via Supabase Auth email
-- Access via dedicated `/superadmin` dashboard
-- Database: `registered_admins.is_super_admin` boolean column
+- **Super Admins**: Full user management (students, faculty, visitors, admins), can create new admin accounts
+  - Access `UserManagementPage.vue` with all tabs visible
+  - Database: `registered_admins.is_super_admin = true`
+  - Can manage admin accounts with email verification workflow
+- **Regular Admins**: Limited to visitor registration approval and approved visitor management
+  - Access `UserManagementPage.vue` with only visitor-related tabs
+  - Cannot create admin accounts or manage other user types
+
+**Visitor Account Lifecycle**:
+
+1. Visitor fills out `UserVisitorPage.vue` (multi-step form + letter upload to R2)
+2. Record saved to `registration_visitors` table
+3. All admins notified via `notifications` table
+4. Admin approves → moved to `approved_visitors` with auth account created
+5. System calculates `account_status` based on start/end dates: Active/Expired
+6. Profile page shows "Request Extension" button for visitors near expiration
 
 ### Dual Upload Flow (Documents vs Artifacts)
 
@@ -226,9 +249,14 @@ async function uploadFileToR2(file, folder, fileName) {
 
 ### Appointment System
 
-- Users book via `/appointment` → creates record in `appointments` table
-- Admins manage via `/admin/appointments` → update status, send email notifications
-- Faculty/visitors have separate registration flows (`UserFacultyPage.vue`, `UserVisitorPage.vue`)
+- Users book via `/appointment` (`AppointmentBooking.vue`) → creates record in `appointments` table
+- Admins manage via `/admin/appointments` (`AdminAppointmentPage.vue`) → update status, send email notifications
+- Faculty/visitors have separate registration flows:
+  - `UserFacultyPage.vue` - Faculty registration with institution validation
+  - `UserVisitorPage.vue` - Multi-step visitor registration with letter upload (R2: `visitor-letters/`)
+- Notification system (`notifications` table) alerts admins of new registrations/appointments
+  - Types: 'appointment_booking', 'appointment_status', 'visitor_registration'
+  - Admins see notifications in real-time via `receiver_role = 'admin'` query
 
 ## File Organization Patterns
 
@@ -309,6 +337,53 @@ import MyComponent from 'src/components/MyComponent.vue'
 
 **Symptom**: Global functions not available in components
 **Fix**: Check `quasar.config.js` boot array order - dependencies must load before consumers (e.g., `supabase` before `r2`)
+
+### Visitor Extension Requests
+
+**Current Implementation**: "Request Extension" button exists in `ProfilePage.vue` but functionality not yet connected
+**Future Work**: Implement extension request workflow (new table + admin approval process similar to initial registration)
+
+## Performance Optimizations Applied
+
+### Code Splitting (`quasar.config.js`)
+
+Manual chunks configured for efficient caching:
+
+- `vendor-vue`: Vue core (vue, vue-router, pinia)
+- `vendor-quasar`: Quasar framework
+- `vendor-supabase`: Supabase client
+- `vendor-aws`: AWS SDK for R2
+- `vendor-3d`: 3D model libraries (model-viewer, three.js)
+- `vendor-pdf`: PDF processing (pdfjs-dist, pdf-lib)
+
+### Parallel Data Loading (`src/stores/user.js`)
+
+Profile resolution uses `Promise.all()` for 4x faster auth checks - queries all auth tables simultaneously instead of sequentially.
+
+### Pagination Composable (`src/composables/usePagination.js`)
+
+Reusable pagination logic limits initial data loads to 20-50 items. Returns: `items`, `currentPage`, `totalPages`, `nextPage`, `previousPage`, `goToPage`, `refresh`.
+
+**Usage Pattern**:
+
+```javascript
+import { usePagination } from 'src/composables/usePagination'
+
+const { items, loading, fetchPage } = usePagination(fetchFunction, { pageSize: 20 })
+await fetchPage(1) // Load first page
+```
+
+### Database Indexes (`database/optimization_indexes_safe.sql`)
+
+Critical indexes for query performance - must be applied manually via Supabase SQL Editor:
+
+- `documents_metadata`: uploaded_at, updated_at, metadata GIN index, file_name
+- `artifacts_metadata`: same as documents
+- `collections`, `collection_items`: composite indexes for joins
+- `user_activity_log`, `logins`: user_id + timestamp
+- All user tables: email, created_at
+
+**Expected improvement: 30-50% faster queries**
 
 ## Testing Approach
 

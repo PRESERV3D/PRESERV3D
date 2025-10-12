@@ -54,7 +54,7 @@
                 :disable="isResetLoading || !newPassword || !confirmPassword"
                 label="Submit"
                 class="btn-submit"
-                @click="((resetSent = true), resetPassword())"
+                @click="resetPassword()"
                 no-caps
               />
             </div>
@@ -125,8 +125,6 @@ function checkPasswordMatch() {
 async function resetPassword() {
   isResetLoading.value = true
   if (!checkPasswordMatch()) {
-    // Use nextTick to ensure message is set before showing dialog
-    await new Promise((resolve) => setTimeout(resolve, 0))
     resetSent.value = true
     return
   }
@@ -140,8 +138,6 @@ async function resetPassword() {
       'Session expired or invalid. Please request a new password reset link from the forgot password page.'
     resetSuccess.value = false
     isResetLoading.value = false
-    // Use nextTick to ensure message is set before showing dialog
-    await new Promise((resolve) => setTimeout(resolve, 0))
     resetSent.value = true
     return
   }
@@ -154,37 +150,66 @@ async function resetPassword() {
   if (error) {
     message.value = `Failed to reset password: ${error.message}`
     resetSuccess.value = false
+    isResetLoading.value = false
   } else {
     message.value = 'Password reset successful! You can now log in with your new password.'
     resetSuccess.value = true
     isResetLoading.value = false
+
+    // Update is_temp_password based on user role - only on success
+    const role = user.user_metadata?.role
+    const userType = user.user_metadata?.type
+    console.log('=== Password Reset Debug Info ===')
+    console.log('User role:', role)
+    console.log('User type:', userType)
+    console.log('User ID:', user.id)
+    console.log('User metadata:', JSON.stringify(user.user_metadata))
+
+    if (role === 'admin') {
+      console.log('Updating admin temp password...')
+      const { data: updateData, error: adminError } = await supabase
+        .from('registered_admins')
+        .update({ is_temp_password: false })
+        .eq('id', user.id)
+        .select()
+
+      if (adminError) {
+        console.error('Error updating admin temp password status:', adminError)
+      } else {
+        console.log('Admin temp password updated successfully:', updateData)
+      }
+    } else if (role === 'user' && userType === 'visitor') {
+      console.log('Updating visitor temp password...')
+      // First, let's check if the record exists
+      const { data: existingRecord, error: checkError } = await supabase
+        .from('approved_visitors')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      console.log('Existing visitor record:', existingRecord)
+      if (checkError) console.error('Check error:', checkError)
+
+      const { data: updateData, error: visitorError } = await supabase
+        .from('approved_visitors')
+        .update({ is_temp_password: false })
+        .eq('user_id', user.id)
+        .select()
+
+      if (visitorError) {
+        console.error('Error updating visitor temp password status:', visitorError)
+        console.error('Full error object:', JSON.stringify(visitorError))
+      } else {
+        console.log('Visitor temp password updated successfully:', updateData)
+        console.log('Number of rows updated:', updateData?.length)
+      }
+    } else {
+      console.log('No update performed - role/type mismatch')
+      console.log('Expected: role="admin" OR (role="user" AND type="visitor")')
+      console.log('Got: role="' + role + '", type="' + userType + '"')
+    }
   }
 
-  // Update is_temp_password based on user role
-  const role = user.user_metadata?.role
-
-  if (role === 'admin') {
-    const { error: adminError } = await supabase
-      .from('registered_admins')
-      .update({ is_temp_password: false })
-      .eq('id', user.id)
-
-    if (adminError) {
-      console.error('Error updating admin temp password status:', adminError)
-    }
-  } else if (role === 'visitor') {
-    const { error: visitorError } = await supabase
-      .from('approved_visitors')
-      .update({ is_temp_password: false })
-      .eq('id', user.id)
-
-    if (visitorError) {
-      console.error('Error updating visitor temp password status:', visitorError)
-    }
-  }
-
-  // Use nextTick to ensure message is set before showing dialog
-  await new Promise((resolve) => setTimeout(resolve, 0))
   resetSent.value = true
 }
 

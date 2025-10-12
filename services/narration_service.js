@@ -8,15 +8,21 @@ export function generateNarration(model) {
 
   // Title + Recipient
   if (model.metadata?.title && model.metadata?.author) {
-    lines.push(`Before us is the "${model.metadata.title}", a piece that carries both recognition and pride. It was made possible through the efforts of ${model.metadata.author},  whose name still echoes in our university’s history.`)
+    lines.push(
+      `Before us is the "${model.metadata.title}", a piece that carries both recognition and pride. It was made possible through the efforts of ${model.metadata.author},  whose name still echoes in our university’s history.`,
+    )
   } else if (model.metadata?.title) {
-    lines.push(`Here we see the "${model.metadata.title}", a remarkable entry in the collection that represents the stories and milestones that shaped our community.`)
+    lines.push(
+      `Here we see the "${model.metadata.title}", a remarkable entry in the collection that represents the stories and milestones that shaped our community.`,
+    )
   } else if (model.metadata?.author) {
     lines.push(
       `This item is attributed to ${model.metadata.author}, whose name still echoes in our university’s history.`,
     )
   } else {
-    lines.push(`This piece is part of the university’s collection, representing the stories and achievements that make up our shared history.`)
+    lines.push(
+      `This piece is part of the university’s collection, representing the stories and achievements that make up our shared history.`,
+    )
   }
 
   // Date
