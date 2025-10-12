@@ -55,7 +55,7 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     }
 
     // Allow public routes
-    const publicRoutes = ['/landing', '/admin/landing', '/forgotpassword', '/resetpassword']
+    const publicRoutes = ['/landing', '/forgotpassword', '/resetpassword']
     if (
       publicRoutes.includes(to.path) ||
       to.path.startsWith('/user') ||
@@ -71,16 +71,34 @@ export default defineRouter(function (/* { store, ssrContext } */) {
       return
     }
 
+    // Ensure profile is loaded before checking role-based access
+    if (session && !userStore.profile) {
+      console.log('⏳ Waiting for profile to load...')
+      await userStore.fetchProfile(session.user.id)
+    }
+
     // Get role from profile store (more reliable) or fall back to user_metadata
     const role = userStore.profile?.role || session.user.user_metadata?.role
 
-    // Super admin check for user management - only restrict the full view
-    if (to.name === 'user-management') {
-      // Allow all admins to access, but the page will control what they see
-      if (!session || role !== 'admin') {
-        next('/admindash')
+    // Explicit check for user-management route - block non-admins
+    if (to.path.startsWith('/user-management') || to.name === 'user-management') {
+      console.log('🔒 User-management access check:', { role, profile: userStore.profile })
+      if (role !== 'admin') {
+        console.log('❌ Access denied to user-management for role:', role)
+        userStore.addNotification({
+          type: 'negative',
+          message: 'You do not have permission to access this page',
+          position: 'top',
+        })
+        // Redirect based on role
+        if (role === 'user') {
+          next('/home')
+        } else {
+          next('/landing')
+        }
         return
       }
+      console.log('✅ Admin access granted to user-management')
     }
 
     // Role-based redirect if landing on root path
@@ -108,8 +126,13 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     // Role-based access control (for non-super-admin routes)
     if (requiresAuth && allowedRoles) {
       if (!allowedRoles.includes(role)) {
-        alert('Unauthorized access')
-        next('/')
+        // Add notification to queue instead of using alert
+        userStore.addNotification({
+          type: 'negative',
+          message: 'You do not have permission to access this page',
+          position: 'top',
+        })
+        next('/home')
         return
       }
     }

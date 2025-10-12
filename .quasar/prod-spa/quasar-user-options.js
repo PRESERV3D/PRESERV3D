@@ -13,7 +13,9 @@
 
 
 
+import {Dialog,Loading,Notify} from 'quasar'
 
 
-export default { config: {} }
+
+export default { config: {},plugins: {Dialog,Loading,Notify} }
 
