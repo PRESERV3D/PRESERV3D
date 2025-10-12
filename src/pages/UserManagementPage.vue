@@ -38,6 +38,7 @@
       <q-tab name="faculty" label="Faculty" />
       <q-tab name="visitors" label="Visitors" />
       <q-tab name="registrations" label="Visitor Registrations" />
+      <q-tab name="extensions" label="Extension Requests" />
     </q-tabs>
 
     <!-- Tabs for Regular Admin -->
@@ -53,6 +54,7 @@
     >
       <q-tab name="registrations" label="Visitor Registrations" />
       <q-tab name="visitors" label="Approved Visitors" />
+      <q-tab name="extensions" label="Extension Requests" />
     </q-tabs>
 
     <q-separator />
@@ -761,6 +763,188 @@
           </template>
         </q-table>
       </q-tab-panel>
+
+      <!-- Extension Requests Tab (For Super Admin) -->
+      <q-tab-panel name="extensions">
+        <q-table
+          title="Visitor Extension Requests"
+          :rows="extensionRequests"
+          :columns="extensionColumns"
+          row-key="id"
+          :loading="loading"
+          :pagination="pagination"
+          flat
+          bordered
+          class="my-sticky-header-table"
+        >
+          <template v-slot:top-right>
+            <q-btn icon="refresh" flat round dense @click="fetchAllUsers" :loading="loading">
+              <q-tooltip>Reload Data</q-tooltip>
+            </q-btn>
+          </template>
+          <template v-slot:body="props">
+            <q-tr :props="props">
+              <q-td
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+                :style="col.style"
+                :align="col.align"
+              >
+                <template v-if="col.name === 'visitor_name'">
+                  <span>{{ props.row.visitor_name }}</span>
+                </template>
+
+                <template v-else-if="col.name === 'old_end_date'">
+                  {{
+                    props.row.old_end_date
+                      ? new Date(props.row.old_end_date).toLocaleDateString()
+                      : 'N/A'
+                  }}
+                </template>
+
+                <template v-else-if="col.name === 'extended_end_date'">
+                  {{
+                    props.row.extended_end_date
+                      ? new Date(props.row.extended_end_date).toLocaleDateString()
+                      : 'N/A'
+                  }}
+                </template>
+
+                <template v-else-if="col.name === 'letter'">
+                  <a
+                    v-if="props.row.letter"
+                    :href="props.row.letter"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="view-more-link"
+                  >
+                    View Letter
+                  </a>
+                  <span v-else>Not Required</span>
+                </template>
+
+                <template v-else-if="col.name === 'extension_status'">
+                  <template v-if="props.row.extension_status === 'Pending'">
+                    <q-btn
+                      flat
+                      dense
+                      round
+                      class="status-btn"
+                      @click="openExtensionDialog(props.row, 'Approved')"
+                    >
+                      <q-icon name="check" color="green" size="18px" />
+                      <q-tooltip>Approve</q-tooltip>
+                    </q-btn>
+                    <q-btn
+                      flat
+                      dense
+                      round
+                      class="status-btn"
+                      @click="openExtensionDialog(props.row, 'Rejected')"
+                    >
+                      <q-icon name="close" color="red" size="18px" />
+                      <q-tooltip>Reject</q-tooltip>
+                    </q-btn>
+                  </template>
+
+                  <template v-else>
+                    <q-badge
+                      :color="
+                        props.row.extension_status === 'Approved'
+                          ? 'green'
+                          : props.row.extension_status === 'Rejected'
+                            ? 'red'
+                            : 'grey'
+                      "
+                      :label="props.row.extension_status"
+                    />
+                  </template>
+                </template>
+
+                <template v-else-if="col.name === 'actions'">
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    :icon="props.expand ? 'expand_less' : 'expand_more'"
+                    @click="props.expand = !props.expand"
+                  >
+                    <q-tooltip>{{ props.expand ? 'Collapse' : 'Expand' }}</q-tooltip>
+                  </q-btn>
+                </template>
+
+                <template v-else>
+                  {{ col.value }}
+                </template>
+              </q-td>
+            </q-tr>
+
+            <!-- Expandable Row -->
+            <q-tr v-show="props.expand" :props="props">
+              <q-td colspan="100%">
+                <div class="q-pa-md" style="background-color: #f5f5f5">
+                  <div class="row q-col-gutter-md">
+                    <div class="col-6">
+                      <div class="text-weight-bold">Visitor:</div>
+                      <div>{{ props.row.visitor_name }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Email:</div>
+                      <div>{{ props.row.visitor_email }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Current End Date:</div>
+                      <div>
+                        {{
+                          props.row.old_end_date
+                            ? new Date(props.row.old_end_date).toLocaleDateString()
+                            : 'N/A'
+                        }}
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Requested End Date:</div>
+                      <div>
+                        {{
+                          props.row.extended_end_date
+                            ? new Date(props.row.extended_end_date).toLocaleDateString()
+                            : 'N/A'
+                        }}
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <div class="text-weight-bold">Purpose/Reason:</div>
+                      <div>{{ props.row.purpose || 'N/A' }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Request Date:</div>
+                      <div>{{ new Date(props.row.created_at).toLocaleString() }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Status:</div>
+                      <div>{{ props.row.extension_status }}</div>
+                    </div>
+                    <div v-if="props.row.reviewed_by" class="col-6">
+                      <div class="text-weight-bold">Reviewed By:</div>
+                      <div>{{ props.row.reviewed_by }}</div>
+                    </div>
+                    <div v-if="props.row.reviewed_at" class="col-6">
+                      <div class="text-weight-bold">Reviewed At:</div>
+                      <div>{{ new Date(props.row.reviewed_at).toLocaleString() }}</div>
+                    </div>
+                    <div v-if="props.row.admin_remarks" class="col-12">
+                      <div class="text-weight-bold">Admin Remarks:</div>
+                      <div>{{ props.row.admin_remarks }}</div>
+                    </div>
+                  </div>
+                </div>
+              </q-td>
+            </q-tr>
+          </template>
+        </q-table>
+      </q-tab-panel>
     </q-tab-panels>
 
     <!-- Regular Admin View - Approved Visitors and Registrations -->
@@ -1052,6 +1236,188 @@
           </template>
         </q-table>
       </q-tab-panel>
+
+      <!-- Extension Requests Tab (For Regular Admin) -->
+      <q-tab-panel name="extensions">
+        <q-table
+          title="Visitor Extension Requests"
+          :rows="extensionRequests"
+          :columns="extensionColumns"
+          row-key="id"
+          :loading="loading"
+          :pagination="pagination"
+          flat
+          bordered
+          class="my-sticky-header-table"
+        >
+          <template v-slot:top-right>
+            <q-btn icon="refresh" flat round dense @click="fetchAllUsers" :loading="loading">
+              <q-tooltip>Reload Data</q-tooltip>
+            </q-btn>
+          </template>
+          <template v-slot:body="props">
+            <q-tr :props="props">
+              <q-td
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+                :style="col.style"
+                :align="col.align"
+              >
+                <template v-if="col.name === 'visitor_name'">
+                  <span>{{ props.row.visitor_name }}</span>
+                </template>
+
+                <template v-else-if="col.name === 'old_end_date'">
+                  {{
+                    props.row.old_end_date
+                      ? new Date(props.row.old_end_date).toLocaleDateString()
+                      : 'N/A'
+                  }}
+                </template>
+
+                <template v-else-if="col.name === 'extended_end_date'">
+                  {{
+                    props.row.extended_end_date
+                      ? new Date(props.row.extended_end_date).toLocaleDateString()
+                      : 'N/A'
+                  }}
+                </template>
+
+                <template v-else-if="col.name === 'letter'">
+                  <a
+                    v-if="props.row.letter"
+                    :href="props.row.letter"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="view-more-link"
+                  >
+                    View Letter
+                  </a>
+                  <span v-else>Not Required</span>
+                </template>
+
+                <template v-else-if="col.name === 'extension_status'">
+                  <template v-if="props.row.extension_status === 'Pending'">
+                    <q-btn
+                      flat
+                      dense
+                      round
+                      class="status-btn"
+                      @click="openExtensionDialog(props.row, 'Approved')"
+                    >
+                      <q-icon name="check" color="green" size="18px" />
+                      <q-tooltip>Approve</q-tooltip>
+                    </q-btn>
+                    <q-btn
+                      flat
+                      dense
+                      round
+                      class="status-btn"
+                      @click="openExtensionDialog(props.row, 'Rejected')"
+                    >
+                      <q-icon name="close" color="red" size="18px" />
+                      <q-tooltip>Reject</q-tooltip>
+                    </q-btn>
+                  </template>
+
+                  <template v-else>
+                    <q-badge
+                      :color="
+                        props.row.extension_status === 'Approved'
+                          ? 'green'
+                          : props.row.extension_status === 'Rejected'
+                            ? 'red'
+                            : 'grey'
+                      "
+                      :label="props.row.extension_status"
+                    />
+                  </template>
+                </template>
+
+                <template v-else-if="col.name === 'actions'">
+                  <q-btn
+                    flat
+                    dense
+                    round
+                    size="sm"
+                    :icon="props.expand ? 'expand_less' : 'expand_more'"
+                    @click="props.expand = !props.expand"
+                  >
+                    <q-tooltip>{{ props.expand ? 'Collapse' : 'Expand' }}</q-tooltip>
+                  </q-btn>
+                </template>
+
+                <template v-else>
+                  {{ col.value }}
+                </template>
+              </q-td>
+            </q-tr>
+
+            <!-- Expandable Row -->
+            <q-tr v-show="props.expand" :props="props">
+              <q-td colspan="100%">
+                <div class="q-pa-md" style="background-color: #f5f5f5">
+                  <div class="row q-col-gutter-md">
+                    <div class="col-6">
+                      <div class="text-weight-bold">Visitor:</div>
+                      <div>{{ props.row.visitor_name }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Email:</div>
+                      <div>{{ props.row.visitor_email }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Current End Date:</div>
+                      <div>
+                        {{
+                          props.row.old_end_date
+                            ? new Date(props.row.old_end_date).toLocaleDateString()
+                            : 'N/A'
+                        }}
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Requested End Date:</div>
+                      <div>
+                        {{
+                          props.row.extended_end_date
+                            ? new Date(props.row.extended_end_date).toLocaleDateString()
+                            : 'N/A'
+                        }}
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <div class="text-weight-bold">Purpose/Reason:</div>
+                      <div>{{ props.row.purpose || 'N/A' }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Request Date:</div>
+                      <div>{{ new Date(props.row.created_at).toLocaleString() }}</div>
+                    </div>
+                    <div class="col-6">
+                      <div class="text-weight-bold">Status:</div>
+                      <div>{{ props.row.extension_status }}</div>
+                    </div>
+                    <div v-if="props.row.reviewed_by" class="col-6">
+                      <div class="text-weight-bold">Reviewed By:</div>
+                      <div>{{ props.row.reviewed_by }}</div>
+                    </div>
+                    <div v-if="props.row.reviewed_at" class="col-6">
+                      <div class="text-weight-bold">Reviewed At:</div>
+                      <div>{{ new Date(props.row.reviewed_at).toLocaleString() }}</div>
+                    </div>
+                    <div v-if="props.row.admin_remarks" class="col-12">
+                      <div class="text-weight-bold">Admin Remarks:</div>
+                      <div>{{ props.row.admin_remarks }}</div>
+                    </div>
+                  </div>
+                </div>
+              </q-td>
+            </q-tr>
+          </template>
+        </q-table>
+      </q-tab-panel>
     </q-tab-panels>
 
     <!-- Confirmation Dialog for Approve/Reject -->
@@ -1255,6 +1621,27 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
+    <!-- Extension Request Dialog -->
+    <q-dialog v-model="showExtensionDialog" persistent>
+      <q-card class="conf-box">
+        <q-card-section v-if="!isProcessingExtension" class="sub-font" style="color: black">
+          Are you sure you want to {{ extensionAction.toLowerCase() }} this extension request?
+        </q-card-section>
+        <q-card-section v-else class="column items-center q-gutter-md" style="min-height: 100px">
+          <q-spinner-dots color="primary" size="50px" />
+          <q-card-section class="sub-font-2" style="color: #560505">
+            {{
+              extensionAction === 'Approved' ? 'Approving extension...' : 'Rejecting extension...'
+            }}
+          </q-card-section>
+        </q-card-section>
+        <q-card-actions v-if="!isProcessingExtension" align="center">
+          <q-btn flat label="Yes" class="btn-save" @click="processExtensionRequest" />
+          <q-btn flat label="No" class="sub-font-2" style="color: #000000" v-close-popup no-caps />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -1287,13 +1674,16 @@ const students = ref([])
 const faculty = ref([])
 const visitors = ref([])
 const registrations = ref([])
+const extensionRequests = ref([])
 
 const showCreateAdminDialog = ref(false)
 const showDeleteDialog = ref(false)
 const showSuccessDialog = ref(false)
 const showExtendDateDialog = ref(false)
 const showConfirmDialog = ref(false)
+const showExtensionDialog = ref(false)
 const isProcessingRegistration = ref(false)
+const isProcessingExtension = ref(false)
 const successTitle = ref('')
 const successMessage = ref('')
 
@@ -1302,6 +1692,8 @@ const deleteType = ref('')
 const selectedVisitor = ref(null)
 const confirmTarget = ref(null)
 const confirmAction = ref('')
+const extensionTarget = ref(null)
+const extensionAction = ref('')
 
 const visitorDates = ref({
   start_date: '',
@@ -1409,6 +1801,41 @@ const registrationColumns = [
   { name: 'start_date', label: 'Start Date', align: 'center', field: 'start_date' },
   { name: 'end_date', label: 'End Date', align: 'center', field: 'end_date' },
   { name: 'status', label: 'Status', align: 'center', field: 'status' },
+  { name: 'actions', label: '', align: 'center', field: 'actions' },
+]
+
+const extensionColumns = [
+  { name: 'visitor_name', label: 'Visitor', align: 'left', field: 'visitor_name', sortable: true },
+  {
+    name: 'old_end_date',
+    label: 'Current End Date',
+    align: 'center',
+    field: 'old_end_date',
+    sortable: true,
+  },
+  {
+    name: 'extended_end_date',
+    label: 'Requested End Date',
+    align: 'center',
+    field: 'extended_end_date',
+    sortable: true,
+  },
+  { name: 'purpose', label: 'Reason', align: 'center', field: 'purpose' },
+  { name: 'letter', label: 'Letter', align: 'center', field: 'letter' },
+  {
+    name: 'created_at',
+    label: 'Request Date',
+    align: 'center',
+    field: (row) => new Date(row.created_at).toLocaleDateString('en-CA'),
+    sortable: true,
+  },
+  {
+    name: 'extension_status',
+    label: 'Status',
+    align: 'center',
+    field: 'extension_status',
+    sortable: true,
+  },
   { name: 'actions', label: '', align: 'center', field: 'actions' },
 ]
 
@@ -1556,6 +1983,39 @@ async function fetchAllUsers() {
 
     // Sort registrations - pending first, then by date
     registrations.value = sortRegistrations(registrationData || [])
+
+    // Fetch extension requests with visitor information
+    const { data: extensionData, error: extensionError } = await supabase
+      .from('account_extensions')
+      .select(
+        `
+        *,
+        visitor:approved_visitors!account_extensions_approval_id_fkey(
+          user_id,
+          email,
+          registration:registration_visitors(
+            first_name,
+            last_name
+          )
+        )
+      `,
+      )
+      .order('created_at', { ascending: false })
+
+    if (extensionError) {
+      console.error('Error fetching extensions:', extensionError)
+    } else {
+      // Format extension data with visitor names
+      extensionRequests.value =
+        extensionData?.map((ext) => ({
+          ...ext,
+          visitor_name: ext.visitor?.registration
+            ? `${ext.visitor.registration.first_name} ${ext.visitor.registration.last_name}`
+            : 'Unknown',
+          visitor_email: ext.visitor?.email || 'N/A',
+        })) || []
+      console.log('Loaded extension requests:', extensionRequests.value.length)
+    }
   } catch (error) {
     console.error('Error fetching users:', error)
     $q.notify({
@@ -2111,6 +2571,114 @@ async function confirmRegistrationAction() {
     })
   } finally {
     isProcessingRegistration.value = false
+  }
+}
+
+// Extension request functions
+function openExtensionDialog(row, action) {
+  extensionTarget.value = row
+  extensionAction.value = action
+  showExtensionDialog.value = true
+}
+
+async function processExtensionRequest() {
+  if (!extensionTarget.value) return
+
+  const row = extensionTarget.value
+  const action = extensionAction.value
+
+  const adminName =
+    `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+
+  isProcessingExtension.value = true
+
+  try {
+    // Update account_extensions status
+    const { error: updateError } = await supabase
+      .from('account_extensions')
+      .update({
+        extension_status: action,
+        reviewed_by: adminName,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', row.id)
+
+    if (updateError) throw updateError
+
+    // If approved, update the visitor's end_date in approved_visitors
+    if (action === 'Approved') {
+      const { error: visitorUpdateError } = await supabase
+        .from('approved_visitors')
+        .update({
+          end_date: row.extended_end_date,
+        })
+        .eq('approval_id', row.approval_id)
+
+      if (visitorUpdateError) throw visitorUpdateError
+
+      // Create notification for the visitor
+      try {
+        const notificationMessage = `Your extension request has been approved by ${adminName || 'the administrator'}. Your new access period ends on ${new Date(row.extended_end_date).toLocaleDateString()}.`
+
+        // Get visitor's user_id from approved_visitors
+        const { data: visitorData } = await supabase
+          .from('approved_visitors')
+          .select('user_id')
+          .eq('approval_id', row.approval_id)
+          .single()
+
+        if (visitorData?.user_id) {
+          await createNotification(visitorData.user_id, notificationMessage, 'visitor_registration')
+        }
+      } catch (notifErr) {
+        console.error('Failed to create notification:', notifErr)
+      }
+
+      $q.notify({
+        type: 'positive',
+        message: 'Extension request approved',
+        caption: `Visitor access extended to ${new Date(row.extended_end_date).toLocaleDateString()}`,
+      })
+    } else {
+      // Create notification for rejection
+      try {
+        const notificationMessage = `Your extension request has been rejected by ${adminName || 'the administrator'}.`
+
+        const { data: visitorData } = await supabase
+          .from('approved_visitors')
+          .select('user_id')
+          .eq('approval_id', row.approval_id)
+          .single()
+
+        if (visitorData?.user_id) {
+          await createNotification(visitorData.user_id, notificationMessage, 'visitor_registration')
+        }
+      } catch (notifErr) {
+        console.error('Failed to create notification:', notifErr)
+      }
+
+      $q.notify({
+        type: 'info',
+        message: 'Extension request rejected',
+        caption: 'Visitor has been notified',
+      })
+    }
+
+    showExtensionDialog.value = false
+    extensionTarget.value = null
+    extensionAction.value = ''
+
+    // Refresh the data
+    await fetchAllUsers()
+  } catch (error) {
+    console.error('Error processing extension request:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to process extension request',
+      caption: error.message,
+    })
+  } finally {
+    isProcessingExtension.value = false
   }
 }
 </script>
