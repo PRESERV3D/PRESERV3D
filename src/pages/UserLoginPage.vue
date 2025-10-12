@@ -92,6 +92,21 @@
         </div>
       </div>
     </q-form>
+
+    <!-- Notification Dialog -->
+    <q-dialog v-model="notifyDialogOpen">
+      <q-card class="sucess-add-to-collection">
+        <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
+          notifyDialogTitle
+        }}</q-card-section>
+        <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
+          notifyDialogMessage
+        }}</q-card-section>
+        <q-card-actions>
+          <q-btn flat label="Close" class="btn-save" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -123,6 +138,17 @@ const maxAttempts = 3
 const remainingAttempts = computed(() => maxAttempts - loginAttempts.value)
 let cooldownInterval = null
 
+// Notification dialog state
+const notifyDialogOpen = ref(false)
+const notifyDialogTitle = ref('')
+const notifyDialogMessage = ref('')
+
+const showNotifyDialog = (title, message) => {
+  notifyDialogTitle.value = title
+  notifyDialogMessage.value = message
+  notifyDialogOpen.value = true
+}
+
 async function loginUser() {
   if (cooldownActive.value) return
 
@@ -141,7 +167,7 @@ async function loginUser() {
 
     if (profileError) {
       console.error('Profile lookup failed:', profileError.message)
-      alert('Unable to verify user. Please try again.')
+      showNotifyDialog('Login Error', 'Unable to verify user. Please try again.')
       return
     }
 
@@ -154,20 +180,24 @@ async function loginUser() {
 
       if (visitorRegisError) {
         console.error('Registration lookup failed:', visitorRegisError.message)
-        alert('Unable to verify registration status. Please try again.')
+        showNotifyDialog(
+          'Registration Error',
+          'Unable to verify registration status. Please try again.',
+        )
         return
       }
 
       if (visitorRegistration) {
         if (visitorRegistration.status === 'Pending') {
-          alert('Please wait for the admin to evaluate your registration.')
+          showNotifyDialog(
+            'Registration Pending',
+            'Please wait for the admin to evaluate your registration.',
+          )
         } else if (visitorRegistration.status === 'Rejected') {
-          alert('Sorry. Your registration has been Rejected.')
-        } else {
-          alert('Your registration is not approved yet.')
+          showNotifyDialog('Registration Rejected', 'Sorry. Your registration has been rejected.')
         }
       } else {
-        alert('No account found with this email.')
+        showNotifyDialog('Account Not Found', 'No account found with this email.')
       }
       return // Do not proceed to login
     }
@@ -176,32 +206,56 @@ async function loginUser() {
     if (profile.user_type === 'visitor') {
       const { data: visitorStatus, error: visitorError } = await supabase
         .from('approved_visitors_status')
-        .select('access_status')
+        .select('account_status')
         .eq('user_id', profile.id)
         .maybeSingle()
 
       if (visitorError) {
         console.error('Visitor status lookup failed:', visitorError.message)
-        alert('Unable to verify visitor status. Please try again.')
+        showNotifyDialog(
+          'Visitor Status Error',
+          'Unable to verify visitor status. Please try again.',
+        )
         return
       }
 
-      const accessStatus = visitorStatus?.access_status
+      const accountStatus = visitorStatus?.account_status
 
-      if (accessStatus !== 'Active') {
-        if (accessStatus === 'Expired') {
-          alert('Your access has expired.')
-        } else if (accessStatus === 'Not Started') {
-          alert('Your access date has not started yet.')
-        } else if (accessStatus === 'Pending Confirmation') {
-          alert(
+      if (accountStatus !== 'Active') {
+        if (accountStatus === 'Expired') {
+          showNotifyDialog('Access Expired', 'Your access has expired.')
+        } else if (accountStatus === 'Not Started') {
+          showNotifyDialog('Access Not Started', 'Your access date has not started yet.')
+        } else if (accountStatus === 'Pending Confirmation') {
+          showNotifyDialog(
+            'Email Verification Required',
             'Please check your email for account authentication first and make sure to set a password.',
           )
         } else {
-          alert('Access denied. Unknown visitor status.')
+          showNotifyDialog('Access Denied', 'Access denied. Unknown visitor status.')
         }
         clearForm()
         return // Do not proceed to login
+      }
+
+      // Check if using temporary password
+      const { data: visitorData, error: tempPassError } = await supabase
+        .from('approved_visitors')
+        .select('is_temp_password')
+        .eq('user_id', profile.id)
+        .maybeSingle()
+
+      if (tempPassError) {
+        console.error('Temp password check failed:', tempPassError.message)
+      }
+
+      if (visitorData?.is_temp_password === true) {
+        showNotifyDialog(
+          'Password Reset Required',
+          'Please check your confirmation email and set a new password before logging in. Alternatively, you may click the "Forgot Password" to set a new one.',
+        )
+        clearForm()
+        return
       }
     }
 
@@ -272,7 +326,7 @@ async function loginUser() {
     }
   } catch (err) {
     console.error('Login error:', err)
-    alert('An unexpected error occurred. Check the console for details.')
+    showNotifyDialog('Login Error', 'An unexpected error occurred. Please try again.')
   }
 }
 
@@ -321,5 +375,33 @@ onMounted(() => {
 :deep(.login-text-box .q-field__control::before),
 :deep(.login-text-box .q-field__control::after) {
   display: none !important;
+}
+
+.sucess-add-to-collection {
+  width: 25rem;
+  height: 14rem;
+  border-radius: 15px !important;
+  background-color: #fbf4d0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.sub-font-3 {
+  font-family: 'Poppins', sans-serif;
+  color: #000000;
+}
+
+.btn-save {
+  width: 5rem;
+  height: 1rem;
+  border-radius: 5px;
+  background-color: #880000;
+  color: #fbf4d0;
+  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
 }
 </style>

@@ -63,7 +63,7 @@ export const useUserStore = defineStore('user', {
         supabase.from('registered_users').select('*').eq('id', userId),
         supabase.from('registered_faculty').select('*').eq('id', userId),
         supabase.from('registered_admins').select('*').eq('id', userId),
-        supabase.from('approved_visitors').select('*').eq('id', userId),
+        supabase.from('approved_visitors').select('*').eq('user_id', userId),
       ])
 
       // Check results in priority order
