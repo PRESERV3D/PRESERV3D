@@ -798,54 +798,96 @@ const clearAdvancedSearch = () => {
 
 const handleLogout = async () => {
   try {
-    if (confirm('Are you sure you want to logout?')) {
-      console.log('🔒 User confirmed logout')
+    // Show confirmation dialog using callback pattern to ensure proper blocking
+    $q.dialog({
+      title: 'Confirm Logout',
+      message: 'Are you sure you want to logout?',
+      cancel: {
+        label: 'Cancel',
+        color: 'primary',
+        flat: true,
+      },
+      ok: {
+        label: 'Logout',
+        color: 'negative',
+        flat: true,
+      },
+      persistent: true,
+      class: 'logout-confirmation-dialog',
+    })
+      .onOk(async () => {
+        // User clicked "Logout" - proceed with logout
+        try {
+          // Show loading indicator with better message
+          $q.loading.show({
+            message: 'Signing out...',
+            spinnerColor: 'primary',
+          })
 
-      // Show loading indicator
-      $q.loading.show({
-        message: 'Logging out...',
+          try {
+            // Sign out and wait for completion with timeout
+            await userStore.signOut()
+            $q.loading.hide()
+            const redirectPath = '/landing'
+
+            // Use single navigation method - window.location for complete app reset
+            window.location.href = redirectPath
+          } catch (signOutError) {
+            console.error('❌ Sign out error:', signOutError)
+            $q.loading.hide()
+
+            // Show error but still attempt navigation
+            $q.notify({
+              type: 'warning',
+              message: 'Logout completed with errors',
+              caption: 'Clearing session and redirecting...',
+            })
+
+            // Force navigation even on error
+            const redirectPath = '/landing'
+            window.location.href = redirectPath
+          } finally {
+            // Ensure loading is hidden
+            $q.loading.hide()
+          }
+        } catch (error) {
+          console.error('❌ Unexpected error during logout:', error)
+          $q.loading.hide()
+
+          // Emergency cleanup and navigation
+          $q.notify({
+            type: 'negative',
+            message: 'Logout failed',
+            caption: 'Please refresh the page and try again',
+          })
+
+          // Force clear everything as last resort
+          localStorage.clear()
+          sessionStorage.clear()
+
+          const redirectPath = '/landing'
+          window.location.href = redirectPath
+        }
       })
-
-      // Sign out and wait for completion
-      await userStore.signOut()
-
-      // Hide loading
-      $q.loading.hide()
-
-      console.log('✅ Logout successful, redirecting...')
-
-      // Determine which login page to redirect to based on current location
-      const redirectPath = router.currentRoute.value.path.startsWith('/admin')
-        ? '/admin/landing'
-        : '/landing'
-
-      // Clear router history and navigate
-      await router.replace(redirectPath)
-
-      // Force page reload to clear any cached state and reset Vue app
-      setTimeout(() => {
-        window.location.href = redirectPath
-      }, 100)
-    }
+      .onCancel(() => {
+        // User clicked "Cancel" - do nothing, just close dialog
+      })
   } catch (error) {
-    console.error('❌ Error during logout:', error)
+    console.error('❌ Unexpected error during logout:', error)
     $q.loading.hide()
 
-    // Show error notification
+    // Emergency cleanup and navigation
     $q.notify({
-      type: 'warning',
-      message: 'Logout completed with errors',
-      caption: 'Clearing session and redirecting...',
+      type: 'negative',
+      message: 'Logout failed',
+      caption: 'Please refresh the page and try again',
     })
 
-    // Even on error, force logout by clearing everything and redirecting
+    // Force clear everything as last resort
     localStorage.clear()
     sessionStorage.clear()
 
-    const redirectPath = router.currentRoute.value.path.startsWith('/admin')
-      ? '/admin/landing'
-      : '/landing'
-
+    const redirectPath = '/landing'
     window.location.href = redirectPath
   }
 }
@@ -860,6 +902,12 @@ onMounted(() => {
       searchType.value = 'artifacts'
     }
   }
+
+  // Check for pending notifications from router guard
+  const pendingNotifications = userStore.getAndClearNotifications()
+  pendingNotifications.forEach((notification) => {
+    $q.notify(notification)
+  })
 
   // // Perform search if there's existing search value
   // if (search.value || searchType.value) {
@@ -890,6 +938,12 @@ watch(
 watch(
   () => route.path,
   (newPath) => {
+    // Check for pending notifications from router guard after navigation
+    const pendingNotifications = userStore.getAndClearNotifications()
+    pendingNotifications.forEach((notification) => {
+      $q.notify(notification)
+    })
+
     if (newPath === '/') {
       activeItem.value = 'home'
     } else if (
@@ -2214,5 +2268,53 @@ watch(
   .toolbar-actions.no-search {
     margin-left: 0;
   }
+}
+
+/* ========================
+   LOGOUT CONFIRMATION DIALOG
+======================== */
+.logout-confirmation-dialog .q-card {
+  width: 25rem;
+  height: 14rem;
+  border-radius: 15px !important;
+  background-color: #fbf4d0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+  padding: 1rem;
+}
+
+.logout-confirmation-dialog .q-dialog__title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: #560505;
+}
+
+.logout-confirmation-dialog .q-dialog__message {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: #560505;
+}
+
+.logout-confirmation-dialog .q-btn {
+  min-width: 4rem;
+  height: 2rem;
+  border-radius: 5px;
+  background-color: #880000 !important;
+  color: #fbf4d0 !important;
+  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  padding: 0.25rem 1rem;
+  text-transform: uppercase;
+}
+
+.logout-confirmation-dialog .q-btn:hover {
+  background-color: #6d0000 !important;
 }
 </style>

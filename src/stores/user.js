@@ -5,6 +5,8 @@ export const useUserStore = defineStore('user', {
   state: () => ({
     session: null,
     profile: null, // Includes full profile + role
+    isSigningOut: false, // Flag to prevent auth listener interference during logout
+    pendingNotifications: [], // Queue for notifications to show after navigation
   }),
 
   actions: {
@@ -18,6 +20,12 @@ export const useUserStore = defineStore('user', {
       })
 
       supabase.auth.onAuthStateChange((_, session) => {
+        // Skip auth state changes during logout process
+        if (this.isSigningOut) {
+          console.log('🔒 Skipping auth state change during logout')
+          return
+        }
+
         this.session = session
         if (session?.user) {
           this.fetchUserAndProfile()
@@ -140,29 +148,58 @@ export const useUserStore = defineStore('user', {
       try {
         console.log('🔒 Starting sign out process...')
 
+        // Set signing out flag to prevent auth listener interference
+        this.isSigningOut = true
+
         // Clear local state first
         this.session = null
         this.profile = null
 
-        // Sign out from Supabase (use 'global' to clear all sessions across devices)
-        const { error } = await supabase.auth.signOut({ scope: 'global' })
+        // Sign out from Supabase with timeout protection
+        const signOutPromise = supabase.auth.signOut({ scope: 'global' })
 
-        if (error) {
-          console.error('Error during Supabase sign out:', error)
-          // Don't throw - continue with cleanup
+        // Add timeout to prevent hanging (10 seconds max)
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Sign out timeout')), 10000),
+        )
+
+        try {
+          await Promise.race([signOutPromise, timeoutPromise])
+        } catch (signOutError) {
+          console.warn('Supabase sign out timed out or failed:', signOutError)
+          // Continue with cleanup even if sign out fails
         }
 
-        // Clear all Supabase auth storage
+        // Aggressive cleanup of all auth-related storage
         const authKeys = Object.keys(localStorage).filter(
-          (key) => key.startsWith('sb-') || key.includes('supabase'),
+          (key) =>
+            key.startsWith('sb-') ||
+            key.includes('supabase') ||
+            key.includes('auth') ||
+            key.startsWith('vueuse'), // Clear any VueUse auth storage
         )
-        authKeys.forEach((key) => localStorage.removeItem(key))
+        authKeys.forEach((key) => {
+          try {
+            localStorage.removeItem(key)
+          } catch (e) {
+            console.warn('Failed to remove localStorage key:', key, e)
+          }
+        })
 
         // Clear session storage
-        sessionStorage.clear()
+        try {
+          sessionStorage.clear()
+        } catch (e) {
+          console.warn('Failed to clear sessionStorage:', e)
+        }
 
         // Clear any remaining auth tokens
-        localStorage.removeItem('supabase.auth.token')
+        try {
+          localStorage.removeItem('supabase.auth.token')
+          localStorage.removeItem('supabase.auth.refreshToken')
+        } catch (e) {
+          console.warn('Failed to remove auth tokens:', e)
+        }
 
         console.log('✅ Sign out completed successfully')
         return true
@@ -172,12 +209,30 @@ export const useUserStore = defineStore('user', {
         this.session = null
         this.profile = null
 
-        // Clear storage even on error
-        localStorage.clear()
-        sessionStorage.clear()
+        // Emergency cleanup
+        try {
+          localStorage.clear()
+          sessionStorage.clear()
+        } catch (e) {
+          console.error('Emergency cleanup failed:', e)
+        }
 
-        return true // Return true to allow navigation
+        return true
+      } finally {
+        // Always clear the signing out flag
+        this.isSigningOut = false
       }
+    },
+
+    // Notification queue management
+    addNotification(notification) {
+      this.pendingNotifications.push(notification)
+    },
+
+    getAndClearNotifications() {
+      const notifications = [...this.pendingNotifications]
+      this.pendingNotifications = []
+      return notifications
     },
   },
 })
