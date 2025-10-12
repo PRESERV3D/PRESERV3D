@@ -3,7 +3,7 @@
 
 CREATE TABLE public.account_extensions (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
+  approval_id uuid NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
   old_end_date date NOT NULL,
   extended_end_date date NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE public.account_extensions (
   reviewed_at timestamp with time zone,
   reviewed_by text,
   CONSTRAINT account_extensions_pkey PRIMARY KEY (id),
-  CONSTRAINT account_extensions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.approved_visitors(approval_id)
+  CONSTRAINT account_extensions_approval_id_fkey FOREIGN KEY (approval_id) REFERENCES public.approved_visitors(approval_id)
 );
 CREATE TABLE public.all_users (
   id uuid NOT NULL,

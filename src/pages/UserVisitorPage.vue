@@ -310,7 +310,7 @@
 <script setup>
 import { ref } from 'vue'
 import { supabase } from 'boot/supabase'
-import { uploadFileToR2 } from 'boot/r2'
+import { uploadFileToR2, deleteFileFromR2 } from 'boot/r2'
 import UploadDialog from 'components/UploadDialog.vue'
 import { date } from 'quasar'
 // import { addMonths, differenceInCalendarDays } from 'date-fns'
@@ -596,6 +596,17 @@ async function registerUser() {
     ])
 
     if (error) {
+      // If database insert fails and we uploaded a file, delete it from R2
+      if (fileUrl) {
+        const fileName = decodeURIComponent(fileUrl.split('/').pop())
+        console.log('Database insert failed. Deleting uploaded file from R2:', fileName)
+        const { error: deleteError } = await deleteFileFromR2('visitor-letters', fileName)
+        if (deleteError) {
+          console.error('Failed to delete file from R2:', deleteError)
+        } else {
+          console.log('Successfully deleted file from R2:', fileName)
+        }
+      }
       showNotifyDialog('Registration Failed', 'Failed to save registration. Please try again.')
       console.error('Insert error:', error)
       isSignUpLoading.value = false

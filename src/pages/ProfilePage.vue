@@ -315,7 +315,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { supabase } from 'boot/supabase'
-import { uploadFileToR2 } from 'boot/r2'
+import { uploadFileToR2, deleteFileFromR2 } from 'boot/r2'
 
 const userStore = useUserStore()
 const userProfile = computed(() => userStore.profile || {})
@@ -570,10 +570,12 @@ const submitExtensionRequest = async () => {
     $q.loading.show({ message: 'Submitting extension request...' })
 
     let letterUrl = null
+    let uploadedFileName = null
 
-    // Upload letter to R2 if required (extension > 7 days)
+    // Upload letter to R2 first (if required)
     if (requiresLetterUpload.value && extensionRequest.letter) {
       const fileName = extensionRequest.letter.name
+      uploadedFileName = fileName
 
       const { error: uploadError, publicUrl } = await uploadFileToR2(
         extensionRequest.letter,
@@ -589,12 +591,12 @@ const submitExtensionRequest = async () => {
       console.log('Letter uploaded successfully:', letterUrl)
     }
 
-    // Insert extension request into database
+    // Insert extension request into database with letter URL
     const { data: extensionData, error: insertError } = await supabase
       .from('account_extensions')
       .insert([
         {
-          user_id: profile.approval_id,
+          approval_id: profile.approval_id,
           old_end_date: visitorData.endDate,
           extended_end_date: extensionRequest.newEndDate,
           letter: letterUrl,
@@ -605,6 +607,16 @@ const submitExtensionRequest = async () => {
       .select()
 
     if (insertError) {
+      // If database insert fails and we uploaded a file, delete it from R2
+      if (uploadedFileName) {
+        console.log('Database insert failed. Deleting uploaded file from R2:', uploadedFileName)
+        const { error: deleteError } = await deleteFileFromR2('visitor-letters', uploadedFileName)
+        if (deleteError) {
+          console.error('Failed to delete file from R2:', deleteError)
+        } else {
+          console.log('Successfully deleted file from R2:', uploadedFileName)
+        }
+      }
       throw insertError
     }
 
