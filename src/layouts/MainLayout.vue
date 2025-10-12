@@ -798,54 +798,95 @@ const clearAdvancedSearch = () => {
 
 const handleLogout = async () => {
   try {
-    if (confirm('Are you sure you want to logout?')) {
-      console.log('🔒 User confirmed logout')
+    // Show confirmation dialog using callback pattern to ensure proper blocking
+    $q.dialog({
+      title: 'Confirm Logout',
+      message: 'Are you sure you want to logout?',
+      cancel: {
+        label: 'Cancel',
+        color: 'primary',
+        flat: true,
+      },
+      ok: {
+        label: 'Logout',
+        color: 'negative',
+        flat: true,
+      },
+      persistent: true,
+    })
+      .onOk(async () => {
+        // User clicked "Logout" - proceed with logout
+        try {
+          // Show loading indicator with better message
+          $q.loading.show({
+            message: 'Signing out...',
+            spinnerColor: 'primary',
+          })
 
-      // Show loading indicator
-      $q.loading.show({
-        message: 'Logging out...',
+          try {
+            // Sign out and wait for completion with timeout
+            await userStore.signOut()
+            $q.loading.hide()
+            const redirectPath = '/landing'
+
+            // Use single navigation method - window.location for complete app reset
+            window.location.href = redirectPath
+          } catch (signOutError) {
+            console.error('❌ Sign out error:', signOutError)
+            $q.loading.hide()
+
+            // Show error but still attempt navigation
+            $q.notify({
+              type: 'warning',
+              message: 'Logout completed with errors',
+              caption: 'Clearing session and redirecting...',
+            })
+
+            // Force navigation even on error
+            const redirectPath = '/landing'
+            window.location.href = redirectPath
+          } finally {
+            // Ensure loading is hidden
+            $q.loading.hide()
+          }
+        } catch (error) {
+          console.error('❌ Unexpected error during logout:', error)
+          $q.loading.hide()
+
+          // Emergency cleanup and navigation
+          $q.notify({
+            type: 'negative',
+            message: 'Logout failed',
+            caption: 'Please refresh the page and try again',
+          })
+
+          // Force clear everything as last resort
+          localStorage.clear()
+          sessionStorage.clear()
+
+          const redirectPath = '/landing'
+          window.location.href = redirectPath
+        }
       })
-
-      // Sign out and wait for completion
-      await userStore.signOut()
-
-      // Hide loading
-      $q.loading.hide()
-
-      console.log('✅ Logout successful, redirecting...')
-
-      // Determine which login page to redirect to based on current location
-      const redirectPath = router.currentRoute.value.path.startsWith('/admin')
-        ? '/admin/landing'
-        : '/landing'
-
-      // Clear router history and navigate
-      await router.replace(redirectPath)
-
-      // Force page reload to clear any cached state and reset Vue app
-      setTimeout(() => {
-        window.location.href = redirectPath
-      }, 100)
-    }
+      .onCancel(() => {
+        // User clicked "Cancel" - do nothing, just close dialog
+      })
   } catch (error) {
-    console.error('❌ Error during logout:', error)
+    console.error('❌ Unexpected error during logout:', error)
     $q.loading.hide()
 
-    // Show error notification
+    // Emergency cleanup and navigation
     $q.notify({
-      type: 'warning',
-      message: 'Logout completed with errors',
-      caption: 'Clearing session and redirecting...',
+      type: 'negative',
+      message: 'Logout failed',
+      caption: 'Please refresh the page and try again',
     })
 
-    // Even on error, force logout by clearing everything and redirecting
+    // Force clear everything as last resort
     localStorage.clear()
     sessionStorage.clear()
 
-    const redirectPath = router.currentRoute.value.path.startsWith('/admin')
-      ? '/admin/landing'
-      : '/landing'
-
+    const redirectPath = '/landing'
     window.location.href = redirectPath
   }
 }
