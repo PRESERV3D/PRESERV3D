@@ -65,7 +65,6 @@ def get_nlp():
         print("Custom NER model loaded successfully")
     return _nlp
 
-<<<<<<< HEAD
 def call_hf_api(endpoint, payload, max_retries=3):
     """Call Hugging Face Inference API with retry logic"""
     if not HF_API_TOKEN:
@@ -89,7 +88,7 @@ def call_hf_api(endpoint, payload, max_retries=3):
                 preview_payload = str(tmp)[:200]
         except Exception:
             preview_payload = "<unprintable>"
-
+            
     except Exception as e:
         print("Failed to normalize HF payload:", e)
 
@@ -228,8 +227,6 @@ def summarize_text_hf(text, max_length=200, min_length=50):
     summary_sentences = sentences[:min(5, len(sentences))]
     return ' '.join(summary_sentences).strip() + ('.' if summary_sentences else '')
 
-=======
->>>>>>> parent of e8368ae (backend fix and made nlp_service lightweight)
 @app.post("/process-text")
 async def process_pdf(
     file: UploadFile = File(None),
