@@ -1,44 +1,46 @@
 <template>
   <q-page class="q-pa-md">
-    <div class="q-mt-xs title">Collections</div>
-
-    <div class="q-mb-md subtitle subtitle-btn-row">
-      <div class="q-ml-sm subtitle-text">Archival Materials grouped into a collection.</div>
-      <div class="artifact-btn">
-        <q-btn-dropdown
-          outline
-          color="black"
-          :label="`Sort by: ${sortOption}`"
-          icon="sort"
-          size="sm"
-          class="q-ml-xs artifact-btn-style"
-          dense
-        >
-          <q-list>
-            <q-item
-              v-for="option in sortOptions"
-              :key="option"
-              clickable
-              v-close-popup
-              class="collection-sort-menu"
-              @click="setSortOption(option)"
-            >
-              <q-item-section>
-                <q-item-label>{{ option }}</q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-btn-dropdown>
-        <q-btn
-          @click="showDialog = true"
-          label="Add New"
-          icon="add_circle"
-          style="min-width: 9.375rem"
-          class="add-new-btn"
-          no-caps
-          unelevated
-        />
+    <div class="page-header">
+      <h2 class="q-mb-sm title">Collections</h2>
+      <div class="subtitle-btn-row">
+        <h5 class="q-mt-xs q-mb-lg subtitle">Archival Materials grouped into a collection.</h5>
       </div>
+    </div>
+
+    <div class="artifact-btn">
+      <q-btn-dropdown
+        outline
+        color="black"
+        :label="`Sort by: ${sortOption}`"
+        icon="sort"
+        size="sm"
+        class="q-ml-xs artifact-btn-style"
+        dense
+      >
+        <q-list>
+          <q-item
+            v-for="option in sortOptions"
+            :key="option"
+            clickable
+            v-close-popup
+            class="collection-sort-menu"
+            @click="setSortOption(option)"
+          >
+            <q-item-section>
+              <q-item-label>{{ option }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-btn-dropdown>
+      <q-btn
+        @click="showDialog = true"
+        label="Add New"
+        icon="add_circle"
+        style="min-width: 9.375rem"
+        class="add-new-btn"
+        no-caps
+        unelevated
+      />
     </div>
 
     <!-- Loading Spinner -->

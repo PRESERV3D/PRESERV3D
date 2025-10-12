@@ -1,9 +1,11 @@
 <template>
   <q-page class="q-pa-md">
     <div class="page-header">
-      <h2 class="q-mb-lg title">Appointments</h2>
-      <div class="q-mt-xs q-mb-lg subtitle">
-        Appointment form and information of scheduled appointments booked by users.
+      <h2 class="q-mb-sm title">Appointments</h2>
+      <div class="subtitle-btn-row">
+        <h5 class="q-mt-xs q-mb-lg subtitle">
+          Appointment form and information of scheduled appointments booked by users.
+        </h5>
       </div>
     </div>
 

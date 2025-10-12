@@ -948,8 +948,7 @@ watch(
       activeItem.value = 'home'
     } else if (
       newPath.includes('home') ||
-      newPath.includes('admindash') ||
-      newPath.includes('collection')
+      newPath.includes('admindash')
     ) {
       activeItem.value = 'home'
     } else if (newPath.includes('appointment')) {

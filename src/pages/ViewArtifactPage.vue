@@ -562,6 +562,21 @@ function formatDate(dateStr) {
 const isSpeaking = ref(false)
 let currentUtterance = null
 
+const initVoices = () => {
+  return new Promise((resolve) => {
+    let voices = window.speechSynthesis.getVoices()
+    if (voices.length > 0) {
+      resolve(voices)
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => {
+        voices = window.speechSynthesis.getVoices()
+
+        resolve(voices)
+      }
+    }
+  })
+}
+
 const toggleTextToSpeech = async () => {
   const { data: artifactData } = await supabase
     .from('artifacts_metadata')
@@ -581,19 +596,55 @@ const toggleTextToSpeech = async () => {
   // Create speech utterance
   currentUtterance = new SpeechSynthesisUtterance(narration)
   currentUtterance.lang = 'en-US'
-  currentUtterance.rate = 0.95
-  currentUtterance.pitch = 1.05
+  currentUtterance.rate = 0.85
+  currentUtterance.pitch = 1.7
+  currentUtterance.volume = 1.0
 
-  // Pick a more natural female voice if available
   const voices = window.speechSynthesis.getVoices()
-  const preferredVoice = voices.find(
-    (v) =>
-      v.lang === 'en-US' &&
-      (v.name.includes('Google US English Female') || v.name.includes('Microsoft')), // adjust for your browser
-  )
-  if (preferredVoice) currentUtterance.voice = preferredVoice
+
+  const femaleVoicePatterns = [
+    'Google US English Female',
+    'Microsoft Zira',
+    'Samantha',
+    'Victoria',
+    'Karen',
+    'Moira',
+    'Tessa',
+    'Google UK English Female',
+    'female',
+  ]
+
+  let selectedVoice = null
+  for (const pattern of femaleVoicePatterns) {
+    selectedVoice = voices.find(
+      (v) =>
+        v.lang.startsWith('en') &&
+        (v.name.toLowerCase().includes(pattern.toLowerCase()) ||
+          v.name.toLowerCase().includes('female')),
+    )
+    if (selectedVoice) break
+  }
+
+  // Fallback
+  if (!selectedVoice) {
+    selectedVoice = voices.find(
+      (v) => v.lang.startsWith('en') && v.name.toLowerCase().includes('female'),
+    )
+  }
+
+  if (selectedVoice) {
+    currentUtterance.voice = selectedVoice
+    console.log('Using voice:', selectedVoice.name)
+  } else {
+    console.log('No female voice found, using default')
+  }
 
   currentUtterance.onend = () => {
+    isSpeaking.value = false
+  }
+
+  currentUtterance.onerror = (event) => {
+    console.error('Speech synthesis error:', event)
     isSpeaking.value = false
   }
 
@@ -943,6 +994,7 @@ const showNotifyDialog = (title, message) => {
 }
 
 onMounted(async () => {
+  await initVoices()
   const { data, error } = await supabase
     .from('artifacts_metadata')
     .select('*')
