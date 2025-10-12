@@ -489,7 +489,7 @@ const checkEmailUnique = async (val) => {
           } else if (visitorStatus.account_status === 'Pending Confirmation') {
             showNotifyDialog(
               'Pending Email Confirmation',
-              'An account with this email exists. If this is you, please check your email for account confirmation. Otherwise, please use a different email.',
+              'An account with this email exists. If this is you, please check your email for account authentication. Otherwise, please use a different email.',
             )
             return false
           } else if (visitorStatus.account_status === 'Not Started') {
