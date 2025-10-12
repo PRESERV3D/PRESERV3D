@@ -1,6 +1,21 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+CREATE TABLE public.account_extensions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  approval_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  old_end_date date NOT NULL,
+  extended_end_date date NOT NULL,
+  letter text,
+  purpose text,
+  extension_status text DEFAULT 'Pending'::text,
+  admin_remarks text,
+  reviewed_at timestamp with time zone,
+  reviewed_by text,
+  CONSTRAINT account_extensions_pkey PRIMARY KEY (id),
+  CONSTRAINT account_extensions_approval_id_fkey FOREIGN KEY (approval_id) REFERENCES public.approved_visitors(approval_id)
+);
 CREATE TABLE public.all_users (
   id uuid NOT NULL,
   email character varying,
@@ -35,8 +50,8 @@ CREATE TABLE public.approved_visitors (
   email text,
   start_date date,
   end_date date,
-  is_temp_password boolean,
-  approval_id uuid NOT NULL,
+  is_temp_password boolean NOT NULL,
+  approval_id uuid NOT NULL DEFAULT gen_random_uuid(),
   CONSTRAINT approved_visitors_pkey PRIMARY KEY (approval_id),
   CONSTRAINT approved_visitors_registration_id_fkey FOREIGN KEY (registration_id) REFERENCES public.registration_visitors(id),
   CONSTRAINT approved_visitors_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)

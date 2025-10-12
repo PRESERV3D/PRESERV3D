@@ -232,7 +232,7 @@
                           <q-item-section>
                             <q-item-label
                               class="notification-message"
-                              :class="{ 'text-bold': !notif.read }"
+                              :class="{ 'text-weight-medium': !notif.read }"
                             >
                               {{ notif.message }}
                             </q-item-label>
@@ -253,11 +253,10 @@
                     <q-card-actions class="notifications-actions" v-if="notifications.length > 0">
                       <q-btn
                         flat
-                        label="Clear All"
+                        label="Mark All as Read"
                         color="primary"
                         class="full-width clear-all-bottom-btn"
                         @click="clearAllNotifications"
-                        icon="clear_all"
                       />
                     </q-card-actions>
                   </q-card>

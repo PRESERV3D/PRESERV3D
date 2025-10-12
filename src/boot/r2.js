@@ -1,5 +1,10 @@
 import { boot } from 'quasar/wrappers'
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { getCachedUrl, setCachedUrl } from 'src/utils/urlCache'
 
@@ -94,10 +99,36 @@ async function uploadFileToR2(file, folder, fileName) {
   }
 }
 
+/**
+ * Delete a file from R2
+ * @param {string} folder - The folder name (e.g., "visitor-letters", "artifacts")
+ * @param {string} fileName - The file name to delete
+ * @returns {Promise<{error: Error|null}>}
+ */
+async function deleteFileFromR2(folder, fileName) {
+  try {
+    const key = `${folder}/${fileName}`
+
+    await r2.send(
+      new DeleteObjectCommand({
+        Bucket: r2BucketName,
+        Key: key,
+      }),
+    )
+
+    console.log(`File deleted from R2: ${key}`)
+    return { error: null }
+  } catch (err) {
+    console.error('Error deleting file from R2:', err)
+    return { error: err }
+  }
+}
+
 export default boot(({ app }) => {
   app.config.globalProperties.$r2Upload = uploadFileToR2
   app.config.globalProperties.$getR2Url = getR2Url
   app.config.globalProperties.$getPresignedUrl = getPresignedUrl
+  app.config.globalProperties.$deleteFileFromR2 = deleteFileFromR2
 })
 
-export { uploadFileToR2, getR2Url, getPresignedUrl }
+export { uploadFileToR2, getR2Url, getPresignedUrl, deleteFileFromR2 }

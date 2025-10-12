@@ -63,7 +63,22 @@ export const useUserStore = defineStore('user', {
         supabase.from('registered_users').select('*').eq('id', userId),
         supabase.from('registered_faculty').select('*').eq('id', userId),
         supabase.from('registered_admins').select('*').eq('id', userId),
-        supabase.from('approved_visitors').select('*').eq('user_id', userId),
+        supabase
+          .from('approved_visitors')
+          .select(
+            `
+            *,
+            registration_visitors (
+              first_name,
+              last_name,
+              contact,
+              institution,
+              purpose,
+              email
+            )
+          `,
+          )
+          .eq('user_id', userId),
       ])
 
       // Check results in priority order
@@ -115,8 +130,24 @@ export const useUserStore = defineStore('user', {
       }
 
       if (visitorData?.length > 0) {
+        const visitor = visitorData[0]
+        const registrationData = visitor.registration_visitors || {}
+
         this.profile = {
-          ...visitorData[0],
+          ...visitor,
+          // Merge registration data into profile
+          first_name: registrationData.first_name,
+          last_name: registrationData.last_name,
+          contact: registrationData.contact,
+          institution: registrationData.institution,
+          purpose: registrationData.purpose,
+          email: registrationData.email || visitor.email,
+          // Keep approved_visitors data
+          approval_id: visitor.approval_id, // Important for extension requests
+          start_date: visitor.start_date,
+          end_date: visitor.end_date,
+          approved_at: visitor.approved_at,
+          approved_by: visitor.approved_by,
           role: 'user',
           user_type: 'visitor',
         }
@@ -124,7 +155,7 @@ export const useUserStore = defineStore('user', {
       }
 
       if (visitorError) {
-        console.error('Error fetching admin profile:', visitorError)
+        console.error('Error fetching visitor profile:', visitorError)
       }
 
       // If all fail

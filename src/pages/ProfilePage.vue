@@ -217,7 +217,19 @@
               type="date"
               :min="visitorData.endDate"
               class="edit-input"
+              @update:model-value="checkExtensionDuration"
             />
+            <!-- Extension duration info -->
+            <div v-if="extensionRequest.newEndDate" class="q-mt-sm">
+              <div v-if="isExtensionWithinWeek" class="text-caption text-positive">
+                <q-icon name="check_circle" size="16px" />
+                Extension within 7 days - No letter required
+              </div>
+              <div v-else class="text-caption text-warning">
+                <q-icon name="warning" size="16px" />
+                Extension exceeds 7 days - Letter upload required
+              </div>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Reason for Extension <span class="required">*</span></label>
@@ -228,36 +240,48 @@
               type="textarea"
               rows="4"
               autogrow
-              placeholder="Please provide a detailed reason for your extension request..."
+              placeholder="Please state your reason for your extension request."
               class="edit-input"
             />
           </div>
-          <div class="form-group">
-            <label class="form-label">Supporting Document (Optional)</label>
+          <!-- Conditional Letter Upload -->
+          <div v-if="requiresLetterUpload" class="form-group">
+            <label class="form-label">
+              Supporting Letter
+              <span class="required">*</span>
+              <span class="text-caption text-grey-7"> (Required for extensions over 7 days) </span>
+            </label>
             <div class="file-upload-section">
               <input
                 type="file"
-                ref="fileInput"
-                @change="handleFileSelect"
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                ref="letterInput"
+                @change="handleLetterSelect"
+                accept=".pdf"
                 style="display: none"
               />
               <q-btn
                 outline
                 color="primary"
-                label="Choose File"
-                icon="attach_file"
+                label="Upload Letter (PDF)"
+                icon="picture_as_pdf"
                 size="md"
-                @click="$refs.fileInput.click()"
+                @click="$refs.letterInput.click()"
               />
-              <div v-if="extensionRequest.supportingDocument" class="file-selected">
-                <q-icon name="description" size="18px" color="primary" />
-                <span>{{ extensionRequest.supportingDocument.name }}</span>
+              <div v-if="extensionRequest.letter" class="file-selected">
+                <q-icon name="picture_as_pdf" size="18px" color="primary" />
+                <span>{{ extensionRequest.letter.name }}</span>
+                <q-btn
+                  flat
+                  dense
+                  round
+                  icon="close"
+                  size="xs"
+                  color="negative"
+                  @click="removeLetterFile"
+                />
               </div>
             </div>
-            <div class="text-caption text-grey-7 q-mt-xs">
-              Accepted formats: PDF, DOC, DOCX, JPG, PNG (Max 5MB)
-            </div>
+            <div class="text-caption text-grey-7 q-mt-xs">PDF only - Max 5MB</div>
           </div>
           <div class="certification-section">
             <q-checkbox v-model="extensionRequest.certificationAccepted" color="primary">
@@ -272,17 +296,13 @@
         </q-card-section>
         <q-separator />
         <q-card-actions align="right" class="dialog-actions">
-          <q-btn flat label="Cancel" color="grey-7" v-close-popup />
+          <q-btn flat label="Cancel" color="grey-7" v-close-popup @click="resetExtensionForm" />
           <q-btn
             unelevated
             label="Submit Request"
             color="primary"
             @click="submitExtensionRequest"
-            :disable="
-              !extensionRequest.certificationAccepted ||
-              !extensionRequest.newEndDate ||
-              !extensionRequest.reason
-            "
+            :disable="!isExtensionFormValid"
           />
         </q-card-actions>
       </q-card>
@@ -294,6 +314,8 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
+import { supabase } from 'boot/supabase'
+import { uploadFileToR2, deleteFileFromR2 } from 'boot/r2'
 
 const userStore = useUserStore()
 const userProfile = computed(() => userStore.profile || {})
@@ -304,7 +326,41 @@ const $q = useQuasar()
 const profileImage = ref(null)
 const showExtensionDialog = ref(false)
 const hasActiveExtension = ref(false)
-const fileInput = ref(null)
+const letterInput = ref(null)
+
+// Computed properties for extension validation
+const extensionDurationDays = computed(() => {
+  if (!extensionRequest.newEndDate || !visitorData.endDate) return 0
+
+  const currentEndDate = new Date(visitorData.endDate)
+  const newEndDate = new Date(extensionRequest.newEndDate)
+  const diffTime = newEndDate - currentEndDate
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  return diffDays
+})
+
+const isExtensionWithinWeek = computed(() => {
+  return extensionDurationDays.value > 0 && extensionDurationDays.value <= 7
+})
+
+const requiresLetterUpload = computed(() => {
+  return extensionDurationDays.value > 7
+})
+
+const isExtensionFormValid = computed(() => {
+  const basicFieldsValid =
+    extensionRequest.certificationAccepted &&
+    extensionRequest.newEndDate &&
+    extensionRequest.reason.trim().length > 0
+
+  // If letter is required (extension > 7 days), check if letter is uploaded
+  if (requiresLetterUpload.value) {
+    return basicFieldsValid && extensionRequest.letter !== null
+  }
+
+  return basicFieldsValid
+})
 
 // Student data
 const studentData = reactive({
@@ -390,6 +446,9 @@ onMounted(async () => {
       visitorData.purpose = profile.purpose || ''
       visitorData.startDate = profile.start_date || ''
       visitorData.endDate = profile.end_date || ''
+
+      // Check for pending extension requests
+      await checkPendingExtension(profile.approval_id)
     }
   } catch (error) {
     console.error('Error loading profile:', error)
@@ -401,16 +460,52 @@ onMounted(async () => {
   }
 })
 
+// Check if visitor has a pending extension request
+const checkPendingExtension = async (approvalId) => {
+  if (!approvalId) return
+
+  const { data, error } = await supabase
+    .from('account_extensions')
+    .select('*')
+    .eq('approval_id', approvalId)
+    .eq('extension_status', 'Pending')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) {
+    console.error('Error checking extension status:', error)
+    return
+  }
+
+  if (data) {
+    hasActiveExtension.value = true
+    console.log('Pending extension found:', data)
+  }
+}
+
 const extensionRequest = reactive({
   newEndDate: '',
   reason: '',
-  supportingDocument: null,
+  letter: null, // Required for extensions > 7 days
   certificationAccepted: false,
 })
 
-const handleFileSelect = (event) => {
+const handleLetterSelect = (event) => {
   const file = event.target.files[0]
   if (file) {
+    // Validate file type (PDF only)
+    if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
+      $q.notify({
+        type: 'negative',
+        message: 'Only PDF files are accepted',
+        position: 'top',
+      })
+      event.target.value = ''
+      return
+    }
+
+    // Validate file size
     if (file.size > 5242880) {
       $q.notify({
         type: 'negative',
@@ -420,24 +515,155 @@ const handleFileSelect = (event) => {
       event.target.value = ''
       return
     }
-    extensionRequest.supportingDocument = file
+
+    extensionRequest.letter = file
   }
 }
 
-const submitExtensionRequest = () => {
-  hasActiveExtension.value = true
-  showExtensionDialog.value = false
-  $q.notify({
-    type: 'positive',
-    message: 'Extension request submitted successfully. Pending approval.',
-    position: 'top',
-  })
+const removeLetterFile = () => {
+  extensionRequest.letter = null
+  if (letterInput.value) {
+    letterInput.value.value = ''
+  }
+}
+
+const checkExtensionDuration = () => {
+  // This is called when newEndDate changes
+  // The computed properties will automatically update
+  console.log('Extension duration:', extensionDurationDays.value, 'days')
+  console.log('Requires letter:', requiresLetterUpload.value)
+}
+
+const resetExtensionForm = () => {
   extensionRequest.newEndDate = ''
   extensionRequest.reason = ''
-  extensionRequest.supportingDocument = null
+  extensionRequest.letter = null
   extensionRequest.certificationAccepted = false
-  if (fileInput.value) {
-    fileInput.value.value = ''
+
+  if (letterInput.value) {
+    letterInput.value.value = ''
+  }
+}
+
+const submitExtensionRequest = async () => {
+  // Validate required fields
+  if (!isExtensionFormValid.value) {
+    $q.notify({
+      type: 'negative',
+      message: 'Please fill in all required fields',
+      position: 'top',
+    })
+    return
+  }
+
+  const profile = userStore.profile
+  if (!profile || !profile.approval_id) {
+    $q.notify({
+      type: 'negative',
+      message: 'Unable to identify your account. Please try logging in again.',
+      position: 'top',
+    })
+    return
+  }
+
+  try {
+    $q.loading.show({ message: 'Submitting extension request...' })
+
+    let letterUrl = null
+    let uploadedFileName = null
+
+    // Upload letter to R2 first (if required)
+    if (requiresLetterUpload.value && extensionRequest.letter) {
+      const fileName = extensionRequest.letter.name
+      uploadedFileName = fileName
+
+      const { error: uploadError, publicUrl } = await uploadFileToR2(
+        extensionRequest.letter,
+        'visitor-letters',
+        fileName,
+      )
+
+      if (uploadError) {
+        throw new Error(`Failed to upload letter: ${uploadError.message}`)
+      }
+
+      letterUrl = publicUrl
+      console.log('Letter uploaded successfully:', letterUrl)
+    }
+
+    // Insert extension request into database with letter URL
+    const { data: extensionData, error: insertError } = await supabase
+      .from('account_extensions')
+      .insert([
+        {
+          approval_id: profile.approval_id,
+          old_end_date: visitorData.endDate,
+          extended_end_date: extensionRequest.newEndDate,
+          letter: letterUrl,
+          purpose: extensionRequest.reason,
+          extension_status: 'Pending',
+        },
+      ])
+      .select()
+
+    if (insertError) {
+      // If database insert fails and we uploaded a file, delete it from R2
+      if (uploadedFileName) {
+        console.log('Database insert failed. Deleting uploaded file from R2:', uploadedFileName)
+        const { error: deleteError } = await deleteFileFromR2('visitor-letters', uploadedFileName)
+        if (deleteError) {
+          console.error('Failed to delete file from R2:', deleteError)
+        } else {
+          console.log('Successfully deleted file from R2:', uploadedFileName)
+        }
+      }
+      throw insertError
+    }
+
+    console.log('Extension request created:', extensionData)
+
+    // Create notification for all admins
+    const { error: notificationError } = await supabase.from('notifications').insert([
+      {
+        receiver_role: 'admin',
+        message: `${visitorData.firstName} ${visitorData.lastName} has requested an account extension from ${formatDate(visitorData.endDate)} to ${formatDate(extensionRequest.newEndDate)}.`,
+        type: 'visitor_registration',
+        created_at: new Date().toISOString(),
+        read: false,
+      },
+    ])
+
+    if (notificationError) {
+      console.error('Failed to create notification:', notificationError)
+      // Don't fail the request if notification fails
+    }
+
+    hasActiveExtension.value = true
+    showExtensionDialog.value = false
+
+    const message = requiresLetterUpload.value
+      ? 'Extension request submitted successfully with supporting letter. Pending admin approval.'
+      : 'Extension request submitted successfully. Pending admin approval.'
+
+    $q.notify({
+      type: 'positive',
+      message: message,
+      position: 'top',
+      timeout: 3000,
+    })
+
+    // Reset form
+    resetExtensionForm()
+  } catch (error) {
+    console.error('Error submitting extension request:', error)
+    $q.notify({
+      type: 'negative',
+      message: error.message || 'Failed to submit extension request. Please try again.',
+      position: 'top',
+      timeout: 3000,
+    })
+  } finally {
+    $q.loading.hide()
   }
 }
 
@@ -476,7 +702,7 @@ const formatDate = (dateString) => {
 .profile-card {
   width: 100%;
   max-width: 900px;
-  padding: 40px;
+  padding: 40px 100px;
   display: flex;
   gap: 60px;
 }
@@ -571,6 +797,32 @@ const formatDate = (dateString) => {
   background-color: #f8f9fa;
   border-radius: 4px;
   border-left: 4px solid #1976d2;
+}
+
+.text-positive {
+  color: #4caf50;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.text-warning {
+  color: #ff9800;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.file-selected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background-color: #e3f2fd;
+  border-radius: 4px;
+  color: #1976d2;
+  font-size: 14px;
+  justify-content: space-between;
 }
 
 .action-buttons {
