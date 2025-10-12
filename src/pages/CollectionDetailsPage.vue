@@ -630,7 +630,20 @@ async function fetchCollectionInfo() {
   if (error) {
     console.error('Failed to load collection info:', error)
   } else {
-    collection.value = data
+    // Convert cover URL to presigned URL
+    let workingCoverUrl = data.cover_url
+    if (data.cover_url) {
+      try {
+        workingCoverUrl = await convertToWorkingUrl(data.cover_url)
+      } catch (err) {
+        console.warn('Could not convert cover URL:', err)
+      }
+    }
+
+    collection.value = {
+      ...data,
+      cover_url: workingCoverUrl,
+    }
   }
 }
 
