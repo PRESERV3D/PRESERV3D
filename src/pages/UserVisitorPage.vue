@@ -289,6 +289,21 @@
         </div>
       </div>
     </q-form>
+
+    <!-- Message Dialog -->
+    <q-dialog v-model="notifyDialogOpen">
+      <q-card class="sucess-add-to-collection">
+        <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
+          notifyDialogTitle
+        }}</q-card-section>
+        <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
+          notifyDialogMessage
+        }}</q-card-section>
+        <q-card-actions>
+          <q-btn flat label="Close" class="btn-save" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -305,6 +320,11 @@ const step = ref(1)
 
 const showDialog = ref(false)
 const isSignUpLoading = ref(false)
+
+// Notification dialog state
+const notifyDialogOpen = ref(false)
+const notifyDialogTitle = ref('')
+const notifyDialogMessage = ref('')
 
 const form = ref({
   first_name: '',
@@ -364,8 +384,15 @@ const endDateOptions = (val) => {
 // const startDateOptions = () => true
 // const endDateOptions = () => true
 
+// Notification dialog helper
+const showNotifyDialog = (title, message) => {
+  notifyDialogTitle.value = title
+  notifyDialogMessage.value = message
+  notifyDialogOpen.value = true
+}
+
 const handleUploadClick = () => {
-  alert('File has been added to your registration.')
+  showNotifyDialog('File Added', 'File has been added to your registration.')
   showDialog.value = false
 }
 // Password strength status
@@ -390,40 +417,127 @@ async function validateStepOne() {
   const { first_name, last_name, email, contact } = form.value
 
   if (!first_name || !last_name || !email || !contact) {
-    alert('Please fill out all required fields.')
+    showNotifyDialog('Missing Information', 'Please fill out all required fields.')
     return
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    alert('Please enter a valid email address.')
+    showNotifyDialog('Invalid Email', 'Please enter a valid email address.')
     return
   }
 
   const emailUnique = await checkEmailUnique(email)
   if (emailUnique !== true) {
-    alert(emailUnique)
     return
   }
 
   step.value++
 }
 
-// Check if email already exists in all_users table
+// Check if email already exists in all_users table, pending registrations, or visitor status
 const checkEmailUnique = async (val) => {
   if (!val) return true
 
-  const { data, error } = await supabase
-    .from('all_users')
-    .select('id')
-    .eq('email', val)
-    .maybeSingle()
+  try {
+    // Check 1: Email exists in all_users (any user type)
+    const { data: existingUser, error: userError } = await supabase
+      .from('all_users')
+      .select('id, user_type')
+      .eq('email', val)
+      .maybeSingle()
 
-  if (error) {
-    console.error(error)
+    if (userError && userError.code !== 'PGRST116') {
+      console.error('Error checking all_users:', userError)
+      return true
+    }
+
+    if (existingUser) {
+      // Check 2: If visitor, check their account status via approved_visitors_status view
+      if (existingUser.user_type === 'visitor') {
+        const { data: visitorStatus, error: statusError } = await supabase
+          .from('approved_visitors_status')
+          .select('account_status, end_date')
+          .eq('user_id', existingUser.id)
+          .maybeSingle()
+
+        if (statusError && statusError.code !== 'PGRST116') {
+          console.error('Error checking visitor status:', statusError)
+          showNotifyDialog(
+            'Email Already Exists',
+            'An account with this email already exists. Please use a different email or log in instead.',
+          )
+          return false
+        }
+
+        if (visitorStatus) {
+          if (visitorStatus.account_status === 'Expired') {
+            const endDate = new Date(visitorStatus.end_date).toLocaleDateString()
+            showNotifyDialog(
+              'Expired Visitor Account',
+              `A visitor account with this email has expired (ended on ${endDate}). Please contact the administrator to extend your access or use a different email.`,
+            )
+            return false
+          } else if (
+            visitorStatus.account_status === 'Active' ||
+            visitorStatus.account_status === 'Inactive'
+          ) {
+            showNotifyDialog(
+              'Account Already Exists',
+              'An account with this email already exists. If this is you, please log in instead. Otherwise, please use a different email.',
+            )
+            return false
+          } else if (visitorStatus.account_status === 'Pending Confirmation') {
+            showNotifyDialog(
+              'Pending Email Confirmation',
+              'An account with this email exists. If this is you, please check your email for account confirmation. Otherwise, please use a different email.',
+            )
+            return false
+          } else if (visitorStatus.account_status === 'Not Started') {
+            showNotifyDialog(
+              'Account Already Exists',
+              'An account with this email already exists. If this is you, please wait for your access period. Otherwise, please use a different email.',
+            )
+            return false
+          }
+        }
+      } else {
+        // Non-visitor user type (student, faculty, admin)
+        showNotifyDialog(
+          'Account Already Exists',
+          'An account with this email already exists. If this is you, please log in instead. Otherwise, please use a different email.',
+        )
+        return false
+      }
+    }
+
+    // Check 3: Email exists in pending visitor registrations
+    const { data: pendingRegistration, error: regError } = await supabase
+      .from('registration_visitors')
+      .select('status, created_at')
+      .eq('email', val)
+      .maybeSingle()
+
+    if (regError && regError.code !== 'PGRST116') {
+      console.error('Error checking registrations:', regError)
+      return true
+    }
+
+    if (pendingRegistration) {
+      if (pendingRegistration.status === 'Pending') {
+        showNotifyDialog(
+          'Registration Pending',
+          `A visitor registration with this email is already pending approval. If this is you, please wait for admin review. Otherwise, please use a different email.`,
+        )
+        return false
+      }
+    }
+
+    // Email is unique and available
+    return true
+  } catch (error) {
+    console.error('Error in checkEmailUnique:', error)
     return true
   }
-
-  return !data || 'An account with this email already exists. Please use a different email.'
 }
 
 // Register user
@@ -433,27 +547,32 @@ async function registerUser() {
     form.value
 
   if (!institution || !purpose) {
-    alert('Please fill out all required fields.')
+    showNotifyDialog('Missing Information', 'Please fill out all required fields.')
+    isSignUpLoading.value = false
     return
   }
 
   if (!selectedFile.value) {
-    alert('Please upload your request/referral letter.')
+    showNotifyDialog('Missing Document', 'Please upload your request/referral letter.')
+    isSignUpLoading.value = false
     return
   }
 
   if (!start_date) {
-    alert('Please select a start date.')
+    showNotifyDialog('Missing Date', 'Please select a start date.')
+    isSignUpLoading.value = false
     return
   }
 
   if (!end_date) {
-    alert('Please select an end date.')
+    showNotifyDialog('Missing Date', 'Please select an end date.')
+    isSignUpLoading.value = false
     return
   }
 
   if (end_date < start_date) {
-    alert('End date must be after the start date.')
+    showNotifyDialog('Invalid Date Range', 'End date must be after the start date.')
+    isSignUpLoading.value = false
     return
   }
 
@@ -477,8 +596,9 @@ async function registerUser() {
     ])
 
     if (error) {
-      alert('Failed to save registration.')
+      showNotifyDialog('Registration Failed', 'Failed to save registration. Please try again.')
       console.error('Insert error:', error)
+      isSignUpLoading.value = false
       return
     }
 
@@ -492,7 +612,8 @@ async function registerUser() {
     step.value = 3
   } catch (err) {
     console.log('Error during registration:', err)
-    alert('An error occurred during registration. Please try again later.')
+    showNotifyDialog('Error', 'An error occurred during registration. Please try again later.')
+    isSignUpLoading.value = false
   }
 }
 
@@ -546,7 +667,7 @@ function onFileDropped(file) {
   if (file?.type === 'application/pdf') {
     onFileSelected(file)
   } else {
-    alert('Only PDF files are allowed.')
+    showNotifyDialog('Invalid File Type', 'Only PDF files are allowed.')
     selectedFile.value = null
   }
 }
@@ -559,23 +680,15 @@ async function uploadFileToStorage(file, fileName) {
   const { error } = await uploadFileToR2(file, 'visitor-letters', fileName)
   return error
 }
-
-function handleCancel() {
-  selectedFile.value = null
-  showDialog.value = false
-  uploading.value = false
-  uploadProgress.value = 0
-}
-
 const prepareFile = async () => {
   if (!selectedFile.value || selectedFile.value.type !== 'application/pdf') {
-    alert('Only .pdf files are allowed.')
+    showNotifyDialog('Invalid File Type', 'Only .pdf files are allowed.')
     return
   }
 
   const compressedFile = await compressPdf(selectedFile.value)
   if (!compressedFile) {
-    alert('Compression failed. Please try again.')
+    showNotifyDialog('Compression Failed', 'Compression failed. Please try again.')
     return
   }
 

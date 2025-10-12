@@ -1758,9 +1758,13 @@ async function deleteUser() {
     }
 
     // Delete from specific user table
-    const { error: deleteError } = await supabase.from(tableName).delete().eq('id', userId)
-
-    if (deleteError) throw deleteError
+    if (deleteType.value === 'visitor') {
+      const { error: deleteError } = await supabase.from(tableName).delete().eq('user_id', userId)
+      if (deleteError) throw deleteError
+    } else {
+      const { error: deleteError } = await supabase.from(tableName).delete().eq('id', userId)
+      if (deleteError) throw deleteError
+    }
 
     // Delete from all_users table
     await supabase.from('all_users').delete().eq('id', userId)
