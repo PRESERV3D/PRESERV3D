@@ -308,18 +308,17 @@ async function validateStepOne() {
 
   if (!first_name || !last_name || !email || !college) {
     //remove contact here
-    alert('Please fill out all required fields.')
+    showNotifyDialog('Missing Information', 'Please fill out all required fields.')
     return
   }
 
   if (!email.includes('@iskolarngbayan.pup.edu.ph')) {
-    alert('Please use your PUP email only.')
+    showNotifyDialog('Invalid Email', 'Please use your PUP email only.')
     return
   }
 
   const emailUnique = await checkEmailUnique(email)
   if (emailUnique !== true) {
-    alert(emailUnique)
     return
   }
 
@@ -330,18 +329,32 @@ async function validateStepOne() {
 const checkEmailUnique = async (val) => {
   if (!val) return true
 
-  const { data, error } = await supabase
-    .from('all_users')
-    .select('id')
-    .eq('email', val)
-    .maybeSingle()
+  try {
+    const { data: existingUser, error: userError } = await supabase
+      .from('all_users')
+      .select('id')
+      .eq('email', val)
+      .maybeSingle()
 
-  if (error) {
-    console.error(error)
+    if (userError && userError.code !== 'PGRST116') {
+      console.error('Error checking all_users:', userError)
+      return true
+    }
+
+    if (existingUser) {
+      showNotifyDialog(
+        'Account Already Exists',
+        'An account with this email already exists. If this is you, please log in instead. Otherwise, please use a different email.',
+      )
+      return false
+    }
+
+    // Email is unique and available
+    return true
+  } catch (error) {
+    console.error('Error in checkEmailUnique:', error)
     return true
   }
-
-  return !data || 'An account with this email already exists. Please use a different email.'
 }
 
 // Register user
@@ -361,19 +374,20 @@ async function registerUser() {
 
   const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/
   if (!passwordRegex.test(password)) {
-    alert(
+    showNotifyDialog(
+      'Invalid Password',
       'Password must be at least 8 characters long and contain an uppercase letter, a number, and a special character.',
     )
     return
   }
 
   if (password !== confirmPassword) {
-    alert('Passwords do not match!')
+    showNotifyDialog('Password Mismatch', 'Passwords do not match!')
     return
   }
 
   if (!college || !department || !year_section) {
-    alert('Please fill out all required fields.')
+    showNotifyDialog('Missing Information', 'Please fill out all required fields.')
     return
   }
 
@@ -391,7 +405,7 @@ async function registerUser() {
     })
 
     if (error) {
-      alert(error.message)
+      showNotifyDialog('Registration Error', error.message)
       return
     }
 
@@ -415,7 +429,7 @@ async function registerUser() {
 
       if (profileError) {
         console.error(profileError)
-        alert('User created, but failed to save profile.')
+        showNotifyDialog('Profile Error', 'User created, but failed to save profile.')
         return
       }
 
@@ -439,7 +453,10 @@ async function registerUser() {
 
       if (!createFavorites) {
         console.error('Error in creating Favorites collection: ', favoritesError)
-        alert('User created, but failed to create Favorites collection.')
+        showNotifyDialog(
+          'Collection Error',
+          'User created, but failed to create Favorites collection.',
+        )
         return
       }
 
@@ -451,7 +468,7 @@ async function registerUser() {
     }
   } catch (err) {
     console.error('Unexpected error:', err)
-    alert('An unexpected error occurred.')
+    showNotifyDialog('Error', 'An unexpected error occurred.')
   }
 }
 
