@@ -90,9 +90,11 @@ async function sendResetEmail() {
   isSubmitLoading.value = true
   const emailExists = await checkEmail()
   if (!emailExists) {
-    message.value = 'Email not found.'
-    showDialog.value = true
+    message.value = 'Email address not found. Please verify your email and try again.'
     isSubmitLoading.value = false
+    // Use nextTick to ensure message is set before showing dialog
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    showDialog.value = true
     return
   }
 
@@ -101,14 +103,16 @@ async function sendResetEmail() {
   })
 
   if (error) {
-    message.value = error.message
+    message.value = `Unable to send reset email: ${error.message}`
     emailSent.value = false
   } else {
     message.value =
-      'A password reset email has been sent to your registered email address. Please check your inbox.'
+      'Password reset email sent successfully! Please check your inbox and follow the instructions to reset your password.'
     emailSent.value = true
   }
   isSubmitLoading.value = false
+  // Use nextTick to ensure message is set before showing dialog
+  await new Promise((resolve) => setTimeout(resolve, 0))
   showDialog.value = true
 }
 
