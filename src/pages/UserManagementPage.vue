@@ -1,15 +1,16 @@
 <template>
   <q-page class="q-pa-md">
-    <div class="row items-center justify-between q-mb-md">
-      <div>
-        <div class="q-mt-xs title">User Management</div>
-        <div class="q-mt-xs q-mb-lg subtitle">
+    <div class="page-header">
+        <h2 class="q-mb-sm title">User Management</h2>
+      <div class="subtitle-btn-row">
+        <h5 class="q-mt-xs q-mb-lg subtitle">
           {{
             isSuperAdmin ? 'Manage all users and administrators' : 'Manage visitor registrations'
           }}
-        </div>
+        </h5>
       </div>
-    </div>
+      </div>
+
 
     <!-- Action Buttons -->
     <div v-if="isSuperAdmin" class="row q-gutter-md q-mb-md">
