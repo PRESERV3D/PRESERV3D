@@ -6,6 +6,7 @@ export const useUserStore = defineStore('user', {
     session: null,
     profile: null, // Includes full profile + role
     isSigningOut: false, // Flag to prevent auth listener interference during logout
+    pendingNotifications: [], // Queue for notifications to show after navigation
   }),
 
   actions: {
@@ -221,6 +222,17 @@ export const useUserStore = defineStore('user', {
         // Always clear the signing out flag
         this.isSigningOut = false
       }
+    },
+
+    // Notification queue management
+    addNotification(notification) {
+      this.pendingNotifications.push(notification)
+    },
+
+    getAndClearNotifications() {
+      const notifications = [...this.pendingNotifications]
+      this.pendingNotifications = []
+      return notifications
     },
   },
 })

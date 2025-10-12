@@ -903,6 +903,12 @@ onMounted(() => {
     }
   }
 
+  // Check for pending notifications from router guard
+  const pendingNotifications = userStore.getAndClearNotifications()
+  pendingNotifications.forEach((notification) => {
+    $q.notify(notification)
+  })
+
   // // Perform search if there's existing search value
   // if (search.value || searchType.value) {
   //   performSearch()
@@ -932,6 +938,12 @@ watch(
 watch(
   () => route.path,
   (newPath) => {
+    // Check for pending notifications from router guard after navigation
+    const pendingNotifications = userStore.getAndClearNotifications()
+    pendingNotifications.forEach((notification) => {
+      $q.notify(notification)
+    })
+
     if (newPath === '/') {
       activeItem.value = 'home'
     } else if (
