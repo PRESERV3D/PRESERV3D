@@ -29,10 +29,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Rate limiting: Track last email send time (in-memory, resets on cold start)
+let lastEmailTime = 0
+const MIN_EMAIL_INTERVAL_MS = 3000 // 3 seconds between emails
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+
+  // Rate limiting check
+  const now = Date.now()
+  const timeSinceLastEmail = now - lastEmailTime
+  if (timeSinceLastEmail < MIN_EMAIL_INTERVAL_MS) {
+    const waitTime = MIN_EMAIL_INTERVAL_MS - timeSinceLastEmail
+    console.log(`Rate limit: waiting ${waitTime}ms before sending email`)
+    await new Promise((resolve) => setTimeout(resolve, waitTime))
   }
 
   try {
@@ -364,6 +377,9 @@ This is an automated message. Please do not reply to this email.
       tlsConn.close()
 
       console.log(`✓✓✓ Email sent successfully to ${email} ✓✓✓`)
+
+      // Update last email time for rate limiting
+      lastEmailTime = Date.now()
     } catch (smtpError) {
       console.error('Gmail SMTP error:', smtpError)
       return new Response(
