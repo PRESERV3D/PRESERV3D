@@ -1,9 +1,16 @@
-<template>
+<template >
   <q-page class="q-pa-md">
-    <div class="q-mt-xs title">Collections</div>
+    <div class="page-header">
+    <h2 class="q-mb-sm title">Collections</h2>
+      <div class="subtitle-btn-row">
+        <h5 class="q-mt-xs q-mb-lg subtitle">
+      Archival Materials grouped into a collection.
+        </h5>
+        </div>
+    </div>
 
-    <div class="q-mb-md subtitle subtitle-btn-row">
-      <div class="q-ml-sm subtitle-text">Archival Materials grouped into a collection.</div>
+
+
       <div class="artifact-btn">
         <q-btn-dropdown
           outline
@@ -39,7 +46,7 @@
           unelevated
         />
       </div>
-    </div>
+
 
     <!-- Loading Spinner -->
     <div v-if="isLoading" class="text-center q-my-md">
