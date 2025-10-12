@@ -9,14 +9,14 @@
               <q-avatar size="150px">
                 <img :src="profileImage || 'https://cdn.quasar.dev/img/avatar.png'" />
               </q-avatar>
-              <q-btn
-                round
-                color="primary"
-                icon="camera_alt"
-                size="sm"
-                class="camera-btn"
-                @click="changeProfilePicture"
-              />
+<!--              <q-btn-->
+<!--                round-->
+<!--                color="primary"-->
+<!--                icon="camera_alt"-->
+<!--                size="sm"-->
+<!--                class="camera-btn"-->
+<!--                @click="changeProfilePicture"-->
+<!--              />-->
             </div>
             <!-- Extension Request Button for Visitors -->
             <div v-if="userType === 'visitor'" class="extension-section q-mt-md">
@@ -673,13 +673,13 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-const changeProfilePicture = () => {
-  $q.notify({
-    type: 'info',
-    message: 'Profile picture upload functionality',
-    position: 'top',
-  })
-}
+// const changeProfilePicture = () => {
+//   $q.notify({
+//     type: 'info',
+//     message: 'Profile picture upload functionality',
+//     position: 'top',
+//   })
+// }
 </script>
 
 <style scoped>
@@ -702,7 +702,7 @@ const changeProfilePicture = () => {
 .profile-card {
   width: 100%;
   max-width: 900px;
-  padding: 40px;
+  padding: 40px 100px;
   display: flex;
   gap: 60px;
 }

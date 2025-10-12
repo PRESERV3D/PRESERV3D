@@ -86,6 +86,7 @@
   background-position: center center;
   background-repeat: no-repeat;
   min-height: 100vh;
+  background-attachment: fixed
 }
 
 .logo-img {
@@ -315,6 +316,90 @@
 
   .main-tile {
     bottom: 2rem;
+  }
+}
+
+/* ========================
+ HEIGHT ADJUSTMENTS
+======================== */
+
+@media (min-height: 54rem) {
+  .trophy-center {
+    bottom: -24.45rem;
+  }
+
+  .trophy-left {
+    bottom: -24rem;
+  }
+
+  .trophy-right {
+    bottom: -23rem;
+  }
+
+  .bottom-shadow-overlay {
+    height: 29rem;
+  }
+
+  .main-tile {
+    bottom: 5rem;
+  }
+}
+
+
+/* Shorter screens - keep trophies closer */
+@media (max-height: 43.75rem) {
+  .trophy-center {
+    width: 36rem;
+    bottom: -14rem;
+  }
+
+  .trophy-left {
+    width: 16rem;
+    bottom: -14rem;
+  }
+
+  .trophy-right {
+    width: 19rem;
+    bottom: -14rem;
+  }
+
+  .bottom-shadow-overlay {
+    height: 18rem;
+  }
+
+  .main-tile {
+    font-size: 92px;
+    bottom: 0.5rem;
+  }
+
+  .hero-title {
+    font-size: 30px;
+  }
+  .hero-subtitle {
+    font-size: 10px;
+  }
+}
+
+/* Very short heights */
+@media (max-height: 31.25rem) {
+  .trophy-center {
+    bottom: -10rem;
+  }
+
+  .trophy-left {
+    bottom: -10rem;
+  }
+
+  .trophy-right {
+    bottom: -10rem;
+  }
+
+  .bottom-shadow-overlay {
+    height: 14rem;
+  }
+
+  .main-tile {
+    bottom: 0.3rem;
   }
 }
 </style>

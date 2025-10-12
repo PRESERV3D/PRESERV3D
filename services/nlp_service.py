@@ -23,15 +23,47 @@ app = FastAPI()
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:9000", "https://preserv3d.vercel.app"],
+    allow_origins=[
+        "http://localhost:9000",
+        "https://localhost:9000",
+        "https://preserv3d.vercel.app",
+        "https://*.vercel.app",  # All Vercel preview deployments
+        "https://*.onrender.com",  # Render domains
+        os.getenv("FRONTEND_URL", "")  # Environment variable for custom frontend URL
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
-kw_model = KeyBERT('all-MiniLM-L6-v2')
-nlp = spacy.load("nlp_training/ner_model")
+# Global model cache - lazy loaded
+_summarizer = None
+_kw_model = None
+_nlp = None
+
+def get_summarizer():
+    global _summarizer
+    if _summarizer is None:
+        print("Loading BART summarizer model...")
+        _summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+        print("BART summarizer model loaded successfully")
+    return _summarizer
+
+def get_kw_model():
+    global _kw_model
+    if _kw_model is None:
+        print("Loading KeyBERT model...")
+        _kw_model = KeyBERT('all-MiniLM-L6-v2')
+        print("KeyBERT model loaded successfully")
+    return _kw_model
+
+def get_nlp():
+    global _nlp
+    if _nlp is None:
+        print("Loading custom NER model...")
+        _nlp = spacy.load("nlp_training/ner_model")
+        print("Custom NER model loaded successfully")
+    return _nlp
 
 @app.post("/process-text")
 async def process_pdf(
@@ -76,7 +108,7 @@ async def process_pdf(
 
             # Keyword Extraction
             try:
-                kw_result = kw_model.extract_keywords(cleaned_text, top_n=10)
+                kw_result = get_kw_model().extract_keywords(cleaned_text, top_n=10)
                 if kw_result:
                     keywords = [kw for kw, _ in kw_result]
                 else:
@@ -87,7 +119,7 @@ async def process_pdf(
 
             # Summarization
             try:
-                result = summarizer(
+                result = get_summarizer()(
                     cleaned_text[:4000],
                     max_length=200,
                     min_length=50,
@@ -205,7 +237,7 @@ def extract_metadata_ner(text, filename=None):
     print("Extracting metadata using NER model...")
     
     # Process text with NER model
-    doc = nlp(text)
+    doc = get_nlp()(text)
     
     # Extract entities by type
     entities = {
@@ -769,7 +801,7 @@ def generate_summary(text, title=None, author=None, date=None, keywords=None, ca
     model_input = f"{instruction}\n\n{input_text}"
 
     try:
-        base_summary = summarizer(model_input[:4000])[0]['summary_text']
+        base_summary = get_summarizer()(model_input[:4000])[0]['summary_text']
     except Exception as e:
         print("Summarizer error:", e)
         base_summary = "Summary not available."

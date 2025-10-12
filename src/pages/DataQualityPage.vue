@@ -281,6 +281,7 @@ import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
+import { getNlpEndpoint } from 'src/utils/nlpConfig'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -419,7 +420,7 @@ const saveRemarks = async (row) => {
 const manualRescan = async () => {
   try {
     loading.value = true
-    const response = await fetch('http://localhost:8000/rescan-metadata', {
+    const response = await fetch(getNlpEndpoint('/rescan-metadata'), {
       method: 'POST',
     })
 

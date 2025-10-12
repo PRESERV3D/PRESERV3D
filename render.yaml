@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: preserv3d-nlp-service
+    env: python
+    region: oregon
+    plan: free
+    rootDir: services
+    buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm
+    startCommand: uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.7
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://preserv3d.vercel.app

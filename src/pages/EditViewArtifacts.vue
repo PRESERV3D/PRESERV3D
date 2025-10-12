@@ -501,6 +501,7 @@ import { useModelStore } from 'stores/modelStore'
 import { useUserStore } from 'stores/user'
 import '@google/model-viewer'
 import axios from 'axios'
+import { getNlpEndpoint } from 'src/utils/nlpConfig'
 
 const route = useRoute()
 const router = useRouter()
@@ -1244,7 +1245,7 @@ async function fetchRelatedLinks(title, author, categories, date) {
 
     loadingRelatedLinks.value = true
 
-    const { data } = await axios.get('http://localhost:8000/related-links', {
+    const { data } = await axios.get(getNlpEndpoint('/related-links'), {
       params: {
         title,
         author,
