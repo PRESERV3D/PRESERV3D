@@ -2,7 +2,7 @@ services:
   - type: web
     name: preserv3d-nlp-service
     env: python
-    region: oregon
+    region: singapore
     plan: free
     rootDir: services
     buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm
