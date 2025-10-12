@@ -191,6 +191,8 @@
 import { ref, onMounted } from 'vue'
 import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
+import { convertToWorkingUrl } from 'src/composables/useR2Url'
+import { preloadPreviews } from 'src/utils/urlCache'
 
 const user = ref({ first_name: '' })
 const collections = ref([])
@@ -292,12 +294,42 @@ async function loadCollections(userId) {
   if (error) {
     console.error('Error loading collections:', error)
   } else {
+    // Convert cover URLs to presigned URLs
+    const collectionsWithUrls = await Promise.all(
+      (data || []).map(async (collection) => {
+        let workingCoverUrl = collection.cover_url
+
+        if (collection.cover_url) {
+          try {
+            workingCoverUrl = await convertToWorkingUrl(collection.cover_url)
+          } catch (err) {
+            console.warn(
+              'Could not convert cover URL for collection:',
+              collection.collection_id,
+              err,
+            )
+          }
+        }
+
+        return {
+          ...collection,
+          cover_url: workingCoverUrl,
+        }
+      }),
+    )
+
     // Separate and pin the "Favorites" collection
-    const favorites = data.find((c) => c.collection_name === 'Favorites')
-    const others = data.filter((c) => c.collection_name !== 'Favorites')
+    const favorites = collectionsWithUrls.find((c) => c.collection_name === 'Favorites')
+    const others = collectionsWithUrls.filter((c) => c.collection_name !== 'Favorites')
 
     // Combine and assign to collections
     collections.value = favorites ? [favorites, ...others] : others
+
+    // Preload cover images for instant display
+    const coverUrls = collections.value.map((c) => c.cover_url).filter(Boolean)
+    if (coverUrls.length > 0) {
+      preloadPreviews(coverUrls)
+    }
 
     // Apply sorting
     applySorting()
