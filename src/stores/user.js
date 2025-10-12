@@ -143,6 +143,7 @@ export const useUserStore = defineStore('user', {
           purpose: registrationData.purpose,
           email: registrationData.email || visitor.email,
           // Keep approved_visitors data
+          approval_id: visitor.approval_id, // Important for extension requests
           start_date: visitor.start_date,
           end_date: visitor.end_date,
           approved_at: visitor.approved_at,
