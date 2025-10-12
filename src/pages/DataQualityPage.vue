@@ -1,14 +1,13 @@
 <template>
   <q-page class="q-pa-md">
     <div class="page-header">
-    <h2 class="q-mb-sm title">Data Quality</h2>
+      <h2 class="q-mb-sm title">Data Quality</h2>
       <div class="subtitle-btn-row">
-    <h5 class="q-mt-xs q-mb-lg subtitle">
-      Information about the accuracy and completeness of collected archival materials.
-    </h5>
+        <h5 class="q-mt-xs q-mb-lg subtitle">
+          Information about the accuracy and completeness of collected archival materials.
+        </h5>
       </div>
     </div>
-
 
     <div class="q-mt-md">
       <div class="row items-center justify-between q-ml-sm q-mb-md">
@@ -282,6 +281,7 @@ import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
+import { getNlpEndpoint } from 'src/utils/nlpConfig'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -420,7 +420,7 @@ const saveRemarks = async (row) => {
 const manualRescan = async () => {
   try {
     loading.value = true
-    const response = await fetch('http://localhost:8000/rescan-metadata', {
+    const response = await fetch(getNlpEndpoint('/rescan-metadata'), {
       method: 'POST',
     })
 

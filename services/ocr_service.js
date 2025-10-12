@@ -1,5 +1,6 @@
 import Tesseract from 'tesseract.js'
 import axios from 'axios'
+import { getNlpEndpoint } from '../src/utils/nlpConfig'
 
 // Batch OCR processing
 async function processBatchWithOCR(images, options = {}) {
@@ -160,7 +161,7 @@ async function processBatchWithOCR(images, options = {}) {
       )
 
       try {
-        const nlpResponse = await axios.post('http://localhost:8000/process-text', nlpForm, {
+        const nlpResponse = await axios.post(getNlpEndpoint('/process-text'), nlpForm, {
           headers: { 'Content-Type': 'multipart/form-data' },
           timeout: 120000,
           signal: signal,
@@ -375,7 +376,7 @@ export async function processImageWithOCR(input, fileNameOrOptions = {}, legacyO
       nlpForm.append('raw_text', result.text)
       nlpForm.append('ocr_confidence', result.confidence.toString())
 
-      return await axios.post('http://localhost:8000/process-text', nlpForm, {
+      return await axios.post(getNlpEndpoint('/process-text'), nlpForm, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 15000,
         signal: options.signal,
