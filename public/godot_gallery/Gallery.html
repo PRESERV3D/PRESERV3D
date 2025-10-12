@@ -117,13 +117,17 @@
 
     <script src="Gallery.js"></script>
     <script>
+      // Get R2 URL for Gallery.pck
+      const R2_PCK_URL = 'https://your-r2-url.com/Gallery.pck'; // Replace with your actual R2 URL
+
       const GODOT_CONFIG = {
         args: [],
         canvasResizePolicy: 2,
         ensureCrossOriginIsolationHeaders: false,
         executable: 'Gallery',
         experimentalVK: false,
-        fileSizes: { 'Gallery.pck': 45232, 'Gallery.wasm': 52126319 },
+        mainPack: R2_PCK_URL,  // Point to R2 URL
+        fileSizes: { [R2_PCK_URL]: 45232, 'Gallery.wasm': 52126319 },  // Update fileSizes key
         focusCanvas: true,
         gdextensionLibs: [],
       }
