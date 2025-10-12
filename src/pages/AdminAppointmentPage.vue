@@ -1,9 +1,15 @@
 <template>
   <q-page class="q-pa-md">
-    <div class="q-mt-xs title">Appointments</div>
-    <div class="q-mt-xs q-mb-lg subtitle">
+    <div class="page-header">
+    <h2 class="q-mb-sm title">Appointments</h2>
+      <div class="subtitle-btn-row">
+    <h5 class="q-mt-xs q-mb-lg subtitle">
       Information of scheduled appointments booked by users.
+    </h5>
+      </div>
     </div>
+
+
     <div class="q-mt-md">
       <q-table
         class="my-sticky-header-table"
