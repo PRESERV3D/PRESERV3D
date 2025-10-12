@@ -501,6 +501,7 @@ import { useUserStore } from 'stores/user'
 import { useDocumentsStore } from 'stores/documentsStore'
 import { useQuasar } from 'quasar'
 import axios from 'axios'
+import { getNlpEndpoint } from 'src/utils/nlpConfig'
 
 const route = useRoute()
 const router = useRouter()
@@ -981,7 +982,7 @@ const generateSummary = async () => {
   summaryLoading.value = true
 
   try {
-    const { data } = await axios.post(`http://localhost:8000/generate-summary/${docId}`)
+    const { data } = await axios.post(getNlpEndpoint(`/generate-summary/${docId}`))
     summary.value = data.summary
   } catch (err) {
     console.error(err)
@@ -1109,7 +1110,7 @@ async function fetchRelatedLinks(title, author, categories, date) {
 
     loadingRelatedLinks.value = true
 
-    const { data } = await axios.get('http://localhost:8000/related-links', {
+    const { data } = await axios.get(getNlpEndpoint('/related-links'), {
       params: {
         title,
         author,

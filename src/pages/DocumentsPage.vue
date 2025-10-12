@@ -490,6 +490,7 @@ import { useRouter } from 'vue-router'
 import { processOCRPages } from '/services/ocr_service'
 import { PDFDocument } from 'pdf-lib'
 import { allSortOptions } from 'src/stores/searchStore'
+import { getNlpEndpoint } from 'src/utils/nlpConfig'
 
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import UploadDialog from 'src/components/UploadDialog.vue'
@@ -907,7 +908,7 @@ async function processFileWithNLP(file, fileName) {
   formData.append('file', file)
   formData.append('filename', fileName)
 
-  return await axios.post('http://localhost:8000/process-text', formData, {
+  return await axios.post(getNlpEndpoint('/process-text'), formData, {
     signal: nlpAbortController?.signal,
   })
 }

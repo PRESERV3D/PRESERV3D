@@ -92,6 +92,7 @@ import { useQuasar } from 'quasar'
 import { supabase } from 'boot/supabase'
 import axios from 'axios'
 import { processOCRPages } from '/services/ocr_service'
+import { getNlpEndpoint } from 'src/utils/nlpConfig'
 
 const $q = useQuasar()
 const files = ref([])
@@ -167,7 +168,7 @@ async function extractDocText() {
     form.append('file_name', selectedDoc.value.file_name)
     form.append('file_url', selectedDoc.value.file_url)
 
-    const { data } = await axios.post('http://localhost:8000/extract-text', form)
+    const { data } = await axios.post(getNlpEndpoint('/extract-text'), form)
 
     if (data.status === 'error') {
       $q.notify({ type: 'negative', message: data.error })
@@ -209,7 +210,7 @@ async function uploadPDF(addedFiles) {
     processingStatus.value = 'Processing uploaded PDF...'
     ocrResults.value = null
 
-    const { data } = await axios.post('http://localhost:8000/extract-text', form)
+    const { data } = await axios.post(getNlpEndpoint('/extract-text'), form)
 
     if (data.status === 'error') {
       $q.notify({ type: 'negative', message: data.error })
