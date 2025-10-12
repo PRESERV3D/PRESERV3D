@@ -887,52 +887,32 @@
                 <div class="q-pa-md" style="background-color: #f5f5f5">
                   <div class="row q-col-gutter-md">
                     <div class="col-6">
-                      <div class="text-weight-bold">Visitor:</div>
-                      <div>{{ props.row.visitor_name }}</div>
-                    </div>
-                    <div class="col-6">
                       <div class="text-weight-bold">Email:</div>
-                      <div>{{ props.row.visitor_email }}</div>
+                      <div>{{ props.row.visitor_email || '' }}</div>
                     </div>
                     <div class="col-6">
-                      <div class="text-weight-bold">Current End Date:</div>
+                      <div class="text-weight-bold">Date Submitted:</div>
                       <div>
                         {{
-                          props.row.old_end_date
-                            ? new Date(props.row.old_end_date).toLocaleDateString()
-                            : 'N/A'
+                          props.row.created_at
+                            ? new Date(props.row.created_at).toLocaleString()
+                            : ''
                         }}
                       </div>
                     </div>
                     <div class="col-6">
-                      <div class="text-weight-bold">Requested End Date:</div>
-                      <div>
-                        {{
-                          props.row.extended_end_date
-                            ? new Date(props.row.extended_end_date).toLocaleDateString()
-                            : 'N/A'
-                        }}
-                      </div>
-                    </div>
-                    <div class="col-12">
-                      <div class="text-weight-bold">Purpose/Reason:</div>
-                      <div>{{ props.row.purpose || 'N/A' }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Request Date:</div>
-                      <div>{{ new Date(props.row.created_at).toLocaleString() }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Status:</div>
-                      <div>{{ props.row.extension_status }}</div>
-                    </div>
-                    <div v-if="props.row.reviewed_by" class="col-6">
                       <div class="text-weight-bold">Reviewed By:</div>
-                      <div>{{ props.row.reviewed_by }}</div>
+                      <div>{{ props.row.reviewed_by || '' }}</div>
                     </div>
-                    <div v-if="props.row.reviewed_at" class="col-6">
+                    <div class="col-6">
                       <div class="text-weight-bold">Reviewed At:</div>
-                      <div>{{ new Date(props.row.reviewed_at).toLocaleString() }}</div>
+                      <div>
+                        {{
+                          props.row.reviewed_at
+                            ? new Date(props.row.reviewed_at).toLocaleString()
+                            : ''
+                        }}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1356,52 +1336,32 @@
                 <div class="q-pa-md" style="background-color: #f5f5f5">
                   <div class="row q-col-gutter-md">
                     <div class="col-6">
-                      <div class="text-weight-bold">Visitor:</div>
-                      <div>{{ props.row.visitor_name }}</div>
-                    </div>
-                    <div class="col-6">
                       <div class="text-weight-bold">Email:</div>
-                      <div>{{ props.row.visitor_email }}</div>
+                      <div>{{ props.row.visitor_email || '' }}</div>
                     </div>
                     <div class="col-6">
-                      <div class="text-weight-bold">Current End Date:</div>
+                      <div class="text-weight-bold">Date Submitted:</div>
                       <div>
                         {{
-                          props.row.old_end_date
-                            ? new Date(props.row.old_end_date).toLocaleDateString()
-                            : 'N/A'
+                          props.row.created_at
+                            ? new Date(props.row.created_at).toLocaleString()
+                            : ''
                         }}
                       </div>
                     </div>
                     <div class="col-6">
-                      <div class="text-weight-bold">Requested End Date:</div>
-                      <div>
-                        {{
-                          props.row.extended_end_date
-                            ? new Date(props.row.extended_end_date).toLocaleDateString()
-                            : 'N/A'
-                        }}
-                      </div>
-                    </div>
-                    <div class="col-12">
-                      <div class="text-weight-bold">Purpose/Reason:</div>
-                      <div>{{ props.row.purpose || 'N/A' }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Request Date:</div>
-                      <div>{{ new Date(props.row.created_at).toLocaleString() }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Status:</div>
-                      <div>{{ props.row.extension_status }}</div>
-                    </div>
-                    <div v-if="props.row.reviewed_by" class="col-6">
                       <div class="text-weight-bold">Reviewed By:</div>
-                      <div>{{ props.row.reviewed_by }}</div>
+                      <div>{{ props.row.reviewed_by || '' }}</div>
                     </div>
-                    <div v-if="props.row.reviewed_at" class="col-6">
+                    <div class="col-6">
                       <div class="text-weight-bold">Reviewed At:</div>
-                      <div>{{ new Date(props.row.reviewed_at).toLocaleString() }}</div>
+                      <div>
+                        {{
+                          props.row.reviewed_at
+                            ? new Date(props.row.reviewed_at).toLocaleString()
+                            : ''
+                        }}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1797,7 +1757,7 @@ const registrationColumns = [
 ]
 
 const extensionColumns = [
-  { name: 'visitor_name', label: 'Visitor', align: 'left', field: 'visitor_name', sortable: true },
+  { name: 'visitor_name', label: 'Name', align: 'left', field: 'visitor_name', sortable: true },
   {
     name: 'old_end_date',
     label: 'Current End Date',
@@ -1814,28 +1774,6 @@ const extensionColumns = [
   },
   { name: 'purpose', label: 'Reason', align: 'center', field: 'purpose' },
   { name: 'letter', label: 'Letter', align: 'center', field: 'letter' },
-  {
-    name: 'created_at',
-    label: 'Request Date',
-    align: 'center',
-    field: (row) => new Date(row.created_at).toLocaleDateString('en-CA'),
-    sortable: true,
-  },
-  {
-    name: 'reviewed_by',
-    label: 'Reviewed By',
-    align: 'center',
-    field: 'reviewed_by',
-    sortable: true,
-  },
-  {
-    name: 'reviewed_at',
-    label: 'Reviewed At',
-    align: 'center',
-    field: (row) =>
-      row.reviewed_at ? new Date(row.reviewed_at).toLocaleDateString('en-CA') : 'N/A',
-    sortable: true,
-  },
   {
     name: 'extension_status',
     label: 'Status',
