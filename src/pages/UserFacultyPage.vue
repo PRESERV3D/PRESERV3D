@@ -349,7 +349,7 @@ async function registerUser() {
           role: 'user',
           type: 'faculty',
         },
-        emailRedirectTo: 'http://localhost:9000/user/login',
+        emailRedirectTo: `${window.location.origin}/user/login`,
       },
     })
 
