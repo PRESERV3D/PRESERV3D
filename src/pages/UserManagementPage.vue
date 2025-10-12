@@ -934,10 +934,6 @@
                       <div class="text-weight-bold">Reviewed At:</div>
                       <div>{{ new Date(props.row.reviewed_at).toLocaleString() }}</div>
                     </div>
-                    <div v-if="props.row.admin_remarks" class="col-12">
-                      <div class="text-weight-bold">Admin Remarks:</div>
-                      <div>{{ props.row.admin_remarks }}</div>
-                    </div>
                   </div>
                 </div>
               </q-td>
@@ -1407,10 +1403,6 @@
                       <div class="text-weight-bold">Reviewed At:</div>
                       <div>{{ new Date(props.row.reviewed_at).toLocaleString() }}</div>
                     </div>
-                    <div v-if="props.row.admin_remarks" class="col-12">
-                      <div class="text-weight-bold">Admin Remarks:</div>
-                      <div>{{ props.row.admin_remarks }}</div>
-                    </div>
                   </div>
                 </div>
               </q-td>
@@ -1827,6 +1819,21 @@ const extensionColumns = [
     label: 'Request Date',
     align: 'center',
     field: (row) => new Date(row.created_at).toLocaleDateString('en-CA'),
+    sortable: true,
+  },
+  {
+    name: 'reviewed_by',
+    label: 'Reviewed By',
+    align: 'center',
+    field: 'reviewed_by',
+    sortable: true,
+  },
+  {
+    name: 'reviewed_at',
+    label: 'Reviewed At',
+    align: 'center',
+    field: (row) =>
+      row.reviewed_at ? new Date(row.reviewed_at).toLocaleDateString('en-CA') : 'N/A',
     sortable: true,
   },
   {
