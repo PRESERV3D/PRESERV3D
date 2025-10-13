@@ -13,6 +13,7 @@ async function scrapeBing(page, query) {
   )
   await page.goto(`https://www.bing.com/search?q=${encodeURIComponent(query)}`, {
     waitUntil: 'domcontentloaded',
+    timeout: 30000,
   })
 
   return await page.$$eval('li.b_algo h2 a', (anchors) =>
@@ -31,6 +32,7 @@ async function scrapeGoogle(page, query) {
   )
   await page.goto(`https://www.google.com/search?q=${encodeURIComponent(query)}`, {
     waitUntil: 'domcontentloaded',
+    timeout: 30000,
   })
 
   return await page.$$eval('div.yuRUbf > a', (anchors) =>
@@ -49,6 +51,7 @@ async function scrapeDuckDuckGo(page, query) {
   )
   await page.goto(`https://duckduckgo.com/?q=${encodeURIComponent(query)}`, {
     waitUntil: 'domcontentloaded',
+    timeout: 30000,
   })
 
   return await page.$$eval('#links .result__title a.result__a', (anchors) =>
@@ -65,7 +68,16 @@ async function scrapeDuckDuckGo(page, query) {
   try {
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+      ],
     })
 
     // Create separate pages for each engine
@@ -76,9 +88,9 @@ async function scrapeDuckDuckGo(page, query) {
     ])
 
     const [bing, google, ddg] = await Promise.all([
-      scrapeBing(bingPage, query),
-      scrapeGoogle(googlePage, query),
-      scrapeDuckDuckGo(ddgPage, query),
+      scrapeBing(bingPage, query).catch(() => []),
+      scrapeGoogle(googlePage, query).catch(() => []),
+      scrapeDuckDuckGo(ddgPage, query).catch(() => []),
     ])
 
     await browser.close()
