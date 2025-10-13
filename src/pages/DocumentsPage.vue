@@ -870,8 +870,12 @@ async function uploadFileToStorage(file, fileName) {
 }
 
 async function generatePdfPreview(file) {
-  // Set the worker source
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${window.pdfjsLib.version}/pdf.worker.min.js`
+  // Prefer the local worker shipped in /public (fallback to CDN removed to avoid 404)
+  try {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+  } catch (e) {
+    console.warn('Could not set pdf.worker path, pdf.js may not be available:', e)
+  }
 
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise
