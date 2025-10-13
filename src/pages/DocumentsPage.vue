@@ -1005,7 +1005,7 @@ async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData, user) {
     console.error('Error inserting metadata:', error)
     throw error
   }
-
+  showDialog.value = false
   return data
 }
 
