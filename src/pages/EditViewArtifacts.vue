@@ -1208,16 +1208,19 @@ onMounted(async () => {
   } else {
     model.value = {
       ...data,
-      // bookmarked: false,
       starred: false,
     }
 
+    // Add null/undefined check before mapping
     if (data.related_links && Array.isArray(data.related_links)) {
       links.value = data.related_links.map((link, idx) => ({
         id: link.id || Date.now() + idx,
-        title: link.title,
-        url: link.url,
+        title: link.title || '',
+        url: link.url || '',
       }))
+    } else {
+      // Initialize as empty array if no related links exist
+      links.value = []
     }
   }
 
@@ -1254,20 +1257,11 @@ async function fetchRelatedLinks(title, author, categories, date) {
       },
     })
 
-    if (data?.error) {
-      console.warn('Related links service returned an error:', data.error)
-    }
-
-    if (data?.raw_output) {
-      console.warn('Related links raw output (non-JSON):', data.raw_output)
-    }
-
-    const safeLinks = Array.isArray(data?.links) ? data.links : []
-
-    links.value = safeLinks.map((link, idx) => ({
-      id: link.id || Date.now() + idx,
-      title: link.title || link.url || String(link),
-      url: link.url || (typeof link === 'string' ? link : ''),
+    // assuming data.links is an array of URLs
+    links.value = data.links.map((link, idx) => ({
+      id: Date.now() + idx,
+      title: link.title,
+      url: link.url,
     }))
 
     hasChanges.value = true
@@ -1336,19 +1330,21 @@ function saveRelatedLinks() {
 }
 
 async function cancelRelatedLinks() {
-  // Reset the links to the original state
   const { data } = await supabase
-    .from('documents_metadata')
+    .from('artifacts_metadata')
     .select('related_links')
     .eq('id', route.params.id)
     .single()
 
-  if (data && Array.isArray(data.related_links)) {
+  // Add null/undefined check
+  if (data && data.related_links && Array.isArray(data.related_links)) {
     links.value = data.related_links.map((link, idx) => ({
       id: link.id || Date.now() + idx,
-      title: link.title,
-      url: link.url,
+      title: link.title || '',
+      url: link.url || '',
     }))
+  } else {
+    links.value = []
   }
 
   hasChanges.value = false
