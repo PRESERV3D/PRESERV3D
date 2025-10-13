@@ -17,6 +17,7 @@ from dateutil.parser import parse as date_parse
 app = FastAPI()
 load_dotenv()
 
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
@@ -1094,20 +1095,52 @@ async def rescan_metadata():
         return {"success": False, "error": str(e)}
 
 @app.get("/related-links")
-async def related_links(title: str, author: str = "", categories: str = ""):
+async def related_links(
+    title: str,
+    author: str = "",
+    categories: str = "",
+    date: str = ""
+):
     try:
+        # Path to your web_scraper.js
+        script_path = os.path.join(os.path.dirname(__file__), "web_scraper.js")
+        
+        # Run the Node.js scraper with proper encoding
         result = subprocess.run(
-            ["node", "web_scraper.js", title, author, categories],
+            ["node", script_path, title, author, categories, date],
             capture_output=True,
             text=True,
-            check=True
+            encoding='utf-8',  # Force UTF-8 encoding
+            errors='replace', 
+            timeout=60
         )
-        return json.loads(result.stdout)
-    except subprocess.CalledProcessError as e:
-        return {"error": e.stderr or "Puppeteer script failed"}
-    except json.JSONDecodeError:
-        return {"error": "Invalid JSON from Puppeteer"}
-
+        
+        # Check if the process failed
+        if result.returncode != 0:
+            error_msg = result.stderr or "Unknown error"
+            print(f"Scraper error: {error_msg}")
+            return {"links": [], "error": error_msg}
+        
+        # Check if stdout is empty
+        if not result.stdout or result.stdout.strip() == "":
+            print("Scraper returned empty output")
+            return {"links": [], "error": "No output from scraper"}
+        
+        # Parse the JSON output
+        try:
+            data = json.loads(result.stdout)
+            return data
+        except json.JSONDecodeError as e:
+            print(f"JSON parse error: {e}")
+            print(f"Raw output: {result.stdout[:500]}")  # Log first 500 chars
+            return {"links": [], "error": "Invalid JSON from scraper"}
+            
+    except subprocess.TimeoutExpired:
+        return {"links": [], "error": "Scraper timeout"}
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        return {"links": [], "error": str(e)}
+    
 @app.post("/extract-text")
 async def extract_text_from_pdf(
     file: UploadFile = File(None),   

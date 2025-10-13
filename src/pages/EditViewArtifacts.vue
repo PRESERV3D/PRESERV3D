@@ -502,7 +502,9 @@ import { useUserStore } from 'stores/user'
 import '@google/model-viewer'
 import axios from 'axios'
 import { getNlpEndpoint } from 'src/utils/nlpConfig'
+import { useQuasar } from 'quasar'
 
+const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()
 const modelStore = useModelStore()
@@ -1239,35 +1241,88 @@ let draggedIndex = null
 async function fetchRelatedLinks(title, author, categories, date) {
   try {
     console.log('Fetching related links for:', title, author, categories, date)
-
-    const formData = new FormData()
-    formData.append('title', title)
-    formData.append('author', author)
-    formData.append('categories', categories)
-    formData.append('date', date)
+    console.log('Using endpoint:', getNlpEndpoint('/related-links'))
 
     loadingRelatedLinks.value = true
 
-    const { data } = await axios.get(getNlpEndpoint('/related-links'), {
+    const endpoint = getNlpEndpoint('/related-links')
+
+    // Add timeout to the request (Render can take time to spin up)
+    const { data } = await axios.get(endpoint, {
       params: {
         title,
         author,
         categories,
         date,
       },
+      timeout: 60000, // 60 second timeout for Render free tier spin-up
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
 
-    // assuming data.links is an array of URLs
+    // Add delay message for Render spin-up
+    if (loadingRelatedLinks.value) {
+      setTimeout(() => {
+        if (loadingRelatedLinks.value) {
+          $q.notify({
+            type: 'info',
+            message: 'Server is starting up, please wait...',
+            timeout: 3000,
+          })
+        }
+      }, 5000)
+    }
+
+    console.log('Received data:', data)
+
+    // Check if data and data.links exist
+    if (!data || !data.links) {
+      console.warn('No links returned from API')
+      links.value = []
+      hasChanges.value = false
+      return
+    }
+
+    // Validate that data.links is an array
+    if (!Array.isArray(data.links)) {
+      console.error('API returned non-array links:', data.links)
+      links.value = []
+      hasChanges.value = false
+      return
+    }
+
     links.value = data.links.map((link, idx) => ({
       id: Date.now() + idx,
-      title: link.title,
-      url: link.url,
+      title: link.title || link.url || 'Untitled',
+      url: link.url || '',
     }))
 
     hasChanges.value = true
     showRelatedDialog.value = true
+
+    console.log('Successfully mapped links:', links.value)
   } catch (err) {
     console.error('Error fetching related links:', err)
+
+    // More detailed error logging
+    if (err.response) {
+      console.error('Response error:', err.response.status, err.response.data)
+    } else if (err.request) {
+      console.error('No response received:', err.request)
+    } else {
+      console.error('Request setup error:', err.message)
+    }
+
+    // Show user-friendly error
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to fetch related links. Please try again.',
+      caption: err.message,
+    })
+
+    links.value = []
+    hasChanges.value = false
   } finally {
     loadingRelatedLinks.value = false
   }

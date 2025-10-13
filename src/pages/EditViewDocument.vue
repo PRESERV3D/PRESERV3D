@@ -1102,17 +1102,11 @@ let draggedIndex = null
 async function fetchRelatedLinks(title, author, categories, date) {
   try {
     console.log('Fetching related links for:', title, author, categories, date)
-
-    const formData = new FormData()
-    formData.append('title', title)
-    formData.append('author', author)
-    formData.append('categories', categories)
-    formData.append('date', date)
+    console.log('Using endpoint:', getNlpEndpoint('/related-links'))
 
     loadingRelatedLinks.value = true
 
     const endpoint = getNlpEndpoint('/related-links')
-    console.log('NLP endpoint being called:', endpoint)
 
     const { data } = await axios.get(endpoint, {
       params: {
@@ -1121,19 +1115,60 @@ async function fetchRelatedLinks(title, author, categories, date) {
         categories,
         date,
       },
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
 
-    // assuming data.links is an array of URLs
+    console.log('Received data:', data)
+
+    // Check if data and data.links exist
+    if (!data || !data.links) {
+      console.warn('No links returned from API')
+      links.value = []
+      hasChanges.value = false
+      return
+    }
+
+    // Validate that data.links is an array
+    if (!Array.isArray(data.links)) {
+      console.error('API returned non-array links:', data.links)
+      links.value = []
+      hasChanges.value = false
+      return
+    }
+
     links.value = data.links.map((link, idx) => ({
       id: Date.now() + idx,
-      title: link.title,
-      url: link.url,
+      title: link.title || link.url || 'Untitled',
+      url: link.url || '',
     }))
 
     hasChanges.value = true
     showRelatedDialog.value = true
+
+    console.log('Successfully mapped links:', links.value)
   } catch (err) {
     console.error('Error fetching related links:', err)
+
+    // More detailed error logging
+    if (err.response) {
+      console.error('Response error:', err.response.status, err.response.data)
+    } else if (err.request) {
+      console.error('No response received:', err.request)
+    } else {
+      console.error('Request setup error:', err.message)
+    }
+
+    // Show user-friendly error
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to fetch related links. Please try again.',
+      caption: err.message,
+    })
+
+    links.value = []
+    hasChanges.value = false
   } finally {
     loadingRelatedLinks.value = false
   }
