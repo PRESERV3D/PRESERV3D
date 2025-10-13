@@ -1096,17 +1096,44 @@ async def rescan_metadata():
 @app.get("/related-links")
 async def related_links(title: str, author: str = "", categories: str = ""):
     try:
+        # Use absolute path to the web_scraper.js to avoid path issues when running from different CWDs
+        script_path = os.path.join(os.path.dirname(__file__), 'web_scraper.js')
+
         result = subprocess.run(
-            ["node", "web_scraper.js", title, author, categories],
+            ["node", script_path, title or "", author or "", categories or ""],
             capture_output=True,
             text=True,
-            check=True
+            check=False
         )
-        return json.loads(result.stdout)
+
+        # If the script printed to stderr or exited non-zero, attempt to surface helpful info
+        if result.returncode != 0:
+            stderr = result.stderr.strip() if result.stderr else ''
+            try:
+                # Some errors are JSON-encoded by the puppeteer script
+                parsed_err = json.loads(result.stderr)
+                return {"links": parsed_err.get("links", []), "error": parsed_err.get("error")}
+            except Exception:
+                # Return an empty links array and include error text for debugging
+                return {"links": [], "error": stderr or "Puppeteer script failed"}
+
+        # Try to parse stdout as JSON. If parsing fails, return an empty links array
+        try:
+            parsed = json.loads(result.stdout)
+            # Support both { links: [...] } and plain array outputs
+            if isinstance(parsed, dict) and parsed.get("links") and isinstance(parsed.get("links"), list):
+                return {"links": parsed.get("links")}
+            if isinstance(parsed, list):
+                return {"links": parsed}
+            # Unknown shape - normalize
+            return {"links": parsed.get("links") if isinstance(parsed, dict) and parsed.get("links") else []}
+        except json.JSONDecodeError:
+            # Non-JSON output -> return empty list but include raw stdout for diagnostics
+            return {"links": [], "raw_output": result.stdout}
     except subprocess.CalledProcessError as e:
-        return {"error": e.stderr or "Puppeteer script failed"}
+        return {"links": [], "error": e.stderr or "Puppeteer script failed"}
     except json.JSONDecodeError:
-        return {"error": "Invalid JSON from Puppeteer"}
+        return {"links": [], "error": "Invalid JSON from Puppeteer"}
 
 @app.post("/extract-text")
 async def extract_text_from_pdf(

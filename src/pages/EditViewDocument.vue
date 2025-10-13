@@ -1122,11 +1122,21 @@ async function fetchRelatedLinks(title, author, categories, date) {
       },
     })
 
-    // assuming data.links is an array of URLs
-    links.value = data.links.map((link, idx) => ({
-      id: Date.now() + idx,
-      title: link.title,
-      url: link.url,
+    // Normalize response: ensure we always have an array of link objects
+    if (data?.error) {
+      console.warn('Related links service returned an error:', data.error)
+    }
+
+    if (data?.raw_output) {
+      console.warn('Related links raw output (non-JSON):', data.raw_output)
+    }
+
+    const safeLinks = Array.isArray(data?.links) ? data.links : []
+
+    links.value = safeLinks.map((link, idx) => ({
+      id: link.id || Date.now() + idx,
+      title: link.title || link.url || String(link),
+      url: link.url || (typeof link === 'string' ? link : ''),
     }))
 
     hasChanges.value = true
