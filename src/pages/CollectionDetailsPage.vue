@@ -1735,4 +1735,63 @@ function goToAddArtifact() {
 .big-book-cover .book-background-image {
   border-radius: 8px;
 }
+
+/* additional css */
+/* Dialog styles */
+.add-collection-card {
+  background-color: #fbf4d0;
+  padding: 1rem;
+  min-width: 30rem;
+  border-radius: 12px !important;
+}
+
+.btn-save {
+  background: #560505;
+  color: white;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.btn-save:hover {
+  background: #6b0707;
+}
+
+.field-collection {
+  border-radius: 8px;
+}
+
+.upload {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  text-align: center;
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+}
+
+.upload-box {
+  width: 11rem;
+  height: 14.5rem;
+  border-radius: 10px;
+  background-color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px dashed #ccc;
+  transition: border-color 0.2s ease;
+}
+
+.upload-box:hover {
+  border-color: #560505;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
 </style>

@@ -50,7 +50,7 @@
 
     <!-- Collection Display -->
     <div v-else>
-      <div v-if="collections.length > 0" class="box-collections">
+      <div v-if="collections.length > 0" class="box-collections q-my-md">
         <div
           v-for="(collection, index) in collections"
           :key="collection.collection_id"
