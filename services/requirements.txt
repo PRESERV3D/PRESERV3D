@@ -44,6 +44,7 @@ python-dateutil
 requests
 typing-extensions
 deepdiff
+beautifulsoup4
 
 # Additional dependencies that may be needed
 numpy

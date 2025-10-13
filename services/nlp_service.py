@@ -7,6 +7,7 @@ import subprocess
 import base64
 import json
 import requests
+from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
@@ -1129,11 +1130,88 @@ async def related_links(title: str, author: str = "", categories: str = ""):
             return {"links": parsed.get("links") if isinstance(parsed, dict) and parsed.get("links") else []}
         except json.JSONDecodeError:
             # Non-JSON output -> return empty list but include raw stdout for diagnostics
+            # If puppeteer failed due to a missing package (e.g., puppeteer-extra), fall back to a Python scraper
+            stderr = result.stderr or ''
+            if 'ERR_MODULE_NOT_FOUND' in stderr or 'Cannot find package' in stderr:
+                try:
+                    query = ' '.join([p for p in [title, author, categories] if p])
+                    py_links = python_scrape_query(query)
+                    return {"links": py_links, "source": "python-fallback"}
+                except Exception as e:
+                    return {"links": [], "error": f"Puppeteer failed and python fallback failed: {e}", "raw_output": result.stdout}
+
             return {"links": [], "raw_output": result.stdout}
     except subprocess.CalledProcessError as e:
         return {"links": [], "error": e.stderr or "Puppeteer script failed"}
     except json.JSONDecodeError:
         return {"links": [], "error": "Invalid JSON from Puppeteer"}
+
+
+def python_scrape_query(query, limit=5):
+    """Lightweight fallback scraper using requests + BeautifulSoup.
+    Tries Bing and DuckDuckGo and returns a deduplicated list of links.
+    """
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36'
+    }
+
+    results = []
+    seen = set()
+
+    def collect_from_bing(q):
+        try:
+            url = f'https://www.bing.com/search'
+            res = requests.get(url, params={'q': q}, headers=headers, timeout=10)
+            if res.status_code != 200:
+                return []
+            soup = BeautifulSoup(res.text, 'html.parser')
+            items = []
+            for li in soup.select('li.b_algo'):
+                a = li.select_one('h2 a')
+                if a and a.get('href'):
+                    title = a.get_text().strip()
+                    href = a['href']
+                    items.append({'title': title, 'url': href})
+            return items
+        except Exception:
+            return []
+
+    def collect_from_ddg(q):
+        try:
+            url = 'https://duckduckgo.com/html/'
+            res = requests.post(url, data={'q': q}, headers=headers, timeout=10)
+            if res.status_code != 200:
+                return []
+            soup = BeautifulSoup(res.text, 'html.parser')
+            items = []
+            for a in soup.select('a.result__a'):
+                href = a.get('href')
+                title = a.get_text().strip()
+                if href:
+                    items.append({'title': title, 'url': href})
+            return items
+        except Exception:
+            return []
+
+    # Try Bing first, then DuckDuckGo
+    try:
+        for src in (collect_from_bing, collect_from_ddg):
+            for item in src(query):
+                url = item.get('url')
+                if not url:
+                    continue
+                if url in seen:
+                    continue
+                seen.add(url)
+                results.append({'title': item.get('title') or url, 'url': url})
+                if len(results) >= limit:
+                    break
+            if len(results) >= limit:
+                break
+    except Exception as e:
+        print('Python scraper error:', e)
+
+    return results
 
 @app.post("/extract-text")
 async def extract_text_from_pdf(
