@@ -41,26 +41,11 @@ HF_API_BASE = "https://api-inference.huggingface.co/models"
 # API endpoints for heavy models
 HF_SUMMARIZER = f"{HF_API_BASE}/facebook/bart-large-cnn"
 HF_EMBEDDINGS = f"{HF_API_BASE}/sentence-transformers/all-MiniLM-L6-v2"
-# Dedicated embeddings endpoint (preferred for embeddings to avoid pipeline mismatches)
-HF_EMBEDDINGS_URL = "https://api-inference.huggingface.co/embeddings"
 HF_KEYWORDS = f"{HF_API_BASE}/ml6team/keyphrase-extraction-kbir-inspec"
 
-# NOTE:
-# The Hugging Face Inference API exposes different pipelines under /models/{model} endpoints.
-# Some models (for example sentence-transformers deployed as a SentenceSimilarityPipeline)
-# expect a payload like {"sentences": [...], "references": [...]} and will return the
-# error seen in the Render logs when given {"inputs": "..."}.
-#
-# To avoid this mismatch we call the dedicated embeddings endpoint at
-# https://api-inference.huggingface.co/embeddings with payload {"model": "<name>", "input": "..."}
-# which consistently returns embedding vectors for supported models. The helper
-# `call_hf_embeddings()` normalizes common response shapes.
-
-# Global model cache - ONLY custom NER
 _nlp = None
 
 def get_nlp():
-    """Load your custom trained NER model (kept local)"""
     global _nlp
     if _nlp is None:
         print("Loading custom NER model...")
@@ -69,7 +54,6 @@ def get_nlp():
     return _nlp
 
 def call_hf_api(endpoint, payload, max_retries=3):
-    """Call Hugging Face Inference API with retry logic"""
     if not HF_API_TOKEN:
         print("Warning: HF_API_TOKEN not set, skipping API call")
         return None
@@ -100,7 +84,6 @@ def call_hf_api(endpoint, payload, max_retries=3):
             print(f"Calling HF model endpoint: {endpoint} (attempt {attempt + 1}) payload-preview: {preview_payload}")
             response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
 
-            # Handle model loading (503) with retries
             if response.status_code == 503:
                 if attempt < max_retries - 1:
                     print(f"Model loading, retrying in 5s... (attempt {attempt + 1})")
@@ -111,11 +94,9 @@ def call_hf_api(endpoint, payload, max_retries=3):
                     print("Model failed to load after retries")
                     return None
 
-            # Raise for non-2xx responses to be handled below
             try:
                 response.raise_for_status()
             except requests.exceptions.HTTPError as http_err:
-                # Print response body to help debug 4xx/5xx errors (don't print token)
                 body = None
                 try:
                     body = response.text
@@ -124,7 +105,6 @@ def call_hf_api(endpoint, payload, max_retries=3):
                 print(f"HF API HTTP error ({response.status_code}): {http_err}. Response body: {body}")
                 raise
 
-            # Successful response
             return response.json()
 
         except requests.exceptions.RequestException as e:
@@ -132,127 +112,129 @@ def call_hf_api(endpoint, payload, max_retries=3):
             if attempt == max_retries - 1:
                 print(f"HF API error after {max_retries} attempts: {e}")
                 return None
-            # Otherwise, wait a short backoff and retry
             import time
             time.sleep(1 + attempt)
     return None
 
-
 def call_hf_embeddings(model_name, text, max_retries=3):
-    """Call the Hugging Face Embeddings API and normalize the returned vector.
-
-    Uses the dedicated embeddings endpoint to avoid invoking the wrong pipeline
-    (some models registered as 'sentence-similarity' expect a different payload).
-    Returns: list[float] embedding or None on failure.
-    """
     if not HF_API_TOKEN:
         print("Warning: HF_API_TOKEN not set, skipping embeddings API call")
         return None
 
     headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
-    payload = {
-        "model": model_name,
-        "input": text
-    }
+    endpoint = f"{HF_API_BASE}/{model_name}"
+    
+    # Try different payload formats based on the pipeline type
+    payloads_to_try = [
+        # Format 1: SentenceSimilarityPipeline format
+        {
+            "inputs": {
+                "source_sentence": text,
+                "sentences": [text]
+            },
+            "options": {"wait_for_model": True}
+        },
+        # Format 2: Standard feature-extraction format
+        {
+            "inputs": text,
+            "options": {"wait_for_model": True}
+        }
+    ]
 
-    for attempt in range(max_retries):
-        try:
-            print(f"Calling HF embeddings endpoint (attempt {attempt + 1}) model={model_name} preview={str(text)[:120]}")
-            response = requests.post(HF_EMBEDDINGS_URL, headers=headers, json=payload, timeout=30)
+    for payload_idx, payload in enumerate(payloads_to_try):
+        for attempt in range(max_retries):
+            try:
+                print(f"Calling HF embeddings (payload format {payload_idx + 1}, attempt {attempt + 1}) model={model_name}")
+                response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
 
-            if response.status_code == 503:
-                if attempt < max_retries - 1:
-                    import time
-                    print("Embeddings model loading, retrying in 3s...")
-                    time.sleep(3)
-                    continue
-                else:
-                    print("Embeddings model failed to load after retries")
+                if response.status_code == 503:
+                    if attempt < max_retries - 1:
+                        import time
+                        print("Embeddings model loading, retrying in 3s...")
+                        time.sleep(3)
+                        continue
+                    else:
+                        print("Embeddings model failed to load after retries")
+                        break 
+
+                if response.status_code == 400:
+                    print(f"400 error with payload format {payload_idx + 1}, trying next format...")
+                    break 
+
+                try:
+                    response.raise_for_status()
+                except requests.exceptions.HTTPError as http_err:
+                    body = None
+                    try:
+                        body = response.text
+                    except Exception:
+                        body = '<unable to read response body>'
+                    print(f"HF Embeddings HTTP error ({response.status_code}): {http_err}. Response body: {body}")
+                    break 
+
+                data = None
+                try:
+                    data = response.json()
+                except Exception as e:
+                    print("Failed to parse HF embeddings response as JSON:", e)
                     return None
 
-            try:
-                response.raise_for_status()
-            except requests.exceptions.HTTPError as http_err:
-                body = None
-                try:
-                    body = response.text
-                except Exception:
-                    body = '<unable to read response body>'
-                print(f"HF Embeddings HTTP error ({response.status_code}): {http_err}. Response body: {body}")
-                return None
+                # Handle different response formats
+                if isinstance(data, list):
+                    if len(data) > 0:
+                        # If it's a list of lists (batch embeddings)
+                        if isinstance(data[0], list):
+                            return [float(x) for x in data[0]]
+                        # If it's a flat list of numbers (single embedding or scores)
+                        elif all(isinstance(x, (float, int)) for x in data):
+                            return [float(x) for x in data]
+                
+                # Format 2: Dictionary with embedding/similarity keys
+                if isinstance(data, dict):
+                    for key in ("embeddings", "embedding", "vector", "features"):
+                        if key in data:
+                            emb = data[key]
+                            if isinstance(emb, list):
+                                if len(emb) > 0 and isinstance(emb[0], list):
+                                    return [float(x) for x in emb[0]]
+                                return [float(x) for x in emb]
 
-            data = None
-            try:
-                data = response.json()
-            except Exception as e:
-                print("Failed to parse HF embeddings response as JSON:", e)
-                return None
+                print(f"Unexpected response format with payload {payload_idx + 1}. Response preview:", str(data)[:300])
+                break
 
-            # Normalize common response shapes
-            # New embeddings endpoint usually returns: {"data": [{"embedding": [...]}, ...]}
-            if isinstance(data, dict):
-                if "data" in data and isinstance(data["data"], list) and len(data["data"]) > 0:
-                    first = data["data"][0]
-                    if isinstance(first, dict) and "embedding" in first:
-                        return first["embedding"]
-                    # Some older responses may include 'vector' or similar keys
-                    for key in ("embedding", "vector", "embeddings"):
-                        if key in first:
-                            return first[key]
-                # Single embedding directly in dict
-                for key in ("embedding", "vector", "embeddings"):
-                    if key in data and isinstance(data[key], list):
-                        return data[key]
-
-            # If the response is a list, it may be a direct embedding or list of embeddings
-            if isinstance(data, list):
-                # If it's list of floats, return it
-                if len(data) > 0 and all(isinstance(x, (float, int)) for x in data):
-                    return [float(x) for x in data]
-                # If it's a list of dicts, try to get first.embedding
-                if isinstance(data[0], dict) and "embedding" in data[0]:
-                    return data[0]["embedding"]
-
-            print("Embeddings response in unexpected format, returning None. Response preview:", str(data)[:300])
-            return None
-
-        except requests.exceptions.RequestException as e:
-            if attempt == max_retries - 1:
-                print(f"HF Embeddings API error after {max_retries} attempts: {e}")
-                return None
-            import time
-            time.sleep(1 + attempt)
+            except requests.exceptions.RequestException as e:
+                if attempt == max_retries - 1:
+                    print(f"HF Embeddings API error after {max_retries} attempts with payload format {payload_idx + 1}: {e}")
+                    break 
+                import time
+                time.sleep(1 + attempt)
+    
+    # If all formats failed, return None
+    print("All payload formats failed for embeddings")
     return None
 
+
 def get_embeddings(text):
-    """Get sentence embeddings via HF API"""
-    # Prefer the dedicated embeddings endpoint which expects {model, input}
     emb = call_hf_embeddings("sentence-transformers/all-MiniLM-L6-v2", text)
-    if emb and isinstance(emb, list):
-        # Ensure floats
+    if emb and isinstance(emb, list) and len(emb) > 0:
         try:
             return [float(x) for x in emb]
         except Exception:
             print("Failed to coerce embedding values to float")
-            return []
-
-    # Last-resort fallback: try the generic inference endpoint (some deployments)
-    fallback = call_hf_api(HF_EMBEDDINGS, {"inputs": text})
-    if fallback:
-        # If response is a list of dicts with 'embedding' key, use that
-        if isinstance(fallback, list) and len(fallback) > 0 and isinstance(fallback[0], dict) and 'embedding' in fallback[0]:
-            try:
-                return [float(x) for x in fallback[0]['embedding']]
-            except Exception:
-                return []
-        # If it's a flat list of floats
-        if isinstance(fallback, list) and all(isinstance(x, (float, int)) for x in fallback):
-            return [float(x) for x in fallback]
-
+    
+    # Fallback to a model that's definitely deployed as feature-extraction
+    print("Trying fallback embedding model...")
+    emb = call_hf_embeddings("sentence-transformers/paraphrase-MiniLM-L6-v2", text)
+    if emb and isinstance(emb, list) and len(emb) > 0:
+        try:
+            return [float(x) for x in emb]
+        except Exception:
+            print("Failed to coerce fallback embedding values to float")
+    
+    print("All embedding models failed, returning empty vector")
     return []
 
 def extract_keywords_hf(text, top_n=10):
-    """Extract keywords using HF API with fallback"""
     # Try HF API first
     result = call_hf_api(HF_KEYWORDS, {"inputs": text[:1000]})
     
@@ -295,7 +277,6 @@ def extract_keywords_hf(text, top_n=10):
     return keywords[:top_n]
 
 def summarize_text_hf(text, max_length=200, min_length=50):
-    """Generate summary using HF API with fallback"""
     result = call_hf_api(HF_SUMMARIZER, {
         "inputs": text[:4000],
         "parameters": {
@@ -317,7 +298,6 @@ def summarize_text_hf(text, max_length=200, min_length=50):
 
 @app.head("/health")
 async def health_check():
-    """Health check endpoint for monitoring"""
     return {
         "status": "healthy",
         "service": "nlp_service",
@@ -326,7 +306,6 @@ async def health_check():
 
 @app.head("/")
 async def root():
-    """Root endpoint"""
     return {
         "message": "PRESERV3D NLP Service",
         "status": "running",
@@ -478,7 +457,6 @@ def extract_text(pdf_bytes, filename=None, char_limit=5000):
     }
 
 def extract_metadata_ner(text, filename=None):
-    """Extract metadata using YOUR custom NER model"""
     print("Extracting metadata using custom NER model...")
     
     # Process text with YOUR custom NER model
@@ -519,7 +497,6 @@ def extract_metadata_ner(text, filename=None):
     }
 
 def cosine_similarity(a, b):
-    """Simple cosine similarity for embeddings"""
     if not a or not b:
         return 0
     import math
@@ -531,7 +508,6 @@ def cosine_similarity(a, b):
     return dot_product / (magnitude_a * magnitude_b)
 
 def check_summary_relevance(title, summary, keywords=None, categories=None, author=None, date=None):
-    """Check summary relevance using HF embeddings API"""
     if not summary or not summary.strip():
         return {
             "field": "summary",

@@ -1,10 +1,10 @@
 // web_scraper.js
-import puppeteer from 'puppeteer-extra'
-import StealthPlugin from 'puppeteer-extra-plugin-stealth'
+let puppeteer
+let StealthPlugin
 
 process.stdout.setDefaultEncoding('utf8')
 
-puppeteer.use(StealthPlugin())
+// We'll dynamically import the modules in the async main block below.
 
 const [, , title, author, categories, date] = process.argv
 const query = `${title} ${author || ''} ${categories || ''} ${date || ''}`.trim()
@@ -115,6 +115,28 @@ async function scrapeDuckDuckGo(page, query) {
 ;(async () => {
   let browser
   try {
+    // Dynamic imports: prefer puppeteer-extra + stealth when available
+    try {
+      const mod = await import('puppeteer-extra')
+      puppeteer = mod.default || mod
+      try {
+        const stealthMod = await import('puppeteer-extra-plugin-stealth')
+        StealthPlugin = stealthMod.default || stealthMod
+        puppeteer.use(StealthPlugin())
+        console.log('Using puppeteer-extra with stealth plugin')
+      } catch (e) {
+        console.log(
+          'puppeteer-extra available but stealth plugin not found; continuing without stealth:',
+          e.message,
+        )
+      }
+    } catch (err) {
+      // Fallback to plain puppeteer
+      console.log('puppeteer-extra not available, falling back to puppeteer:', err.message)
+      const mod = await import('puppeteer')
+      puppeteer = mod.default || mod
+    }
+
     browser = await puppeteer.launch({
       headless: true,
       args: [

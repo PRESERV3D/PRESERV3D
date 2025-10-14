@@ -396,7 +396,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onActivated, ref } from 'vue'
 import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
 import { convertToWorkingUrl } from 'src/composables/useR2Url'
@@ -450,8 +450,8 @@ const notifyDialogMessage = ref('')
 
 const userType = computed(() => userStore.profile?.user_type || 'Unknown')
 
-// Initialize page
-onMounted(async () => {
+// Initialize page (extract to allow re-run on activation)
+async function init() {
   try {
     const {
       data: { user: authUser },
@@ -464,8 +464,10 @@ onMounted(async () => {
       return
     }
 
-    // Load user profile
-    await userStore.fetchProfile()
+    // Load user profile if missing
+    if (!userStore.profile && authUser?.id) {
+      await userStore.fetchProfile(authUser.id)
+    }
 
     // Load all data
     await Promise.all([
@@ -483,7 +485,10 @@ onMounted(async () => {
   } catch (err) {
     console.error('Error initializing page:', err)
   }
-})
+}
+
+onMounted(() => init())
+onActivated(() => init())
 
 //COLLECTIONS
 const visibleCollections = computed(() => {
@@ -1601,6 +1606,7 @@ async function addCollection() {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -2088,6 +2094,7 @@ async function addCollection() {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   cursor: pointer;
 }

@@ -478,7 +478,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, onBeforeUnmount, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, onBeforeUnmount, watch, computed, onActivated } from 'vue'
 import { useQuasar } from 'quasar'
 import { useDocumentsStore } from 'stores/documentsStore'
 import { useSearchStore } from 'stores/searchStore'
@@ -526,13 +526,15 @@ const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
-if (userStore.profile.role === undefined) {
-  userStore.fetchProfile()
+// Ensure we never access `profile` when it's null. Use safe computed accessors.
+if (!userStore.profile && userStore.session?.user?.id) {
+  // Fire-and-forget: fetch profile when we already have a session available.
+  userStore.fetchProfile(userStore.session.user.id)
 }
 
-const userRole = userStore.profile.role
-const isAdmin = computed(() => userRole === 'admin')
-const userType = computed(() => userStore.profile.user_type || 'Unknown') // from userstore because some users dont have usertype on auth
+const userRole = computed(() => userStore.profile?.role ?? null)
+const isAdmin = computed(() => userRole.value === 'admin')
+const userType = computed(() => userStore.profile?.user_type ?? 'Unknown') // from userstore because some users dont have usertype on auth
 
 onMounted(async () => {
   loading.value = true
@@ -611,6 +613,21 @@ onMounted(async () => {
   console.log('Applied sorting:', searchStore.sortBy, searchStore.sortOrder)
 
   loading.value = false
+})
+
+// Re-fetch documents when this component is re-activated (e.g. via back navigation)
+onActivated(async () => {
+  try {
+    // Only re-run the full fetch when there's no active search query.
+    if (!searchStore.query) {
+      loading.value = true
+      await fetchAllDocuments()
+    }
+  } catch (err) {
+    console.warn('[DocumentsPage] onActivated fetch failed:', err)
+  } finally {
+    loading.value = false
+  }
 })
 
 onUnmounted(() => {
