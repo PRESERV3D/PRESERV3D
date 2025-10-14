@@ -193,6 +193,24 @@ def summarize_text_hf(text, max_length=200, min_length=50):
     summary_sentences = sentences[:min(5, len(sentences))]
     return ' '.join(summary_sentences) + '.'
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    return {
+        "status": "healthy",
+        "service": "nlp_service",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {
+        "message": "PRESERV3D NLP Service",
+        "status": "running",
+        "endpoints": ["/health", "/process-text", "/generate-summary", "/extract-text"]
+    }
+
 @app.post("/process-text")
 async def process_pdf(
     file: UploadFile = File(None),
