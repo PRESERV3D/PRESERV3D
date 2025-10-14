@@ -1175,6 +1175,51 @@ def save_inconsistencies(
               .eq("source_type", source_type) \
               .execute()
 
+
+def cleanup_inconsistencies():
+    deleted = []
+    try:
+        all_rows = supabase.table("inconsistencies").select("*").execute()
+        if not all_rows.data:
+            return {"deleted": deleted}
+
+        for row in all_rows.data:
+            rec_id = row.get("record_id")
+            src = row.get("source_type")
+            if not rec_id or not src:
+                # If malformed, remove it
+                try:
+                    supabase.table("inconsistencies").delete().eq("id", row.get("id")).execute()
+                    deleted.append(row.get("id"))
+                except Exception:
+                    continue
+                continue
+
+            # Check live table existence
+            live_table = "documents_metadata" if src == "document" else "artifacts_metadata"
+            resp = supabase.table(live_table).select("id").eq("id", rec_id).execute()
+            exists_in_live = bool(resp.data)
+
+            if not exists_in_live:
+                # Check deleted tables as indicator the item was intentionally removed
+                deleted_table = "deleted_documents" if src == "document" else "deleted_artifacts"
+                resp_del = supabase.table(deleted_table).select("id").eq("id", rec_id).execute()
+                exists_in_deleted = bool(resp_del.data)
+
+                # If not in live table, consider it deleted (or orphaned) and remove inconsistency
+                try:
+                    supabase.table("inconsistencies").delete().eq("id", row.get("id")).execute()
+                    deleted.append(row.get("id"))
+                except Exception:
+                    # ignore individual delete failures
+                    continue
+
+        return {"deleted": deleted}
+
+    except Exception as e:
+        print("cleanup_inconsistencies error:", e)
+        return {"deleted": deleted, "error": str(e)}
+
 @app.post("/rescan-metadata")
 async def rescan_metadata():
     try:
@@ -1207,7 +1252,11 @@ async def rescan_metadata():
                     file_url=row.get("file_url"),
                 )
 
-        return {"success": True, "error": None}
+        # After rescanning live items, clean up inconsistencies that reference
+        # items which were deleted or moved out of the live metadata tables.
+        cleanup_result = cleanup_inconsistencies()
+
+        return {"success": True, "error": None, "cleanup": cleanup_result}
 
     except Exception as e:
         return {"success": False, "error": str(e)}
