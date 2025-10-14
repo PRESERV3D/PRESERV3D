@@ -253,7 +253,7 @@
                     </div>
 
                     <!-- Star Icon with Count -->
-                    <div class="icon-with-count">
+                    <div class="icon-with-count" :class="{ 'hidden-icon': isAdmin }">
                       <q-icon
                         :name="model.starred ? 'star' : 'star_border'"
                         class="action-icon star-icon"
@@ -1896,6 +1896,10 @@ function goToModelsPage(page) {
 
 .view-icon:hover {
   background-color: rgba(136, 0, 0, 0.1);
+}
+
+.icon-with-count.hidden-icon {
+  margin-right: 1rem;
 }
 
 .my-card:hover {
