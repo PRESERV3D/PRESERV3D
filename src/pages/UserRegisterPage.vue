@@ -514,7 +514,7 @@ async function registerUser() {
           role: 'user',
           type: 'student',
         },
-        emailRedirectTo: `${window.location.origin}/user/login`,
+        emailRedirectTo: 'https://preserv3d.vercel.app/user/login',
       },
     })
 

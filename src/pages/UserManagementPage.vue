@@ -2019,7 +2019,7 @@ async function createAdmin() {
           type: 'admin',
           is_super_admin: newAdmin.value.is_super_admin,
         },
-        emailRedirectTo: `${window.location.origin}/resetpassword`,
+        emailRedirectTo: 'https://preserv3d.vercel.app/resetpassword',
       },
     })
 
@@ -2224,7 +2224,7 @@ async function resendConfirmationEmail(admin) {
       type: 'signup',
       email: admin.email,
       options: {
-        emailRedirectTo: `${window.location.origin}/resetpassword`,
+        emailRedirectTo: 'https://preserv3d.vercel.app/resetpassword',
       },
     })
 
@@ -2351,7 +2351,7 @@ async function confirmRegistrationAction() {
             role: 'user',
             type: 'visitor',
           },
-          emailRedirectTo: `${window.location.origin}/resetpassword`,
+          emailRedirectTo: 'https://preserv3d.vercel.app/resetpassword',
         },
       })
 
