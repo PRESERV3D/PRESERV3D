@@ -528,10 +528,10 @@ const notifyDialogMessage = ref('')
 
 // Ensure we never access `profile` when it's null. Use safe computed accessors.
 if (!userStore.profile && userStore.session?.user?.id) {
-  // Fire-and-forget: fetch profile when we already have a session available.
   userStore.fetchProfile(userStore.session.user.id)
 }
 
+// Safe profile-derived values
 const userRole = computed(() => userStore.profile?.role ?? null)
 const isAdmin = computed(() => userRole.value === 'admin')
 const userType = computed(() => userStore.profile?.user_type ?? 'Unknown') // from userstore because some users dont have usertype on auth
@@ -849,7 +849,7 @@ let nlpAbortController = null
 let ocrAbortController = null
 let cancelRequested = false
 const router = useRouter()
-const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
+const user = `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
 
 const metadata = ref({
   file_name: '',

@@ -297,6 +297,7 @@ def summarize_text_hf(text, max_length=200, min_length=50):
     return ' '.join(summary_sentences) + '.'
 
 @app.head("/health")
+@app.get("/health")
 async def health_check():
     return {
         "status": "healthy",
@@ -305,6 +306,7 @@ async def health_check():
     }
 
 @app.head("/")
+@app.get("/")
 async def root():
     return {
         "message": "PRESERV3D NLP Service",

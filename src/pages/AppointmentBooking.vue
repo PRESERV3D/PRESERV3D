@@ -207,7 +207,7 @@ const userStore = useUserStore()
 const router = useRouter()
 
 const form = ref({
-  name: `${userStore.profile.first_name || ''} ${userStore.profile.last_name || ''}`.trim(),
+  name: `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim(),
   email: userStore.profile?.email || '',
   date: '',
   time: '',

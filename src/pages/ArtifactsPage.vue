@@ -452,7 +452,7 @@ const userCollections = ref([])
 const selectedCollections = ref([])
 const existingCollectionIds = ref([])
 
-// Notification dialog state
+// Notification dialog sate
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
@@ -462,7 +462,7 @@ const notifyDialogMessage = ref('')
 //   return searchStore.query ? searchStore.searchedModels : modelStore.filteredModels
 // })
 
-// Safe access to profile - avoid runtime errors when profile is null.
+// Safe access to profile
 if (!userStore.profile && userStore.session?.user?.id) {
   userStore.fetchProfile(userStore.session.user.id)
 }

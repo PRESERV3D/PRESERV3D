@@ -162,6 +162,17 @@ export const useUserStore = defineStore('user', {
       console.warn('No matching profile found for user:', userId)
     },
 
+    /**
+     * Ensure profile is loaded for a user id. Safe to call repeatedly.
+     * Returns the profile or null.
+     */
+    async ensureProfile(userId) {
+      if (!userId) return null
+      if (this.profile && this.profile.id === userId) return this.profile
+      await this.fetchProfile(userId)
+      return this.profile
+    },
+
     // Manually fetch session + profile (e.g., on page reload)
     async fetchSession() {
       const {

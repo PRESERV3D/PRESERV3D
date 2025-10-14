@@ -515,8 +515,8 @@ const documentsStore = useDocumentsStore()
 const userStore = useUserStore()
 // const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 
-const userRole = userStore.profile.role
-const isAdmin = computed(() => userRole === 'admin')
+const userRole = computed(() => userStore.profile?.role ?? null)
+const isAdmin = computed(() => userRole.value === 'admin')
 
 const dialogOpen = ref(false)
 

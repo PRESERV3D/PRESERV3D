@@ -267,11 +267,12 @@ const doc = ref(null)
 const loading = ref(true)
 const showDialog = ref(false)
 const userStore = useUserStore()
-const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
+// Safe accessors for profile fields to avoid runtime errors when profile is not yet loaded
+const user = `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
 
-const userRole = userStore.profile.role
-const isAdmin = computed(() => userRole === 'admin')
-const userType = computed(() => userStore.profile.user_type || 'Unknown')
+const userRole = computed(() => userStore.profile?.role ?? null)
+const isAdmin = computed(() => userRole.value === 'admin')
+const userType = computed(() => userStore.profile?.user_type || 'Unknown')
 
 const dialogOpen = ref(false)
 const selectedItemType = ref('document')

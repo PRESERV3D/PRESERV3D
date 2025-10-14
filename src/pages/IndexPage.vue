@@ -6,7 +6,9 @@
         <!-- Text Content -->
         <div class="col-12 col-md-7 q-gutter-xs">
           <p class="q-ml-xl dash-title">
-            <span v-if="userStore.profile">Welcome Back, {{ userStore.profile.first_name }}!</span>
+            <span v-if="userStore.profile"
+              >Welcome Back, {{ userStore.profile?.first_name || '' }}!</span
+            >
           </p>
           <p class="q-ml-xl dash-subtitle">
             <span v-if="userStore.profile?.role === 'admin'">(Admin Access) - </span>
