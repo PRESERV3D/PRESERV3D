@@ -515,8 +515,8 @@ const documentsStore = useDocumentsStore()
 const userStore = useUserStore()
 // const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 
-const userRole = userStore.profile.role
-const isAdmin = computed(() => userRole === 'admin')
+const userRole = computed(() => userStore.profile?.role ?? null)
+const isAdmin = computed(() => userRole.value === 'admin')
 
 const dialogOpen = ref(false)
 
@@ -922,24 +922,25 @@ onMounted(async () => {
 
   if (error || !data) {
     console.error('Document not found from Supabase:', error)
-    // Optional: fallback to store if you have a docuStore like modelStore
-    // const docuStore = useDocuStore()
     doc.value = documentsStore.documents.find((d) => d.id == route.params.id) || null
     console.log('Fallback Document from Store:', doc.value)
   } else {
-    // Initialize with default bookmark/star states
     doc.value = {
       ...data,
       bookmarked: false,
       starred: false,
     }
 
+    // Add null/undefined check before mapping
     if (data.related_links && Array.isArray(data.related_links)) {
       links.value = data.related_links.map((link, idx) => ({
         id: link.id || Date.now() + idx,
-        title: link.title,
-        url: link.url,
+        title: link.title || '',
+        url: link.url || '',
       }))
+    } else {
+      // Initialize as empty array if no related links exist
+      links.value = []
     }
   }
 
@@ -1101,35 +1102,73 @@ let draggedIndex = null
 async function fetchRelatedLinks(title, author, categories, date) {
   try {
     console.log('Fetching related links for:', title, author, categories, date)
-
-    const formData = new FormData()
-    formData.append('title', title)
-    formData.append('author', author)
-    formData.append('categories', categories)
-    formData.append('date', date)
+    console.log('Using endpoint:', getNlpEndpoint('/related-links'))
 
     loadingRelatedLinks.value = true
 
-    const { data } = await axios.get(getNlpEndpoint('/related-links'), {
+    const endpoint = getNlpEndpoint('/related-links')
+
+    const { data } = await axios.get(endpoint, {
       params: {
         title,
         author,
         categories,
         date,
       },
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
 
-    // assuming data.links is an array of URLs
+    console.log('Received data:', data)
+
+    // Check if data and data.links exist
+    if (!data || !data.links) {
+      console.warn('No links returned from API')
+      links.value = []
+      hasChanges.value = false
+      return
+    }
+
+    // Validate that data.links is an array
+    if (!Array.isArray(data.links)) {
+      console.error('API returned non-array links:', data.links)
+      links.value = []
+      hasChanges.value = false
+      return
+    }
+
     links.value = data.links.map((link, idx) => ({
       id: Date.now() + idx,
-      title: link.title,
-      url: link.url,
+      title: link.title || link.url || 'Untitled',
+      url: link.url || '',
     }))
 
     hasChanges.value = true
     showRelatedDialog.value = true
+
+    console.log('Successfully mapped links:', links.value)
   } catch (err) {
     console.error('Error fetching related links:', err)
+
+    // More detailed error logging
+    if (err.response) {
+      console.error('Response error:', err.response.status, err.response.data)
+    } else if (err.request) {
+      console.error('No response received:', err.request)
+    } else {
+      console.error('Request setup error:', err.message)
+    }
+
+    // Show user-friendly error
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to fetch related links. Please try again.',
+      caption: err.message,
+    })
+
+    links.value = []
+    hasChanges.value = false
   } finally {
     loadingRelatedLinks.value = false
   }
@@ -1185,19 +1224,21 @@ async function saveRelatedLinks() {
 }
 
 async function cancelChanges() {
-  // Reset the links to the original state
   const { data } = await supabase
     .from('documents_metadata')
     .select('related_links')
     .eq('id', route.params.id)
     .single()
 
-  if (data && Array.isArray(data.related_links)) {
+  // Add null/undefined check
+  if (data && data.related_links && Array.isArray(data.related_links)) {
     links.value = data.related_links.map((link, idx) => ({
       id: link.id || Date.now() + idx,
-      title: link.title,
-      url: link.url,
+      title: link.title || '',
+      url: link.url || '',
     }))
+  } else {
+    links.value = []
   }
 
   hasChanges.value = false

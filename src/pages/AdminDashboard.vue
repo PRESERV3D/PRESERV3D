@@ -285,11 +285,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, onActivated, watch, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import '@google/model-viewer'
 import { supabase } from 'boot/supabase'
 import { useRecentStore } from 'stores/recentStore'
+import { useUserStore } from 'src/stores/user'
 import { generateMonthlyReport } from '/services/report_service.js'
 import {
   Chart,
@@ -329,6 +330,7 @@ let topArtifacts = ref([])
 const topDocuments = ref([])
 
 const recentStore = useRecentStore()
+const userStore = useUserStore()
 const currentIndex = ref(0)
 const currentItem = computed(() => recentStore.recentItems[currentIndex.value])
 
@@ -439,42 +441,54 @@ const generateReport = async () => {
   reportDialog.value = false
 }
 
-onMounted(async () => {
-  if (usersPerMonth.value) {
-    const usersData = await prepareUsersData()
-    initUsersPerMonthChart(usersData)
+async function init() {
+  try {
+    // Ensure profile is loaded if we have a session
+    if (userStore.session && !userStore.profile) {
+      await userStore.fetchProfile(userStore.session.user.id)
+    }
+
+    if (usersPerMonth.value) {
+      const usersData = await prepareUsersData()
+      initUsersPerMonthChart(usersData)
+    }
+
+    if (uploadedArchives.value) {
+      const chartData = await prepareChartData()
+      initChart(chartData)
+    }
+
+    const { data: topArts } = await supabase.from('artifacts_view').select('*').limit(3)
+    const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
+    const { count: artifactsCount } = await supabase
+      .from('artifacts_metadata')
+      .select('*', { count: 'exact', head: true })
+
+    const { count: documentsCount } = await supabase
+      .from('documents_metadata')
+      .select('*', { count: 'exact', head: true })
+
+    const { count: userCount } = await supabase
+      .from('all_users')
+      .select('*', { count: 'exact', head: true })
+      .neq('user_type', 'admin')
+
+    await recentStore.fetchRecentUploads()
+
+    topArtifacts.value = topArts
+    topDocuments.value = topDocus
+
+    // Update counts from chartData and usersData
+    artifacts.value = artifactsCount
+    documents.value = documentsCount
+    users.value = userCount
+  } catch (err) {
+    console.error('Error initializing AdminDashboard:', err)
   }
+}
 
-  if (uploadedArchives.value) {
-    const chartData = await prepareChartData()
-    initChart(chartData)
-  }
-
-  const { data: topArts } = await supabase.from('artifacts_view').select('*').limit(3)
-  const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
-  const { count: artifactsCount } = await supabase
-    .from('artifacts_metadata')
-    .select('*', { count: 'exact', head: true })
-
-  const { count: documentsCount } = await supabase
-    .from('documents_metadata')
-    .select('*', { count: 'exact', head: true })
-
-  const { count: userCount } = await supabase
-    .from('all_users')
-    .select('*', { count: 'exact', head: true })
-    .neq('user_type', 'admin')
-
-  await recentStore.fetchRecentUploads()
-
-  topArtifacts.value = topArts
-  topDocuments.value = topDocus
-
-  // Update counts from chartData and usersData
-  artifacts.value = artifactsCount
-  documents.value = documentsCount
-  users.value = userCount
-})
+onMounted(() => init())
+onActivated(() => init())
 
 function initChart(data) {
   chartInstance = new Chart(uploadedArchives.value, {
@@ -785,7 +799,7 @@ function imgProps(item) {
   margin-left: 3rem;
   flex: 1;
   min-width: 0;
-  height: 35rem;  /* ✅ Keep only this height declaration */
+  height: 35rem; /* ✅ Keep only this height declaration */
   box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
   justify-content: center;
 }

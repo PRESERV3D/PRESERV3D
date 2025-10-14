@@ -5,6 +5,7 @@
 
 const CACHE_PREFIX = 'r2_presigned_'
 const CACHE_EXPIRY_MS = 6 * 24 * 60 * 60 * 1000 // 6 days (before 7-day expiration)
+const MAX_ENTRIES = 300 // Max cached presigned URLs to keep in localStorage (LRU-style eviction)
 
 // In-memory cache for fast access during session
 const memoryCache = new Map()
@@ -82,8 +83,43 @@ export function setCachedUrl(key, url) {
   try {
     const cacheKey = getCacheKey(key)
     localStorage.setItem(cacheKey, JSON.stringify(entry))
+    // Enforce a maximum number of entries in localStorage to avoid unbounded growth
+    try {
+      enforceMaxEntries()
+    } catch (e) {
+      // Non-fatal
+      console.warn('Error enforcing max cache entries:', e)
+    }
   } catch (error) {
     console.warn('Error saving to cache:', error)
+  }
+}
+
+/**
+ * Enforce MAX_ENTRIES by removing oldest cache entries when localStorage exceeds the limit.
+ * This is a lightweight LRU-like eviction based on stored timestamp.
+ */
+function enforceMaxEntries() {
+  try {
+    const keys = Object.keys(localStorage).filter((k) => k.startsWith(CACHE_PREFIX))
+    if (keys.length <= MAX_ENTRIES) return
+
+    // Build array of { key, timestamp }
+    const entries = keys
+      .map((k) => {
+        try {
+          const v = JSON.parse(localStorage.getItem(k))
+          return { key: k, timestamp: v?.timestamp || 0 }
+        } catch {
+          return { key: k, timestamp: 0 }
+        }
+      })
+      .sort((a, b) => a.timestamp - b.timestamp) // oldest first
+
+    const toRemove = entries.slice(0, Math.max(0, keys.length - MAX_ENTRIES))
+    toRemove.forEach((e) => localStorage.removeItem(e.key))
+  } catch (err) {
+    console.warn('Error during enforceMaxEntries:', err)
   }
 }
 

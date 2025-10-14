@@ -58,20 +58,20 @@
             <div class="stat-item">
               <q-icon name="visibility" size="sm" color="grey-6" />
               <span
-              >{{
+                >{{
                   documentsStore?.viewCounts[
                     topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].id
-                    ] || 0
+                  ] || 0
                 }}
                 views</span
               >
               <div class="stat-item q-ml-md">
                 <q-icon name="star" size="sm" color="grey-6" />
                 <span
-                >{{
+                  >{{
                     documentsStore?.starCounts[
                       topDocuments[hoveredBook !== null ? hoveredBook : selectedBook].id
-                      ] || 0
+                    ] || 0
                   }}
                   stars</span
                 >
@@ -106,7 +106,7 @@
             'book-hovered': hoveredBook === index,
             'book-selected': selectedBook === index,
             'hide-on-tablet': index >= 3,
-            'hide-on-mobile': index >= 2
+            'hide-on-mobile': index >= 2,
           }"
           @mouseenter="hoveredBook = index"
           @mouseleave="hoveredBook = null"
@@ -214,11 +214,11 @@
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-            notifyDialogTitle
-          }}</q-card-section>
+          notifyDialogTitle
+        }}</q-card-section>
         <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-            notifyDialogMessage
-          }}</q-card-section>
+          notifyDialogMessage
+        }}</q-card-section>
         <q-card-actions>
           <q-btn flat label="Close" class="btn-save" v-close-popup />
         </q-card-actions>
@@ -250,9 +250,9 @@ const hoveredBook = ref(null)
 const authorInfoSelected = ref(false)
 const selectedBook = ref(null)
 
-const userRole = userStore.profile.role
-const isAdmin = computed(() => userRole === 'admin')
-const userType = computed(() => userStore.profile.user_type || 'Unknown') // from userstore because some users dont have usertype on auth
+const userRole = computed(() => userStore.profile?.role ?? null)
+const isAdmin = computed(() => userRole.value === 'admin')
+const userType = computed(() => userStore.profile?.user_type || 'Unknown') // from userstore because some users dont have usertype on auth
 
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
@@ -436,8 +436,8 @@ const showNotifyDialog = (title, message) => {
 // Load documents on mount
 onMounted(async () => {
   // Fetch user profile if not loaded
-  if (userStore.profile.role === undefined) {
-    await userStore.fetchProfile()
+  if (!userStore.profile && userStore.session?.user?.id) {
+    await userStore.fetchProfile(userStore.session.user.id)
   }
 
   // Fetch top documents from your database (same as in your documents page)
@@ -950,7 +950,6 @@ onMounted(async () => {
   background: #8b4513;
   color: white;
 }
-
 
 /* ========================
  HIGHLIGHT RESPONSIVE DESIGN

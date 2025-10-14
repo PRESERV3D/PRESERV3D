@@ -478,7 +478,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, onBeforeUnmount, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, onBeforeUnmount, watch, computed, onActivated } from 'vue'
 import { useQuasar } from 'quasar'
 import { useDocumentsStore } from 'stores/documentsStore'
 import { useSearchStore } from 'stores/searchStore'
@@ -526,13 +526,15 @@ const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
-if (userStore.profile.role === undefined) {
-  userStore.fetchProfile()
+// Ensure we never access `profile` when it's null. Use safe computed accessors.
+if (!userStore.profile && userStore.session?.user?.id) {
+  userStore.fetchProfile(userStore.session.user.id)
 }
 
-const userRole = userStore.profile.role
-const isAdmin = computed(() => userRole === 'admin')
-const userType = computed(() => userStore.profile.user_type || 'Unknown') // from userstore because some users dont have usertype on auth
+// Safe profile-derived values
+const userRole = computed(() => userStore.profile?.role ?? null)
+const isAdmin = computed(() => userRole.value === 'admin')
+const userType = computed(() => userStore.profile?.user_type ?? 'Unknown') // from userstore because some users dont have usertype on auth
 
 onMounted(async () => {
   loading.value = true
@@ -611,6 +613,21 @@ onMounted(async () => {
   console.log('Applied sorting:', searchStore.sortBy, searchStore.sortOrder)
 
   loading.value = false
+})
+
+// Re-fetch documents when this component is re-activated (e.g. via back navigation)
+onActivated(async () => {
+  try {
+    // Only re-run the full fetch when there's no active search query.
+    if (!searchStore.query) {
+      loading.value = true
+      await fetchAllDocuments()
+    }
+  } catch (err) {
+    console.warn('[DocumentsPage] onActivated fetch failed:', err)
+  } finally {
+    loading.value = false
+  }
 })
 
 onUnmounted(() => {
@@ -832,7 +849,7 @@ let nlpAbortController = null
 let ocrAbortController = null
 let cancelRequested = false
 const router = useRouter()
-const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
+const user = `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
 
 const metadata = ref({
   file_name: '',
@@ -870,8 +887,12 @@ async function uploadFileToStorage(file, fileName) {
 }
 
 async function generatePdfPreview(file) {
-  // Set the worker source
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${window.pdfjsLib.version}/pdf.worker.min.js`
+  // Prefer the local worker shipped in /public (fallback to CDN removed to avoid 404)
+  try {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+  } catch (e) {
+    console.warn('Could not set pdf.worker path, pdf.js may not be available:', e)
+  }
 
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise
@@ -908,9 +929,37 @@ async function processFileWithNLP(file, fileName) {
   formData.append('file', file)
   formData.append('filename', fileName)
 
-  return await axios.post(getNlpEndpoint('/process-text'), formData, {
-    signal: nlpAbortController?.signal,
-  })
+  const nlpUrl = getNlpEndpoint('/process-text')
+  console.log('[DocumentsPage] Calling NLP endpoint:', nlpUrl, 'filename:', fileName)
+
+  // Try to log FormData entries (note: file entries will show File objects)
+  try {
+    for (const entry of formData.entries()) {
+      // entry is [key, value]
+      const key = entry[0]
+      const val = entry[1]
+      // For File objects, log the name; otherwise log the value directly
+      console.log('[DocumentsPage] FormData:', key, val && val.name ? val.name : val)
+    }
+  } catch (err) {
+    console.warn('[DocumentsPage] Could not enumerate FormData entries:', err)
+  }
+
+  try {
+    const resp = await axios.post(nlpUrl, formData, {
+      signal: nlpAbortController?.signal,
+    })
+    console.log('[DocumentsPage] NLP response status:', resp.status)
+    console.log('[DocumentsPage] NLP response data:', resp.data)
+    return resp
+  } catch (err) {
+    console.error(
+      '[DocumentsPage] NLP request failed:',
+      err?.response?.status,
+      err?.response?.data ?? err.message,
+    )
+    throw err
+  }
 }
 
 // async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData) {
@@ -973,7 +1022,7 @@ async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData, user) {
     console.error('Error inserting metadata:', error)
     throw error
   }
-
+  showDialog.value = false
   return data
 }
 

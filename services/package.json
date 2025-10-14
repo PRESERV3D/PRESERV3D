@@ -2,7 +2,7 @@
   "name": "services",
   "version": "1.0.0",
   "description": "",
-  "main": "web_scrapper.js",
+  "main": "web_scraper.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,7 +11,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "puppeteer": "^24.16.1",
+    "puppeteer": "^24.24.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-adblocker": "^2.13.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2"

@@ -204,7 +204,7 @@ async function registerAdmin() {
           role: 'admin',
           type: 'admin',
         },
-        emailRedirectTo: `${window.location.origin}/user/login`,
+        emailRedirectTo: `${process.env.FRONTEND_URL}/user/login`,
       },
     })
 

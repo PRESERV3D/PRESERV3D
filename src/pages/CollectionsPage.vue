@@ -50,7 +50,7 @@
 
     <!-- Collection Display -->
     <div v-else>
-      <div v-if="collections.length > 0" class="box-collections">
+      <div v-if="collections.length > 0" class="box-collections q-my-md">
         <div
           v-for="(collection, index) in collections"
           :key="collection.collection_id"
@@ -190,11 +190,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onActivated } from 'vue'
 import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
 import { convertToWorkingUrl } from 'src/composables/useR2Url'
 import { preloadPreviews } from 'src/utils/urlCache'
+import { useUserStore } from 'stores/user'
 
 const user = ref({ first_name: '' })
 const collections = ref([])
@@ -212,6 +213,13 @@ const sortOption = ref('Newest to Oldest')
 const sortOptions = ['Alphabetical', 'Oldest to Newest', 'Newest to Oldest', 'Recently Updated']
 
 // Load user and collections
+const userStore = useUserStore()
+
+// If there's an active session but profile is missing, fetch it to avoid null-access errors.
+if (!userStore.profile && userStore.session?.user?.id) {
+  userStore.fetchProfile(userStore.session.user.id)
+}
+
 onMounted(async () => {
   const {
     data: { user: authUser },
@@ -237,6 +245,23 @@ onMounted(async () => {
   }
 
   await loadCollections(authUser.id)
+})
+
+onActivated(async () => {
+  try {
+    const {
+      data: { user: authUser },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !authUser) return
+    isLoading.value = true
+    await loadCollections(authUser.id)
+  } catch (err) {
+    console.warn('[CollectionsPage] onActivated failed to reload collections:', err)
+  } finally {
+    isLoading.value = false
+  }
 })
 
 // FIXED: Sorting

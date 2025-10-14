@@ -2,10 +2,17 @@ services:
   - type: web
     name: preserv3d-nlp-service
     env: python
-    region: oregon
+    region: singapore
     plan: free
     rootDir: services
-    buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm
+    buildCommand: |
+      set -e
+      pip install -r requirements.txt
+      python -m spacy download en_core_web_sm
+      curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+      apt-get update
+      apt-get install -y nodejs chromium chromium-sandbox fonts-liberation libnss3 libxss1 libasound2
+      npm ci --legacy-peer-deps
     startCommand: uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
     envVars:
       - key: PYTHON_VERSION
@@ -16,3 +23,5 @@ services:
         sync: false
       - key: FRONTEND_URL
         value: https://preserv3d.vercel.app
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /usr/bin/chromium

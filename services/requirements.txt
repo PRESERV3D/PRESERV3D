@@ -1,34 +1,56 @@
-fastapi==0.115.12
-uvicorn==0.34.2
-starlette==0.46.2
-python-multipart==0.0.20
-python-dotenv==1.1.1
-pydantic==2.11.7
-pydantic_core==2.33.2
+# Core FastAPI and HTTP dependencies
+fastapi
+uvicorn[standard]
+starlette
+python-multipart
+pydantic
+pydantic-core
 
-supabase==2.18.1
-postgrest==1.1.1
-storage3==0.12.1
-realtime==2.7.0
-supabase_auth==2.12.3
-supabase_functions==0.10.1
+# Supabase dependencies
+supabase
+postgrest
+storage3
+realtime
+supabase-auth
+supabase-functions
 
-PyMuPDF==1.26.0
+# PDF processing
+PyMuPDF
 
-transformers==4.52.3
-torch==2.7.0
-sentence-transformers==4.1.0
-keybert==0.9.0
-scikit-learn==1.6.1
-scipy==1.15.3
-joblib==1.5.1
-threadpoolctl==3.6.0
+# Machine Learning and NLP - Core PyTorch
+torch
+torchvision
+torchaudio
 
-spacy==3.8.7
-en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl#sha256=1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85
+# Transformers and NLP models
+transformers
+sentence-transformers
+keybert
 
-regex==2024.11.6
-python-dateutil==2.9.0.post0
-requests==2.32.3
-typing_extensions==4.15.0
-deepdiff==8.6.1
+# SpaCy and NER
+spacy
+en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+
+# Data Science and ML utilities
+scikit-learn
+scipy
+joblib
+threadpoolctl
+
+# Utility libraries
+python-dotenv
+regex
+python-dateutil
+requests
+typing-extensions
+deepdiff
+beautifulsoup4
+
+# Additional dependencies that may be needed
+numpy
+tokenizers
+safetensors
+huggingface-hub
+filelock
+packaging
+tqdm

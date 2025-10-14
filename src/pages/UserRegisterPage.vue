@@ -358,12 +358,125 @@ const checkEmailUnique = async (val) => {
 }
 
 // Register user
+// async function registerUser() {
+//   const {
+//     first_name,
+//     last_name,
+//     email,
+//     // contact,
+//     college,
+//     department,
+//     year_section,
+//     is_alumni,
+//     password,
+//     confirmPassword,
+//   } = form.value
+
+//   const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/
+//   if (!passwordRegex.test(password)) {
+//     showNotifyDialog(
+//       'Invalid Password',
+//       'Password must be at least 8 characters long and contain an uppercase letter, a number, and a special character.',
+//     )
+//     return
+//   }
+
+//   if (password !== confirmPassword) {
+//     showNotifyDialog('Password Mismatch', 'Passwords do not match!')
+//     return
+//   }
+
+//   if (!college || !department || !year_section) {
+//     showNotifyDialog('Missing Information', 'Please fill out all required fields.')
+//     return
+//   }
+
+//   try {
+//     const { data, error } = await supabase.auth.signUp({
+//       email,
+//       password,
+//       options: {
+//         data: {
+//           role: 'user',
+//           type: 'student',
+//         },
+//         emailRedirectTo: `${window.location.origin}/user/login`,
+//       },
+//     })
+
+//     if (error) {
+//       showNotifyDialog('Registration Error', error.message)
+//       return
+//     }
+
+//     const now = new Date()
+
+//     if (data.user) {
+//       const { error: profileError } = await supabase.from('registered_users').insert([
+//         {
+//           id: data.user.id,
+//           first_name,
+//           last_name,
+//           email,
+//           // contact,
+//           college,
+//           department,
+//           year_section,
+//           is_alumni,
+//           created_at: now,
+//         },
+//       ])
+
+//       if (profileError) {
+//         console.error(profileError)
+//         showNotifyDialog('Profile Error', 'User created, but failed to save profile.')
+//         return
+//       }
+
+//       const { error: allUserError } = await supabase.from('all_users').insert([
+//         {
+//           id: data.user.id,
+//           email,
+//           created_at: now,
+//           user_type: 'student',
+//         },
+//       ])
+
+//       if (allUserError) {
+//         console.error('Error in adding user to all users table: ', allUserError)
+//         return
+//       }
+
+//       const { createFavorites, error: favoritesError } = await createFavoritesCollection(
+//         data.user.id,
+//       )
+
+//       if (!createFavorites) {
+//         console.error('Error in creating Favorites collection: ', favoritesError)
+//         showNotifyDialog(
+//           'Collection Error',
+//           'User created, but failed to create Favorites collection.',
+//         )
+//         return
+//       }
+
+//       await showNotifyDialog(
+//         'Success',
+//         'Registration successful! Please check your email to authenticate your account.',
+//       )
+//       router.push('/user/login')
+//     }
+//   } catch (err) {
+//     console.error('Unexpected error:', err)
+//     showNotifyDialog('Error', 'An unexpected error occurred.')
+//   }
+// }
+
 async function registerUser() {
   const {
     first_name,
     last_name,
     email,
-    // contact,
     college,
     department,
     year_section,
@@ -392,6 +505,7 @@ async function registerUser() {
   }
 
   try {
+    // Sign up user
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -400,7 +514,7 @@ async function registerUser() {
           role: 'user',
           type: 'student',
         },
-        emailRedirectTo: `${window.location.origin}/user/login`,
+        emailRedirectTo: `${process.env.FRONTEND_URL}/user/login`,
       },
     })
 
@@ -409,66 +523,118 @@ async function registerUser() {
       return
     }
 
-    const now = new Date()
-
+    // Check if user was created
     if (data.user) {
-      const { error: profileError } = await supabase.from('registered_users').insert([
-        {
-          id: data.user.id,
-          first_name,
-          last_name,
-          email,
-          // contact,
-          college,
-          department,
-          year_section,
-          is_alumni,
-          created_at: now,
-        },
-      ])
+      const userId = data.user.id
+      const now = new Date()
 
-      if (profileError) {
-        console.error(profileError)
-        showNotifyDialog('Profile Error', 'User created, but failed to save profile.')
-        return
-      }
+      // Wait a moment to ensure auth.users record is fully created
+      // This helps with timing issues in Supabase
+      await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      const { error: allUserError } = await supabase.from('all_users').insert([
-        {
-          id: data.user.id,
-          email,
-          created_at: now,
-          user_type: 'student',
-        },
-      ])
+      try {
+        // Insert into registered_users
+        const { error: profileError } = await supabase.from('registered_users').insert([
+          {
+            id: userId,
+            first_name,
+            last_name,
+            email,
+            college,
+            department,
+            year_section,
+            is_alumni,
+            created_at: now,
+          },
+        ])
 
-      if (allUserError) {
-        console.error('Error in adding user to all users table: ', allUserError)
-        return
-      }
+        if (profileError) {
+          console.error('Profile Error:', profileError)
 
-      const { createFavorites, error: favoritesError } = await createFavoritesCollection(
-        data.user.id,
-      )
+          // If foreign key constraint fails, it means user isn't in auth.users yet
+          if (profileError.code === '23503') {
+            showNotifyDialog(
+              'Registration Pending',
+              "Your account has been created but requires email verification. Please check your email (including spam folder) and click the confirmation link. If you don't receive an email within 5 minutes, please contact support.",
+            )
+            router.push('/user/login')
+            return
+          }
 
-      if (!createFavorites) {
-        console.error('Error in creating Favorites collection: ', favoritesError)
+          showNotifyDialog(
+            'Profile Error',
+            'User created, but failed to save profile. Please contact support.',
+          )
+          return
+        }
+
+        // Insert into all_users
+        const { error: allUserError } = await supabase.from('all_users').insert([
+          {
+            id: userId,
+            email,
+            created_at: now,
+            user_type: 'student',
+          },
+        ])
+
+        if (allUserError) {
+          console.error('All Users Error:', allUserError)
+          showNotifyDialog(
+            'Database Error',
+            'Profile created, but failed to complete registration. Please contact support.',
+          )
+          return
+        }
+
+        // Create favorites collection
+        const { createFavorites, error: favoritesError } = await createFavoritesCollection(userId)
+
+        if (!createFavorites) {
+          console.error('Favorites Error:', favoritesError)
+          showNotifyDialog(
+            'Collection Error',
+            'Registration completed, but failed to create Favorites collection. You can create it manually later.',
+          )
+        }
+
+        // Check if email confirmation is required
+        const emailConfirmationRequired = !data.user.email_confirmed_at
+
+        if (emailConfirmationRequired) {
+          await showNotifyDialog(
+            'Registration Successful!',
+            "Your account has been created. Please check your email to verify your account before logging in. If you don't receive the email within 5 minutes, check your spam folder or contact support.",
+          )
+        } else {
+          await showNotifyDialog(
+            'Registration Successful!',
+            'Your account has been created and is ready to use. You can now log in.',
+          )
+        }
+
+        router.push('/user/login')
+      } catch (insertError) {
+        console.error('Unexpected error during profile creation:', insertError)
         showNotifyDialog(
-          'Collection Error',
-          'User created, but failed to create Favorites collection.',
+          'Error',
+          'An unexpected error occurred while creating your profile. Please contact support.',
         )
-        return
       }
-
-      await showNotifyDialog(
-        'Success',
-        'Registration successful! Please check your email to authenticate your account.',
+    } else {
+      // User object not returned - might be an identity confirmation issue
+      showNotifyDialog(
+        'Registration Initiated',
+        "Please check your email to confirm your account. If you don't receive an email within 5 minutes, please contact support.",
       )
       router.push('/user/login')
     }
   } catch (err) {
     console.error('Unexpected error:', err)
-    showNotifyDialog('Error', 'An unexpected error occurred.')
+    showNotifyDialog(
+      'Error',
+      'An unexpected error occurred during registration. Please try again or contact support.',
+    )
   }
 }
 

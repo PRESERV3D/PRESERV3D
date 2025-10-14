@@ -505,9 +505,10 @@ const router = useRouter()
 const modelStore = useModelStore()
 const userStore = useUserStore()
 
-const userRole = userStore.profile.role
-const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
-const isAdmin = computed(() => userRole === 'admin')
+// Safe profile accessors
+const userRole = computed(() => userStore.profile?.role ?? null)
+const user = `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
+const isAdmin = computed(() => userRole.value === 'admin')
 
 const model = ref(null)
 const loading = ref(true)

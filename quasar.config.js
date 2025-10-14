@@ -11,7 +11,8 @@ export default defineConfig((/* ctx */) => {
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
     // https://v2.quasar.dev/quasar-cli-vite/boot-files
-    boot: ['axios', 'supabase', 'r2', 'model-viewer'],
+    // Add 'pdfjs' boot first so worker is configured app-wide
+    boot: ['axios', 'supabase', 'r2', 'pdfjs', 'model-viewer'],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#css
     css: ['app.scss'],

@@ -395,7 +395,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch, onActivated } from 'vue'
 import { useModelStore } from 'stores/modelStore'
 import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
@@ -452,7 +452,7 @@ const userCollections = ref([])
 const selectedCollections = ref([])
 const existingCollectionIds = ref([])
 
-// Notification dialog state
+// Notification dialog sate
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
@@ -462,13 +462,14 @@ const notifyDialogMessage = ref('')
 //   return searchStore.query ? searchStore.searchedModels : modelStore.filteredModels
 // })
 
-if (userStore.profile.role === undefined) {
-  userStore.fetchProfile()
+// Safe access to profile
+if (!userStore.profile && userStore.session?.user?.id) {
+  userStore.fetchProfile(userStore.session.user.id)
 }
 
-const userRole = userStore.profile.role
-const isAdmin = computed(() => userRole === 'admin')
-const userType = computed(() => userStore.profile.user_type || 'Unknown')
+const userRole = computed(() => userStore.profile?.role ?? null)
+const isAdmin = computed(() => userRole.value === 'admin')
+const userType = computed(() => userStore.profile?.user_type ?? 'Unknown')
 
 function startRotate(e) {
   const el = e.target
@@ -978,6 +979,20 @@ onMounted(async () => {
     }
 
     console.log('Applied sorting:', searchStore.sortBy, searchStore.sortOrder)
+  } finally {
+    loading.value = false
+  }
+})
+
+// Re-fetch when navigated back to the page (keep-alive/reactivation scenarios)
+onActivated(async () => {
+  try {
+    if (!searchStore.query) {
+      loading.value = true
+      await fetchAllArtifacts()
+    }
+  } catch (err) {
+    console.warn('[ArtifactsPage] onActivated fetch failed:', err)
   } finally {
     loading.value = false
   }
