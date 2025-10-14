@@ -339,9 +339,19 @@ async function logClick(itemId, itemType, action) {
   }
 }
 
-const startReading = () => {
-  if (topDocuments.value.length > 0) {
-    router.push({ name: 'view-document', params: { id: topDocuments.value[0].id } })
+const startReading = async () => {
+  const bookIndex = selectedBook.value !== null ? selectedBook.value : 0
+
+  if (topDocuments.value.length > 0 && topDocuments.value[bookIndex]) {
+    const doc = topDocuments.value[bookIndex]
+
+    try {
+      await logClick(doc.id, 'document', 'start_reading')
+    } catch (err) {
+      console.error('Error logging start reading click:', err)
+    }
+
+    router.push({ name: 'view-document', params: { id: doc.id } })
   }
 }
 
