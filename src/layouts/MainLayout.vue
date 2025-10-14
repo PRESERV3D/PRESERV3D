@@ -429,6 +429,7 @@
 
         <router-view />
       </q-page-container>
+      <Footer />
     </q-layout>
   </div>
 </template>
@@ -444,6 +445,7 @@ import { useDocumentsStore } from 'src/stores/documentsStore'
 import { useModelStore } from 'src/stores/modelStore'
 import { useFiltering } from 'src/utils/useFiltering'
 import { allSortOptions } from 'src/stores/searchStore'
+import Footer from 'src/pages/FooterAll.vue'
 
 const { clearFilters } = useFiltering()
 
@@ -474,6 +476,7 @@ const showAdvancedSearch = ref(false)
 const searchLoading = ref(false)
 
 const searchType = ref('documents')
+
 
 // Advanced Search Form Data
 const advancedSearch = ref({
