@@ -134,7 +134,7 @@
               <div class="q-ml-md summary">
                 {{ doc.metadata.summary }}
               </div>
-              <div class="q-ma-md link" @click="showRelatedDialog = true">Related Links</div>
+              <div class="q-ma-md link" @click="showRelatedDialog = true">Show Related Links</div>
               <!-- q-dialog for related links -->
               <!-- to be edited -->
               <q-dialog v-model="showRelatedDialog" persistent>
@@ -143,7 +143,7 @@
                     class="column sub-font-3 items-start"
                     style="font-size: 16px; font-weight: 700"
                   >
-                    Related Links
+                    Show Related Links
                   </q-card-section>
                   <q-separator />
                   <q-card-section class="column items-start">
