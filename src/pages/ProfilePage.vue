@@ -9,14 +9,14 @@
               <q-avatar size="150px">
                 <img :src="profileImage || 'https://cdn.quasar.dev/img/avatar.png'" />
               </q-avatar>
-<!--              <q-btn-->
-<!--                round-->
-<!--                color="primary"-->
-<!--                icon="camera_alt"-->
-<!--                size="sm"-->
-<!--                class="camera-btn"-->
-<!--                @click="changeProfilePicture"-->
-<!--              />-->
+              <!--              <q-btn-->
+              <!--                round-->
+              <!--                color="primary"-->
+              <!--                icon="camera_alt"-->
+              <!--                size="sm"-->
+              <!--                class="camera-btn"-->
+              <!--                @click="changeProfilePicture"-->
+              <!--              />-->
             </div>
             <!-- Extension Request Button for Visitors -->
             <div v-if="userType === 'visitor'" class="extension-section q-mt-md">
@@ -622,21 +622,9 @@ const submitExtensionRequest = async () => {
 
     console.log('Extension request created:', extensionData)
 
-    // Create notification for all admins
-    const { error: notificationError } = await supabase.from('notifications').insert([
-      {
-        receiver_role: 'admin',
-        message: `${visitorData.firstName} ${visitorData.lastName} has requested an account extension from ${formatDate(visitorData.endDate)} to ${formatDate(extensionRequest.newEndDate)}.`,
-        type: 'visitor_registration',
-        created_at: new Date().toISOString(),
-        read: false,
-      },
-    ])
-
-    if (notificationError) {
-      console.error('Failed to create notification:', notificationError)
-      // Don't fail the request if notification fails
-    }
+    // Notify all admins about the extension request
+    const notifMessage = `${visitorData.firstName} ${visitorData.lastName} has requested an account extension from ${formatDate(visitorData.endDate)} to ${formatDate(extensionRequest.newEndDate)}.`
+    await adminNotification(notifMessage)
 
     hasActiveExtension.value = true
     showExtensionDialog.value = false
@@ -664,6 +652,44 @@ const submitExtensionRequest = async () => {
     })
   } finally {
     $q.loading.hide()
+  }
+}
+
+// Notify all admins of extension request
+async function adminNotification(notifMessage) {
+  try {
+    const { data: admins, error: adminError } = await supabase
+      .from('registered_admins')
+      .select('id')
+
+    if (adminError) {
+      console.error('Error fetching admins:', adminError)
+      return
+    }
+
+    if (!admins || admins.length === 0) {
+      console.log('No existing admins to notify.')
+      return
+    }
+
+    const notifications = admins.map((admin) => ({
+      receiver_id: admin.id,
+      message: notifMessage,
+      type: 'visitor_extension',
+      receiver_role: 'admin',
+      read: false,
+      created_at: new Date().toISOString(),
+    }))
+
+    const { error: notifError } = await supabase.from('notifications').insert(notifications)
+
+    if (notifError) {
+      console.log('Error sending notification to all admins:', notifError)
+    } else {
+      console.log('Notification sent to all admins.')
+    }
+  } catch (err) {
+    console.error('Error in notifying admins:', err)
   }
 }
 
