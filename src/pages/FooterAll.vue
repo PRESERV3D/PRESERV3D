@@ -6,9 +6,9 @@
         © 2025 by Polytechnic University of the Philippines. All rights reserved.
       </p>
       <div class="footer-links">
-        <a href="https://www.pup.edu.ph/terms/" class="footer-link">Terms of Use</a>
+        <a href="https://www.pup.edu.ph/terms/" class="footer-link" target="_blank" rel="noopener noreferrer">Terms of Use</a>
         <span class="separator">|</span>
-        <a href="https://www.pup.edu.ph/privacy/" class="footer-link">Privacy Policy</a>
+        <a href="https://www.pup.edu.ph/privacy/" class="footer-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
       </div>
     </div>
   </footer>
