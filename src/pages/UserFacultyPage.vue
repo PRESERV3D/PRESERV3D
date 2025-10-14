@@ -364,7 +364,7 @@ async function registerUser() {
           role: 'user',
           type: 'faculty',
         },
-          emailRedirectTo: `${getFrontendUrl()}/user/login`,
+        emailRedirectTo: `${getFrontendUrl()}/user/login`,
       },
     })
 

@@ -205,7 +205,7 @@ async function registerAdmin() {
           role: 'admin',
           type: 'admin',
         },
-  emailRedirectTo: `${getFrontendUrl()}/user/login`,
+        emailRedirectTo: `${getFrontendUrl()}/user/login`,
       },
     })
 

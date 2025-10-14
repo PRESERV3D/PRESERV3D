@@ -4,7 +4,8 @@
 export function getFrontendUrl() {
   try {
     const envUrl = import.meta.env?.VITE_FRONTEND_URL
-    if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') return envUrl.replace(/\/$/, '')
+    if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '')
+      return envUrl.replace(/\/$/, '')
   } catch {
     // import.meta may not be available in some test environments
   }
