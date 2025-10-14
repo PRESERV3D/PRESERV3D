@@ -1615,9 +1615,9 @@ async function getLastLogin(userId) {
   try {
     const { data, error } = await supabaseAdmin
       .from('logins')
-      .select('created_at')
+      .select('login_at')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .order('login_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
@@ -1626,7 +1626,7 @@ async function getLastLogin(userId) {
       return null
     }
 
-    return data?.created_at || null
+    return data?.login_at || null
   } catch (err) {
     console.error('Unexpected error in getLastLogin:', err)
     return null
