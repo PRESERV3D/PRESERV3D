@@ -315,7 +315,7 @@ def summarize_text_hf(text, max_length=200, min_length=50):
     summary_sentences = sentences[:min(5, len(sentences))]
     return ' '.join(summary_sentences) + '.'
 
-@app.get("/health", methods=["GET", "HEAD"])
+@app.head("/health")
 async def health_check():
     """Health check endpoint for monitoring"""
     return {
@@ -324,7 +324,7 @@ async def health_check():
         "timestamp": datetime.utcnow().isoformat()
     }
 
-@app.get("/", methods=["GET", "HEAD"])
+@app.head("/")
 async def root():
     """Root endpoint"""
     return {
