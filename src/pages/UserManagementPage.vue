@@ -1609,6 +1609,30 @@ const $q = useQuasar()
 const userStore = useUserStore()
 const route = useRoute()
 
+// Helper: get the most recent login timestamp from `logins` table for a user
+async function getLastLogin(userId) {
+  if (!userId) return null
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('logins')
+      .select('created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error) {
+      console.error('Error fetching last login from logins table:', error)
+      return null
+    }
+
+    return data?.created_at || null
+  } catch (err) {
+    console.error('Unexpected error in getLastLogin:', err)
+    return null
+  }
+}
+
 // Computed property to check if user is super admin
 const isSuperAdmin = computed(() => {
   return userStore.profile?.is_super_admin === true
@@ -1815,10 +1839,12 @@ async function fetchAllUsers() {
       const adminsWithStatus = await Promise.all(
         adminData.map(async (admin) => {
           const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(admin.id)
+          const loginTime = await getLastLogin(admin.id)
           return {
             ...admin,
             email_confirmed_at: authUser?.user?.email_confirmed_at || null,
-            last_login: authUser?.user?.last_sign_in_at || null,
+            // Prefer logins table timestamp; fall back to auth.users.last_sign_in_at
+            last_login: loginTime || authUser?.user?.last_sign_in_at || null,
           }
         }),
       )
@@ -1840,9 +1866,10 @@ async function fetchAllUsers() {
       const studentsWithLogin = await Promise.all(
         studentData.map(async (student) => {
           const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(student.id)
+          const loginTime = await getLastLogin(student.id)
           return {
             ...student,
-            last_login: authUser?.user?.last_sign_in_at || null,
+            last_login: loginTime || authUser?.user?.last_sign_in_at || null,
           }
         }),
       )
@@ -1864,9 +1891,10 @@ async function fetchAllUsers() {
       const facultyWithLogin = await Promise.all(
         facultyData.map(async (faculty) => {
           const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(faculty.id)
+          const loginTime = await getLastLogin(faculty.id)
           return {
             ...faculty,
-            last_login: authUser?.user?.last_sign_in_at || null,
+            last_login: loginTime || authUser?.user?.last_sign_in_at || null,
           }
         }),
       )
@@ -1899,6 +1927,7 @@ async function fetchAllUsers() {
       const visitorsWithLogin = await Promise.all(
         visitorData.map(async (visitor) => {
           const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(visitor.user_id)
+          const loginTime = await getLastLogin(visitor.user_id)
 
           return {
             ...visitor,
@@ -1908,8 +1937,7 @@ async function fetchAllUsers() {
             contact: visitor.registration?.contact,
             institution: visitor.registration?.institution,
             purpose: visitor.registration?.purpose,
-            // account_status is already calculated by the view
-            last_login: authUser?.user?.last_sign_in_at || null,
+            last_login: loginTime || authUser?.user?.last_sign_in_at || null,
           }
         }),
       )
