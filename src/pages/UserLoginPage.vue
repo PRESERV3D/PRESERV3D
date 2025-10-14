@@ -420,34 +420,5 @@ onMounted(() => {
   margin-top: 1rem;
 }
 
-.footer-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-  text-align: center;
-}
 
-.footer-text {
-  font-size: 0.75rem;
-  margin: 0 0 0.25rem 0;
-  color: #7c7c7c;
-}
-
-.copyright {
-  font-size: 0.75rem;
-  margin: 0;
-}
-
-.footer-link {
-  color: #880000;
-  text-decoration: underline;
-  font-size: 0.75rem;
-}
-
-.footer-link:hover {
-  opacity: 0.8;
-}
 </style>

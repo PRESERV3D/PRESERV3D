@@ -17,6 +17,9 @@
       <router-link to="/user/login" class="login-back-font"> Back to Log In </router-link>
     </div>
   </div>
+  <p class="copyright">
+    © 2025 Polytechnic University of the Philippines. All rights reserved.
+  </p>
 </template>
 
 <script setup>
@@ -55,5 +58,9 @@ function goToVisitorRegister() {
   color: #000000;
   text-decoration: none;
   margin-top: 4rem;
+}
+.copyright {
+
+  margin-top: 2rem;
 }
 </style>
