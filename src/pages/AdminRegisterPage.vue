@@ -204,7 +204,7 @@ async function registerAdmin() {
           role: 'admin',
           type: 'admin',
         },
-        emailRedirectTo: 'https://preserv3d.vercel.app/user/login',
+        emailRedirectTo: `${process.env.FRONTEND_URL}/user/login`,
       },
     })
 

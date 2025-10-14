@@ -99,7 +99,7 @@ async function sendResetEmail() {
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email.value, {
-    emailRedirectTo: 'https://preserv3d.vercel.app/resetpassword',
+    emailRedirectTo: `${process.env.FRONTEND_URL}/resetpassword`,
   })
 
   if (error) {

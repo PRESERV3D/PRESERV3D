@@ -89,7 +89,7 @@ export function useWebRTC() {
       const protocol = window.location.protocol
       baseUrl = `${protocol}//${localIp}:${port}`
     } else {
-      baseUrl = 'https://preserv3d.vercel.app/'
+      baseUrl = process.env.FRONTEND_URL
     }
 
     const connectionUrl = `${baseUrl}/phone-camera?code=${connectionCode.value}`
