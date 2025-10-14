@@ -148,6 +148,8 @@ createQuasarApp(createApp, quasarUserOptions)
       
       import('boot/r2'),
       
+      import('boot/pdfjs'),
+      
       import('boot/model-viewer')
       
     ]).then(bootFiles => {

@@ -199,6 +199,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
+import { getFrontendUrl } from 'src/utils/frontendUrl'
 
 const router = useRouter()
 const step = ref(1)
@@ -363,7 +364,7 @@ async function registerUser() {
           role: 'user',
           type: 'faculty',
         },
-        emailRedirectTo: `${process.env.FRONTEND_URL}/user/login`,
+          emailRedirectTo: `${getFrontendUrl()}/user/login`,
       },
     })
 

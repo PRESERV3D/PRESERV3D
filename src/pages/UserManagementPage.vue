@@ -1604,6 +1604,7 @@ import { supabase, supabaseAdmin } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 import { useRoute } from 'vue-router'
 import { createNotification } from '/services/email_service.js'
+import { getFrontendUrl } from 'src/utils/frontendUrl'
 
 const $q = useQuasar()
 const userStore = useUserStore()
@@ -2047,7 +2048,7 @@ async function createAdmin() {
           type: 'admin',
           is_super_admin: newAdmin.value.is_super_admin,
         },
-        emailRedirectTo: 'https://preserv3d.vercel.app/resetpassword',
+        emailRedirectTo: `${getFrontendUrl()}/resetpassword`,
       },
     })
 
@@ -2252,7 +2253,7 @@ async function resendConfirmationEmail(admin) {
       type: 'signup',
       email: admin.email,
       options: {
-        emailRedirectTo: 'https://preserv3d.vercel.app/resetpassword',
+        emailRedirectTo: `${getFrontendUrl()}/resetpassword`,
       },
     })
 
@@ -2379,7 +2380,7 @@ async function confirmRegistrationAction() {
             role: 'user',
             type: 'visitor',
           },
-          emailRedirectTo: 'https://preserv3d.vercel.app/resetpassword',
+          emailRedirectTo: `${getFrontendUrl()}/resetpassword`,
         },
       })
 
