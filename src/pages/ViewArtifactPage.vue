@@ -23,6 +23,7 @@
             loading="lazy"
             shadow-intensity="1"
             class="large-artifacts"
+
           />
 
           <!-- Control Buttons -->
@@ -707,8 +708,8 @@ function resetModelView() {
 
 // Full screen function
 function viewFullScreen() {
-  const el = artifactCard.value
-  if (!el) return
+  const viewer = artifactViewer.value
+  if (!viewer) return
 
   // Check if in full screen
   if (
@@ -720,22 +721,21 @@ function viewFullScreen() {
     if (document.exitFullscreen) {
       document.exitFullscreen()
     } else if (document.webkitExitFullscreen) {
-      el.webkitExitFullscreen()
+      document.webkitExitFullscreen()
     } else if (document.msExitFullscreen) {
       document.msExitFullscreen()
     }
   } else {
-    // Enter fullscreen
-    if (el.requestFullscreen) {
-      el.requestFullscreen()
-    } else if (el.webkitRequestFullscreen) {
-      el.webkitRequestFullscreen()
-    } else if (el.msRequestFullscreen) {
-      el.msRequestFullscreen()
+    // Enter fullscreen on the model-viewer element directly
+    if (viewer.requestFullscreen) {
+      viewer.requestFullscreen()
+    } else if (viewer.webkitRequestFullscreen) {
+      viewer.webkitRequestFullscreen()
+    } else if (viewer.msRequestFullscreen) {
+      viewer.msRequestFullscreen()
     }
   }
 }
-
 // Action button methods
 const editArtifact = () => {
   router.push(`/edit/artifacts/${model.value.id}`)
@@ -1294,6 +1294,8 @@ async function logItemHistory({ itemId, itemType, action, oldData, changes }) {
 <style scoped>
 /* Standard fullscreen */
 model-viewer:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
   background: radial-gradient(
     110.32% 94.3% at 50% 57.87%,
     #b69f9f 0%,
@@ -1304,6 +1306,8 @@ model-viewer:fullscreen {
 
 /* Webkit browsers (Safari, Chrome) */
 model-viewer:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
   background: radial-gradient(
     110.32% 94.3% at 50% 57.87%,
     #b69f9f 0%,
@@ -1314,6 +1318,8 @@ model-viewer:-webkit-full-screen {
 
 /* Firefox */
 model-viewer:-moz-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
   background: radial-gradient(
     110.32% 94.3% at 50% 57.87%,
     #b69f9f 0%,
@@ -1324,6 +1330,8 @@ model-viewer:-moz-full-screen {
 
 /* IE/Edge */
 model-viewer:-ms-fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
   background: radial-gradient(
     110.32% 94.3% at 50% 57.87%,
     #b69f9f 0%,
@@ -1331,7 +1339,27 @@ model-viewer:-ms-fullscreen {
     #121212 95.67%
   );
 }
+/* Control Buttons Styles */
+.control-buttons {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  z-index: 1000; 
+  pointer-events: auto;
+}
 
+/* Ensure buttons are visible in fullscreen */
+model-viewer:fullscreen .control-buttons,
+model-viewer:-webkit-full-screen .control-buttons,
+model-viewer:-moz-full-screen .control-buttons,
+model-viewer:-ms-fullscreen .control-buttons {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+}
 .action-buttons {
   display: flex;
   align-items: center;

@@ -194,7 +194,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useUserStore } from 'src/stores/user'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { addBusinessDays, addMonths, isWithinInterval, isWeekend } from 'date-fns'
 
@@ -205,6 +205,7 @@ const showSuccessModal = ref(false)
 
 const userStore = useUserStore()
 const router = useRouter()
+const route = useRoute()
 
 const form = ref({
   name: `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim(),
@@ -438,7 +439,7 @@ function resetForm() {
 // onMounted(fetchAppointments)
 
 onMounted(() => {
-  if (router.query?.tab === 'status') {
+  if (route.query?.tab === 'status') {
     activeTab.value = 'status'
     fetchAppointments()
   } else {

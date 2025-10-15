@@ -1123,25 +1123,46 @@ async function setupRealtimeNotifications() {
     })
 }
 
-const notificationRoutes = {
-  appointment_booking: '/admin/appointments',
-  appointment_status: '/appointment?tab=status',
-  visitor_registration: '/user-management?tab=registrations',
+// Notification routes - different routes based on user role
+const getNotificationRoute = (type, role) => {
+  const adminRoutes = {
+    appointment_booking: '/admin/appointments',
+    visitor_registration: '/user-management?tab=registrations',
+    visitor_extension: '/user-management?tab=extensions',
+  }
+
+  const userRoutes = {
+    appointment_status: '/appointment?tab=status',
+    visitor_extension: 'user/profile',
+  }
+
+  // Check admin routes first
+  if (role === 'admin' && adminRoutes[type]) {
+    return adminRoutes[type]
+  }
+
+  // Check user routes
+  if (role === 'user' && userRoutes[type]) {
+    return userRoutes[type]
+  }
+
+  // Fallback to home
+  return '/'
 }
+
 // Mark as read and navigate to corresponding page based on type
 async function openNotification(notif) {
   await markAsRead(notif.id)
 
-  // console.log('Opening notification:', notif)
-
   const type = notif.type ? notif.type.trim().toLowerCase() : ''
-  const targetRoute = notificationRoutes[type] || '/'
+  const currentRole = userRole.value.toLowerCase()
+  const targetRoute = getNotificationRoute(type, currentRole)
 
-  if (targetRoute) {
-    console.log('Navigating to ', targetRoute)
+  if (targetRoute && targetRoute !== '/') {
+    console.log('Navigating to', targetRoute, 'for role:', currentRole)
     router.push(targetRoute)
   } else {
-    console.warn('No route defined for notification type:', type)
+    console.warn('No route defined for notification type:', type, 'and role:', currentRole)
   }
 }
 
