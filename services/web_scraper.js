@@ -158,7 +158,7 @@ async function getBrowser() {
 /**
  * Search DuckDuckGo for related links
  */
-async function searchDuckDuckGo(query, maxResults = 5) {
+async function searchDuckDuckGo(query, maxResults = 3) {
   let page
   try {
     console.error(`=== Starting DuckDuckGo search ===`)
