@@ -11,6 +11,9 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "cheerio": "^1.0.0",
+    "franc": "^6.2.0",
+    "franc-min": "^6.2.0",
     "puppeteer": "^24.24.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-adblocker": "^2.13.6",
