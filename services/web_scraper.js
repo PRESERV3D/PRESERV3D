@@ -37,12 +37,15 @@ function getPuppeteerConfig() {
     ],
   }
 
-  // Use system Chromium if path is provided or we're on Render
+  // Use system Chromium if path is provided
   if (executablePath) {
     config.executablePath = executablePath
     console.error(`Using system Chromium at: ${executablePath}`)
-  } else if (isRenderOrCloud) {
-    // Try common paths for system Chromium
+    return config
+  }
+
+  // On cloud platforms, try to find system Chromium
+  if (isRenderOrCloud) {
     const chromiumPaths = [
       '/usr/bin/chromium',
       '/usr/bin/chromium-browser',
@@ -55,28 +58,22 @@ function getPuppeteerConfig() {
         if (existsSync(path)) {
           config.executablePath = path
           console.error(`Found system Chromium at: ${path}`)
-          break
+          return config
         }
       } catch (err) {
         console.error(`Error checking Chromium path ${path}: ${err.message}`)
       }
     }
 
-    if (!config.executablePath) {
-      console.error('WARNING: No system Chromium found, will try bundled version')
-    }
+    console.error('No system Chromium found, using Puppeteer downloaded browser')
   }
-  // In development, let Puppeteer use its bundled Chromium (no executablePath set)
 
   console.error(
-    `Puppeteer config: headless=${config.headless}, executablePath=${config.executablePath || 'bundled'}`,
+    `Puppeteer config: headless=${config.headless}, executablePath=${config.executablePath || 'default (Puppeteer downloaded)'}`,
   )
   return config
 }
 
-/**
- * Search DuckDuckGo for related links
- */
 async function searchDuckDuckGo(query, maxResults = 5) {
   let browser
   try {
@@ -88,7 +85,7 @@ async function searchDuckDuckGo(query, maxResults = 5) {
     console.error(
       `Launching browser with config: ${JSON.stringify({
         ...config,
-        executablePath: config.executablePath || 'bundled',
+        executablePath: config.executablePath || 'default (Puppeteer downloaded)',
       })}`,
     )
 
