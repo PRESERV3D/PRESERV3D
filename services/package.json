@@ -10,7 +10,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "scrape": "node web_scraper.js"
+    "scrape": "node web_scraper.js",
+    "test-env": "node test_scraper.js"
   },
   "keywords": [
     "web-scraper",

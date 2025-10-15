@@ -31,6 +31,8 @@ function getPuppeteerConfig() {
       '--disable-accelerated-2d-canvas',
       '--disable-gpu',
       '--window-size=1920x1080',
+      '--disable-web-security',
+      '--disable-features=IsolateOrigins,site-per-process',
       '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     ],
   }
@@ -45,6 +47,7 @@ function getPuppeteerConfig() {
       '/usr/bin/chromium',
       '/usr/bin/chromium-browser',
       '/usr/bin/google-chrome',
+      '/usr/bin/google-chrome-stable',
     ]
 
     for (const path of chromiumPaths) {
@@ -65,6 +68,9 @@ function getPuppeteerConfig() {
   }
   // In development, let Puppeteer use its bundled Chromium (no executablePath set)
 
+  console.error(
+    `Puppeteer config: headless=${config.headless}, executablePath=${config.executablePath || 'bundled'}`,
+  )
   return config
 }
 
@@ -74,6 +80,10 @@ function getPuppeteerConfig() {
 async function searchDuckDuckGo(query, maxResults = 5) {
   let browser
   try {
+    console.error(`=== Starting DuckDuckGo search ===`)
+    console.error(`Query: "${query}"`)
+    console.error(`Environment: NODE_ENV=${process.env.NODE_ENV}, RENDER=${process.env.RENDER}`)
+
     const config = getPuppeteerConfig()
     console.error(
       `Launching browser with config: ${JSON.stringify({
@@ -83,7 +93,10 @@ async function searchDuckDuckGo(query, maxResults = 5) {
     )
 
     browser = await puppeteer.launch(config)
+    console.error(`Browser launched successfully`)
+
     const page = await browser.newPage()
+    console.error(`New page created`)
 
     // Set viewport to look more like a real browser
     await page.setViewport({ width: 1920, height: 1080 })
@@ -285,6 +298,11 @@ function filterByLanguage(results, preferredLang = 'eng') {
  */
 async function main() {
   try {
+    console.error(`=== Web Scraper Starting ===`)
+    console.error(`Node version: ${process.version}`)
+    console.error(`CWD: ${process.cwd()}`)
+    console.error(`Script path: ${import.meta.url}`)
+
     // Get command line arguments
     const args = process.argv.slice(2)
 
@@ -308,6 +326,7 @@ async function main() {
     const searchResults = await searchDuckDuckGo(searchQuery, 5)
 
     if (searchResults.length === 0) {
+      console.error('No search results found, returning empty array')
       console.log(
         JSON.stringify({
           links: [],
@@ -335,14 +354,17 @@ async function main() {
       language: result.language,
     }))
 
+    console.error(`Returning ${links.length} links`)
     // Output as JSON to stdout
     console.log(JSON.stringify({ links }))
   } catch (error) {
     // Output error as JSON to stderr
+    console.error(`=== Error in main function ===`)
     console.error(
       JSON.stringify({
         error: error.message,
         stack: error.stack,
+        name: error.name,
       }),
     )
     process.exit(1)

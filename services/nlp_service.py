@@ -1483,41 +1483,41 @@ async def related_links(
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         script_path = os.path.join(script_dir, "web_scraper.js")
-        
-        # Verify both script and node_modules exist
-        if not os.path.exists(script_path):
-            return {
-                "links": [], 
-                "error": f"web_scraper.js not found at {script_path}"
-            }
-        
         node_modules_path = os.path.join(script_dir, 'node_modules')
-        if not os.path.exists(node_modules_path):
-            return {
-                "links": [],
-                "error": f"node_modules not found. This usually means the build didn't complete properly. Please redeploy the service."
-            }
         
-        # Debug logging
+        print(f"=== Related Links Request ===")
         print(f"Script directory: {script_dir}")
         print(f"Script path: {script_path}")
         print(f"Script exists: {os.path.exists(script_path)}")
-        print(f"node_modules exists: {os.path.exists(os.path.join(script_dir, 'node_modules'))}")
+        print(f"node_modules exists: {os.path.exists(node_modules_path)}")
         
-        # Check if script exists
+        # Verify both script and node_modules exist
         if not os.path.exists(script_path):
             available_files = os.listdir(script_dir) if os.path.exists(script_dir) else []
             return {
                 "links": [], 
-                "error": f"Script not found at {script_path}. Available files: {available_files[:10]}"
+                "error": f"web_scraper.js not found at {script_path}. Available files: {available_files[:10]}"
             }
         
-        # Check if node_modules exists
-        node_modules_path = os.path.join(script_dir, 'node_modules')
         if not os.path.exists(node_modules_path):
             return {
                 "links": [],
-                "error": f"node_modules not found at {node_modules_path}. Dependencies may not be installed."
+                "error": f"node_modules not found at {node_modules_path}. This usually means the build didn't complete properly. Please redeploy the service."
+            }
+        
+        # Check if critical dependencies exist
+        critical_deps = ['puppeteer-extra', 'puppeteer', 'cheerio', 'franc']
+        missing_deps = []
+        for dep in critical_deps:
+            dep_path = os.path.join(node_modules_path, dep)
+            if not os.path.exists(dep_path):
+                missing_deps.append(dep)
+        
+        if missing_deps:
+            print(f"Missing dependencies: {missing_deps}")
+            return {
+                "links": [],
+                "error": f"Missing Node.js dependencies: {', '.join(missing_deps)}. Please redeploy."
             }
         
         # Check Node.js availability
@@ -1529,6 +1529,11 @@ async def related_links(
                 timeout=5
             )
             print(f"Node.js version: {node_version.stdout.strip()}")
+            if node_version.returncode != 0:
+                return {
+                    "links": [],
+                    "error": f"Node.js check failed: {node_version.stderr}"
+                }
         except Exception as e:
             return {
                 "links": [],
@@ -1539,6 +1544,11 @@ async def related_links(
         cmd = ["node", script_path, title, author or "", categories or "", date or ""]
         print(f"Running command: {' '.join(cmd)}")
         
+        # Set up environment with proper NODE_PATH
+        env = os.environ.copy()
+        env["NODE_ENV"] = "production"
+        env["NODE_PATH"] = node_modules_path
+        
         # Run the Node.js scraper
         result = subprocess.run(
             cmd,
@@ -1546,15 +1556,17 @@ async def related_links(
             text=True,
             encoding='utf-8',
             errors='replace',
-            timeout=60,
+            timeout=90,  # Increased timeout to 90 seconds
             cwd=script_dir,
-            env={**os.environ, "NODE_ENV": "production"}
+            env=env
         )
         
         # Log the results
         print(f"Return code: {result.returncode}")
         print(f"Stdout length: {len(result.stdout)}")
         print(f"Stderr length: {len(result.stderr)}")
+        if result.stderr:
+            print(f"STDERR preview: {result.stderr[:500]}")
         
         # Check for errors
         if result.returncode != 0:

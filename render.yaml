@@ -47,9 +47,15 @@ services:
 
     startCommand: |
       echo "Starting service from: $(pwd)" && \
+      echo "Node.js version: $(node --version)" && \
+      echo "npm version: $(npm --version)" && \
       echo "Checking node_modules..." && \
-      ls -la node_modules/puppeteer* 2>/dev/null || echo "WARNING: puppeteer modules not found, reinstalling..." && \
-      [ ! -d "node_modules/puppeteer-extra" ] && npm install --legacy-peer-deps --prefer-offline || true && \
+      ls -la node_modules/puppeteer* 2>/dev/null || echo "WARNING: puppeteer modules not found" && \
+      if [ ! -d "node_modules/puppeteer-extra" ]; then \
+        echo "Installing Node.js dependencies at runtime..." && \
+        npm install --legacy-peer-deps --prefer-offline || npm install --legacy-peer-deps; \
+      fi && \
+      echo "node_modules verified. Starting uvicorn..." && \
       uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
 
     envVars:
@@ -71,5 +77,5 @@ services:
         value: 'true'
       - key: NODE_ENV
         value: production
-      - key: NODE_PATH
-        value: /opt/render/project/src/services/node_modules
+      - key: RENDER
+        value: 'true'
