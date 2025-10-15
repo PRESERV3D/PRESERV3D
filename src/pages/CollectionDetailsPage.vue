@@ -405,7 +405,16 @@
             no-caps
             @click="cancelEditCollection"
           />
-          <q-btn label="Save" class="q-mr-sm btn-save" @click="updateCollection" no-caps />
+          <div v-if="!isGenerateCollectionLoading">
+            <q-btn
+              :disable="!editData.collection_name.trim()"
+              label="Save"
+              class="q-mr-sm btn-save"
+              @click="updateCollection"
+              no-caps
+            />
+          </div>
+          <q-spinner v-else color="primary" size="2em" class="q-mx-lg" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -498,6 +507,9 @@ const userType = computed(() => userStore.profile?.user_type || 'Unknown')
 
 // Get collection ID from route params
 const collectionId = route.params.id
+
+// Loading states
+const isGenerateCollectionLoading = ref(false)
 
 // Data refs
 const collection = ref({})
@@ -832,6 +844,7 @@ const cancelEditCollection = () => {
 
 // Update collection
 async function updateCollection() {
+  isGenerateCollectionLoading.value = true
   const { error } = await supabase
     .from('collections')
     .update({
@@ -845,9 +858,11 @@ async function updateCollection() {
   if (error) {
     console.error('Update failed:', error)
     showMessageDialog('Update Failed', 'Failed to update collection.')
+    isGenerateCollectionLoading.value = false
   } else {
     showMessageDialog('Success', 'Collection updated.')
     await fetchCollectionInfo()
+    isGenerateCollectionLoading.value = false
     editDialogOpen.value = false
   }
 }
