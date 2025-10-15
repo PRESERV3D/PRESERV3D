@@ -645,7 +645,7 @@ async function saveChanges() {
 
     let changes = getChanges(oldData, newData)
 
-    if (Object.keys(changes).length === 0 && !hasChanges.value) {
+    if (Object.keys(changes).length === 0 && hasChanges.value === false) {
       showNotifyDialog('Info', 'No changes made.')
       return
     }

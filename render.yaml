@@ -37,25 +37,59 @@ services:
       # Verify critical packages are installed
       if [ ! -d "node_modules/puppeteer-extra" ]; then
         echo "ERROR: puppeteer-extra not found after npm install"
+        ls -la
         exit 1
       fi
 
       echo "Node modules installed at: $(pwd)/node_modules"
       ls -la node_modules/ | head -20
 
+      # Create a marker file to indicate successful build
+      echo "Build completed at $(date)" > .build_complete
+
       echo "========== Build completed successfully =========="
 
     startCommand: |
-      echo "Starting service from: $(pwd)" && \
-      echo "Node.js version: $(node --version)" && \
-      echo "npm version: $(npm --version)" && \
-      echo "Checking node_modules..." && \
-      ls -la node_modules/puppeteer* 2>/dev/null || echo "WARNING: puppeteer modules not found" && \
-      if [ ! -d "node_modules/puppeteer-extra" ]; then \
-        echo "Installing Node.js dependencies at runtime..." && \
-        npm install --legacy-peer-deps --prefer-offline || npm install --legacy-peer-deps; \
-      fi && \
-      echo "node_modules verified. Starting uvicorn..." && \
+      set -e
+      echo "========== Starting service =========="
+      echo "Current directory: $(pwd)"
+      echo "Node.js version: $(node --version)"
+      echo "npm version: $(npm --version)"
+      echo "Listing current directory:"
+      ls -la
+
+      # Check if build completed successfully
+      if [ -f ".build_complete" ]; then
+        echo "Build marker found: $(cat .build_complete)"
+      else
+        echo "WARNING: No build marker found!"
+      fi
+
+      # Always ensure node_modules exists
+      if [ ! -d "node_modules" ]; then
+        echo "ERROR: node_modules directory not found!"
+        echo "Installing Node.js dependencies now..."
+        npm install --legacy-peer-deps
+      else
+        echo "node_modules directory exists"
+        echo "Checking critical dependencies..."
+        
+        # Check for critical packages
+        for pkg in puppeteer-extra puppeteer cheerio franc; do
+          if [ ! -d "node_modules/$pkg" ]; then
+            echo "Missing package: $pkg - reinstalling all dependencies"
+            npm install --legacy-peer-deps
+            break
+          else
+            echo "✓ $pkg found"
+          fi
+        done
+      fi
+
+      echo "Final node_modules check:"
+      ls -la node_modules/ | head -10
+
+      echo "========== Starting uvicorn =========="
       uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
 
     envVars:
