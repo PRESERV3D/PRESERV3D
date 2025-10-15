@@ -75,7 +75,15 @@
           <!-- Main row -->
           <q-tr :props="props">
             <q-td v-for="col in props.cols" :key="col.name" :props="props" align="center">
-              <template v-if="col.name === 'issues'">
+              <template v-if="col.name === 'title'">
+                <span :class="{ 'resolved-issue': props.row.status === 'Resolved' }">
+                  {{ truncateText(props.row.title, 50) }}
+                  <q-tooltip v-if="props.row.title.length > 50">{{ props.row.title }}</q-tooltip>
+                </span>
+              </template>
+
+              <!-- Issues column -->
+              <template v-else-if="col.name === 'issues'">
                 <span :class="{ 'resolved-issue': props.row.status === 'Resolved' }">
                   {{ props.row.issues.map((issue) => issue.field).join(', ') }}
                 </span>
@@ -330,6 +338,13 @@ const filteredInconsistencies = computed(() => {
   }
   return inconsistencies.value
 })
+
+// Helper function to truncate text
+const truncateText = (text, maxLength) => {
+  if (!text) return ''
+  if (text.length <= maxLength) return text
+  return text.substring(0, maxLength) + '...'
+}
 
 // Load inconsistencies from Supabase
 const loadInconsistencies = async () => {

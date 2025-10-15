@@ -1,382 +1,361 @@
-// web_scraper.js
-let puppeteer
-let StealthPlugin
+import puppeteer from 'puppeteer-extra'
+import StealthPlugin from 'puppeteer-extra-plugin-stealth'
+import { franc } from 'franc'
+import * as cheerio from 'cheerio'
+import { existsSync } from 'fs'
 
-process.stdout.setDefaultEncoding('utf8')
+puppeteer.use(StealthPlugin())
 
-// We'll dynamically import the modules in the async main block below.
+/**
+ * Wait utility function for compatibility with newer Puppeteer versions
+ */
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-const [, , title, author, categories, date] = process.argv
-const query = `${title} ${author || ''} ${categories || ''} ${date || ''}`.trim()
+/**
+ * Get appropriate Puppeteer launch options based on environment
+ */
+function getPuppeteerConfig() {
+  const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
 
-const TIMEOUT = 20000 // 20 seconds per engine
+  // Check if we're on Render or similar cloud platform
+  const isRenderOrCloud =
+    executablePath || process.env.RENDER || process.env.NODE_ENV === 'production'
 
-// Add a timeout wrapper
-function withTimeout(promise, ms) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms)),
-  ])
-}
-
-async function scrapeBing(page, query) {
-  try {
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    )
-
-    // Add language parameters for English results
-    await page.goto(
-      `https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=en&setmkt=en-US`,
-      {
-        waitUntil: 'domcontentloaded',
-        timeout: TIMEOUT,
-      },
-    )
-
-    await page.waitForSelector('li.b_algo', { timeout: 3000 }).catch(() => null)
-
-    return await page
-      .$$eval('li.b_algo', (items) =>
-        items
-          .map((item) => {
-            const a = item.querySelector('h2 a')
-            const title = a?.textContent?.trim() || ''
-            const url = a?.href || ''
-            const snippet = item.querySelector('.b_caption p')?.textContent?.trim() || ''
-            return { title, url, snippet }
-          })
-          .filter((link) => link.url && link.url.startsWith('http')),
-      )
-      .catch(() => [])
-  } catch (err) {
-    console.error('Bing scrape error:', err.message)
-    return []
+  // Base configuration
+  const config = {
+    headless: 'new',
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--disable-gpu',
+      '--window-size=1920x1080',
+      '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    ],
   }
-}
 
-async function scrapeGoogle(page, query) {
-  try {
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    )
+  // Use system Chromium if path is provided or we're on Render
+  if (executablePath) {
+    config.executablePath = executablePath
+    console.error(`Using system Chromium at: ${executablePath}`)
+  } else if (isRenderOrCloud) {
+    // Try common paths for system Chromium
+    const chromiumPaths = [
+      '/usr/bin/chromium',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/google-chrome',
+    ]
 
-    // Add language and region parameters
-    await page.goto(`https://www.google.com/search?q=${encodeURIComponent(query)}&hl=en&gl=us`, {
-      waitUntil: 'domcontentloaded',
-      timeout: TIMEOUT,
-    })
+    for (const path of chromiumPaths) {
+      try {
+        if (existsSync(path)) {
+          config.executablePath = path
+          console.error(`Found system Chromium at: ${path}`)
+          break
+        }
+      } catch (err) {
+        console.error(`Error checking Chromium path ${path}: ${err.message}`)
+      }
+    }
 
-    await page.waitForSelector('div.g', { timeout: 3000 }).catch(() => null)
-
-    return await page
-      .$$eval('div.yuRUbf > a', (anchors) =>
-        anchors
-          .map((a) => {
-            const title = a.querySelector('h3')?.textContent?.trim() || a.href
-            const url = a.href
-            // Try to find a snippet in the result container
-            const container = a.closest('.g')
-            const snippet = (
-              container?.querySelector('.VwiC3b')?.textContent ||
-              container?.querySelector('.IsZvec')?.textContent ||
-              container?.querySelector('.aCOpRe')?.textContent ||
-              ''
-            ).trim()
-            return { title, url, snippet }
-          })
-          .filter((link) => link.url && link.url.startsWith('http')),
-      )
-      .catch(() => [])
-  } catch (err) {
-    console.error('Google scrape error:', err.message)
-    return []
+    if (!config.executablePath) {
+      console.error('WARNING: No system Chromium found, will try bundled version')
+    }
   }
+  // In development, let Puppeteer use its bundled Chromium (no executablePath set)
+
+  return config
 }
 
-async function scrapeDuckDuckGo(page, query) {
-  try {
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    )
-
-    // Add language parameter
-    await page.goto(`https://duckduckgo.com/?q=${encodeURIComponent(query)}&kl=us-en`, {
-      waitUntil: 'domcontentloaded',
-      timeout: TIMEOUT,
-    })
-
-    await page.waitForSelector('[data-testid="result"]', { timeout: 3000 }).catch(() => null)
-
-    return await page
-      .$$eval('[data-testid="result"]', (items) =>
-        items
-          .map((item) => {
-            const a = item.querySelector('a[data-testid="result-title-a"]')
-            const title = a?.textContent?.trim() || ''
-            const url = a?.href || ''
-            const snippet = item.querySelector('.result__snippet')?.textContent?.trim() || ''
-            return { title, url, snippet }
-          })
-          .filter((link) => link.url && link.url.startsWith('http')),
-      )
-      .catch(() => [])
-  } catch (err) {
-    console.error('DuckDuckGo scrape error:', err.message)
-    return []
-  }
-}
-
-;(async () => {
+/**
+ * Search DuckDuckGo for related links
+ */
+async function searchDuckDuckGo(query, maxResults = 5) {
   let browser
   try {
-    // Dynamic imports: prefer puppeteer-extra + stealth when available
-    let havePuppeteer = false
-    try {
-      const mod = await import('puppeteer-extra')
-      puppeteer = mod.default || mod
-      try {
-        const stealthMod = await import('puppeteer-extra-plugin-stealth')
-        StealthPlugin = stealthMod.default || stealthMod
-        puppeteer.use(StealthPlugin())
-        console.log('Using puppeteer-extra with stealth plugin')
-      } catch (e) {
-        console.log(
-          'puppeteer-extra available but stealth plugin not found; continuing without stealth:',
-          e?.message || e,
-        )
-      }
-      havePuppeteer = true
-    } catch {
-      // Try plain puppeteer, but don't throw if missing — we'll fall back to fetch+cheerio
-      try {
-        const mod = await import('puppeteer')
-        puppeteer = mod.default || mod
-        havePuppeteer = true
-        console.log('Using plain puppeteer')
-      } catch {
-        console.log('No puppeteer available in environment; falling back to fetch+cheerio scrapers')
-        puppeteer = null
-        havePuppeteer = false
-      }
-    }
-
-    let bing = []
-    let google = []
-    let ddg = []
-
-    if (havePuppeteer && puppeteer) {
-      browser = await puppeteer.launch({
-        headless: true,
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-blink-features=AutomationControlled',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-        ],
-      })
-
-      const [bingPage, googlePage, ddgPage] = await Promise.all([
-        browser.newPage(),
-        browser.newPage(),
-        browser.newPage(),
-      ])
-
-      const extraHeaders = {
-        'Accept-Language': 'en-US,en;q=0.9',
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Charset': 'utf-8',
-      }
-
-      await Promise.all([
-        bingPage.setExtraHTTPHeaders(extraHeaders),
-        googlePage.setExtraHTTPHeaders(extraHeaders),
-        ddgPage.setExtraHTTPHeaders(extraHeaders),
-      ])
-
-      // Run all scrapers in parallel with individual timeouts
-      const results = await Promise.allSettled([
-        withTimeout(scrapeBing(bingPage, query), TIMEOUT),
-        withTimeout(scrapeGoogle(googlePage, query), TIMEOUT),
-        withTimeout(scrapeDuckDuckGo(ddgPage, query), TIMEOUT),
-      ])
-
-      await browser.close()
-
-      bing = results[0].status === 'fulfilled' ? results[0].value : []
-      google = results[1].status === 'fulfilled' ? results[1].value : []
-      ddg = results[2].status === 'fulfilled' ? results[2].value : []
-    } else {
-      // Fetch + cheerio fallback scrapers
-      const cheerioMod = await import('cheerio')
-      const cheerio = cheerioMod.default || cheerioMod
-
-      async function fetchHtml(url) {
-        try {
-          const res = await fetch(url, {
-            headers: {
-              'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Accept-Language': 'en-US,en;q=0.9',
-            },
-            redirect: 'follow',
-          })
-          if (!res.ok) return null
-          const text = await res.text()
-          return text
-        } catch {
-          return null
-        }
-      }
-
-      async function fetchScrapeBing(query) {
-        const url = `https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=en&setmkt=en-US`
-        const html = await fetchHtml(url)
-        if (!html) return []
-        const $ = cheerio.load(html)
-        const results = []
-        $('li.b_algo').each((i, el) => {
-          const a = $(el).find('h2 a')
-          const title = a.text().trim()
-          const href = a.attr('href') || ''
-          const snippet = $(el).find('.b_caption p').text().trim() || ''
-          if (href && href.startsWith('http')) results.push({ title, url: href, snippet })
-        })
-        return results
-      }
-
-      async function fetchScrapeGoogle(query) {
-        const url = `https://www.google.com/search?q=${encodeURIComponent(query)}&hl=en&gl=us`
-        const html = await fetchHtml(url)
-        if (!html) return []
-        const $ = cheerio.load(html)
-        const results = []
-        $('div.g').each((i, el) => {
-          const a = $(el).find('div.yuRUbf > a')
-          const title = a.find('h3').text().trim() || a.attr('href') || ''
-          const href = a.attr('href') || ''
-          const snippet = (
-            $(el).find('.VwiC3b').text() ||
-            $(el).find('.IsZvec').text() ||
-            $(el).find('.aCOpRe').text() ||
-            ''
-          ).trim()
-          if (href && href.startsWith('http')) results.push({ title, url: href, snippet })
-        })
-        return results
-      }
-
-      async function fetchScrapeDuckDuckGo(query) {
-        const url = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&kl=us-en`
-        const html = await fetchHtml(url)
-        if (!html) return []
-        const $ = cheerio.load(html)
-        const results = []
-        $('[data-testid="result"]').each((i, el) => {
-          const a = $(el).find('a[data-testid="result-title-a"]')
-          const title = a.text().trim() || ''
-          const href = a.attr('href') || ''
-          const snippet = $(el).find('.result__snippet').text().trim() || ''
-          if (href && href.startsWith('http')) results.push({ title, url: href, snippet })
-        })
-        return results
-      }
-
-      // Run fetch-based scrapers in parallel with timeouts
-      const results = await Promise.allSettled([
-        withTimeout(fetchScrapeBing(query), TIMEOUT),
-        withTimeout(fetchScrapeGoogle(query), TIMEOUT),
-        withTimeout(fetchScrapeDuckDuckGo(query), TIMEOUT),
-      ])
-
-      bing = results[0].status === 'fulfilled' ? results[0].value : []
-      google = results[1].status === 'fulfilled' ? results[1].value : []
-      ddg = results[2].status === 'fulfilled' ? results[2].value : []
-    }
-
-    const allLinks = [...bing, ...google, ...ddg]
-
-    if (allLinks.length === 0) {
-      console.log(
-        JSON.stringify({
-          links: [],
-          warning: 'No results found. Search engines may be blocking requests.',
-        }),
-      )
-      process.exit(0)
-    }
-
-    // Deduplicate by URL but keep full list for language filtering
-    const uniqueLinks = Array.from(new Map(allLinks.map((link) => [link.url, link])).values())
-
-    // Allowed language codes (ISO 639-3 from franc): English = 'eng', Tagalog = 'tgl'
-    const allowedLangs = new Set(['eng', 'tgl'])
-
-    // Detect language for a short piece of text (prefer title, fall back to URL)
-    async function detectLanguage(text) {
-      if (!text) return null
-      const sample = String(text).trim().replace(/\s+/g, ' ').slice(0, 300)
-      try {
-        // Prefer the tiny franc build when available
-        let francMod
-        try {
-          francMod = await import('franc-min')
-        } catch {
-          // Fallback to full franc if franc-min isn't installed
-          francMod = await import('franc')
-        }
-        const franc = francMod.default || francMod
-        const code = franc(sample)
-        if (!code || code === 'und') return null
-        // Map ISO codes: accept English and Tagalog
-        if (code === 'eng' || code === 'tgl') return code
-        return null
-      } catch {
-        // Heuristic fallback: look for common Tagalog/Filipino words
-        const tagalogWords =
-          /\b(ang|ng|sa|si|ni|mga|ako|ikaw|siya|ito|iyon|kami|tayo|kita|kayo|nila)\b/i
-        const englishWords = /\b(the|and|is|are|of|to|in|for|with|on|by|this|that)\b/i
-        if (tagalogWords.test(sample)) return 'tgl'
-        if (englishWords.test(sample)) return 'eng'
-        return null
-      }
-    }
-
-    // Detect languages in parallel and filter
-    const checked = await Promise.all(
-      uniqueLinks.map(async (link) => {
-        const lang =
-          (await detectLanguage(link.snippet)) ||
-          (await detectLanguage(link.title)) ||
-          (await detectLanguage(link.url)) ||
-          null
-        return { ...link, lang }
-      }),
+    const config = getPuppeteerConfig()
+    console.error(
+      `Launching browser with config: ${JSON.stringify({
+        ...config,
+        executablePath: config.executablePath || 'bundled',
+      })}`,
     )
 
-    const filtered = checked.filter((l) => allowedLangs.has(l.lang))
+    browser = await puppeteer.launch(config)
+    const page = await browser.newPage()
 
-    // Limit to top 5 after filtering
-    const outputLinks = filtered.slice(0, 5).map((l) => {
-      const rest = { ...l }
-      delete rest.lang
-      return rest
+    // Set viewport to look more like a real browser
+    await page.setViewport({ width: 1920, height: 1080 })
+
+    // Set extra headers to appear more human
+    await page.setExtraHTTPHeaders({
+      'Accept-Language': 'en-US,en;q=0.9',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Encoding': 'gzip, deflate, br',
+      Connection: 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
     })
 
-    console.log(JSON.stringify({ links: outputLinks }))
-  } catch (err) {
-    console.error(
-      JSON.stringify({
-        error: err.message,
-        stack: err.stack,
-      }),
-    )
-    process.exit(1)
-  } finally {
+    // Set a reasonable timeout
+    await page.setDefaultNavigationTimeout(30000)
+
+    // Construct DuckDuckGo search URL
+    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
+    console.error(`Searching: ${searchUrl}`)
+
+    // Navigate with a more lenient waitUntil option
+    await page.goto(searchUrl, {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000,
+    })
+
+    // Wait a bit for content to load
+    await wait(1500)
+
+    // Extract search results
+    const results = await page.evaluate(() => {
+      const items = []
+
+      // DuckDuckGo HTML version has a simpler structure
+      const resultElements = document.querySelectorAll('.result')
+
+      resultElements.forEach((element) => {
+        const linkElement = element.querySelector('.result__a')
+        const snippetElement = element.querySelector('.result__snippet')
+        const urlElement = element.querySelector('.result__url')
+
+        if (linkElement) {
+          // Try to get the actual URL from the data attribute or href
+          let url = linkElement.getAttribute('href') || linkElement.href
+
+          // If URL starts with //, it's a DuckDuckGo redirect - extract the actual URL
+          if (url && url.startsWith('//duckduckgo.com/l/?')) {
+            try {
+              const urlParams = new URLSearchParams(url.split('?')[1])
+              const actualUrl = urlParams.get('uddg')
+              if (actualUrl) {
+                url = actualUrl
+              }
+            } catch (e) {
+              console.error(`Failed to parse DuckDuckGo redirect URL: ${e.message}`)
+              if (urlElement) {
+                const displayUrl = urlElement.textContent.trim()
+                url = displayUrl.startsWith('http') ? displayUrl : 'https://' + displayUrl
+              }
+            }
+          }
+
+          // Ensure URL has protocol
+          if (url && !url.startsWith('http')) {
+            url = 'https://' + url
+          }
+
+          const title = linkElement.textContent.trim()
+          const snippet = snippetElement ? snippetElement.textContent.trim() : ''
+
+          // Filter out non-http links and document files
+          const documentExtensions = [
+            '.pdf',
+            '.doc',
+            '.docx',
+            '.xls',
+            '.xlsx',
+            '.ppt',
+            '.pptx',
+            '.txt',
+            '.rtf',
+            '.odt',
+            '.ods',
+            '.odp',
+          ]
+          const urlLower = url.toLowerCase()
+          const isDocument = documentExtensions.some((ext) => urlLower.includes(ext))
+
+          if (url && url.startsWith('http') && !isDocument) {
+            items.push({ url, title, snippet })
+          }
+        }
+      })
+
+      return items
+    })
+
+    await browser.close()
+
+    console.error(`Found ${results.length} results from DuckDuckGo`)
+    return results.slice(0, maxResults)
+  } catch (error) {
     if (browser) {
       await browser.close().catch(() => {})
     }
+    console.error(`DuckDuckGo search error: ${error.message}`)
+    throw error
   }
-})()
+}
+
+/**
+ * Scrape content from a URL
+ */
+async function scrapeContent(url) {
+  let browser
+  try {
+    const config = getPuppeteerConfig()
+    browser = await puppeteer.launch(config)
+    const page = await browser.newPage()
+
+    // Set viewport and headers
+    await page.setViewport({ width: 1920, height: 1080 })
+    await page.setExtraHTTPHeaders({
+      'Accept-Language': 'en-US,en;q=0.9',
+    })
+
+    await page.setDefaultNavigationTimeout(20000)
+
+    try {
+      await page.goto(url, {
+        waitUntil: 'domcontentloaded',
+        timeout: 20000,
+      })
+    } catch (navError) {
+      // If navigation fails, try to get whatever content loaded
+      console.error(`Navigation to ${url} failed: ${navError.message}`)
+    }
+
+    // Wait a bit for dynamic content
+    await wait(1000)
+
+    // Get page content
+    const content = await page.content()
+    await browser.close()
+
+    // Parse with Cheerio
+    const $ = cheerio.load(content)
+
+    // Remove script, style, and other non-content tags
+    $('script, style, nav, header, footer, iframe, noscript').remove()
+
+    // Extract text content
+    const bodyText = $('body').text()
+    const cleanText = bodyText.replace(/\s+/g, ' ').trim()
+
+    // Extract metadata
+    const title = $('title').text() || $('h1').first().text() || ''
+    const description =
+      $('meta[name="description"]').attr('content') ||
+      $('meta[property="og:description"]').attr('content') ||
+      ''
+
+    return {
+      url,
+      title: title.trim(),
+      description: description.trim(),
+      content: cleanText.substring(0, 2000), // First 2000 chars
+      language: franc(cleanText.substring(0, 500)), // Detect language
+    }
+  } catch (error) {
+    if (browser) {
+      await browser.close().catch(() => {})
+    }
+    console.error(`Scraping error for ${url}: ${error.message}`)
+    return {
+      url,
+      error: error.message,
+      title: '',
+      description: '',
+      content: '',
+      language: 'und',
+    }
+  }
+}
+
+/**
+ * Filter results based on language (prioritize English)
+ */
+function filterByLanguage(results, preferredLang = 'eng') {
+  const englishResults = results.filter((r) => r.language === preferredLang && !r.error)
+  const otherResults = results.filter((r) => r.language !== preferredLang && !r.error)
+
+  // Prefer English results, but include others if not enough English content
+  return englishResults.length >= 3 ? englishResults : [...englishResults, ...otherResults]
+}
+
+/**
+ * Main function
+ */
+async function main() {
+  try {
+    // Get command line arguments
+    const args = process.argv.slice(2)
+
+    if (args.length === 0) {
+      throw new Error(
+        'No search query provided. Usage: node web_scraper.js <title> [author] [categories] [date]',
+      )
+    }
+
+    const [title, author = '', categories = '', date = ''] = args
+
+    // Build search query
+    let searchQuery = title
+    if (author) searchQuery += ` ${author}`
+    if (categories) searchQuery += ` ${categories}`
+    if (date) searchQuery += ` ${date}`
+
+    console.error(`Searching for: "${searchQuery}"`)
+
+    // Search DuckDuckGo
+    const searchResults = await searchDuckDuckGo(searchQuery, 5)
+
+    if (searchResults.length === 0) {
+      console.log(
+        JSON.stringify({
+          links: [],
+          warning: 'No search results found',
+        }),
+      )
+      return
+    }
+
+    console.error(`Found ${searchResults.length} search results, scraping content...`)
+
+    // Scrape content from each result
+    const scrapedResults = await Promise.all(
+      searchResults.map((result) => scrapeContent(result.url)),
+    )
+
+    // Filter by language
+    const filteredResults = filterByLanguage(scrapedResults, 'eng')
+
+    // Format output
+    const links = filteredResults.map((result) => ({
+      url: result.url,
+      title: result.title || 'Untitled',
+      description: result.description || result.content.substring(0, 200) + '...',
+      language: result.language,
+    }))
+
+    // Output as JSON to stdout
+    console.log(JSON.stringify({ links }))
+  } catch (error) {
+    // Output error as JSON to stderr
+    console.error(
+      JSON.stringify({
+        error: error.message,
+        stack: error.stack,
+      }),
+    )
+    process.exit(1)
+  }
+}
+
+// Run the script
+main().catch((error) => {
+  console.error(
+    JSON.stringify({
+      error: error.message,
+      stack: error.stack,
+    }),
+  )
+  process.exit(1)
+})

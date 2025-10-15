@@ -7,21 +7,94 @@ services:
     rootDir: services
     buildCommand: |
       set -e
+      echo "========== Starting build process =========="
+      echo "Current directory: $(pwd)"
+      echo "Directory contents:"
+      ls -la
+
+      # Install Python dependencies
+      echo "Installing Python dependencies..."
       pip install -r requirements.txt
       python -m spacy download en_core_web_sm
+
+      # Install Node.js and dependencies
+      echo "Installing Node.js..."
       curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
       apt-get update
       apt-get install -y nodejs chromium chromium-sandbox fonts-liberation libnss3 libxss1 libasound2
-      npm ci --legacy-peer-deps
+
+      # Verify Node.js installation
+      echo "Node.js version: $(node --version)"
+      echo "npm version: $(npm --version)"
+
+      # Check if package.json exists in current directory (services)
+      if [ ! -f package.json ]; then
+        echo "ERROR: package.json not found in $(pwd)"
+        echo "Available files:"
+        ls -la
+        exit 1
+      fi
+
+      echo "package.json found, installing Node.js dependencies..."
+
+      # Clean any existing node_modules to avoid conflicts
+      rm -rf node_modules package-lock.json
+
+      # Install Node.js dependencies in the services directory
+      # Use --legacy-peer-deps to avoid peer dependency conflicts
+      npm install --legacy-peer-deps --production=false
+
+      # Verify installation
+      echo "========== Verifying installation =========="
+      echo "node_modules exists: $(test -d node_modules && echo 'YES' || echo 'NO')"
+      echo "node_modules location: $(pwd)/node_modules"
+
+      if [ -d node_modules ]; then
+        echo "node_modules contents (first 20 items):"
+        ls node_modules | head -20
+        
+        echo ""
+        echo "Checking for critical packages..."
+        echo "cheerio: $(test -d node_modules/cheerio && echo 'INSTALLED' || echo 'MISSING')"
+        echo "puppeteer: $(test -d node_modules/puppeteer && echo 'INSTALLED' || echo 'MISSING')"
+        echo "franc: $(test -d node_modules/franc && echo 'INSTALLED' || echo 'MISSING')"
+        echo "franc-min: $(test -d node_modules/franc-min && echo 'INSTALLED' || echo 'MISSING')"
+        echo "puppeteer-extra: $(test -d node_modules/puppeteer-extra && echo 'INSTALLED' || echo 'MISSING')"
+        echo "puppeteer-extra-plugin-stealth: $(test -d node_modules/puppeteer-extra-plugin-stealth && echo 'INSTALLED' || echo 'MISSING')"
+      else
+        echo "ERROR: node_modules directory not created!"
+        echo "npm install may have failed. Check npm logs above."
+        exit 1
+      fi
+
+      # Verify web_scraper.js exists
+      if [ -f web_scraper.js ]; then
+        echo "web_scraper.js found: YES"
+      else
+        echo "ERROR: web_scraper.js not found in $(pwd)"
+        ls -la
+        exit 1
+      fi
+
+      echo "========== Build completed successfully =========="
+
     startCommand: uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.7
+      - key: NODE_VERSION
+        value: 20.18.1
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: HF_API_TOKEN
         sync: false
       - key: FRONTEND_URL
         value: https://preserv3d.vercel.app
       - key: PUPPETEER_EXECUTABLE_PATH
         value: /usr/bin/chromium
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: 'true'
+      - key: NODE_ENV
+        value: production

@@ -1,16 +1,28 @@
 {
   "name": "services",
   "version": "1.0.0",
-  "description": "",
+  "description": "PRESERV3D NLP Service - Web Scraper",
   "main": "web_scraper.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "type": "module",
+  "engines": {
+    "node": ">=20.18.1",
+    "npm": ">=10.0.0"
   },
-  "keywords": [],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "scrape": "node web_scraper.js"
+  },
+  "keywords": [
+    "web-scraper",
+    "nlp",
+    "search"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "dependencies": {
+    "cheerio": "^1.0.0",
+    "franc": "^6.2.0",
+    "franc-min": "^6.2.0",
     "puppeteer": "^24.24.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-adblocker": "^2.13.6",

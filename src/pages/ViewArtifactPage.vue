@@ -23,6 +23,7 @@
             loading="lazy"
             shadow-intensity="1"
             class="large-artifacts"
+
           />
 
           <!-- Control Buttons -->
@@ -309,7 +310,13 @@
           <!-- Summary Section -->
           <div class="summary-section q-mb-md">
             <h6 class="a-info-title q-mb-sm q-mt-sm">Summary</h6>
-            <p class="a-info-text">{{ model.metadata.summary }}</p>
+            <p class="a-info-text">
+              {{
+                model.metadata.summary && model.metadata.summary.trim() !== ''
+                  ? model.metadata.summary
+                  : 'No Summary Available.'
+              }}
+            </p>
           </div>
 
           <!-- Related Links -->
@@ -352,11 +359,23 @@
             <div class="detail-row q-mb-md">
               <div class="detail-label">
                 <div class="a-info-title2">Author</div>
-                <div class="a-info-subtitle">{{ model.metadata.author }}</div>
+                <div class="a-info-subtitle">
+                  {{
+                    model.metadata.author && model.metadata.author.trim() !== ''
+                      ? model.metadata.author
+                      : 'Unknown'
+                  }}
+                </div>
               </div>
               <div class="detail-value">
                 <div class="a-info-title2">Date</div>
-                <div class="a-info-subtitle">{{ model.metadata.date }}</div>
+                <div class="a-info-subtitle">
+                  {{
+                    model.metadata.date && model.metadata.date.trim() !== ''
+                      ? model.metadata.date
+                      : 'Unknown'
+                  }}
+                </div>
               </div>
             </div>
 
@@ -374,7 +393,13 @@
             <!-- Single Column Section -->
             <div class="detail-item q-mb-md">
               <div class="a-info-title2">Data Source</div>
-              <div class="a-info-subtitle">{{ model.data_source }}</div>
+              <div class="a-info-subtitle">
+                {{
+                  model.data_source && model.data_source.trim() !== ''
+                    ? model.data_source
+                    : 'Unknown'
+                }}
+              </div>
             </div>
 
             <!-- User Info with side-by-side layout -->
@@ -384,7 +409,13 @@
                   <div class="a-info-title2">Donated/Loaned By:</div>
                 </div>
                 <div class="detail-value">
-                  <div class="a-info-subtitle">{{ model.donated_by }}</div>
+                  <div class="a-info-subtitle">
+                    {{
+                      model.donated_by && model.donated_by.trim() !== ''
+                        ? model.donated_by
+                        : 'Unknown'
+                    }}
+                  </div>
                 </div>
               </div>
 
@@ -397,7 +428,7 @@
                     {{
                       model.date_received && model.date_received.trim() !== ''
                         ? formatDate(model.date_received)
-                        : ''
+                        : 'Unknown'
                     }}
                   </div>
                 </div>
@@ -677,8 +708,8 @@ function resetModelView() {
 
 // Full screen function
 function viewFullScreen() {
-  const el = artifactCard.value
-  if (!el) return
+  const viewer = artifactViewer.value
+  if (!viewer) return
 
   // Check if in full screen
   if (
@@ -690,22 +721,21 @@ function viewFullScreen() {
     if (document.exitFullscreen) {
       document.exitFullscreen()
     } else if (document.webkitExitFullscreen) {
-      el.webkitExitFullscreen()
+      document.webkitExitFullscreen()
     } else if (document.msExitFullscreen) {
       document.msExitFullscreen()
     }
   } else {
-    // Enter fullscreen
-    if (el.requestFullscreen) {
-      el.requestFullscreen()
-    } else if (el.webkitRequestFullscreen) {
-      el.webkitRequestFullscreen()
-    } else if (el.msRequestFullscreen) {
-      el.msRequestFullscreen()
+    // Enter fullscreen on the model-viewer element directly
+    if (viewer.requestFullscreen) {
+      viewer.requestFullscreen()
+    } else if (viewer.webkitRequestFullscreen) {
+      viewer.webkitRequestFullscreen()
+    } else if (viewer.msRequestFullscreen) {
+      viewer.msRequestFullscreen()
     }
   }
 }
-
 // Action button methods
 const editArtifact = () => {
   router.push(`/edit/artifacts/${model.value.id}`)
@@ -1264,6 +1294,8 @@ async function logItemHistory({ itemId, itemType, action, oldData, changes }) {
 <style scoped>
 /* Standard fullscreen */
 model-viewer:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
   background: radial-gradient(
     110.32% 94.3% at 50% 57.87%,
     #b69f9f 0%,
@@ -1274,6 +1306,8 @@ model-viewer:fullscreen {
 
 /* Webkit browsers (Safari, Chrome) */
 model-viewer:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
   background: radial-gradient(
     110.32% 94.3% at 50% 57.87%,
     #b69f9f 0%,
@@ -1284,6 +1318,8 @@ model-viewer:-webkit-full-screen {
 
 /* Firefox */
 model-viewer:-moz-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
   background: radial-gradient(
     110.32% 94.3% at 50% 57.87%,
     #b69f9f 0%,
@@ -1294,6 +1330,8 @@ model-viewer:-moz-full-screen {
 
 /* IE/Edge */
 model-viewer:-ms-fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
   background: radial-gradient(
     110.32% 94.3% at 50% 57.87%,
     #b69f9f 0%,
@@ -1301,7 +1339,27 @@ model-viewer:-ms-fullscreen {
     #121212 95.67%
   );
 }
+/* Control Buttons Styles */
+.control-buttons {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  z-index: 1000; 
+  pointer-events: auto;
+}
 
+/* Ensure buttons are visible in fullscreen */
+model-viewer:fullscreen .control-buttons,
+model-viewer:-webkit-full-screen .control-buttons,
+model-viewer:-moz-full-screen .control-buttons,
+model-viewer:-ms-fullscreen .control-buttons {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+}
 .action-buttons {
   display: flex;
   align-items: center;

@@ -187,7 +187,7 @@ CREATE TABLE public.logins (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   user_id uuid NOT NULL,
   login_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
-  ip_address text,
+  hostname text,
   user_agent text,
   CONSTRAINT logins_pkey PRIMARY KEY (id)
 );
@@ -209,8 +209,9 @@ CREATE TABLE public.registered_admins (
   last_name text NOT NULL,
   email text NOT NULL,
   is_super_admin boolean DEFAULT false,
-  account_status text DEFAULT 'Active'::text CHECK (account_status = ANY (ARRAY['Active'::text, 'Inactive'::text])),
+  account_status text DEFAULT 'Inactive'::text CHECK (account_status = ANY (ARRAY['Active'::text, 'Inactive'::text])),
   is_temp_password boolean,
+  contact text,
   CONSTRAINT registered_admins_pkey PRIMARY KEY (id),
   CONSTRAINT registered_admins_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
@@ -222,7 +223,7 @@ CREATE TABLE public.registered_faculty (
   college text,
   department text,
   email character varying UNIQUE,
-  account_status text DEFAULT 'Active'::text CHECK (account_status = ANY (ARRAY['Active'::text, 'Inactive'::text])),
+  account_status text DEFAULT 'Inactive'::text CHECK (account_status = ANY (ARRAY['Active'::text, 'Inactive'::text])),
   CONSTRAINT registered_faculty_pkey PRIMARY KEY (id),
   CONSTRAINT registered_faculty_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
@@ -236,7 +237,7 @@ CREATE TABLE public.registered_users (
   year_section text,
   is_alumni boolean DEFAULT false,
   email character varying UNIQUE,
-  account_status text DEFAULT 'Active'::text CHECK (account_status = ANY (ARRAY['Active'::text, 'Inactive'::text])),
+  account_status text DEFAULT 'Inactive'::text CHECK (account_status = ANY (ARRAY['Active'::text, 'Inactive'::text])),
   CONSTRAINT registered_users_pkey PRIMARY KEY (id),
   CONSTRAINT registered_users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );

@@ -6,12 +6,13 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
 
-// Create the client
+// Create the client with a unique storage key
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    storageKey: 'preserv3d-auth',
   },
 })
 
@@ -21,10 +22,10 @@ export const supabaseAdmin = supabaseServiceKey
       auth: {
         autoRefreshToken: false,
         persistSession: false,
+        storageKey: 'preserv3d-admin-auth',
       },
     })
-  : supabase // Fallback to regular client if service key not available
-
+  : supabase
 export default boot(({ app }) => {
   app.config.globalProperties.$supabase = supabase
   app.config.globalProperties.$supabaseAdmin = supabaseAdmin
