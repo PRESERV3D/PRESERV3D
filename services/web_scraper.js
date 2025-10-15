@@ -12,10 +12,27 @@ const __dirname = dirname(__filename)
 
 puppeteer.use(StealthPlugin())
 
+// Shared browser instance to reduce memory usage
+let browserInstance = null
+let browserLastUsed = Date.now()
+const BROWSER_IDLE_TIMEOUT = 5 * 60 * 1000 // 5 minutes
+
 /**
- * Wait utility function for compatibility with newer Puppeteer versions
+ * Wait utility function
  */
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * Log memory usage
+ */
+function logMemoryUsage(label = '') {
+  const used = process.memoryUsage()
+  console.error(`Memory ${label}:`, {
+    rss: `${Math.round(used.rss / 1024 / 1024)}MB`,
+    heapUsed: `${Math.round(used.heapUsed / 1024 / 1024)}MB`,
+    heapTotal: `${Math.round(used.heapTotal / 1024 / 1024)}MB`,
+  })
+}
 
 /**
  * Find Chrome executable in browsers directory
@@ -29,7 +46,6 @@ function findChromeExecutable() {
   }
 
   try {
-    // Find chrome executable
     const findCmd = `find ${browsersDir} -name chrome -type f -executable 2>/dev/null | head -1`
     const chromePath = execSync(findCmd, { encoding: 'utf-8' }).trim()
 
@@ -45,12 +61,11 @@ function findChromeExecutable() {
 }
 
 /**
- * Get appropriate Puppeteer launch options based on environment
+ * Get appropriate Puppeteer launch options
  */
 function getPuppeteerConfig() {
   const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
 
-  // Base configuration
   const config = {
     headless: 'new',
     args: [
@@ -59,21 +74,29 @@ function getPuppeteerConfig() {
       '--disable-dev-shm-usage',
       '--disable-accelerated-2d-canvas',
       '--disable-gpu',
-      '--window-size=1920x1080',
+      '--disable-software-rasterizer',
+      '--disable-extensions',
+      '--disable-background-networking',
+      '--disable-sync',
+      '--disable-translate',
+      '--disable-default-apps',
+      '--mute-audio',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process', // Critical for low memory environments
+      '--window-size=1280x720', // Reduced from 1920x1080
       '--disable-web-security',
       '--disable-features=IsolateOrigins,site-per-process',
       '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     ],
   }
 
-  // Use system Chromium if path is provided
   if (executablePath && existsSync(executablePath)) {
     config.executablePath = executablePath
     console.error(`Using system Chromium at: ${executablePath}`)
     return config
   }
 
-  // Try to find Chrome in local browsers directory
   const localChrome = findChromeExecutable()
   if (localChrome) {
     config.executablePath = localChrome
@@ -81,7 +104,6 @@ function getPuppeteerConfig() {
     return config
   }
 
-  // Try system paths
   const chromiumPaths = [
     '/usr/bin/chromium',
     '/usr/bin/chromium-browser',
@@ -97,65 +119,87 @@ function getPuppeteerConfig() {
     }
   }
 
-  // No browser found
   console.error('ERROR: No Chrome/Chromium executable found!')
   throw new Error('No Chrome/Chromium browser found. Please run: npm run install-chrome')
 }
 
+/**
+ * Get or create shared browser instance
+ */
+async function getBrowser() {
+  // Close browser if it's been idle too long
+  if (browserInstance && Date.now() - browserLastUsed > BROWSER_IDLE_TIMEOUT) {
+    console.error('Closing idle browser instance')
+    await browserInstance.close().catch(() => {})
+    browserInstance = null
+  }
+
+  // Create new browser if needed
+  if (!browserInstance) {
+    console.error('Creating new browser instance')
+    logMemoryUsage('before browser launch')
+
+    const config = getPuppeteerConfig()
+    browserInstance = await puppeteer.launch(config)
+
+    logMemoryUsage('after browser launch')
+
+    // Handle unexpected closures
+    browserInstance.on('disconnected', () => {
+      console.error('Browser disconnected')
+      browserInstance = null
+    })
+  }
+
+  browserLastUsed = Date.now()
+  return browserInstance
+}
+
+/**
+ * Search DuckDuckGo for related links
+ */
 async function searchDuckDuckGo(query, maxResults = 5) {
-  let browser
+  let page
   try {
     console.error(`=== Starting DuckDuckGo search ===`)
     console.error(`Query: "${query}"`)
-    console.error(`Environment: NODE_ENV=${process.env.NODE_ENV}, RENDER=${process.env.RENDER}`)
 
-    const config = getPuppeteerConfig()
-    console.error(
-      `Launching browser with config: ${JSON.stringify({
-        ...config,
-        executablePath: config.executablePath || 'default (Puppeteer downloaded)',
-      })}`,
-    )
+    const browser = await getBrowser()
+    page = await browser.newPage()
 
-    browser = await puppeteer.launch(config)
-    console.error(`Browser launched successfully`)
+    // Reduce memory usage by limiting page resources
+    await page.setViewport({ width: 1280, height: 720 })
+    await page.setRequestInterception(true)
 
-    const page = await browser.newPage()
-    console.error(`New page created`)
-
-    // Set viewport to look more like a real browser
-    await page.setViewport({ width: 1920, height: 1080 })
-
-    // Set extra headers to appear more human
-    await page.setExtraHTTPHeaders({
-      'Accept-Language': 'en-US,en;q=0.9',
-      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      'Accept-Encoding': 'gzip, deflate, br',
-      Connection: 'keep-alive',
-      'Upgrade-Insecure-Requests': '1',
+    // Block unnecessary resources to save memory
+    page.on('request', (request) => {
+      const resourceType = request.resourceType()
+      if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+        request.abort()
+      } else {
+        request.continue()
+      }
     })
 
-    // Set a reasonable timeout
+    await page.setExtraHTTPHeaders({
+      'Accept-Language': 'en-US,en;q=0.9',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9',
+    })
+
     await page.setDefaultNavigationTimeout(30000)
 
-    // Construct DuckDuckGo search URL
     const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
     console.error(`Searching: ${searchUrl}`)
 
-    // Navigate with a more lenient waitUntil option
     await page.goto(searchUrl, {
       waitUntil: 'domcontentloaded',
       timeout: 30000,
     })
 
-    // Wait a bit for content to load
-    await wait(1500)
+    await wait(1000) // Reduced from 1500ms
 
-    // Extract search results
     const results = await page.evaluate(() => {
       const items = []
-
-      // DuckDuckGo HTML version has a simpler structure
       const resultElements = document.querySelectorAll('.result')
 
       resultElements.forEach((element) => {
@@ -164,19 +208,15 @@ async function searchDuckDuckGo(query, maxResults = 5) {
         const urlElement = element.querySelector('.result__url')
 
         if (linkElement) {
-          // Try to get the actual URL from the data attribute or href
           let url = linkElement.getAttribute('href') || linkElement.href
 
-          // If URL starts with //, it's a DuckDuckGo redirect - extract the actual URL
           if (url && url.startsWith('//duckduckgo.com/l/?')) {
             try {
               const urlParams = new URLSearchParams(url.split('?')[1])
               const actualUrl = urlParams.get('uddg')
-              if (actualUrl) {
-                url = actualUrl
-              }
+              if (actualUrl) url = actualUrl
             } catch (e) {
-              console.error(`Failed to parse DuckDuckGo redirect URL: ${e.message}`)
+              console.error(`Error parsing redirect URL: ${e.message}`)
               if (urlElement) {
                 const displayUrl = urlElement.textContent.trim()
                 url = displayUrl.startsWith('http') ? displayUrl : 'https://' + displayUrl
@@ -184,7 +224,6 @@ async function searchDuckDuckGo(query, maxResults = 5) {
             }
           }
 
-          // Ensure URL has protocol
           if (url && !url.startsWith('http')) {
             url = 'https://' + url
           }
@@ -192,21 +231,7 @@ async function searchDuckDuckGo(query, maxResults = 5) {
           const title = linkElement.textContent.trim()
           const snippet = snippetElement ? snippetElement.textContent.trim() : ''
 
-          // Filter out non-http links and document files
-          const documentExtensions = [
-            '.pdf',
-            '.doc',
-            '.docx',
-            '.xls',
-            '.xlsx',
-            '.ppt',
-            '.pptx',
-            '.txt',
-            '.rtf',
-            '.odt',
-            '.ods',
-            '.odp',
-          ]
+          const documentExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx']
           const urlLower = url.toLowerCase()
           const isDocument = documentExtensions.some((ext) => urlLower.includes(ext))
 
@@ -219,14 +244,14 @@ async function searchDuckDuckGo(query, maxResults = 5) {
       return items
     })
 
-    await browser.close()
+    await page.close()
+    page = null
+    logMemoryUsage('after search')
 
     console.error(`Found ${results.length} results from DuckDuckGo`)
     return results.slice(0, maxResults)
   } catch (error) {
-    if (browser) {
-      await browser.close().catch(() => {})
-    }
+    if (page) await page.close().catch(() => {})
     console.error(`DuckDuckGo search error: ${error.message}`)
     throw error
   }
@@ -236,48 +261,47 @@ async function searchDuckDuckGo(query, maxResults = 5) {
  * Scrape content from a URL
  */
 async function scrapeContent(url) {
-  let browser
+  let page
   try {
-    const config = getPuppeteerConfig()
-    browser = await puppeteer.launch(config)
-    const page = await browser.newPage()
+    const browser = await getBrowser()
+    page = await browser.newPage()
 
-    // Set viewport and headers
-    await page.setViewport({ width: 1920, height: 1080 })
-    await page.setExtraHTTPHeaders({
-      'Accept-Language': 'en-US,en;q=0.9',
+    await page.setViewport({ width: 1280, height: 720 })
+    await page.setRequestInterception(true)
+
+    // Block images and other heavy resources
+    page.on('request', (request) => {
+      const resourceType = request.resourceType()
+      if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+        request.abort()
+      } else {
+        request.continue()
+      }
     })
 
-    await page.setDefaultNavigationTimeout(20000)
+    await page.setDefaultNavigationTimeout(15000) // Reduced from 20s
 
     try {
       await page.goto(url, {
         waitUntil: 'domcontentloaded',
-        timeout: 20000,
+        timeout: 15000,
       })
     } catch (navError) {
-      // If navigation fails, try to get whatever content loaded
       console.error(`Navigation to ${url} failed: ${navError.message}`)
     }
 
-    // Wait a bit for dynamic content
-    await wait(1000)
+    await wait(500) // Reduced from 1000ms
 
-    // Get page content
     const content = await page.content()
-    await browser.close()
+    await page.close()
+    page = null
 
-    // Parse with Cheerio
     const $ = cheerio.load(content)
-
-    // Remove script, style, and other non-content tags
     $('script, style, nav, header, footer, iframe, noscript').remove()
 
-    // Extract text content
     const bodyText = $('body').text()
     const cleanText = bodyText.replace(/\s+/g, ' ').trim()
 
-    // Extract metadata
     const title = $('title').text() || $('h1').first().text() || ''
     const description =
       $('meta[name="description"]').attr('content') ||
@@ -288,13 +312,11 @@ async function scrapeContent(url) {
       url,
       title: title.trim(),
       description: description.trim(),
-      content: cleanText.substring(0, 2000), // First 2000 chars
-      language: franc(cleanText.substring(0, 500)), // Detect language
+      content: cleanText.substring(0, 1500), // Reduced from 2000
+      language: franc(cleanText.substring(0, 300)), // Reduced from 500
     }
   } catch (error) {
-    if (browser) {
-      await browser.close().catch(() => {})
-    }
+    if (page) await page.close().catch(() => {})
     console.error(`Scraping error for ${url}: ${error.message}`)
     return {
       url,
@@ -308,13 +330,38 @@ async function scrapeContent(url) {
 }
 
 /**
- * Filter results based on language (prioritize English)
+ * Scrape content with concurrency control
+ */
+async function scrapeAllContent(searchResults, concurrency = 2) {
+  const results = []
+
+  for (let i = 0; i < searchResults.length; i += concurrency) {
+    const batch = searchResults.slice(i, i + concurrency)
+    console.error(`Scraping batch ${Math.floor(i / concurrency) + 1}: ${batch.length} URLs`)
+
+    const batchResults = await Promise.all(batch.map((result) => scrapeContent(result.url)))
+
+    results.push(...batchResults)
+
+    // Give system time to free memory between batches
+    if (i + concurrency < searchResults.length) {
+      await wait(500)
+      if (global.gc) global.gc() // Force garbage collection if available
+    }
+
+    logMemoryUsage(`after batch ${Math.floor(i / concurrency) + 1}`)
+  }
+
+  return results
+}
+
+/**
+ * Filter results based on language
  */
 function filterByLanguage(results, preferredLang = 'eng') {
   const englishResults = results.filter((r) => r.language === preferredLang && !r.error)
   const otherResults = results.filter((r) => r.language !== preferredLang && !r.error)
 
-  // Prefer English results, but include others if not enough English content
   return englishResults.length >= 3 ? englishResults : [...englishResults, ...otherResults]
 }
 
@@ -325,10 +372,8 @@ async function main() {
   try {
     console.error(`=== Web Scraper Starting ===`)
     console.error(`Node version: ${process.version}`)
-    console.error(`CWD: ${process.cwd()}`)
-    console.error(`Script path: ${import.meta.url}`)
+    logMemoryUsage('startup')
 
-    // Get command line arguments
     const args = process.argv.slice(2)
 
     if (args.length === 0) {
@@ -339,7 +384,6 @@ async function main() {
 
     const [title, author = '', categories = '', date = ''] = args
 
-    // Build search query
     let searchQuery = title
     if (author) searchQuery += ` ${author}`
     if (categories) searchQuery += ` ${categories}`
@@ -347,43 +391,35 @@ async function main() {
 
     console.error(`Searching for: "${searchQuery}"`)
 
-    // Search DuckDuckGo
     const searchResults = await searchDuckDuckGo(searchQuery, 5)
 
     if (searchResults.length === 0) {
-      console.error('No search results found, returning empty array')
-      console.log(
-        JSON.stringify({
-          links: [],
-          warning: 'No search results found',
-        }),
-      )
+      console.error('No search results found')
+      console.log(JSON.stringify({ links: [], warning: 'No search results found' }))
       return
     }
 
     console.error(`Found ${searchResults.length} search results, scraping content...`)
 
-    // Scrape content from each result
-    const scrapedResults = await Promise.all(
-      searchResults.map((result) => scrapeContent(result.url)),
-    )
+    // Use controlled concurrency instead of Promise.all
+    const scrapedResults = await scrapeAllContent(searchResults, 2)
 
-    // Filter by language
     const filteredResults = filterByLanguage(scrapedResults, 'eng')
 
-    // Format output
     const links = filteredResults.map((result) => ({
       url: result.url,
       title: result.title || 'Untitled',
-      description: result.description || result.content.substring(0, 200) + '...',
+      description: result.description || result.content.substring(0, 150) + '...',
       language: result.language,
     }))
 
     console.error(`Returning ${links.length} links`)
-    // Output as JSON to stdout
+    logMemoryUsage('before output')
+
     console.log(JSON.stringify({ links }))
+
+    // Don't close browser - keep it alive for next request
   } catch (error) {
-    // Output error as JSON to stderr
     console.error(`=== Error in main function ===`)
     console.error(
       JSON.stringify({

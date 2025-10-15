@@ -1541,7 +1541,7 @@ async def related_links(
             }
         
         # Prepare the command
-        cmd = ["node", script_path, title, author or "", categories or "", date or ""]
+        cmd = ["node", "--expose-gc", script_path, title, author or "", categories or "", date or ""]
         print(f"Running command: {' '.join(cmd)}")
         
         # Set up environment with proper NODE_PATH
