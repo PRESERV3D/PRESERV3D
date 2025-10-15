@@ -3,6 +3,12 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { franc } from 'franc'
 import * as cheerio from 'cheerio'
 import { existsSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+import { execSync } from 'child_process'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 puppeteer.use(StealthPlugin())
 
@@ -12,14 +18,37 @@ puppeteer.use(StealthPlugin())
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
+ * Find Chrome executable in browsers directory
+ */
+function findChromeExecutable() {
+  const browsersDir = join(__dirname, 'browsers')
+
+  if (!existsSync(browsersDir)) {
+    console.error(`Browsers directory not found at: ${browsersDir}`)
+    return null
+  }
+
+  try {
+    // Find chrome executable
+    const findCmd = `find ${browsersDir} -name chrome -type f -executable 2>/dev/null | head -1`
+    const chromePath = execSync(findCmd, { encoding: 'utf-8' }).trim()
+
+    if (chromePath && existsSync(chromePath)) {
+      console.error(`Found Chrome at: ${chromePath}`)
+      return chromePath
+    }
+  } catch (err) {
+    console.error(`Error finding Chrome: ${err.message}`)
+  }
+
+  return null
+}
+
+/**
  * Get appropriate Puppeteer launch options based on environment
  */
 function getPuppeteerConfig() {
   const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
-
-  // Check if we're on Render or similar cloud platform
-  const isRenderOrCloud =
-    executablePath || process.env.RENDER || process.env.NODE_ENV === 'production'
 
   // Base configuration
   const config = {
@@ -38,40 +67,39 @@ function getPuppeteerConfig() {
   }
 
   // Use system Chromium if path is provided
-  if (executablePath) {
+  if (executablePath && existsSync(executablePath)) {
     config.executablePath = executablePath
     console.error(`Using system Chromium at: ${executablePath}`)
     return config
   }
 
-  // On cloud platforms, try to find system Chromium
-  if (isRenderOrCloud) {
-    const chromiumPaths = [
-      '/usr/bin/chromium',
-      '/usr/bin/chromium-browser',
-      '/usr/bin/google-chrome',
-      '/usr/bin/google-chrome-stable',
-    ]
-
-    for (const path of chromiumPaths) {
-      try {
-        if (existsSync(path)) {
-          config.executablePath = path
-          console.error(`Found system Chromium at: ${path}`)
-          return config
-        }
-      } catch (err) {
-        console.error(`Error checking Chromium path ${path}: ${err.message}`)
-      }
-    }
-
-    console.error('No system Chromium found, using Puppeteer downloaded browser')
+  // Try to find Chrome in local browsers directory
+  const localChrome = findChromeExecutable()
+  if (localChrome) {
+    config.executablePath = localChrome
+    console.error(`Using locally installed Chrome: ${localChrome}`)
+    return config
   }
 
-  console.error(
-    `Puppeteer config: headless=${config.headless}, executablePath=${config.executablePath || 'default (Puppeteer downloaded)'}`,
-  )
-  return config
+  // Try system paths
+  const chromiumPaths = [
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+  ]
+
+  for (const path of chromiumPaths) {
+    if (existsSync(path)) {
+      config.executablePath = path
+      console.error(`Found system Chromium at: ${path}`)
+      return config
+    }
+  }
+
+  // No browser found
+  console.error('ERROR: No Chrome/Chromium executable found!')
+  throw new Error('No Chrome/Chromium browser found. Please run: npm run install-chrome')
 }
 
 async function searchDuckDuckGo(query, maxResults = 5) {

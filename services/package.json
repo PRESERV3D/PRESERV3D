@@ -11,7 +11,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "scrape": "node web_scraper.js",
-    "test-env": "node test_scraper.js"
+    "install-chrome": "npx @puppeteer/browsers install chrome@stable --path ./browsers"
   },
   "keywords": [
     "web-scraper",
@@ -21,10 +21,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@puppeteer/browsers": "^2.4.1",
     "cheerio": "^1.0.0",
     "franc": "^6.2.0",
     "franc-min": "^6.2.0",
-    "puppeteer": "^24.24.0",
+    "puppeteer-core": "^23.0.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-adblocker": "^2.13.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2"
