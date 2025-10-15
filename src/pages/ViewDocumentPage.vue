@@ -19,10 +19,20 @@
           />
         </div>
         <div class="col">
-          <h2 class="document-title">{{ doc.metadata.title }}</h2>
+          <h2 class="document-title">
+            {{
+              doc.metadata.title && doc.metadata.title.trim() !== ''
+                ? doc.metadata.title
+                : doc.file_name
+            }}
+          </h2>
           <div class="row items-center">
             <p class="sub-font-3" style="font-size: 16px; margin-bottom: 1rem; max-width: 25rem">
-              {{ doc.metadata.author }}
+              {{
+                doc.metadata.author && doc.metadata.author.trim() !== ''
+                  ? doc.metadata.author
+                  : 'Unknown'
+              }}
             </p>
             <div v-if="isAdmin" class="edit-delete-btns row q-gutter-sm q-mb-md">
               <q-btn label="Edit" class="actions" no-caps flat @click="handleEdit" />
@@ -132,7 +142,11 @@
                 Description
               </div>
               <div class="q-ml-md summary">
-                {{ doc.metadata.summary }}
+                {{
+                  doc.metadata.summary && doc.metadata.summary.trim() !== ''
+                    ? doc.metadata.summary
+                    : 'No Summary Available.'
+                }}
               </div>
               <div class="q-ma-md link" @click="showRelatedDialog = true">Show Related Links</div>
               <!-- q-dialog for related links -->

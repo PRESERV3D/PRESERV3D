@@ -309,7 +309,13 @@
           <!-- Summary Section -->
           <div class="summary-section q-mb-md">
             <h6 class="a-info-title q-mb-sm q-mt-sm">Summary</h6>
-            <p class="a-info-text">{{ model.metadata.summary }}</p>
+            <p class="a-info-text">
+              {{
+                model.metadata.summary && model.metadata.summary.trim() !== ''
+                  ? model.metadata.summary
+                  : 'No Summary Available.'
+              }}
+            </p>
           </div>
 
           <!-- Related Links -->
@@ -352,11 +358,23 @@
             <div class="detail-row q-mb-md">
               <div class="detail-label">
                 <div class="a-info-title2">Author</div>
-                <div class="a-info-subtitle">{{ model.metadata.author }}</div>
+                <div class="a-info-subtitle">
+                  {{
+                    model.metadata.author && model.metadata.author.trim() !== ''
+                      ? model.metadata.author
+                      : 'Unknown'
+                  }}
+                </div>
               </div>
               <div class="detail-value">
                 <div class="a-info-title2">Date</div>
-                <div class="a-info-subtitle">{{ model.metadata.date }}</div>
+                <div class="a-info-subtitle">
+                  {{
+                    model.metadata.date && model.metadata.date.trim() !== ''
+                      ? model.metadata.date
+                      : 'Unknown'
+                  }}
+                </div>
               </div>
             </div>
 
@@ -374,7 +392,13 @@
             <!-- Single Column Section -->
             <div class="detail-item q-mb-md">
               <div class="a-info-title2">Data Source</div>
-              <div class="a-info-subtitle">{{ model.data_source }}</div>
+              <div class="a-info-subtitle">
+                {{
+                  model.data_source && model.data_source.trim() !== ''
+                    ? model.data_source
+                    : 'Unknown'
+                }}
+              </div>
             </div>
 
             <!-- User Info with side-by-side layout -->
@@ -384,7 +408,13 @@
                   <div class="a-info-title2">Donated/Loaned By:</div>
                 </div>
                 <div class="detail-value">
-                  <div class="a-info-subtitle">{{ model.donated_by }}</div>
+                  <div class="a-info-subtitle">
+                    {{
+                      model.donated_by && model.donated_by.trim() !== ''
+                        ? model.donated_by
+                        : 'Unknown'
+                    }}
+                  </div>
                 </div>
               </div>
 
@@ -397,7 +427,7 @@
                     {{
                       model.date_received && model.date_received.trim() !== ''
                         ? formatDate(model.date_received)
-                        : ''
+                        : 'Unknown'
                     }}
                   </div>
                 </div>
