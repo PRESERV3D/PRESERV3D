@@ -8,7 +8,7 @@ services:
     buildCommand: |
       set -e
       echo "========== Starting build process =========="
-      
+
       # Install Python dependencies
       echo "Installing Python dependencies..."
       pip install -r requirements.txt
@@ -23,28 +23,35 @@ services:
       echo "Node.js version: $(node --version)"
       echo "npm version: $(npm --version)"
 
-      # Create a script that will install node modules at startup
-      cat > install_node_deps.sh << 'SCRIPT'
-#!/bin/bash
-set -e
+      # Verify package.json exists
+      if [ ! -f "package.json" ]; then
+        echo "ERROR: package.json not found in $(pwd)"
+        ls -la
+        exit 1
+      fi
 
-echo "Checking node_modules..."
-if [ ! -d "node_modules" ] || [ ! -d "node_modules/puppeteer-extra" ]; then
-    echo "Installing Node.js dependencies..."
-    npm install --legacy-peer-deps --prefer-offline
-    echo "Node.js dependencies installed successfully"
-else
-    echo "Node.js dependencies already installed"
-fi
-SCRIPT
-      chmod +x install_node_deps.sh
+      # Install Node.js dependencies during build
+      echo "Installing Node.js dependencies..."
+      npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+      # Verify critical packages are installed
+      if [ ! -d "node_modules/puppeteer-extra" ]; then
+        echo "ERROR: puppeteer-extra not found after npm install"
+        exit 1
+      fi
+
+      echo "Node modules installed at: $(pwd)/node_modules"
+      ls -la node_modules/ | head -20
 
       echo "========== Build completed successfully =========="
 
     startCommand: |
-      ./install_node_deps.sh && \
+      echo "Starting service from: $(pwd)" && \
+      echo "Checking node_modules..." && \
+      ls -la node_modules/puppeteer* 2>/dev/null || echo "WARNING: puppeteer modules not found, reinstalling..." && \
+      [ ! -d "node_modules/puppeteer-extra" ] && npm install --legacy-peer-deps --prefer-offline || true && \
       uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
-    
+
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.7
@@ -64,3 +71,5 @@ SCRIPT
         value: 'true'
       - key: NODE_ENV
         value: production
+      - key: NODE_PATH
+        value: /opt/render/project/src/services/node_modules
