@@ -1604,6 +1604,7 @@ import { supabase, supabaseAdmin } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 import { useRoute } from 'vue-router'
 import { createNotification } from '/services/email_service.js'
+import { getFrontendUrl } from 'src/utils/frontendUrl'
 
 const $q = useQuasar()
 const userStore = useUserStore()
@@ -1615,9 +1616,9 @@ async function getLastLogin(userId) {
   try {
     const { data, error } = await supabaseAdmin
       .from('logins')
-      .select('created_at')
+      .select('login_at')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .order('login_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
@@ -1626,7 +1627,7 @@ async function getLastLogin(userId) {
       return null
     }
 
-    return data?.created_at || null
+    return data?.login_at || null
   } catch (err) {
     console.error('Unexpected error in getLastLogin:', err)
     return null
@@ -1844,7 +1845,7 @@ async function fetchAllUsers() {
             ...admin,
             email_confirmed_at: authUser?.user?.email_confirmed_at || null,
             // Prefer logins table timestamp; fall back to auth.users.last_sign_in_at
-            last_login: loginTime || authUser?.user?.last_sign_in_at || null,
+            last_login: loginTime || null,
           }
         }),
       )
@@ -2047,7 +2048,7 @@ async function createAdmin() {
           type: 'admin',
           is_super_admin: newAdmin.value.is_super_admin,
         },
-        emailRedirectTo: `${process.env.FRONTEND_URL}/resetpassword`,
+        emailRedirectTo: `${getFrontendUrl()}/resetpassword`,
       },
     })
 
@@ -2252,7 +2253,7 @@ async function resendConfirmationEmail(admin) {
       type: 'signup',
       email: admin.email,
       options: {
-        emailRedirectTo: `${process.env.FRONTEND_URL}/resetpassword`,
+        emailRedirectTo: `${getFrontendUrl()}/resetpassword`,
       },
     })
 
@@ -2379,7 +2380,7 @@ async function confirmRegistrationAction() {
             role: 'user',
             type: 'visitor',
           },
-          emailRedirectTo: `${process.env.FRONTEND_URL}/resetpassword`,
+          emailRedirectTo: `${getFrontendUrl()}/resetpassword`,
         },
       })
 

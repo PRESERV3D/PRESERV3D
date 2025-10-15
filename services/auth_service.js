@@ -12,7 +12,7 @@ export function trackAuthChanges() {
       await supabase.from('logins').insert([
         {
           user_id: userId,
-          ip_address: window.location.hostname, // optional, can fetch real IP via server
+          hostname: window.location.hostname,
           user_agent: navigator.userAgent,
         },
       ])
