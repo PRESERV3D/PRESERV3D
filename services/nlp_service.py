@@ -509,60 +509,162 @@ def cosine_similarity(a, b):
         return 0
     return dot_product / (magnitude_a * magnitude_b)
 
-def check_summary_relevance(title, summary, keywords=None, categories=None, author=None, date=None):
-    if not summary or not summary.strip():
+def check_summary_relevance(title, summary, keywords=None, categories=None, author=None, date=None, extracted_text=None):
+    if not summary or not summary.strip() or summary.strip().lower() in ["n/a", "none", "no summary available.", "summary not available."]:
         return {
             "field": "summary",
-            "issue": "Missing summary",
-            "suggestion": "Generate a concise summary based on the document content."
+            "issue": "Missing or invalid summary",
+            "suggestion": "Generate a concise summary based on the document content.",
+            "severity": "high"
         }
-
-    # Build context
-    context_parts = [title]
+    
+    # Check minimum length
+    if len(summary.split()) < 15:
+        return {
+            "field": "summary",
+            "issue": "Summary too short (less than 15 words)",
+            "suggestion": "Expand the summary to provide more context and detail.",
+            "severity": "medium"
+        }
+    
+    # Check maximum length
+    if len(summary.split()) > 250:
+        return {
+            "field": "summary",
+            "issue": "Summary too long (over 250 words)",
+            "suggestion": "Condense the summary to focus on key points only.",
+            "severity": "low"
+        }
+    
+    # Build comprehensive context for comparison
+    context_parts = []
+    if title and title not in ["Unknown", "Unknown Document", ""]:
+        context_parts.append(title)
     if keywords:
-        context_parts.append(" ".join(keywords))
+        context_parts.append(" ".join([k for k in keywords if k]))
     if categories:
-        context_parts.append(" ".join(categories))
-    if author:
+        cat_text = " ".join(categories) if isinstance(categories, list) else categories
+        context_parts.append(cat_text)
+    if author and author not in ["Unknown", ""]:
         context_parts.append(f"Author: {author}")
-    if date:
+    if date and date not in ["Unknown", ""]:
         context_parts.append(f"Date: {date}")
+    
     context_text = " ".join(context_parts)
-
+    
+    # If we have extracted text, add a sample for better context
+    if extracted_text:
+        text_sample = extracted_text[:1000]
+        context_text = f"{context_text} {text_sample}"
+    
+    if not context_text.strip():
+        print("Warning: No context available for relevance check")
+        return {}
+    
+    # Semantic similarity check using embeddings
     try:
         context_emb = get_embeddings(context_text) or []
         summary_emb = get_embeddings(summary) or []
 
-        if not context_emb or not summary_emb:
-            print("Skipping similarity check - embeddings API unavailable or returned empty embeddings")
-            return {}
-
-        similarity = cosine_similarity(context_emb, summary_emb)
-        print(f"Summary similarity score: {similarity}")
+        if context_emb and summary_emb:
+            similarity = cosine_similarity(context_emb, summary_emb)
+            print(f"Summary similarity score: {similarity:.3f}")
+            
+            # Adjusted thresholds with severity levels
+            if similarity < 0.45:
+                return {
+                    "field": "summary",
+                    "issue": f"Summary has low semantic alignment with document context (score: {similarity:.2f})",
+                    "suggestion": "Rewrite the summary to better reflect the main topics, themes, and key points of the document. Ensure it captures the document's essence.",
+                    "severity": "high"
+                }
+            elif similarity < 0.55:
+                return {
+                    "field": "summary",
+                    "issue": f"Summary alignment could be improved (score: {similarity:.2f})",
+                    "suggestion": "Consider revising the summary to more closely match the document's key themes and topics.",
+                    "severity": "medium"
+                }
+        else:
+            print("Skipping embedding-based similarity check - embeddings unavailable")
     except Exception as e:
-        print("Embedding similarity check failed:", e)
-        return {}
-
-    if similarity < 0.55:
-        return {
-            "field": "summary",
-            "issue": "Summary may not align well with document content or metadata context",
-            "suggestion": "Rewrite the summary to better reflect the main topics and key points of the document."
-        }
-
-    # Check if any keywords appear in summary (simple text match as backup)
-    if keywords:
-        keyword_matches = sum(1 for kw in keywords if kw.lower() in summary.lower())
-        if keyword_matches == 0 and len(keywords) >= 3:
+        print(f"Embedding similarity check failed: {e}")
+    
+    # Keyword overlap check
+    if keywords and len(keywords) >= 3:
+        summary_lower = summary.lower()
+        keyword_matches = sum(1 for kw in keywords if kw and kw.lower() in summary_lower)
+        keyword_coverage = keyword_matches / len(keywords)
+        
+        print(f"Keyword coverage: {keyword_matches}/{len(keywords)} ({keyword_coverage:.1%})")
+        
+        if keyword_matches == 0:
             return {
                 "field": "summary",
-                "issue": "Summary may not reflect main topics from keywords",
-                "suggestion": "Regenerate the summary ensuring it covers the main topics implied by the keywords"
+                "issue": "Summary doesn't mention any of the document's key topics/keywords",
+                "suggestion": f"Revise the summary to include references to main topics: {', '.join(keywords[:5])}",
+                "severity": "high"
             }
-
+        elif keyword_coverage < 0.3:
+            return {
+                "field": "summary",
+                "issue": f"Summary mentions only {keyword_matches} of {len(keywords)} key topics",
+                "suggestion": f"Try to incorporate more key topics: {', '.join([k for k in keywords if k.lower() not in summary_lower][:3])}",
+                "severity": "medium"
+            }
+    
+    # Title relevance check
+    if title and title not in ["Unknown", "Unknown Document", ""]:
+        title_words = set(word.lower() for word in re.findall(r'\b\w+\b', title) if len(word) > 3)
+        summary_words = set(word.lower() for word in re.findall(r'\b\w+\b', summary))
+        
+        # Filter out common stop words
+        stop_words = {'this', 'that', 'with', 'from', 'have', 'been', 'were', 'about', 'their', 'there', 'these', 'those'}
+        title_words = title_words - stop_words
+        
+        if title_words:
+            title_overlap = len(title_words & summary_words) / len(title_words)
+            print(f"Title word overlap: {title_overlap:.1%}")
+            
+            if title_overlap < 0.2 and len(title_words) >= 3:
+                return {
+                    "field": "summary",
+                    "issue": "Summary doesn't reflect the document's title well",
+                    "suggestion": f"Ensure the summary addresses the main theme from the title: '{title}'",
+                    "severity": "medium"
+                }
+    
+    # Check for generic/template-like summaries
+    generic_phrases = [
+        "this document discusses",
+        "this paper presents",
+        "this report contains",
+        "the document provides information",
+        "the following document",
+        "this is a document about"
+    ]
+    
+    summary_lower = summary.lower()
+    generic_count = sum(1 for phrase in generic_phrases if phrase in summary_lower)
+    
+    if generic_count >= 2 or (generic_count >= 1 and len(summary.split()) < 30):
+        return {
+            "field": "summary",
+            "issue": "Summary appears too generic or template-like",
+            "suggestion": "Rewrite the summary with specific details about the actual content, findings, or purpose of this particular document.",
+            "severity": "medium"
+        }
+    
+    # Author and date integration check
+    mentions_author = author and author != "Unknown" and author.split()[0] in summary
+    mentions_date = date and date != "Unknown" and any(d in summary for d in [str(date), date.split('-')[0]])
+    
+    if author and author != "Unknown" and not mentions_author and len(summary.split()) > 50:
+        print(f"Note: Summary doesn't mention author '{author}' - this may be intentional")
+    
+    print("Summary passes all relevance checks")
     return {}
 
-# Keep ALL your existing helper functions from original file:
 def extract_title_ner(title_entities, text, filename):
     # YOUR ORIGINAL CODE HERE
     if title_entities:
@@ -944,48 +1046,156 @@ def clean_place(place):
     return place
 
 def generate_summary(text, title=None, author=None, date=None, keywords=None, categories=None, max_attempts=3):
-    print("Generating summary...")
+    print("Generating summary with relevance optimization...")
     cleaned_text = clean_text(text)
-    input_text = cleaned_text[:2000]
-
+    
+    # Use more text for better context (increased from 2000 to 3000)
+    input_text = cleaned_text[:3000]
+    
+    if len(input_text.strip()) < 100:
+        return "Insufficient content for summary generation."
+    
+    # Build rich context
     context_parts = []
-    if title and title not in ["Unknown", ""]:
-        context_parts.append(f"Title: {title}")
+    if title and title not in ["Unknown", "Unknown Document", ""]:
+        context_parts.append(f"Document Title: {title}")
     if author and author not in ["Unknown", ""]:
-        context_parts.append(f"Author: {author}")
+        context_parts.append(f"Author/Creator: {author}")
     if date and date not in ["Unknown", ""]:
         context_parts.append(f"Date: {date}")
     if categories:
-        context_parts.append(f"Related topics: {', '.join(categories)}")
-    if keywords:
-        context_parts.append(f"Important topics: {', '.join(keywords[:8])}")
+        cat_str = ', '.join(categories) if isinstance(categories, list) else categories
+        context_parts.append(f"Category: {cat_str}")
+    if keywords and len(keywords) > 0:
+        # Prioritize top keywords
+        top_keywords = [k for k in keywords[:8] if k]
+        if top_keywords:
+            context_parts.append(f"Key Topics: {', '.join(top_keywords)}")
+    
+    context_str = "\n".join(context_parts)
+    
+    # Initial generation with rich context
+    instruction = f"""Write a comprehensive summary of the following document. The summary should:
+1. Capture the main purpose, themes, and key findings
+2. Be specific to this document (avoid generic phrases)
+3. Incorporate relevant details about the content
+4. Be 3-5 sentences long (50-150 words)
+5. Naturally reference key topics when relevant
 
-    instruction = "Summarize the following document, reflecting the main ideas and key topics. Include author and date if relevant. Avoid explicitly mentioning metadata fields as much as possible but include one or more keywords."
-    if context_parts:
-        instruction += " Context: " + ". ".join(context_parts)
+{context_str}
 
-    model_input = f"{instruction}\n\n{input_text}"
+Document Content:
+{input_text}
 
-    try:
-        base_summary = summarize_text_hf(model_input[:4000])
-        if not base_summary:
-            base_summary = "Summary not available."
-    except Exception as e:
-        print("Summarizer error:", e)
-        base_summary = "Summary not available."
-
-    relevance_issue = check_summary_relevance(title, base_summary, keywords, categories, author, date)
-    if relevance_issue:
-        retry_instruction = instruction + " Rewrite the summary to better reflect main topics and keywords."
-        retry_input = f"{retry_instruction}\n\n{input_text}"
+Summary:"""
+    
+    best_summary = None
+    best_score = -1
+    
+    for attempt in range(max_attempts):
         try:
-            retry_summary = summarize_text_hf(retry_input[:4000])
-            if retry_summary:
-                base_summary = retry_summary
+            print(f"Summary generation attempt {attempt + 1}/{max_attempts}")
+            
+            # Generate summary
+            if attempt == 0:
+                # First attempt: standard generation
+                current_summary = summarize_text_hf(instruction[:4000], max_length=150, min_length=50)
+            elif attempt == 1:
+                # Second attempt: emphasize keywords
+                keyword_emphasis = f"Ensure the summary explicitly mentions these key topics: {', '.join(keywords[:5])}" if keywords else ""
+                refined_instruction = f"{instruction}\n\nIMPORTANT: {keyword_emphasis}. Focus on specific content rather than generic descriptions."
+                current_summary = summarize_text_hf(refined_instruction[:4000], max_length=150, min_length=50)
+            else:
+                # Final attempt: use extractive fallback with context
+                print("Using context-aware extractive summary")
+                sentences = re.split(r'[.!?]+', input_text)
+                sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
+                
+                # Score sentences based on keyword presence and position
+                scored_sentences = []
+                for idx, sent in enumerate(sentences[:15]):  # Focus on first 15 sentences
+                    score = 0
+                    sent_lower = sent.lower()
+                    
+                    # Bonus for early sentences
+                    score += (15 - idx) * 0.5
+                    
+                    # Bonus for keyword matches
+                    if keywords:
+                        score += sum(3 for kw in keywords if kw and kw.lower() in sent_lower)
+                    
+                    # Bonus for title word matches
+                    if title and title != "Unknown":
+                        title_words = set(re.findall(r'\b\w{4,}\b', title.lower()))
+                        score += sum(2 for word in title_words if word in sent_lower)
+                    
+                    scored_sentences.append((score, sent))
+                
+                # Select top sentences
+                scored_sentences.sort(reverse=True)
+                top_sentences = [sent for score, sent in scored_sentences[:4]]
+                
+                # Add context prefix if we have metadata
+                prefix = ""
+                if context_parts:
+                    if author and author != "Unknown" and date and date != "Unknown":
+                        prefix = f"From {author} ({date}): "
+                    elif author and author != "Unknown":
+                        prefix = f"From {author}: "
+                    elif date and date != "Unknown":
+                        prefix = f"Dated {date}: "
+                
+                current_summary = prefix + " ".join(top_sentences)
+            
+            if not current_summary or current_summary.strip() in ["", "Summary not available."]:
+                print(f"Attempt {attempt + 1} produced no summary")
+                continue
+            
+            # Check relevance
+            relevance_check = check_summary_relevance(
+                title=title,
+                summary=current_summary,
+                keywords=keywords,
+                categories=categories,
+                author=author,
+                date=date,
+                extracted_text=input_text
+            )
+            
+            # Calculate a score (lower is better, 0 is perfect)
+            if not relevance_check:
+                current_score = 0  # Perfect score
+                print(f"Attempt {attempt + 1} passed all relevance checks!")
+                return current_summary.strip()
+            else:
+                severity_scores = {"low": 1, "medium": 2, "high": 3}
+                current_score = severity_scores.get(relevance_check.get("severity", "medium"), 2)
+                print(f"Attempt {attempt + 1} issue ({relevance_check.get('severity', 'medium')}): {relevance_check.get('issue', 'Unknown')}")
+            
+            # Track best summary
+            if best_summary is None or current_score < best_score:
+                best_summary = current_summary
+                best_score = current_score
+            
+            # If severity is low, accept it
+            if current_score <= 1:
+                print("Summary has low severity issues, accepting it")
+                return current_summary.strip()
+        
         except Exception as e:
-            print("Retry summarizer error:", e)
-
-    return base_summary.strip()
+            print(f"Summary generation attempt {attempt + 1} error: {e}")
+            continue
+    
+    # Return best summary found
+    if best_summary:
+        print(f"Returning best summary with score {best_score}")
+        return best_summary.strip()
+    
+    # Ultimate fallback
+    print("All attempts failed, using basic extractive summary")
+    sentences = re.split(r'[.!?]+', input_text[:1500])
+    sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
+    return " ".join(sentences[:3]) + "."
 
 @app.post("/generate-summary/{doc_id}")
 def generate_summary_endpoint(doc_id: str):
@@ -1413,7 +1623,6 @@ async def related_links(
 # Also add a debug endpoint to check the environment
 @app.get("/debug/environment")
 async def debug_environment():
-    """Debug endpoint to check Node.js environment"""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     
     info = {
