@@ -8,7 +8,13 @@
       </q-card-section>
 
       <q-card-section>
-        <q-input outlined v-model="localMetadata.title" label="Title" />
+        <q-input
+          outlined
+          v-model="localMetadata.title"
+          label="Title"
+          lazy-rules
+          :rules="[(val) => !!val || 'Please enter a title.']"
+        />
         <q-input outlined v-model="localMetadata.author" label="Author(s)" class="meta-info" />
 
         <q-input
