@@ -502,7 +502,8 @@ document-title-2 {
   transition: opacity 0.2s ease;
 }
 
-.fade-title-container:hover .tooltip-box {
+.fade-title-container:hover .tooltip-box,
+.h-fade-title-container:hover .tooltip-box {
   visibility: visible;
   opacity: 1;
 }
