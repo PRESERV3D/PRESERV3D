@@ -28,9 +28,6 @@ services:
 #!/bin/bash
 set -e
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$SCRIPT_DIR"
-
 echo "Checking node_modules..."
 if [ ! -d "node_modules" ] || [ ! -d "node_modules/puppeteer-extra" ]; then
     echo "Installing Node.js dependencies..."
@@ -45,7 +42,6 @@ SCRIPT
       echo "========== Build completed successfully =========="
 
     startCommand: |
-      cd /opt/render/project/src/services && \
       ./install_node_deps.sh && \
       uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
     
