@@ -371,7 +371,9 @@
           </div>
 
           <div class="col-5 q-ml-lg">
-            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">COLLECTION NAME</div>
+            <div class="sub-font-3" style="font-size: 16px; font-weight: 500">
+              COLLECTION NAME <span class="required">*</span>
+            </div>
             <q-input
               v-model="editData.collection_name"
               class="field-collection q-mb-md"

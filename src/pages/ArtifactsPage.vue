@@ -295,11 +295,18 @@
           <q-icon name="inventory_2" size="4rem" color="grey-5" />
           <div class="text-h6 q-mt-md text-grey-6">No artifacts found</div>
           <div class="text-body2 text-grey-5">
-            {{ searchStore.query || search ? 'No results match your search query' : 'Try adjusting your filters or search terms' }}
+            {{
+              searchStore.query || search
+                ? 'No results match your search query'
+                : 'Try adjusting your filters or search terms'
+            }}
           </div>
         </div>
 
-        <div v-if="!loading && displayedModels.length > 0" class="pagination-controls justify-center">
+        <div
+          v-if="!loading && displayedModels.length > 0"
+          class="pagination-controls justify-center"
+        >
           <q-btn
             flat
             round
@@ -311,15 +318,15 @@
           />
 
           <span class="pagination-numbers">
-    <span
-      v-for="page in modelsTotalPages"
-      :key="page"
-      @click="goToModelsPage(page)"
-      :class="['page-number', { active: page === modelsCurrentPage }]"
-    >
-      {{ page }}
-    </span>
-  </span>
+            <span
+              v-for="page in modelsTotalPages"
+              :key="page"
+              @click="goToModelsPage(page)"
+              :class="['page-number', { active: page === modelsCurrentPage }]"
+            >
+              {{ page }}
+            </span>
+          </span>
 
           <q-btn
             flat
@@ -397,7 +404,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, onActivated } from 'vue'
 import { useModelStore } from 'stores/modelStore'
 import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
@@ -969,6 +976,9 @@ onMounted(async () => {
   try {
     if (!searchStore.query) {
       await fetchAllArtifacts()
+    } else {
+      console.log('🔍 Search query detected:', searchStore.query)
+      console.log('📊 Search results ready:', searchStore.searchedModels.length, 'artifacts')
     }
 
     await modelStore.fetchViewCounts()
@@ -985,9 +995,24 @@ onMounted(async () => {
   }
 })
 
-onUnmounted(() => {
-  searchStore.clear()
+// Re-fetch when navigated back to the page (keep-alive/reactivation scenarios)
+onActivated(async () => {
+  try {
+    if (!searchStore.query) {
+      loading.value = true
+      await fetchAllArtifacts()
+    }
+  } catch (err) {
+    console.warn('[ArtifactsPage] onActivated fetch failed:', err)
+  } finally {
+    loading.value = false
+  }
 })
+
+// Don't clear search when unmounting - keep search state persistent
+// onUnmounted(() => {
+//   searchStore.clear()
+// })
 
 // Upload
 const metadata = ref({
@@ -1823,6 +1848,7 @@ const getBaseModels = computed(() => {
 
   return []
 })
+
 const getSortedModels = computed(() => {
   const baseModels = getBaseModels.value
 
