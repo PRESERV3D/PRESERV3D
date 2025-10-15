@@ -1269,45 +1269,200 @@ async def related_links(
     date: str = ""
 ):
     try:
-        # Path to your web_scraper.js
-        script_path = os.path.join(os.path.dirname(__file__), "web_scraper.js")
+        # Get the directory of the current file
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(script_dir, "web_scraper.js")
         
-        # Run the Node.js scraper with proper encoding
+        # Debug logging
+        print(f"Script directory: {script_dir}")
+        print(f"Script path: {script_path}")
+        print(f"Script exists: {os.path.exists(script_path)}")
+        print(f"node_modules exists: {os.path.exists(os.path.join(script_dir, 'node_modules'))}")
+        
+        # Check if script exists
+        if not os.path.exists(script_path):
+            available_files = os.listdir(script_dir) if os.path.exists(script_dir) else []
+            return {
+                "links": [], 
+                "error": f"Script not found at {script_path}. Available files: {available_files[:10]}"
+            }
+        
+        # Check if node_modules exists
+        node_modules_path = os.path.join(script_dir, 'node_modules')
+        if not os.path.exists(node_modules_path):
+            return {
+                "links": [],
+                "error": f"node_modules not found at {node_modules_path}. Dependencies may not be installed."
+            }
+        
+        # Check Node.js availability
+        try:
+            node_version = subprocess.run(
+                ["node", "--version"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            print(f"Node.js version: {node_version.stdout.strip()}")
+        except Exception as e:
+            return {
+                "links": [],
+                "error": f"Node.js not available: {str(e)}"
+            }
+        
+        # Prepare the command
+        cmd = ["node", script_path, title, author or "", categories or "", date or ""]
+        print(f"Running command: {' '.join(cmd)}")
+        
+        # Run the Node.js scraper
         result = subprocess.run(
-            ["node", script_path, title, author, categories, date],
+            cmd,
             capture_output=True,
             text=True,
-            encoding='utf-8',  # Force UTF-8 encoding
-            errors='replace', 
-            timeout=60
+            encoding='utf-8',
+            errors='replace',
+            timeout=60,
+            cwd=script_dir,
+            env={**os.environ, "NODE_ENV": "production"}
         )
         
-        # Check if the process failed
+        # Log the results
+        print(f"Return code: {result.returncode}")
+        print(f"Stdout length: {len(result.stdout)}")
+        print(f"Stderr length: {len(result.stderr)}")
+        
+        # Check for errors
         if result.returncode != 0:
             error_msg = result.stderr or "Unknown error"
-            print(f"Scraper error: {error_msg}")
-            return {"links": [], "error": error_msg}
+            print(f"Scraper error (exit code {result.returncode}):")
+            print(f"STDERR: {error_msg[:1000]}")  # First 1000 chars
+            
+            # Try to parse stderr as JSON
+            try:
+                error_data = json.loads(result.stderr)
+                return {
+                    "links": [], 
+                    "error": error_data.get("error", error_msg),
+                    "stack": error_data.get("stack", "")[:500]  # Truncate stack trace
+                }
+            except json.JSONDecodeError:
+                return {
+                    "links": [], 
+                    "error": error_msg[:500]  # Truncate error message
+                }
         
         # Check if stdout is empty
         if not result.stdout or result.stdout.strip() == "":
             print("Scraper returned empty output")
-            return {"links": [], "error": "No output from scraper"}
+            if result.stderr:
+                print(f"STDERR: {result.stderr[:1000]}")
+            return {
+                "links": [], 
+                "error": "No output from scraper",
+                "stderr": result.stderr[:500] if result.stderr else None
+            }
         
-        # Parse the JSON output
+        # Parse stdout as JSON
         try:
+            print(f"Parsing output (first 200 chars): {result.stdout[:200]}")
             data = json.loads(result.stdout)
+            
+            # Handle warning from scraper
+            if "warning" in data:
+                print(f"Scraper warning: {data['warning']}")
+            
             return data
+            
         except json.JSONDecodeError as e:
             print(f"JSON parse error: {e}")
-            print(f"Raw output: {result.stdout[:500]}")  # Log first 500 chars
-            return {"links": [], "error": "Invalid JSON from scraper"}
+            print(f"Raw stdout (first 500 chars): {result.stdout[:500]}")
+            print(f"Raw stderr: {result.stderr[:500]}")
+            
+            return {
+                "links": [], 
+                "error": f"Invalid JSON from scraper: {str(e)}",
+                "raw_output": result.stdout[:200]
+            }
             
     except subprocess.TimeoutExpired:
-        return {"links": [], "error": "Scraper timeout"}
+        print("Scraper timeout after 60 seconds")
+        return {
+            "links": [], 
+            "error": "Scraper timeout after 60 seconds"
+        }
+        
+    except FileNotFoundError as e:
+        print(f"File not found error: {e}")
+        return {
+            "links": [], 
+            "error": f"Command not found: {str(e)}. Is Node.js installed?"
+        }
+        
     except Exception as e:
-        print(f"Unexpected error: {str(e)}")
-        return {"links": [], "error": str(e)}
+        print(f"Unexpected error in related_links: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        return {
+            "links": [], 
+            "error": f"Unexpected error: {str(e)}",
+            "type": type(e).__name__
+        }
+
+
+# Also add a debug endpoint to check the environment
+@app.get("/debug/environment")
+async def debug_environment():
+    """Debug endpoint to check Node.js environment"""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
     
+    info = {
+        "script_dir": script_dir,
+        "files_in_dir": os.listdir(script_dir)[:20] if os.path.exists(script_dir) else [],
+        "node_modules_exists": os.path.exists(os.path.join(script_dir, 'node_modules')),
+        "web_scraper_exists": os.path.exists(os.path.join(script_dir, 'web_scraper.js')),
+        "package_json_exists": os.path.exists(os.path.join(script_dir, 'package.json')),
+    }
+    
+    # Check Node.js
+    try:
+        node_check = subprocess.run(
+            ["node", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        info["node_version"] = node_check.stdout.strip()
+        info["node_available"] = node_check.returncode == 0
+    except Exception as e:
+        info["node_available"] = False
+        info["node_error"] = str(e)
+    
+    # Check npm
+    try:
+        npm_check = subprocess.run(
+            ["npm", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        info["npm_version"] = npm_check.stdout.strip()
+        info["npm_available"] = npm_check.returncode == 0
+    except Exception as e:
+        info["npm_available"] = False
+        info["npm_error"] = str(e)
+    
+    # Check for specific packages
+    node_modules_path = os.path.join(script_dir, 'node_modules')
+    if os.path.exists(node_modules_path):
+        packages = ["cheerio", "puppeteer", "franc", "franc-min", "puppeteer-extra"]
+        info["installed_packages"] = {
+            pkg: os.path.exists(os.path.join(node_modules_path, pkg))
+            for pkg in packages
+        }
+    
+    return info
+ 
 @app.post("/extract-text")
 async def extract_text_from_pdf(
     file: UploadFile = File(None),   
