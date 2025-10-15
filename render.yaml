@@ -40,6 +40,9 @@ services:
 
       # Install with npm (not npm ci since we removed package-lock.json)
       npm install --legacy-peer-deps
+      cd services
+      rm -rf node_modules package-lock.json
+      npm install
 
       # Verify installation
       echo "========== Verifying installation =========="
