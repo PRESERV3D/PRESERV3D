@@ -1,7 +1,6 @@
 import { ref } from 'vue'
 import QRCode from 'qrcode'
 import { supabase } from 'boot/supabase'
-import { getFrontendUrl } from 'src/utils/frontendUrl'
 
 export function useWebRTC() {
   const isHost = ref(false)
@@ -90,7 +89,7 @@ export function useWebRTC() {
       const protocol = window.location.protocol
       baseUrl = `${protocol}//${localIp}:${port}`
     } else {
-      baseUrl = getFrontendUrl()
+      baseUrl = window.location.origin
     }
 
     const connectionUrl = `${baseUrl}/phone-camera?code=${connectionCode.value}`

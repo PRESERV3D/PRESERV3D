@@ -126,7 +126,6 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
-import { getFrontendUrl } from 'src/utils/frontendUrl'
 
 const router = useRouter()
 
@@ -205,7 +204,7 @@ async function registerAdmin() {
           role: 'admin',
           type: 'admin',
         },
-        emailRedirectTo: `${getFrontendUrl()}/user/login`,
+        emailRedirectTo: `${window.location.origin}/user/login`,
       },
     })
 

@@ -220,7 +220,6 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
-import { getFrontendUrl } from 'src/utils/frontendUrl'
 
 const router = useRouter()
 const step = ref(1)
@@ -515,7 +514,7 @@ async function registerUser() {
           role: 'user',
           type: 'student',
         },
-        emailRedirectTo: `${getFrontendUrl()}/user/login`,
+        emailRedirectTo: `${window.location.origin}/user/login`,
       },
     })
 
