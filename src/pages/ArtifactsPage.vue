@@ -1839,12 +1839,8 @@ const getBaseModels = computed(() => {
   // If there's an active search query, ONLY show search results (even if empty)
   if (searchStore.query) {
     return Array.isArray(searchStore.searchedModels) ? searchStore.searchedModels : []
-  // If there's an active search query, ALWAYS show search results (even if empty)
-  if (searchStore.query) {
-    return Array.isArray(searchStore.searchedModels) ? searchStore.searchedModels : []
   }
 
-  // Otherwise, show filtered models
   // Otherwise, show filtered models
   if (Array.isArray(modelStore.filteredModels) && modelStore.filteredModels.length > 0) {
     return modelStore.filteredModels
@@ -1852,6 +1848,7 @@ const getBaseModels = computed(() => {
 
   return []
 })
+
 const getSortedModels = computed(() => {
   const baseModels = getBaseModels.value
 
