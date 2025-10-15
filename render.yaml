@@ -8,81 +8,47 @@ services:
     buildCommand: |
       set -e
       echo "========== Starting build process =========="
-      echo "Current directory: $(pwd)"
-      echo "Directory contents:"
-      ls -la
-
+      
       # Install Python dependencies
       echo "Installing Python dependencies..."
       pip install -r requirements.txt
       python -m spacy download en_core_web_sm
 
-      # Install Node.js and dependencies
-      echo "Installing Node.js..."
+      # Install Node.js and system dependencies
+      echo "Installing Node.js and system dependencies..."
       curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
       apt-get update
       apt-get install -y nodejs chromium chromium-sandbox fonts-liberation libnss3 libxss1 libasound2
 
-      # Verify Node.js installation
       echo "Node.js version: $(node --version)"
       echo "npm version: $(npm --version)"
 
-      # Check if package.json exists in current directory (services)
-      if [ ! -f package.json ]; then
-        echo "ERROR: package.json not found in $(pwd)"
-        echo "Available files:"
-        ls -la
-        exit 1
-      fi
+      # Create a script that will install node modules at startup
+      cat > install_node_deps.sh << 'SCRIPT'
+#!/bin/bash
+set -e
 
-      echo "package.json found, installing Node.js dependencies..."
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
 
-      # Clean any existing node_modules to avoid conflicts
-      rm -rf node_modules package-lock.json
-
-      # Install Node.js dependencies in the services directory
-      # DO NOT use --production flag - we need all dependencies at runtime
-      npm install --legacy-peer-deps
-
-      # Verify installation
-      echo "========== Verifying installation =========="
-      echo "node_modules exists: $(test -d node_modules && echo 'YES' || echo 'NO')"
-      echo "node_modules location: $(pwd)/node_modules"
-
-      if [ -d node_modules ]; then
-        echo "node_modules contents (first 20 items):"
-        ls node_modules | head -20
-        
-        echo ""
-        echo "Checking for critical packages..."
-        echo "cheerio: $(test -d node_modules/cheerio && echo 'INSTALLED' || echo 'MISSING')"
-        echo "puppeteer: $(test -d node_modules/puppeteer && echo 'INSTALLED' || echo 'MISSING')"
-        echo "franc: $(test -d node_modules/franc && echo 'INSTALLED' || echo 'MISSING')"
-        echo "franc-min: $(test -d node_modules/franc-min && echo 'INSTALLED' || echo 'MISSING')"
-        echo "puppeteer-extra: $(test -d node_modules/puppeteer-extra && echo 'INSTALLED' || echo 'MISSING')"
-        echo "puppeteer-extra-plugin-stealth: $(test -d node_modules/puppeteer-extra-plugin-stealth && echo 'INSTALLED' || echo 'MISSING')"
-      else
-        echo "ERROR: node_modules directory not created!"
-        echo "npm install may have failed. Check npm logs above."
-        exit 1
-      fi
-
-      # Verify web_scraper.js exists
-      if [ -f web_scraper.js ]; then
-        echo "web_scraper.js found: YES"
-      else
-        echo "ERROR: web_scraper.js not found in $(pwd)"
-        ls -la
-        exit 1
-      fi
-
-      # Test the web scraper with a simple query
-      echo "Testing web scraper..."
-      node web_scraper.js "test query" || echo "Warning: web scraper test failed (may be ok if network limited)"
+echo "Checking node_modules..."
+if [ ! -d "node_modules" ] || [ ! -d "node_modules/puppeteer-extra" ]; then
+    echo "Installing Node.js dependencies..."
+    npm install --legacy-peer-deps --prefer-offline
+    echo "Node.js dependencies installed successfully"
+else
+    echo "Node.js dependencies already installed"
+fi
+SCRIPT
+      chmod +x install_node_deps.sh
 
       echo "========== Build completed successfully =========="
 
-    startCommand: uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
+    startCommand: |
+      cd /opt/render/project/src/services && \
+      ./install_node_deps.sh && \
+      uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
+    
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.7
@@ -102,5 +68,3 @@ services:
         value: 'true'
       - key: NODE_ENV
         value: production
-      - key: NODE_PATH
-        value: /opt/render/project/src/services/node_modules
