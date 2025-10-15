@@ -64,6 +64,7 @@
 import { ref } from 'vue'
 import { supabase } from 'boot/supabase'
 import { useRouter } from 'vue-router'
+import { getFrontendUrl } from 'src/utils/frontendUrl'
 
 const router = useRouter()
 const email = ref('')
@@ -99,7 +100,7 @@ async function sendResetEmail() {
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email.value, {
-    emailRedirectTo: `${window.location.origin}/resetpassword`,
+    emailRedirectTo: `${getFrontendUrl()}/resetpassword`,
   })
 
   if (error) {
