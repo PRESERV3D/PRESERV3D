@@ -950,8 +950,8 @@ document-title-2 {
 }
 
 .sucess-add-to-collection {
-  width: 25rem;
-  height: 14rem;
+  width: auto;
+  height: auto;
   border-radius: 15px !important;
   background-color: #fbf4d0 !important;
   display: flex;
@@ -959,6 +959,7 @@ document-title-2 {
   justify-content: center;
   align-items: center;
   text-align: center;
+  padding: 1rem;
 }
 
 .delete-notice {
