@@ -36,9 +36,9 @@
       @camera-click="handleScan"
     />
 
-    <!-- Document Highlights Section -->
     <div class="q-py-md q-gutter-lg">
-      <div class="box-highlights">
+      <!-- Document Highlights Section -->
+      <div v-if="!searchStore.query" class="box-highlights">
         <div class="row justify-between q-px-lg q-pt-lg q-mb-md">
           <p class="title-font-2" style="font-size: 16px; margin: 0">Document Highlights</p>
 
@@ -424,15 +424,24 @@
 
           <!-- Empty State -->
           <div
-            v-if="displayedDocuments.length === 0 && !loading"
-            class="text-center q-mt-xl q-mb-xl"
+            v-if="!loading && displayedDocuments.length === 0"
+            class="text-center q-mt-xl q-pb-xl"
           >
             <q-icon name="folder_open" size="4rem" color="grey-5" />
             <div class="text-h6 q-mt-md text-grey-6">No documents found</div>
-            <div class="text-body2 text-grey-5">Try adjusting your filters or search terms</div>
+            <div class="text-body2 text-grey-5">
+              {{
+                searchStore.query
+                  ? 'No results match your search query'
+                  : 'Try adjusting your filters or search terms'
+              }}
+            </div>
           </div>
 
-          <div class="pagination-controls justify-center">
+          <div
+            v-if="!loading && displayedDocuments.length > 0"
+            class="pagination-controls justify-center"
+          >
             <q-btn
               flat
               round
@@ -2114,7 +2123,7 @@ onBeforeUnmount(() => {
 // })
 
 const getBaseDocuments = computed(() => {
-  // If there's an active search query, ALWAYS show search results (even if empty)
+  // If there's an active search query, ONLY show search results (even if empty)
   if (searchStore.query) {
     return Array.isArray(searchStore.searchedDocuments) ? searchStore.searchedDocuments : []
   }
