@@ -36,100 +36,100 @@
       @camera-click="handleScan"
     />
 
-    <!-- Document Highlights Section -->
     <div class="q-py-md q-gutter-lg">
-      <div class="box-highlights">
-        <div class="row justify-between q-px-lg q-pt-lg q-mb-md">
-          <p class="title-font-2" style="font-size: 16px; margin: 0">Document Highlights</p>
+    <!-- Document Highlights Section -->
+    <div v-if="!searchStore.query" class="box-highlights">
+      <div class="row justify-between q-px-lg q-pt-lg q-mb-md">
+        <p class="title-font-2" style="font-size: 16px; margin: 0">Document Highlights</p>
 
-          <!-- See All Link -->
-          <router-link to="/highlights" class="see-all-link q-mt-xs">
-            See All
-            <q-icon name="arrow_forward" size="16px" class="q-ml-xs" />
-          </router-link>
-        </div>
+        <!-- See All Link -->
+        <router-link to="/highlights" class="see-all-link q-mt-xs">
+          See All
+          <q-icon name="arrow_forward" size="16px" class="q-ml-xs" />
+        </router-link>
+      </div>
 
-        <div class="row docs-gap justify-center q-py-sm">
-          <div v-for="(doc, index) in topDocuments" :key="index">
-            <div class="row q-mb-lg doc-wrapper">
-              <q-card class="highlightsdocCard">
+      <div class="row docs-gap justify-center q-py-sm">
+        <div v-for="(doc, index) in topDocuments" :key="index">
+          <div class="row q-mb-lg doc-wrapper">
+            <q-card class="highlightsdocCard">
+              <router-link
+                :to="{ name: 'view-document', params: { id: doc.id } }"
+                class="document-link"
+              >
+                <q-img
+                  :src="doc.preview_url"
+                  alt="Document Preview"
+                  class="document"
+                  loading="lazy"
+                />
+              </router-link>
+              <div class="q-py-xs doc-align-items">
+                <!-- View Icon with Count -->
+                <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
+                <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
+
+                <!-- Star Icon with Count -->
+                <q-icon
+                  :name="doc.starred ? 'star' : 'star_border'"
+                  :class="{ starred: doc.starred }"
+                  size="xs"
+                  class="action-icon star-icon"
+                  @click.stop="isAdmin ? null : toggleFavorite(doc, 'document')"
+                />
+                <span class="count-text">{{ documentsStore.starCounts[doc.id] || 0 }}</span>
+
+                <!-- Bookmark Icon -->
+                <q-icon
+                  v-if="!isAdmin"
+                  :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
+                  :class="{ bookmarked: doc.bookmarked }"
+                  size="xs"
+                  class="action-icon bookmark-icon"
+                  @click="openBookmarkDialog(doc, 'document')"
+                />
+              </div>
+            </q-card>
+
+            <div class="bg-highlights-details">
+              <div class="h-fade-title-container">
+                <div class="title-highlight fade-title">
+                  {{ doc.metadata.title }}
+                  <div class="tooltip-box">{{ doc.metadata.title }}</div>
+                </div>
+              </div>
+              <div class="sub-details">
+                {{ doc.metadata.summary }}
+              </div>
+              <div class="q-mt-xs q-mb-xs flex justify-evenly">
                 <router-link
                   :to="{ name: 'view-document', params: { id: doc.id } }"
-                  class="document-link"
+                  @click="logClick(doc.id, 'document', 'view_document')"
                 >
-                  <q-img
-                    :src="doc.preview_url"
-                    alt="Document Preview"
-                    class="document"
-                    loading="lazy"
-                  />
+                  <q-btn label="Read Now" class="now-read-btn" unelevated no-caps />
                 </router-link>
-                <div class="q-py-xs doc-align-items">
-                  <!-- View Icon with Count -->
-                  <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
-                  <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
-
-                  <!-- Star Icon with Count -->
-                  <q-icon
-                    :name="doc.starred ? 'star' : 'star_border'"
-                    :class="{ starred: doc.starred }"
-                    size="xs"
-                    class="action-icon star-icon"
-                    @click.stop="isAdmin ? null : toggleFavorite(doc, 'document')"
-                  />
-                  <span class="count-text">{{ documentsStore.starCounts[doc.id] || 0 }}</span>
-
-                  <!-- Bookmark Icon -->
-                  <q-icon
-                    v-if="!isAdmin"
-                    :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
-                    :class="{ bookmarked: doc.bookmarked }"
-                    size="xs"
-                    class="action-icon bookmark-icon"
-                    @click="openBookmarkDialog(doc, 'document')"
-                  />
-                </div>
-              </q-card>
-
-              <div class="bg-highlights-details">
-                <div class="h-fade-title-container">
-                  <div class="title-highlight fade-title">
-                    {{ doc.metadata.title }}
-                    <div class="tooltip-box">{{ doc.metadata.title }}</div>
-                  </div>
-                </div>
-                <div class="sub-details">
-                  {{ doc.metadata.summary }}
-                </div>
-                <div class="q-mt-xs q-mb-xs flex justify-evenly">
-                  <router-link
-                    :to="{ name: 'view-document', params: { id: doc.id } }"
-                    @click="logClick(doc.id, 'document', 'view_document')"
-                  >
-                    <q-btn label="Read Now" class="now-read-btn" unelevated no-caps />
-                  </router-link>
-                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Box Category -->
-      <div class="box-category">
-        <div class="q-pa-lg">
-          <div class="row q-col-gutter-md items-center justify-between">
-            <div class="title-font-2" style="font-size: 16px; margin-top: 0">Category</div>
-            <div class="row q-gutter-sm col-auto">
-              <!-- Filter Section -->
-              <q-btn-dropdown
-                outline
-                color="black"
-                label="Filter"
-                icon="filter_list"
-                size="sm"
-                class="artifact-btn-style"
-              >
+    <!-- Box Category -->
+    <div class="box-category">
+      <div class="q-pa-lg">
+        <div class="row q-col-gutter-md items-center justify-between">
+          <div class="title-font-2" style="font-size: 16px; margin-top: 0">Category</div>
+          <div class="row q-gutter-sm col-auto">
+            <!-- Filter Section -->
+            <q-btn-dropdown
+              outline
+              color="black"
+              label="Filter"
+              icon="filter_list"
+              size="sm"
+              class="artifact-btn-style"
+            >
                 <q-list style="width: 40rem">
                   <div class="row q-pa-md">
                     <!-- Authors Column (Left) -->
@@ -424,15 +424,17 @@
 
           <!-- Empty State -->
           <div
-            v-if="displayedDocuments.length === 0 && !loading"
-            class="text-center q-mt-xl q-mb-xl"
+            v-if="!loading && displayedDocuments.length === 0"
+            class="text-center q-mt-xl q-pb-xl"
           >
             <q-icon name="folder_open" size="4rem" color="grey-5" />
             <div class="text-h6 q-mt-md text-grey-6">No documents found</div>
-            <div class="text-body2 text-grey-5">Try adjusting your filters or search terms</div>
+            <div class="text-body2 text-grey-5">
+              {{ searchStore.query ? 'No results match your search query' : 'Try adjusting your filters or search terms' }}
+            </div>
           </div>
 
-          <div class="pagination-controls justify-center">
+          <div v-if="!loading && displayedDocuments.length > 0" class="pagination-controls justify-center">
             <q-btn
               flat
               round
@@ -2110,12 +2112,12 @@ onBeforeUnmount(() => {
 // })
 
 const getBaseDocuments = computed(() => {
-  // Prefer filtered/search results if available
-  if (Array.isArray(searchStore.searchedDocuments) && searchStore.searchedDocuments.length > 0) {
-    return searchStore.searchedDocuments
+  // If there's an active search query, ONLY show search results (even if empty)
+  if (searchStore.query) {
+    return Array.isArray(searchStore.searchedDocuments) ? searchStore.searchedDocuments : []
   }
 
-  // Otherwise, show all filtered documents
+  // Otherwise, show filtered documents
   if (
     Array.isArray(documentsStore.filteredDocuments) &&
     documentsStore.filteredDocuments.length > 0
