@@ -1479,9 +1479,21 @@ async def related_links(
     date: str = ""
 ):
     try:
-        # Get the directory of the current file
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        script_path = os.path.join(script_dir, "web_scraper.js")
+        script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web_scraper.js")
+
+        # Verify both script and node_modules exist
+        if not os.path.exists(script_path):
+            return {
+                "links": [], 
+                "error": f"web_scraper.js not found at {script_path}"
+            }
+        
+        node_modules_path = os.path.join(script_dir, 'node_modules')
+        if not os.path.exists(node_modules_path):
+            return {
+                "links": [],
+                "error": f"node_modules not found. This usually means the build didn't complete properly. Please redeploy the service."
+            }
         
         # Debug logging
         print(f"Script directory: {script_dir}")
