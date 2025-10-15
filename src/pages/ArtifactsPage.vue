@@ -395,7 +395,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch, onActivated } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, onActivated } from 'vue'
 import { useModelStore } from 'stores/modelStore'
 import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
@@ -968,6 +968,9 @@ onMounted(async () => {
   try {
     if (!searchStore.query) {
       await fetchAllArtifacts()
+    } else {
+      console.log('🔍 Search query detected:', searchStore.query)
+      console.log('📊 Search results ready:', searchStore.searchedModels.length, 'artifacts')
     }
 
     await modelStore.fetchViewCounts()
@@ -998,9 +1001,10 @@ onActivated(async () => {
   }
 })
 
-onUnmounted(() => {
-  searchStore.clear()
-})
+// Don't clear search when unmounting - keep search state persistent
+// onUnmounted(() => {
+//   searchStore.clear()
+// })
 
 // Upload
 const metadata = ref({
@@ -1824,12 +1828,12 @@ onBeforeUnmount(() => {
 })
 
 const getBaseModels = computed(() => {
-  // Prefer filtered/search results if available
-  if (Array.isArray(searchStore.searchedModels) && searchStore.searchedModels.length > 0) {
-    return searchStore.searchedModels
+  // If there's an active search query, ALWAYS show search results (even if empty)
+  if (searchStore.query) {
+    return Array.isArray(searchStore.searchedModels) ? searchStore.searchedModels : []
   }
 
-  // Otherwise, show all filtered documents
+  // Otherwise, show filtered models
   if (Array.isArray(modelStore.filteredModels) && modelStore.filteredModels.length > 0) {
     return modelStore.filteredModels
   }

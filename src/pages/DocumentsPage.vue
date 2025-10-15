@@ -478,7 +478,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, onBeforeUnmount, watch, computed, onActivated } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed, onActivated } from 'vue'
 import { useQuasar } from 'quasar'
 import { useDocumentsStore } from 'stores/documentsStore'
 import { useSearchStore } from 'stores/searchStore'
@@ -587,6 +587,9 @@ onMounted(async () => {
 
   if (!searchStore.query) {
     await fetchAllDocuments()
+  } else {
+    console.log('🔍 Search query detected:', searchStore.query)
+    console.log('📊 Search results ready:', searchStore.searchedDocuments.length, 'documents')
   }
 
   // Handle scanned file from DocumentScannerPage
@@ -630,9 +633,10 @@ onActivated(async () => {
   }
 })
 
-onUnmounted(() => {
-  searchStore.clear()
-})
+// Don't clear search when unmounting - keep search state persistent
+// onUnmounted(() => {
+//   searchStore.clear()
+// })
 
 function showNotifyDialog(title, message) {
   notifyDialogTitle.value = title
@@ -2110,12 +2114,12 @@ onBeforeUnmount(() => {
 // })
 
 const getBaseDocuments = computed(() => {
-  // Prefer filtered/search results if available
-  if (Array.isArray(searchStore.searchedDocuments) && searchStore.searchedDocuments.length > 0) {
-    return searchStore.searchedDocuments
+  // If there's an active search query, ALWAYS show search results (even if empty)
+  if (searchStore.query) {
+    return Array.isArray(searchStore.searchedDocuments) ? searchStore.searchedDocuments : []
   }
 
-  // Otherwise, show all filtered documents
+  // Otherwise, show filtered documents
   if (
     Array.isArray(documentsStore.filteredDocuments) &&
     documentsStore.filteredDocuments.length > 0

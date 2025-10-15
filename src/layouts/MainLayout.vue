@@ -481,7 +481,6 @@ const searchLoading = ref(false)
 
 const searchType = ref('documents')
 
-
 // Advanced Search Form Data
 const advancedSearch = ref({
   field: '',
@@ -702,7 +701,8 @@ const performSearch = async () => {
   modelStore.resetFilters()
   clearFilters()
 
-  const query = search.value
+  // Use search input value, or fall back to existing query in store (for dropdown changes)
+  const query = search.value || searchStore.query
   if (!query.trim()) {
     searchStore.clear()
     return
@@ -716,15 +716,14 @@ const performSearch = async () => {
     targetRoute = '/documents'
   }
 
-  if (route.path !== targetRoute) {
-    searchStore.clearAll()
-    await router.push(targetRoute) // Wait for navigation to complete
-    return
-  }
-
-  // Set store search type based on dropdown selection
+  // Perform search FIRST, then navigate if needed
   await searchStore.search(query, searchType.value)
   console.log('Search performed:', query, searchType.value)
+
+  // Navigate to the appropriate page if not already there
+  if (route.path !== targetRoute) {
+    await router.push(targetRoute)
+  }
 
   // search.value = ''
 }
@@ -929,8 +928,12 @@ onUnmounted(() => {
 watch(
   () => route.name,
   (newRoute, oldRoute) => {
-    // Only clear if leaving from artifacts/documents
+    // Only clear if leaving from artifacts/documents to a different page (not when switching between them)
     if (['artifacts', 'documents'].includes(oldRoute)) {
+      // Don't clear if switching between artifacts and documents
+      if (['artifacts', 'documents'].includes(newRoute)) {
+        return
+      }
       // Only clear if there is an actual query value
       if (search.value && search.value.trim() !== '') {
         search.value = ''
@@ -952,10 +955,7 @@ watch(
 
     if (newPath === '/') {
       activeItem.value = 'home'
-    } else if (
-      newPath.includes('home') ||
-      newPath.includes('admindash')
-    ) {
+    } else if (newPath.includes('home') || newPath.includes('admindash')) {
       activeItem.value = 'home'
     } else if (newPath.includes('appointment')) {
       activeItem.value = 'appointment'
