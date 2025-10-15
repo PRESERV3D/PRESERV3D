@@ -1479,8 +1479,9 @@ async def related_links(
     date: str = ""
 ):
     try:
-        script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web_scraper.js")
-
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(script_dir, "web_scraper.js")
+        
         # Verify both script and node_modules exist
         if not os.path.exists(script_path):
             return {
