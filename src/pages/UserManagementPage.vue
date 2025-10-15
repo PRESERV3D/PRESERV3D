@@ -2566,83 +2566,76 @@ async function processExtensionRequest() {
   isProcessingExtension.value = true
 
   try {
-    // Update account_extensions status
-    const { error: updateError } = await supabase
-      .from('account_extensions')
-      .update({
-        extension_status: action,
-        reviewed_by: adminName,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq('id', row.id)
+    const isApproved = action === 'Approved'
+    const timestamp = new Date().toISOString()
 
-    if (updateError) throw updateError
+    // Fetch visitor data once upfront (we need it for both approval and rejection)
+    const { data: visitorData, error: visitorFetchError } = await supabase
+      .from('approved_visitors')
+      .select('user_id, end_date')
+      .eq('approval_id', row.approval_id)
+      .single()
 
-    // If approved, update the visitor's end_date in approved_visitors
-    if (action === 'Approved') {
-      const { error: visitorUpdateError } = await supabase
-        .from('approved_visitors')
+    if (visitorFetchError) throw visitorFetchError
+
+    // Build parallel operations array
+    const operations = [
+      // 1. Update extension status
+      supabase
+        .from('account_extensions')
         .update({
-          end_date: row.extended_end_date,
+          extension_status: action,
+          reviewed_by: adminName,
+          reviewed_at: timestamp,
         })
-        .eq('approval_id', row.approval_id)
+        .eq('id', row.id),
+    ]
 
-      if (visitorUpdateError) throw visitorUpdateError
-
-      // Create notification for the visitor
-      try {
-        const notificationMessage = `Your extension request has been approved by ${adminName || 'the administrator'}. Your new access period ends on ${new Date(row.extended_end_date).toLocaleDateString()}.`
-
-        // Get visitor's user_id from approved_visitors
-        const { data: visitorData } = await supabase
+    // 2. If approved, update visitor's end_date
+    if (isApproved) {
+      operations.push(
+        supabase
           .from('approved_visitors')
-          .select('user_id')
-          .eq('approval_id', row.approval_id)
-          .single()
-
-        if (visitorData?.user_id) {
-          await createNotification(visitorData.user_id, notificationMessage, 'visitor_registration')
-        }
-      } catch (notifErr) {
-        console.error('Failed to create notification:', notifErr)
-      }
-
-      $q.notify({
-        type: 'positive',
-        message: 'Extension request approved',
-        caption: `Visitor access extended to ${new Date(row.extended_end_date).toLocaleDateString()}`,
-      })
-    } else {
-      // Create notification for rejection
-      try {
-        const notificationMessage = `Your extension request has been rejected by ${adminName || 'the administrator'}.`
-
-        const { data: visitorData } = await supabase
-          .from('approved_visitors')
-          .select('user_id')
-          .eq('approval_id', row.approval_id)
-          .single()
-
-        if (visitorData?.user_id) {
-          await createNotification(visitorData.user_id, notificationMessage, 'visitor_registration')
-        }
-      } catch (notifErr) {
-        console.error('Failed to create notification:', notifErr)
-      }
-
-      $q.notify({
-        type: 'info',
-        message: 'Extension request rejected',
-        caption: 'Visitor has been notified',
-      })
+          .update({ end_date: row.extended_end_date })
+          .eq('approval_id', row.approval_id),
+      )
     }
 
+    // Execute database operations in parallel
+    const results = await Promise.all(operations)
+
+    // Check for errors
+    const dbError = results.find((r) => r.error)?.error
+    if (dbError) throw dbError
+
+    // Create notification (fire and forget - don't wait for it)
+    if (visitorData?.user_id) {
+      const notificationMessage = isApproved
+        ? `Your extension request has been approved by ${adminName || 'the administrator'}. Your new access period ends on ${new Date(row.extended_end_date).toLocaleDateString()}.`
+        : `Your extension request has been rejected by ${adminName || 'the administrator'}.`
+
+      // Fire and forget - no await
+      createNotification(visitorData.user_id, notificationMessage, 'visitor_registration').catch(
+        (err) => console.error('Failed to create notification:', err),
+      )
+    }
+
+    // Show notification
+    $q.notify({
+      type: isApproved ? 'positive' : 'info',
+      message: isApproved ? 'Extension request approved' : 'Extension request rejected',
+      caption: isApproved
+        ? `Visitor access extended to ${new Date(row.extended_end_date).toLocaleDateString()}`
+        : 'Visitor has been notified',
+    })
+
+    // Reset state
     showExtensionDialog.value = false
     extensionTarget.value = null
     extensionAction.value = ''
 
-    // Refresh the data
-    await fetchAllUsers()
+    // Refresh data in background
+    fetchAllUsers().catch((err) => console.error('Failed to refresh users:', err))
   } catch (error) {
     console.error('Error processing extension request:', error)
     $q.notify({

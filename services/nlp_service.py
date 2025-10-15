@@ -1645,60 +1645,7 @@ async def related_links(
             "error": f"Unexpected error: {str(e)}",
             "type": type(e).__name__
         }
-
-
-# Also add a debug endpoint to check the environment
-@app.get("/debug/environment")
-async def debug_environment():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
     
-    info = {
-        "script_dir": script_dir,
-        "files_in_dir": os.listdir(script_dir)[:20] if os.path.exists(script_dir) else [],
-        "node_modules_exists": os.path.exists(os.path.join(script_dir, 'node_modules')),
-        "web_scraper_exists": os.path.exists(os.path.join(script_dir, 'web_scraper.js')),
-        "package_json_exists": os.path.exists(os.path.join(script_dir, 'package.json')),
-    }
-    
-    # Check Node.js
-    try:
-        node_check = subprocess.run(
-            ["node", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        info["node_version"] = node_check.stdout.strip()
-        info["node_available"] = node_check.returncode == 0
-    except Exception as e:
-        info["node_available"] = False
-        info["node_error"] = str(e)
-    
-    # Check npm
-    try:
-        npm_check = subprocess.run(
-            ["npm", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        info["npm_version"] = npm_check.stdout.strip()
-        info["npm_available"] = npm_check.returncode == 0
-    except Exception as e:
-        info["npm_available"] = False
-        info["npm_error"] = str(e)
-    
-    # Check for specific packages
-    node_modules_path = os.path.join(script_dir, 'node_modules')
-    if os.path.exists(node_modules_path):
-        packages = ["cheerio", "puppeteer", "franc", "franc-min", "puppeteer-extra"]
-        info["installed_packages"] = {
-            pkg: os.path.exists(os.path.join(node_modules_path, pkg))
-            for pkg in packages
-        }
-    
-    return info
- 
 @app.post("/extract-text")
 async def extract_text_from_pdf(
     file: UploadFile = File(None),   
