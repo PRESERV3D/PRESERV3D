@@ -5,92 +5,24 @@ services:
     region: singapore
     plan: free
     rootDir: services
-    buildCommand: |
-      set -e
-      echo "========== Starting build process =========="
+    buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm && npm install --legacy-peer-deps
+    startCommand: uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
 
-      # Install Python dependencies
-      echo "Installing Python dependencies..."
-      pip install -r requirements.txt
-      python -m spacy download en_core_web_sm
+    # System packages - Render will install these with proper permissions
+    nativeEnvironments:
+      - name: python
+        version: 3.11.7
+      - name: node
+        version: 20.18.1
 
-      # Install Node.js and system dependencies
-      echo "Installing Node.js and system dependencies..."
-      curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-      apt-get update
-      apt-get install -y nodejs chromium chromium-sandbox fonts-liberation libnss3 libxss1 libasound2
-
-      echo "Node.js version: $(node --version)"
-      echo "npm version: $(npm --version)"
-
-      # Verify package.json exists
-      if [ ! -f "package.json" ]; then
-        echo "ERROR: package.json not found in $(pwd)"
-        ls -la
-        exit 1
-      fi
-
-      # Install Node.js dependencies during build
-      echo "Installing Node.js dependencies..."
-      npm ci --legacy-peer-deps || npm install --legacy-peer-deps
-
-      # Verify critical packages are installed
-      if [ ! -d "node_modules/puppeteer-extra" ]; then
-        echo "ERROR: puppeteer-extra not found after npm install"
-        ls -la
-        exit 1
-      fi
-
-      echo "Node modules installed at: $(pwd)/node_modules"
-      ls -la node_modules/ | head -20
-
-      # Create a marker file to indicate successful build
-      echo "Build completed at $(date)" > .build_complete
-
-      echo "========== Build completed successfully =========="
-
-    startCommand: |
-      set -e
-      echo "========== Starting service =========="
-      echo "Current directory: $(pwd)"
-      echo "Node.js version: $(node --version)"
-      echo "npm version: $(npm --version)"
-      echo "Listing current directory:"
-      ls -la
-
-      # Check if build completed successfully
-      if [ -f ".build_complete" ]; then
-        echo "Build marker found: $(cat .build_complete)"
-      else
-        echo "WARNING: No build marker found!"
-      fi
-
-      # Always ensure node_modules exists
-      if [ ! -d "node_modules" ]; then
-        echo "ERROR: node_modules directory not found!"
-        echo "Installing Node.js dependencies now..."
-        npm install --legacy-peer-deps
-      else
-        echo "node_modules directory exists"
-        echo "Checking critical dependencies..."
-        
-        # Check for critical packages
-        for pkg in puppeteer-extra puppeteer cheerio franc; do
-          if [ ! -d "node_modules/$pkg" ]; then
-            echo "Missing package: $pkg - reinstalling all dependencies"
-            npm install --legacy-peer-deps
-            break
-          else
-            echo "✓ $pkg found"
-          fi
-        done
-      fi
-
-      echo "Final node_modules check:"
-      ls -la node_modules/ | head -10
-
-      echo "========== Starting uvicorn =========="
-      uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
+    # These get installed automatically by Render
+    systemPackages:
+      - chromium
+      - chromium-sandbox
+      - fonts-liberation
+      - libnss3
+      - libxss1
+      - libasound2
 
     envVars:
       - key: PYTHON_VERSION
@@ -105,11 +37,5 @@ services:
         sync: false
       - key: FRONTEND_URL
         value: https://preserv3d.vercel.app
-      - key: PUPPETEER_EXECUTABLE_PATH
-        value: /usr/bin/chromium
-      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: 'true'
       - key: NODE_ENV
         value: production
-      - key: RENDER
-        value: 'true'

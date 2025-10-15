@@ -2569,7 +2569,7 @@ async function processExtensionRequest() {
     const isApproved = action === 'Approved'
     const timestamp = new Date().toISOString()
 
-    // Fetch visitor data once upfront (we need it for both approval and rejection)
+    // Fetch visitor data once upfront
     const { data: visitorData, error: visitorFetchError } = await supabase
       .from('approved_visitors')
       .select('user_id, end_date')
