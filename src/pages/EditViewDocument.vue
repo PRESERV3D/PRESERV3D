@@ -291,7 +291,7 @@
               </q-dialog>
 
               <div class="q-ma-md link" @click="showRelatedDialog = true">Show Related Links</div>
-              <!-- q-dialog for related links -->
+              <!-- Related Links Dialog -->
               <q-dialog v-model="showRelatedDialog" persistent>
                 <q-card class="related-box">
                   <q-card-section
@@ -305,61 +305,120 @@
                     <q-spinner color="primary" size="40px" />
                   </div>
                   <div v-else class="q-pt-md q-px-md column items-start">
-                    <!-- Links List with Drag -->
-                    <div
-                      v-for="(link, index) in links"
-                      :key="link.id"
-                      class="row items-center q-mb-xs full-width draggable-item"
-                      draggable="true"
-                      @dragstart="dragStart(index)"
-                      @dragover.prevent
-                      @drop="drop(index)"
-                    >
-                      <!-- Drag handle -->
-                      <q-icon name="menu" class="q-mr-md cursor-pointer" size="xs" color="black" />
-
-                      <!-- Link (inline beside icon) -->
-                      <div class="link-style" @click="openLink(link.url)">
-                        {{ link.title || link.url }}
+                    <!-- Links List with Drag and Edit -->
+                    <div v-for="(link, index) in links" :key="link.id" class="full-width q-mb-sm">
+                      <div v-if="editingLinkIndex === index" class="column q-gutter-sm q-pa-sm">
+                        <!-- Edit Mode -->
+                        <q-input v-model="editingLink.title" label="Link Title" outlined dense />
+                        <q-input v-model="editingLink.url" label="Link URL" outlined dense />
+                        <div class="row justify-end q-gutter-sm">
+                          <q-btn flat dense label="Cancel" size="sm" @click="cancelEditLink" />
+                          <q-btn
+                            flat
+                            dense
+                            label="Save"
+                            color="primary"
+                            size="sm"
+                            @click="saveEditLink(index)"
+                          />
+                        </div>
                       </div>
 
-                      <!-- Spacer pushes delete icon to far right -->
-                      <q-space />
+                      <div
+                        v-else
+                        class="row items-center q-mb-xs full-width draggable-item"
+                        draggable="true"
+                        @dragstart="dragStart(index)"
+                        @dragover.prevent
+                        @drop="drop(index)"
+                      >
+                        <!-- Drag handle -->
+                        <q-icon
+                          name="menu"
+                          class="q-mr-md cursor-pointer"
+                          size="xs"
+                          color="black"
+                        />
 
-                      <!-- Delete button -->
-                      <q-btn
-                        flat
-                        round
-                        icon="delete"
-                        color="negative"
-                        size="sm"
-                        @click="deleteLink(index)"
-                      />
+                        <!-- Link Title (clickable) -->
+                        <div class="link-style" @click="openLink(link.url)">
+                          {{ link.title || link.url }}
+                        </div>
+                        <q-space />
+
+                        <!-- Edit button -->
+                        <q-btn
+                          flat
+                          round
+                          icon="edit"
+                          color="primary"
+                          size="sm"
+                          @click="startEditLink(index)"
+                        />
+
+                        <!-- Delete button -->
+                        <q-btn
+                          flat
+                          round
+                          icon="delete"
+                          color="negative"
+                          size="sm"
+                          @click="deleteLink(index)"
+                        />
+                      </div>
                     </div>
 
-                    <!-- Add link input -->
-                    <q-input
-                      v-model="newLink"
-                      placeholder="Add new link"
-                      borderless
-                      dense
-                      class="q-mt-sm"
-                      @keyup.enter="addLink"
-                    >
-                      <template v-slot:prepend>
+                    <!-- Add New Link -->
+                    <div v-if="showAddLinkForm" class="column q-gutter-sm q-pa-sm full-width">
+                      <q-input
+                        v-model="newLinkTitle"
+                        label="Link Title"
+                        outlined
+                        dense
+                        placeholder="Enter link title"
+                      />
+                      <q-input
+                        v-model="newLink"
+                        label="Link URL"
+                        outlined
+                        dense
+                        placeholder="Enter link URL"
+                        lazy-rules
+                        :rules="[
+                          (val) =>
+                            !val ||
+                            /^(https?:\/\/)?([\w-]+(\.[\w-]+)+)(\/[\w-./?%&=]*)?$/.test(val) ||
+                            'Enter a valid URL',
+                        ]"
+                      />
+                      <div class="row justify-end q-gutter-sm">
+                        <q-btn flat dense label="Cancel" size="sm" @click="cancelAddLink" />
                         <q-btn
-                          round
+                          flat
                           dense
-                          outline
-                          color="black"
-                          icon="add"
-                          size="xs"
+                          label="Add"
+                          color="primary"
+                          size="sm"
                           @click="addLink"
+                          :disable="!newLink.trim() || !newLinkTitle.trim()"
                         />
-                      </template>
-                    </q-input>
+                      </div>
+                    </div>
+
+                    <!-- Add Link Button -->
+                    <q-btn
+                      v-if="!showAddLinkForm"
+                      flat
+                      dense
+                      icon="add"
+                      label="Add New Link"
+                      class="q-mt-sm"
+                      @click="showAddLinkForm = true"
+                      @keyup.up="showAddLinkForm = true"
+                    />
                   </div>
-                  <!--Save and Cancel-->
+
+                  <!-- Save and Cancel Actions -->
                   <q-card-actions align="right">
                     <template v-if="hasChanges">
                       <q-btn
@@ -386,7 +445,16 @@
                           )
                         "
                       />
-                      <q-btn label="Save" class="btn-save" flat @click="saveRelatedLinks" />
+                      <q-btn
+                        v-if="!savingRelatedLinks"
+                        label="Save"
+                        class="btn-save"
+                        flat
+                        @click="saveRelatedLinks"
+                      />
+                      <div v-if="savingRelatedLinks" class="q-pa-sm">
+                        <q-spinner-dots size="2em" color="primary" />
+                      </div>
                     </template>
                     <template v-else>
                       <q-btn
@@ -577,7 +645,7 @@ async function saveChanges() {
 
     let changes = getChanges(oldData, newData)
 
-    if (Object.keys(changes).length === 0) {
+    if (Object.keys(changes).length === 0 && !hasChanges.value) {
       showNotifyDialog('Info', 'No changes made.')
       return
     }
@@ -1094,45 +1162,57 @@ watch(
 // Related Links
 const showRelatedDialog = ref(false)
 const newLink = ref('')
-const links = ref([]) // starts empty
+const newLinkTitle = ref('')
+const showAddLinkForm = ref(false)
+const links = ref([])
 const hasChanges = ref(false)
 const loadingRelatedLinks = ref(false)
+const savingRelatedLinks = ref(false)
 let draggedIndex = null
+
+// Edit link state
+const editingLinkIndex = ref(null)
+const editingLink = ref({ title: '', url: '' })
+
+function startEditLink(index) {
+  editingLinkIndex.value = index
+  editingLink.value = {
+    title: links.value[index].title || '',
+    url: links.value[index].url || '',
+  }
+}
+
+function saveEditLink(index) {
+  if (editingLink.value.title.trim() && editingLink.value.url.trim()) {
+    links.value[index] = {
+      ...links.value[index],
+      title: editingLink.value.title.trim(),
+      url: editingLink.value.url.trim(),
+    }
+    hasChanges.value = true
+    cancelEditLink()
+  }
+}
+
+function cancelEditLink() {
+  editingLinkIndex.value = null
+  editingLink.value = { title: '', url: '' }
+}
 
 async function fetchRelatedLinks(title, author, categories, date) {
   try {
     console.log('Fetching related links for:', title, author, categories, date)
-    console.log('Using endpoint:', getNlpEndpoint('/related-links'))
-
     loadingRelatedLinks.value = true
 
     const endpoint = getNlpEndpoint('/related-links')
 
     const { data } = await axios.get(endpoint, {
-      params: {
-        title,
-        author,
-        categories,
-        date,
-      },
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      params: { title, author, categories, date },
+      headers: { 'Content-Type': 'application/json' },
     })
 
-    console.log('Received data:', data)
-
-    // Check if data and data.links exist
-    if (!data || !data.links) {
-      console.warn('No links returned from API')
-      links.value = []
-      hasChanges.value = false
-      return
-    }
-
-    // Validate that data.links is an array
-    if (!Array.isArray(data.links)) {
-      console.error('API returned non-array links:', data.links)
+    if (!data || !data.links || !Array.isArray(data.links)) {
+      console.warn('No valid links returned from API')
       links.value = []
       hasChanges.value = false
       return
@@ -1146,27 +1226,12 @@ async function fetchRelatedLinks(title, author, categories, date) {
 
     hasChanges.value = true
     showRelatedDialog.value = true
-
-    console.log('Successfully mapped links:', links.value)
   } catch (err) {
     console.error('Error fetching related links:', err)
-
-    // More detailed error logging
-    if (err.response) {
-      console.error('Response error:', err.response.status, err.response.data)
-    } else if (err.request) {
-      console.error('No response received:', err.request)
-    } else {
-      console.error('Request setup error:', err.message)
-    }
-
-    // Show user-friendly error
     $q.notify({
       type: 'negative',
       message: 'Failed to fetch related links. Please try again.',
-      caption: err.message,
     })
-
     links.value = []
     hasChanges.value = false
   } finally {
@@ -1175,11 +1240,23 @@ async function fetchRelatedLinks(title, author, categories, date) {
 }
 
 function addLink() {
-  if (newLink.value.trim() !== '') {
-    links.value.push({ id: Date.now(), url: newLink.value.trim() })
+  if (newLink.value.trim() && newLinkTitle.value.trim()) {
+    links.value.push({
+      id: Date.now(),
+      title: newLinkTitle.value.trim(),
+      url: newLink.value.trim(),
+    })
     newLink.value = ''
+    newLinkTitle.value = ''
+    showAddLinkForm.value = false
     hasChanges.value = true
   }
+}
+
+function cancelAddLink() {
+  newLink.value = ''
+  newLinkTitle.value = ''
+  showAddLinkForm.value = false
 }
 
 function deleteLink(index) {
@@ -1202,24 +1279,37 @@ function drop(index) {
 }
 
 async function saveRelatedLinks() {
+  savingRelatedLinks.value = true
   try {
-    // Save directly to Supabase
+    // Clean the links data before saving
+    const cleanedLinks = links.value.map((link) => ({
+      title: link.title || '',
+      url: link.url || '',
+    }))
+
     const { error } = await supabase
       .from('documents_metadata')
       .update({
-        related_links: links.value,
+        related_links: cleanedLinks,
       })
       .eq('id', route.params.id)
 
     if (error) throw error
+    else {
+      $q.notify({ type: 'positive', message: 'Related links saved successfully' })
+      hasChanges.value = true
+      showRelatedDialog.value = false
+      showAddLinkForm.value = false
+      editingLinkIndex.value = null
+      savingRelatedLinks.value = false
+    }
 
-    console.log('Related links saved successfully:', links.value)
-
-    hasChanges.value = false
-    showRelatedDialog.value = false
+    if (doc.value) {
+      doc.value.related_links = cleanedLinks
+    }
   } catch (err) {
-    console.error('Error fetching/saving related links:', err)
-    console.log('Error saving related links:', err)
+    console.error('Error saving related links:', err)
+    $q.notify({ type: 'negative', message: 'Failed to save related links' })
   }
 }
 
@@ -1230,7 +1320,6 @@ async function cancelChanges() {
     .eq('id', route.params.id)
     .single()
 
-  // Add null/undefined check
   if (data && data.related_links && Array.isArray(data.related_links)) {
     links.value = data.related_links.map((link, idx) => ({
       id: link.id || Date.now() + idx,
@@ -1243,6 +1332,8 @@ async function cancelChanges() {
 
   hasChanges.value = false
   showRelatedDialog.value = false
+  savingRelatedLinks.value = false
+  showAddLinkForm.value = false
 }
 </script>
 
@@ -1321,6 +1412,36 @@ async function cancelChanges() {
 
 .author-input {
   width: 17rem;
+}
+
+/* Related Links */
+.link-style {
+  cursor: pointer;
+  color: var(--q-primary);
+  text-decoration: none;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-style:hover {
+  text-decoration: underline;
+}
+
+.draggable-item {
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.draggable-item:hover {
+  background-color: #ffffe9;
+}
+
+.related-box {
+  min-width: 500px;
+  max-width: 600px;
 }
 
 /* Responsivesness */
