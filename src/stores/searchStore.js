@@ -88,11 +88,18 @@ export const useSearchStore = defineStore('search', {
         supabaseQuery = supabaseQuery.or(orConditions)
       }
 
-      // intitle: keyword (matches exact word on metadata.title) - with spaces working but words should be next to each other / not working for word in different order
+      // intitle: keyword (matches exact word on metadata.title) - exact word match only
       else if (query.includes('intitle:')) {
         const titleTerm = query.match(/intitle:([^\n\r]+)/)?.[1]?.trim()
         if (titleTerm) {
-          supabaseQuery = supabaseQuery.ilike('metadata->>title', `%${titleTerm}%`)
+          // Build OR condition to match exact word with spaces, punctuation, or at boundaries
+          const orConditions = [
+            `metadata->>title.ilike.${titleTerm} %`, // word at start
+            `metadata->>title.ilike.% ${titleTerm}`, // word at end
+            `metadata->>title.ilike.% ${titleTerm} %`, // word in middle
+            `metadata->>title.eq.${titleTerm}`, // exact match (single word)
+          ].join(',')
+          supabaseQuery = supabaseQuery.or(orConditions)
         }
       }
 
@@ -121,9 +128,16 @@ export const useSearchStore = defineStore('search', {
         supabaseQuery = supabaseQuery.ilike('search_text', `%${stem}%`)
       }
 
-      // Fallback to default ilike match - working but words should be next to each other
+      // Fallback to exact word match on search_text
       else {
-        supabaseQuery = supabaseQuery.ilike('search_text', `%${query}%`)
+        // Build OR condition to match exact word with spaces, punctuation, or at boundaries
+        const orConditions = [
+          `search_text.ilike.${query} %`, // word at start
+          `search_text.ilike.% ${query}`, // word at end
+          `search_text.ilike.% ${query} %`, // word in middle
+          `search_text.eq.${query}`, // exact match (single word)
+        ].join(',')
+        supabaseQuery = supabaseQuery.or(orConditions)
       }
 
       const { data, error } = await supabaseQuery
