@@ -303,8 +303,8 @@ const pagination = ref({ rowsPerPage: 10 })
 const loading = ref(false)
 
 const columns = [
-  { name: 'title', label: 'Title', field: 'title', align: 'center' },
-  { name: 'issues', label: 'Issues', field: 'issues', align: 'center' },
+  { name: 'title', label: 'Title', field: 'title', align: 'left' },
+  { name: 'issues', label: 'Issues', field: 'issues', align: 'left' },
   { name: 'resolution', label: 'Resolution', field: 'resolution', align: 'center' },
   { name: 'status', label: 'Status', field: 'status', align: 'center' },
   { name: 'actions', label: 'Actions', field: 'actions', align: 'center' },
