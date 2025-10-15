@@ -253,7 +253,7 @@
                     </div>
 
                     <!-- Star Icon with Count -->
-                    <div class="icon-with-count">
+                    <div class="icon-with-count" :class="{ 'hidden-icon': isAdmin }">
                       <q-icon
                         :name="model.starred ? 'star' : 'star_border'"
                         class="action-icon star-icon"
@@ -291,13 +291,15 @@
         </div>
 
         <!-- Empty State -->
-        <div v-if="displayedModels.length === 0 && !loading" class="text-center q-mt-xl">
+        <div v-if="!loading && displayedModels.length === 0" class="text-center q-mt-xl q-pb-xl">
           <q-icon name="inventory_2" size="4rem" color="grey-5" />
           <div class="text-h6 q-mt-md text-grey-6">No artifacts found</div>
-          <div class="text-body2 text-grey-5">Try adjusting your filters or search terms</div>
+          <div class="text-body2 text-grey-5">
+            {{ searchStore.query || search ? 'No results match your search query' : 'Try adjusting your filters or search terms' }}
+          </div>
         </div>
 
-        <div class="pagination-controls justify-center">
+        <div v-if="!loading && displayedModels.length > 0" class="pagination-controls justify-center">
           <q-btn
             flat
             round
@@ -309,15 +311,15 @@
           />
 
           <span class="pagination-numbers">
-            <span
-              v-for="page in modelsTotalPages"
-              :key="page"
-              @click="goToModelsPage(page)"
-              :class="['page-number', { active: page === modelsCurrentPage }]"
-            >
-              {{ page }}
-            </span>
-          </span>
+    <span
+      v-for="page in modelsTotalPages"
+      :key="page"
+      @click="goToModelsPage(page)"
+      :class="['page-number', { active: page === modelsCurrentPage }]"
+    >
+      {{ page }}
+    </span>
+  </span>
 
           <q-btn
             flat
@@ -395,7 +397,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch, onActivated } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, watch } from 'vue'
 import { useModelStore } from 'stores/modelStore'
 import { useSearchStore } from 'stores/searchStore'
 import { useUserStore } from 'stores/user'
@@ -452,7 +454,7 @@ const userCollections = ref([])
 const selectedCollections = ref([])
 const existingCollectionIds = ref([])
 
-// Notification dialog sate
+// Notification dialog state
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
@@ -462,14 +464,13 @@ const notifyDialogMessage = ref('')
 //   return searchStore.query ? searchStore.searchedModels : modelStore.filteredModels
 // })
 
-// Safe access to profile
-if (!userStore.profile && userStore.session?.user?.id) {
-  userStore.fetchProfile(userStore.session.user.id)
+if (userStore.profile.role === undefined) {
+  userStore.fetchProfile()
 }
 
-const userRole = computed(() => userStore.profile?.role ?? null)
-const isAdmin = computed(() => userRole.value === 'admin')
-const userType = computed(() => userStore.profile?.user_type ?? 'Unknown')
+const userRole = userStore.profile.role
+const isAdmin = computed(() => userRole === 'admin')
+const userType = computed(() => userStore.profile.user_type || 'Unknown')
 
 function startRotate(e) {
   const el = e.target
@@ -979,20 +980,6 @@ onMounted(async () => {
     }
 
     console.log('Applied sorting:', searchStore.sortBy, searchStore.sortOrder)
-  } finally {
-    loading.value = false
-  }
-})
-
-// Re-fetch when navigated back to the page (keep-alive/reactivation scenarios)
-onActivated(async () => {
-  try {
-    if (!searchStore.query) {
-      loading.value = true
-      await fetchAllArtifacts()
-    }
-  } catch (err) {
-    console.warn('[ArtifactsPage] onActivated fetch failed:', err)
   } finally {
     loading.value = false
   }
@@ -1824,20 +1811,18 @@ onBeforeUnmount(() => {
 })
 
 const getBaseModels = computed(() => {
-  // Prefer filtered/search results if available
-  if (Array.isArray(searchStore.searchedModels) && searchStore.searchedModels.length > 0) {
-    return searchStore.searchedModels
+  // If there's an active search query, ONLY show search results (even if empty)
+  if (searchStore.query) {
+    return Array.isArray(searchStore.searchedModels) ? searchStore.searchedModels : []
   }
 
-  // Otherwise, show all filtered documents
+  // Otherwise, show filtered models
   if (Array.isArray(modelStore.filteredModels) && modelStore.filteredModels.length > 0) {
     return modelStore.filteredModels
   }
 
-  // fallback
   return []
 })
-
 const getSortedModels = computed(() => {
   const baseModels = getBaseModels.value
 
@@ -1911,6 +1896,10 @@ function goToModelsPage(page) {
 
 .view-icon:hover {
   background-color: rgba(136, 0, 0, 0.1);
+}
+
+.icon-with-count.hidden-icon {
+  margin-right: 1rem;
 }
 
 .my-card:hover {

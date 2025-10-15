@@ -500,7 +500,7 @@ async function registerUser() {
     return
   }
 
-  if (!college || !department || !year_section) {
+  if (!college || !department || (!is_alumni && !year_section)) {
     showNotifyDialog('Missing Information', 'Please fill out all required fields.')
     return
   }

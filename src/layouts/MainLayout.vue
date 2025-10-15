@@ -429,6 +429,7 @@
 
         <router-view />
       </q-page-container>
+      <Footer v-if="showFooter" />
     </q-layout>
   </div>
 </template>
@@ -444,6 +445,7 @@ import { useDocumentsStore } from 'src/stores/documentsStore'
 import { useModelStore } from 'src/stores/modelStore'
 import { useFiltering } from 'src/utils/useFiltering'
 import { allSortOptions } from 'src/stores/searchStore'
+import Footer from 'src/pages/FooterAll.vue'
 
 const { clearFilters } = useFiltering()
 
@@ -462,18 +464,23 @@ const isHovered = ref(false)
 const search = ref('')
 
 // Responsive state
-// Responsive state
 const windowWidth = ref(window.innerWidth)
 const windowHeight = ref(window.innerHeight)
 const isCompactMode = computed(() => windowWidth.value < 1030)
 const isShortScreen = computed(() => windowHeight.value < 768)
 const isVeryShortScreen = computed(() => windowHeight.value < 600)
 
+const showFooter = computed(() => {
+  const hiddenPages = ['gallery']
+  return !hiddenPages.includes(route.name)
+})
+
 // Advanced Search State
 const showAdvancedSearch = ref(false)
 const searchLoading = ref(false)
 
 const searchType = ref('documents')
+
 
 // Advanced Search Form Data
 const advancedSearch = ref({

@@ -1,112 +1,121 @@
 <template>
-  <div class="q-pa-md form-container">
-    <div class="column items-center q-mb-md">
-      <label class="form-title">LOG IN</label>
-      <label class="subtitle-logsign">Access Your Account</label>
+  <div>
+    <div class="q-pa-md form-container">
+      <div class="column items-center q-mb-md">
+        <label class="form-title">LOG IN</label>
+        <label class="subtitle-logsign">Access Your Account</label>
+      </div>
+
+      <q-form @submit.prevent="loginUser">
+        <div class="column q-gutter-sm">
+          <label class="labelNames">Email</label>
+          <q-input
+            filled
+            v-model="form.email"
+            type="email"
+            lazy-rules
+            :rules="[
+              (val) => !!val || 'Please enter your email.',
+              // (val) => val.includes('@iskolarngbayan.pup.edu.ph') || 'Use your PUP email only.',
+            ]"
+            class="login-text-box"
+          />
+          <label class="labelNames">Password</label>
+          <q-input
+            filled
+            v-model="form.password"
+            :type="showPassword ? 'text' : 'password'"
+            lazy-rules
+            :rules="[(val) => !!val || 'Please enter your password.']"
+            class="login-text-box"
+          >
+            <template v-slot:append>
+              <q-icon
+                :name="showPassword ? 'visibility' : 'visibility_off'"
+                class="cursor-pointer"
+                @click="showPassword = !showPassword"
+              />
+            </template>
+          </q-input>
+        </div>
+
+        <div class="text-right full-width no-gutter-top">
+          <router-link to="/forgotpassword" class="forgot-password-link">Forgot Password</router-link>
+        </div>
+
+        <!-- Error message -->
+        <!-- Login attempt counter -->
+        <div
+          v-if="message"
+          :class="messageType === 'error' ? 'text-red' : 'text-green'"
+          class="q-mt-md text-center"
+        >
+          {{ message }}
+        </div>
+
+        <!-- Cooldown Message -->
+        <div v-if="cooldownActive" class="text-red text-center q-mt-sm">
+          Too many failed attempts. Please wait {{ cooldownTime }} seconds before trying again.
+        </div>
+
+        <div class="column items-center q-pt-md">
+          <q-btn label="Log In" type="submit" class="log-in" :disable="cooldownActive" />
+        </div>
+
+        <div class="column items-center q-mt-md">
+          <label class="already">
+            Don't have an account?
+            <router-link to="/user/register-option" name="user-options" class="signup-login-link">
+              Sign Up
+            </router-link>
+          </label>
+        </div>
+      </q-form>
+
+      <!-- Notification Dialog -->
+      <q-dialog v-model="notifyDialogOpen">
+        <q-card class="sucess-add-to-collection">
+          <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
+              notifyDialogTitle
+            }}</q-card-section>
+          <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
+              notifyDialogMessage
+            }}</q-card-section>
+          <q-card-actions>
+            <q-btn flat label="Close" class="btn-save" v-close-popup />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
     </div>
 
-    <q-form @submit.prevent="loginUser">
-      <div class="column q-gutter-sm">
-        <label class="labelNames">Email</label>
-        <q-input
-          filled
-          v-model="form.email"
-          type="email"
-          lazy-rules
-          :rules="[
-            (val) => !!val || 'Please enter your email.',
-            // (val) => val.includes('@iskolarngbayan.pup.edu.ph') || 'Use your PUP email only.',
-          ]"
-          class="login-text-box"
-        />
-        <label class="labelNames">Password</label>
-        <q-input
-          filled
-          v-model="form.password"
-          :type="showPassword ? 'text' : 'password'"
-          lazy-rules
-          :rules="[(val) => !!val || 'Please enter your password.']"
-          class="login-text-box"
-        >
-          <template v-slot:append>
-            <q-icon
-              :name="showPassword ? 'visibility' : 'visibility_off'"
-              class="cursor-pointer"
-              @click="showPassword = !showPassword"
-            />
-          </template>
-        </q-input>
-      </div>
-
-      <div class="text-right full-width no-gutter-top">
-        <router-link to="/forgotpassword" class="forgot-password-link">Forgot Password</router-link>
-      </div>
-
-      <!-- Error message -->
-      <!-- Login attempt counter -->
-      <div
-        v-if="message"
-        :class="messageType === 'error' ? 'text-red' : 'text-green'"
-        class="q-mt-md text-center"
-      >
-        {{ message }}
-      </div>
-
-      <!-- Cooldown Message -->
-      <div v-if="cooldownActive" class="text-red text-center q-mt-sm">
-        Too many failed attempts. Please wait {{ cooldownTime }} seconds before trying again.
-      </div>
-
-      <div class="column items-center q-pt-md">
-        <q-btn label="Log In" type="submit" class="log-in" :disable="cooldownActive" />
-      </div>
-
-      <div class="column items-center q-mt-md">
-        <label class="already">
-          Don't have an account?
-          <router-link to="/user/register-option" name="user-options" class="signup-login-link">
-            Sign Up
-          </router-link>
-        </label>
-        <!--Terms and Conditions Checkbox -->
-
-        <div class="terms-font q-mt-lg" style="text-align: center">
-          By using this service, you understood and agree <br />to the PUP Online Services
+    <!--  Footer -->
+    <footer class="login-footer">
+      <div class="footer-content">
+        <p class="footer-text">
+          By using this service, you agree to the PUP Online Services
           <a
             href="https://www.pup.edu.ph/terms/"
+            class="footer-link"
             target="_blank"
-            class="terms-font"
-            style="text-decoration: underline; color: #560505"
+            rel="noopener noreferrer"
           >
             Terms of Use
           </a>
           and
           <a
             href="https://www.pup.edu.ph/privacy/"
+            class="footer-link"
             target="_blank"
-            class="terms-font"
-            style="text-decoration: underline; color: #560505"
+            rel="noopener noreferrer"
           >
             Privacy Policy
           </a>
-        </div>
+        </p>
+        <p class="copyright">
+          © 2025 Polytechnic University of the Philippines. All rights reserved.
+        </p>
       </div>
-    </q-form>
-
-    <!-- Notification Dialog -->
-    <q-dialog v-model="notifyDialogOpen">
-      <q-card class="sucess-add-to-collection">
-        <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-          notifyDialogTitle
-        }}</q-card-section>
-        <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-          notifyDialogMessage
-        }}</q-card-section>
-        <q-card-actions>
-          <q-btn flat label="Close" class="btn-save" v-close-popup />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+    </footer>
   </div>
 </template>
 
@@ -404,4 +413,12 @@ onMounted(() => {
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
 }
+
+.login-footer {
+  color: #7c7c7c;
+  padding: 1.5rem 2rem;
+  margin-top: 1rem;
+}
+
+
 </style>
