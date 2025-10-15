@@ -7,6 +7,8 @@ import subprocess
 import base64
 import json
 import requests
+import sys
+from pathlib import Path
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
@@ -1472,164 +1474,96 @@ async def rescan_metadata():
         return {"success": False, "error": str(e)}
 
 @app.get("/related-links")
-async def related_links(
+async def get_related_links(
     title: str,
     author: str = "",
     categories: str = "",
     date: str = ""
 ):
     try:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        script_path = os.path.join(script_dir, "web_scraper.js")
+        # Get the directory where this script is located
+        current_dir = Path(__file__).parent
+        scraper_path = current_dir / "web_scraper.js"
         
-        # Verify both script and node_modules exist
-        if not os.path.exists(script_path):
-            return {
-                "links": [], 
-                "error": f"web_scraper.js not found at {script_path}"
-            }
-        
-        node_modules_path = os.path.join(script_dir, 'node_modules')
-        if not os.path.exists(node_modules_path):
+        # Check if web_scraper.js exists
+        if not scraper_path.exists():
             return {
                 "links": [],
-                "error": f"node_modules not found. This usually means the build didn't complete properly. Please redeploy the service."
+                "error": f"web_scraper.js not found at {scraper_path}"
             }
         
-        # Debug logging
-        print(f"Script directory: {script_dir}")
-        print(f"Script path: {script_path}")
-        print(f"Script exists: {os.path.exists(script_path)}")
-        print(f"node_modules exists: {os.path.exists(os.path.join(script_dir, 'node_modules'))}")
+        # Build command with all arguments
+        cmd = ["node", str(scraper_path), title]
+        if author:
+            cmd.append(author)
+        if categories:
+            cmd.append(categories)
+        if date:
+            cmd.append(date)
         
-        # Check if script exists
-        if not os.path.exists(script_path):
-            available_files = os.listdir(script_dir) if os.path.exists(script_dir) else []
-            return {
-                "links": [], 
-                "error": f"Script not found at {script_path}. Available files: {available_files[:10]}"
-            }
+        print(f"Running command: {' '.join(cmd)}", file=sys.stderr)
+        print(f"Current working directory: {os.getcwd()}", file=sys.stderr)
+        print(f"NODE_PATH: {os.environ.get('NODE_PATH', 'not set')}", file=sys.stderr)
+        print(f"node_modules exists: {(current_dir / 'node_modules').exists()}", file=sys.stderr)
         
-        # Check if node_modules exists
-        node_modules_path = os.path.join(script_dir, 'node_modules')
-        if not os.path.exists(node_modules_path):
-            return {
-                "links": [],
-                "error": f"node_modules not found at {node_modules_path}. Dependencies may not be installed."
-            }
+        # Set environment variables
+        env = os.environ.copy()
         
-        # Check Node.js availability
-        try:
-            node_version = subprocess.run(
-                ["node", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            print(f"Node.js version: {node_version.stdout.strip()}")
-        except Exception as e:
-            return {
-                "links": [],
-                "error": f"Node.js not available: {str(e)}"
-            }
+        # Ensure NODE_PATH includes the local node_modules
+        node_modules_path = str(current_dir / "node_modules")
+        if "NODE_PATH" in env:
+            env["NODE_PATH"] = f"{node_modules_path}:{env['NODE_PATH']}"
+        else:
+            env["NODE_PATH"] = node_modules_path
         
-        # Prepare the command
-        cmd = ["node", script_path, title, author or "", categories or "", date or ""]
-        print(f"Running command: {' '.join(cmd)}")
-        
-        # Run the Node.js scraper
+        # Run the scraper
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            encoding='utf-8',
-            errors='replace',
-            timeout=60,
-            cwd=script_dir,
-            env={**os.environ, "NODE_ENV": "production"}
+            timeout=60, 
+            cwd=str(current_dir), 
+            env=env
         )
         
-        # Log the results
-        print(f"Return code: {result.returncode}")
-        print(f"Stdout length: {len(result.stdout)}")
-        print(f"Stderr length: {len(result.stderr)}")
+        # Log stderr for debugging
+        if result.stderr:
+            print(f"Scraper stderr: {result.stderr}", file=sys.stderr)
         
         # Check for errors
         if result.returncode != 0:
             error_msg = result.stderr or "Unknown error"
-            print(f"Scraper error (exit code {result.returncode}):")
-            print(f"STDERR: {error_msg[:1000]}")  # First 1000 chars
-            
-            # Try to parse stderr as JSON
-            try:
-                error_data = json.loads(result.stderr)
-                return {
-                    "links": [], 
-                    "error": error_data.get("error", error_msg),
-                    "stack": error_data.get("stack", "")[:500]  # Truncate stack trace
-                }
-            except json.JSONDecodeError:
-                return {
-                    "links": [], 
-                    "error": error_msg[:500]  # Truncate error message
-                }
-        
-        # Check if stdout is empty
-        if not result.stdout or result.stdout.strip() == "":
-            print("Scraper returned empty output")
-            if result.stderr:
-                print(f"STDERR: {result.stderr[:1000]}")
+            print(f"Scraper failed with code {result.returncode}: {error_msg}", file=sys.stderr)
             return {
-                "links": [], 
-                "error": "No output from scraper",
-                "stderr": result.stderr[:500] if result.stderr else None
+                "links": [],
+                "error": f"Scraper failed: {error_msg}",
+                "returncode": result.returncode
             }
         
-        # Parse stdout as JSON
+        # Parse the JSON output
         try:
-            print(f"Parsing output (first 200 chars): {result.stdout[:200]}")
-            data = json.loads(result.stdout)
-            
-            # Handle warning from scraper
-            if "warning" in data:
-                print(f"Scraper warning: {data['warning']}")
-            
-            return data
-            
+            output = json.loads(result.stdout)
+            return output
         except json.JSONDecodeError as e:
-            print(f"JSON parse error: {e}")
-            print(f"Raw stdout (first 500 chars): {result.stdout[:500]}")
-            print(f"Raw stderr: {result.stderr[:500]}")
-            
+            print(f"Failed to parse JSON: {result.stdout}", file=sys.stderr)
             return {
-                "links": [], 
+                "links": [],
                 "error": f"Invalid JSON from scraper: {str(e)}",
-                "raw_output": result.stdout[:200]
+                "raw_output": result.stdout[:500]
             }
             
     except subprocess.TimeoutExpired:
-        print("Scraper timeout after 60 seconds")
         return {
-            "links": [], 
-            "error": "Scraper timeout after 60 seconds"
+            "links": [],
+            "error": "Scraper timed out after 60 seconds"
         }
-        
-    except FileNotFoundError as e:
-        print(f"File not found error: {e}")
-        return {
-            "links": [], 
-            "error": f"Command not found: {str(e)}. Is Node.js installed?"
-        }
-        
     except Exception as e:
-        print(f"Unexpected error in related_links: {str(e)}")
+        print(f"Unexpected error: {str(e)}", file=sys.stderr)
         import traceback
         traceback.print_exc()
-        
         return {
-            "links": [], 
-            "error": f"Unexpected error: {str(e)}",
-            "type": type(e).__name__
+            "links": [],
+            "error": f"Unexpected error: {str(e)}"
         }
 
 

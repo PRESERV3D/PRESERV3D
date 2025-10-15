@@ -1281,7 +1281,7 @@ function drop(index) {
 async function saveRelatedLinks() {
   savingRelatedLinks.value = true
   try {
-    // Clean the links data before saving
+    // Clean the links data before saving - remove the id field if it's just a timestamp
     const cleanedLinks = links.value.map((link) => ({
       title: link.title || '',
       url: link.url || '',
@@ -1295,21 +1295,21 @@ async function saveRelatedLinks() {
       .eq('id', route.params.id)
 
     if (error) throw error
-    else {
-      $q.notify({ type: 'positive', message: 'Related links saved successfully' })
-      hasChanges.value = true
-      showRelatedDialog.value = false
-      showAddLinkForm.value = false
-      editingLinkIndex.value = null
-      savingRelatedLinks.value = false
-    }
 
+    // Update the local doc object
     if (doc.value) {
       doc.value.related_links = cleanedLinks
     }
+
+    console.log('Related links saved successfully:', cleanedLinks)
+    $q.notify({ type: 'positive', message: 'Related links saved successfully' })
+    hasChanges.value = true
+    showRelatedDialog.value = false
   } catch (err) {
     console.error('Error saving related links:', err)
     $q.notify({ type: 'negative', message: 'Failed to save related links' })
+  } finally {
+    savingRelatedLinks.value = false
   }
 }
 

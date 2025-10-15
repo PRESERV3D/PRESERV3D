@@ -41,8 +41,8 @@ services:
       rm -rf node_modules package-lock.json
 
       # Install Node.js dependencies in the services directory
-      # Use --legacy-peer-deps to avoid peer dependency conflicts
-      npm install --legacy-peer-deps --production=false
+      # DO NOT use --production flag - we need all dependencies at runtime
+      npm install --legacy-peer-deps
 
       # Verify installation
       echo "========== Verifying installation =========="
@@ -76,6 +76,10 @@ services:
         exit 1
       fi
 
+      # Test the web scraper with a simple query
+      echo "Testing web scraper..."
+      node web_scraper.js "test query" || echo "Warning: web scraper test failed (may be ok if network limited)"
+
       echo "========== Build completed successfully =========="
 
     startCommand: uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
@@ -98,3 +102,5 @@ services:
         value: 'true'
       - key: NODE_ENV
         value: production
+      - key: NODE_PATH
+        value: /opt/render/project/src/services/node_modules
