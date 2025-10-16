@@ -1438,7 +1438,6 @@ const handleUpload = async () => {
     alert('Upload failed. See console for details.')
     uploading.value = false
   } finally {
-    showDialog.value = false
     loading.value = false
   }
 }
@@ -1560,7 +1559,8 @@ async function saveMetadata(updatedMetadata) {
     })
 
     currentArtifactData.value = updatedData
-    showNotifyDialog('Notice', 'Metadata saved successfully!')
+    $q.notify('positive', 'Metadata saved successfully!')
+    showDialog.value = false
     dialog.value = false
     router.push('/artifacts')
   } catch (err) {
