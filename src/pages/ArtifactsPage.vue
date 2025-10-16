@@ -1438,6 +1438,7 @@ const handleUpload = async () => {
     alert('Upload failed. See console for details.')
     uploading.value = false
   } finally {
+    showDialog.value = false
     loading.value = false
   }
 }
