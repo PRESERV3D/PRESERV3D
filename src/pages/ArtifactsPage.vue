@@ -1559,7 +1559,7 @@ async function saveMetadata(updatedMetadata) {
     })
 
     currentArtifactData.value = updatedData
-    $q.notify('positive', 'Metadata saved successfully!')
+    $q.notify({ type: 'positive', message: 'Metadata saved successfully!' })
     showDialog.value = false
     dialog.value = false
     router.push('/artifacts')
