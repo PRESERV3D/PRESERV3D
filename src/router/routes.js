@@ -46,6 +46,12 @@ const routes = [
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
       {
+        path: 'security-logs',
+        name: 'security-logs',
+        component: () => import('pages/SecurityLogsPage.vue'),
+        meta: { requiresAuth: true, allowedRoles: ['admin'], requiresSecurityAccess: true },
+      },
+      {
         path: 'documents/:id',
         name: 'view-document',
         component: () => import('pages/ViewDocumentPage.vue'),

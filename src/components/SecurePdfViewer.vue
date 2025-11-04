@@ -105,6 +105,7 @@
 
 <script setup>
 import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useQuasar } from 'quasar'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 import * as pdfjsLib from 'pdfjs-dist'
@@ -112,6 +113,7 @@ import * as pdfjsLib from 'pdfjs-dist'
 // Configure local PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
 
+const $q = useQuasar()
 const userStore = useUserStore()
 
 const props = defineProps({
@@ -474,6 +476,7 @@ const disableSecurityMeasures = () => {
 
 const preventContextMenu = (e) => {
   e.preventDefault()
+  showSecurityWarning('restricted_action', 'Right-click is not allowed')
   return false
 }
 
@@ -532,11 +535,13 @@ const preventScreenshotKeys = (e) => {
 
 const preventSelection = (e) => {
   e.preventDefault()
+  showSecurityWarning('restricted_action', 'Text selection is not allowed')
   return false
 }
 
 const preventDrag = (e) => {
   e.preventDefault()
+  showSecurityWarning('restricted_action', 'Dragging content is not allowed')
   return false
 }
 
@@ -588,7 +593,65 @@ const showSecurityWarning = (
   eventType = 'restricted_action',
   message = 'This action is restricted for security reasons.',
 ) => {
-  // You can integrate with Quasar Notify here
+  // Show user-friendly notification with Quasar Notify
+  let notificationMessage = ''
+  let notificationIcon = 'block'
+
+  switch (eventType) {
+    case 'copy_attempt':
+      notificationMessage = 'Copying content is not allowed'
+      notificationIcon = 'content_copy'
+      break
+    case 'print_attempt':
+      notificationMessage = 'Printing is not allowed'
+      notificationIcon = 'print'
+      break
+    case 'screenshot_attempt':
+      notificationMessage = 'Screenshots are not allowed'
+      notificationIcon = 'screenshot'
+      break
+    case 'dev_tools_detected':
+      notificationMessage = 'Developer tools are not allowed'
+      notificationIcon = 'warning'
+      break
+    case 'restricted_action':
+      // Use the specific message passed in
+      if (message.includes('Right-click')) {
+        notificationMessage = message
+        notificationIcon = 'mouse'
+      } else if (message.includes('selection')) {
+        notificationMessage = message
+        notificationIcon = 'text_select'
+      } else if (message.includes('Dragging')) {
+        notificationMessage = message
+        notificationIcon = 'drag_indicator'
+      } else {
+        notificationMessage = message
+        notificationIcon = 'block'
+      }
+      break
+    default:
+      notificationMessage = 'This action is not allowed'
+      notificationIcon = 'block'
+  }
+
+  $q.notify({
+    type: 'warning',
+    message: notificationMessage,
+    icon: notificationIcon,
+    position: 'top',
+    timeout: 3000,
+    actions: [
+      {
+        icon: 'close',
+        color: 'white',
+        handler: () => {
+          /* dismiss */
+        },
+      },
+    ],
+  })
+
   console.warn('⚠️ Security Alert:', message)
 
   // Log to server for monitoring

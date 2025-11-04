@@ -101,6 +101,31 @@ export default defineRouter(function (/* { store, ssrContext } */) {
       console.log('✅ Admin access granted to user-management')
     }
 
+    // Check for security logs access - requires super admin OR security access privilege
+    if (to.meta.requiresSecurityAccess) {
+      console.log('🔒 Security logs access check:', {
+        role,
+        isSuperAdmin: userStore.profile?.is_super_admin,
+        hasSecurityAccess: userStore.profile?.has_security_access,
+      })
+
+      const hasAccess =
+        userStore.profile?.is_super_admin === true ||
+        userStore.profile?.has_security_access === true
+
+      if (!hasAccess) {
+        console.log('❌ Access denied to security logs')
+        userStore.addNotification({
+          type: 'negative',
+          message: 'You do not have permission to access security logs',
+          position: 'top',
+        })
+        next('/admindash')
+        return
+      }
+      console.log('✅ Security logs access granted')
+    }
+
     // Role-based redirect if landing on root path
     if (to.path === '/') {
       if (role === 'admin') {

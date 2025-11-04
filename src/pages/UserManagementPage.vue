@@ -24,7 +24,6 @@
 
     <!-- Tabs - Conditional based on admin type -->
     <q-tabs
-      v-if="isSuperAdmin"
       v-model="activeTab"
       dense
       class="text-grey"
@@ -33,38 +32,22 @@
       align="left"
       narrow-indicator
     >
-      <q-tab name="admins" label="Administrators" />
-      <q-tab name="students" label="Students" />
-      <q-tab name="faculty" label="Faculty" />
-      <q-tab name="visitors" label="Visitors" />
-      <q-tab name="registrations" label="Visitor Registrations" />
-      <q-tab name="extensions" label="Extension Requests" />
-    </q-tabs>
-
-    <!-- Tabs for Regular Admin -->
-    <q-tabs
-      v-if="!isSuperAdmin"
-      v-model="activeTab"
-      dense
-      class="text-grey"
-      active-color="primary"
-      indicator-color="primary"
-      align="left"
-      narrow-indicator
-    >
-      <q-tab name="registrations" label="Visitor Registrations" />
-      <q-tab name="visitors" label="Approved Visitors" />
-      <q-tab name="extensions" label="Extension Requests" />
+      <q-tab v-if="canManageAdmins" name="admins" label="Administrators" />
+      <q-tab v-if="canManageStudents" name="students" label="Students" />
+      <q-tab v-if="canManageFaculty" name="faculty" label="Faculty" />
+      <q-tab v-if="canManageVisitors" name="visitors" label="Visitors" />
+      <q-tab v-if="canManageVisitors" name="registrations" label="Visitor Registrations" />
+      <q-tab v-if="canManageVisitors" name="extensions" label="Extension Requests" />
     </q-tabs>
 
     <q-separator />
 
-    <q-tab-panels v-if="isSuperAdmin" v-model="activeTab" animated class="q-mt-md">
+    <q-tab-panels v-model="activeTab" animated class="q-mt-md">
       <!-- Administrators Tab -->
-      <q-tab-panel name="admins">
+      <q-tab-panel v-if="canManageAdmins" name="admins">
         <q-table
           title="Administrators"
-          :rows="admins"
+          :rows="filteredAdmins"
           :columns="adminColumns"
           row-key="id"
           :loading="loading"
@@ -136,6 +119,20 @@
                     <q-tooltip>Resend Email</q-tooltip>
                   </q-btn>
                   <q-btn
+                    v-if="isSuperAdmin"
+                    flat
+                    dense
+                    round
+                    icon="admin_panel_settings"
+                    color="primary"
+                    size="sm"
+                    @click="openAccessManagementDialog(props.row)"
+                    :disable="props.row.id === userStore.profile?.id"
+                    class="q-mr-xs"
+                  >
+                    <q-tooltip>Manage Access & Permissions</q-tooltip>
+                  </q-btn>
+                  <q-btn
                     flat
                     dense
                     round
@@ -171,6 +168,10 @@
               <q-td colspan="100%">
                 <div class="q-pa-md" style="background-color: #f5f5f5">
                   <div class="row q-col-gutter-md">
+                    <!-- Basic Info -->
+                    <div class="col-12">
+                      <div class="text-h6 q-mb-md">Admin Information</div>
+                    </div>
                     <div class="col-6">
                       <div class="text-weight-bold">Full Name:</div>
                       <div>{{ props.row.first_name }} {{ props.row.last_name }}</div>
@@ -207,6 +208,182 @@
                         }}
                       </div>
                     </div>
+
+                    <!-- Permissions Section (Super Admin Only) -->
+                    <div v-if="isSuperAdmin" class="col-12 q-mt-md">
+                      <q-separator class="q-mb-md" />
+                      <div class="text-h6 q-mb-md">Granted Permissions</div>
+                    </div>
+
+                    <div v-if="isSuperAdmin" class="col-12">
+                      <div class="row q-col-gutter-sm">
+                        <!-- Super Admin Badge -->
+                        <div v-if="props.row.is_super_admin" class="col-12 col-sm-6 col-md-4">
+                          <q-card flat bordered class="permission-card super-admin">
+                            <q-card-section class="row items-center q-pa-sm">
+                              <q-icon name="stars" color="orange" size="sm" class="q-mr-sm" />
+                              <div class="text-weight-bold">Super Admin</div>
+                            </q-card-section>
+                          </q-card>
+                        </div>
+
+                        <!-- Security Logs Access -->
+                        <div
+                          v-if="props.row.is_super_admin || props.row.has_security_access"
+                          class="col-12 col-sm-6 col-md-4"
+                        >
+                          <q-card
+                            flat
+                            bordered
+                            :class="
+                              props.row.is_super_admin
+                                ? 'permission-card auto-granted'
+                                : 'permission-card granted'
+                            "
+                          >
+                            <q-card-section class="row items-center q-pa-sm">
+                              <q-icon name="shield" color="primary" size="sm" class="q-mr-sm" />
+                              <div>
+                                <div class="text-weight-medium">Security Logs</div>
+                                <div v-if="props.row.is_super_admin" class="text-caption">
+                                  Auto-granted
+                                </div>
+                              </div>
+                            </q-card-section>
+                          </q-card>
+                        </div>
+
+                        <!-- Manage Students -->
+                        <div
+                          v-if="props.row.is_super_admin || props.row.can_manage_students"
+                          class="col-12 col-sm-6 col-md-4"
+                        >
+                          <q-card
+                            flat
+                            bordered
+                            :class="
+                              props.row.is_super_admin
+                                ? 'permission-card auto-granted'
+                                : 'permission-card granted'
+                            "
+                          >
+                            <q-card-section class="row items-center q-pa-sm">
+                              <q-icon name="school" color="primary" size="sm" class="q-mr-sm" />
+                              <div>
+                                <div class="text-weight-medium">Manage Students</div>
+                                <div v-if="props.row.is_super_admin" class="text-caption">
+                                  Auto-granted
+                                </div>
+                              </div>
+                            </q-card-section>
+                          </q-card>
+                        </div>
+
+                        <!-- Manage Faculty -->
+                        <div
+                          v-if="props.row.is_super_admin || props.row.can_manage_faculty"
+                          class="col-12 col-sm-6 col-md-4"
+                        >
+                          <q-card
+                            flat
+                            bordered
+                            :class="
+                              props.row.is_super_admin
+                                ? 'permission-card auto-granted'
+                                : 'permission-card granted'
+                            "
+                          >
+                            <q-card-section class="row items-center q-pa-sm">
+                              <q-icon name="work" color="primary" size="sm" class="q-mr-sm" />
+                              <div>
+                                <div class="text-weight-medium">Manage Faculty</div>
+                                <div v-if="props.row.is_super_admin" class="text-caption">
+                                  Auto-granted
+                                </div>
+                              </div>
+                            </q-card-section>
+                          </q-card>
+                        </div>
+
+                        <!-- Manage Visitors -->
+                        <div
+                          v-if="props.row.is_super_admin || props.row.can_manage_visitors"
+                          class="col-12 col-sm-6 col-md-4"
+                        >
+                          <q-card
+                            flat
+                            bordered
+                            :class="
+                              props.row.is_super_admin
+                                ? 'permission-card auto-granted'
+                                : 'permission-card granted'
+                            "
+                          >
+                            <q-card-section class="row items-center q-pa-sm">
+                              <q-icon name="badge" color="primary" size="sm" class="q-mr-sm" />
+                              <div>
+                                <div class="text-weight-medium">Manage Visitors</div>
+                                <div v-if="props.row.is_super_admin" class="text-caption">
+                                  Auto-granted
+                                </div>
+                              </div>
+                            </q-card-section>
+                          </q-card>
+                        </div>
+
+                        <!-- Manage Admins -->
+                        <div
+                          v-if="props.row.is_super_admin || props.row.can_manage_admins"
+                          class="col-12 col-sm-6 col-md-4"
+                        >
+                          <q-card
+                            flat
+                            bordered
+                            :class="
+                              props.row.is_super_admin
+                                ? 'permission-card auto-granted'
+                                : 'permission-card granted'
+                            "
+                          >
+                            <q-card-section class="row items-center q-pa-sm">
+                              <q-icon
+                                name="admin_panel_settings"
+                                color="primary"
+                                size="sm"
+                                class="q-mr-sm"
+                              />
+                              <div>
+                                <div class="text-weight-medium">Manage Admins</div>
+                                <div v-if="props.row.is_super_admin" class="text-caption">
+                                  Auto-granted
+                                </div>
+                              </div>
+                            </q-card-section>
+                          </q-card>
+                        </div>
+
+                        <!-- No Permissions -->
+                        <div
+                          v-if="
+                            !props.row.is_super_admin &&
+                            !props.row.has_security_access &&
+                            !props.row.can_manage_students &&
+                            !props.row.can_manage_faculty &&
+                            !props.row.can_manage_visitors &&
+                            !props.row.can_manage_admins
+                          "
+                          class="col-12"
+                        >
+                          <q-banner class="bg-orange-1 text-orange-9" rounded>
+                            <template v-slot:avatar>
+                              <q-icon name="info" color="orange" />
+                            </template>
+                            No special permissions granted. This admin can only view content and
+                            manage their own collections.
+                          </q-banner>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </q-td>
@@ -216,7 +393,7 @@
       </q-tab-panel>
 
       <!-- Students Tab -->
-      <q-tab-panel name="students">
+      <q-tab-panel v-if="canManageStudents" name="students">
         <q-table
           title="Students"
           :rows="students"
@@ -341,7 +518,7 @@
       </q-tab-panel>
 
       <!-- Faculty Tab -->
-      <q-tab-panel name="faculty">
+      <q-tab-panel v-if="canManageFaculty" name="faculty">
         <q-table
           title="Faculty Members"
           :rows="faculty"
@@ -466,7 +643,7 @@
       </q-tab-panel>
 
       <!-- Visitors Tab -->
-      <q-tab-panel name="visitors">
+      <q-tab-panel v-if="canManageVisitors" name="visitors">
         <q-table
           title="Approved Visitors"
           :rows="visitors"
@@ -630,303 +807,8 @@
         </q-table>
       </q-tab-panel>
 
-      <!-- Visitor Registrations Tab (For Super Admin) -->
-      <q-tab-panel name="registrations">
-        <q-table
-          title="Visitor Registrations"
-          :rows="registrations"
-          :columns="registrationColumns"
-          row-key="id"
-          :loading="loading"
-          :pagination="pagination"
-          flat
-          bordered
-          class="my-sticky-header-table"
-        >
-          <template v-slot:top-right>
-            <q-btn icon="refresh" flat round dense @click="fetchAllUsers" :loading="loading">
-              <q-tooltip>Reload Data</q-tooltip>
-            </q-btn>
-          </template>
-          <template v-slot:body="props">
-            <q-tr :props="props">
-              <q-td
-                v-for="col in props.cols"
-                :key="col.name"
-                :props="props"
-                :style="col.style"
-                :align="col.align"
-              >
-                <template v-if="col.name === 'name'">
-                  <span>{{ props.row.first_name }} {{ props.row.last_name }}</span>
-                </template>
-
-                <template v-else-if="col.name === 'letter_url'">
-                  <a
-                    v-if="props.row.letter_url"
-                    :href="props.row.letter_url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="view-more-link"
-                  >
-                    Letter
-                  </a>
-                  <span v-else>N/A</span>
-                </template>
-
-                <template v-else-if="col.name === 'status'">
-                  <template v-if="props.row.status === 'Pending'">
-                    <q-btn
-                      flat
-                      dense
-                      round
-                      class="status-btn"
-                      @click="openConfirmDialog(props.row, 'Approved')"
-                    >
-                      <q-icon name="check" color="green" size="18px" />
-                      <q-tooltip>Approve</q-tooltip>
-                    </q-btn>
-                    <q-btn
-                      flat
-                      dense
-                      round
-                      class="status-btn"
-                      @click="openConfirmDialog(props.row, 'Rejected')"
-                    >
-                      <q-icon name="close" color="red" size="18px" />
-                      <q-tooltip>Reject</q-tooltip>
-                    </q-btn>
-                  </template>
-
-                  <template v-else>
-                    <q-badge
-                      :color="props.row.status === 'Approved' ? 'green' : 'red'"
-                      :label="props.row.status"
-                    />
-                  </template>
-                </template>
-
-                <template v-else-if="col.name === 'actions'">
-                  <q-btn
-                    flat
-                    dense
-                    round
-                    size="sm"
-                    :icon="props.expand ? 'expand_less' : 'expand_more'"
-                    @click="props.expand = !props.expand"
-                  >
-                    <q-tooltip>{{ props.expand ? 'Collapse' : 'Expand' }}</q-tooltip>
-                  </q-btn>
-                </template>
-
-                <template v-else>
-                  {{ col.value }}
-                </template>
-              </q-td>
-            </q-tr>
-
-            <!-- Expandable Row -->
-            <q-tr v-show="props.expand" :props="props">
-              <q-td colspan="100%">
-                <div class="q-pa-md" style="background-color: #f5f5f5">
-                  <div class="row q-col-gutter-md">
-                    <div class="col-6">
-                      <div class="text-weight-bold">Full Name:</div>
-                      <div>{{ props.row.first_name }} {{ props.row.last_name }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Email:</div>
-                      <div>{{ props.row.email }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Institution:</div>
-                      <div>{{ props.row.institution || 'N/A' }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Purpose:</div>
-                      <div>{{ props.row.purpose || 'N/A' }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Date Filed:</div>
-                      <div>{{ new Date(props.row.created_at).toLocaleDateString() }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Requested Period:</div>
-                      <div>
-                        {{ props.row.start_date || 'N/A' }} to {{ props.row.end_date || 'N/A' }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </q-td>
-            </q-tr>
-          </template>
-        </q-table>
-      </q-tab-panel>
-
-      <!-- Extension Requests Tab (For Super Admin) -->
-      <q-tab-panel name="extensions">
-        <q-table
-          title="Visitor Extension Requests"
-          :rows="extensionRequests"
-          :columns="extensionColumns"
-          row-key="id"
-          :loading="loading"
-          :pagination="pagination"
-          flat
-          bordered
-          class="my-sticky-header-table"
-        >
-          <template v-slot:top-right>
-            <q-btn icon="refresh" flat round dense @click="fetchAllUsers" :loading="loading">
-              <q-tooltip>Reload Data</q-tooltip>
-            </q-btn>
-          </template>
-          <template v-slot:body="props">
-            <q-tr :props="props">
-              <q-td
-                v-for="col in props.cols"
-                :key="col.name"
-                :props="props"
-                :style="col.style"
-                :align="col.align"
-              >
-                <template v-if="col.name === 'visitor_name'">
-                  <span>{{ props.row.visitor_name }}</span>
-                </template>
-
-                <template v-else-if="col.name === 'old_end_date'">
-                  {{
-                    props.row.old_end_date
-                      ? new Date(props.row.old_end_date).toLocaleDateString()
-                      : 'N/A'
-                  }}
-                </template>
-
-                <template v-else-if="col.name === 'extended_end_date'">
-                  {{
-                    props.row.extended_end_date
-                      ? new Date(props.row.extended_end_date).toLocaleDateString()
-                      : 'N/A'
-                  }}
-                </template>
-
-                <template v-else-if="col.name === 'letter'">
-                  <a
-                    v-if="props.row.letter"
-                    :href="props.row.letter"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="view-more-link"
-                  >
-                    View Letter
-                  </a>
-                  <span v-else>Not Required</span>
-                </template>
-
-                <template v-else-if="col.name === 'extension_status'">
-                  <template v-if="props.row.extension_status === 'Pending'">
-                    <q-btn
-                      flat
-                      dense
-                      round
-                      class="status-btn"
-                      @click="openExtensionDialog(props.row, 'Approved')"
-                    >
-                      <q-icon name="check" color="green" size="18px" />
-                      <q-tooltip>Approve</q-tooltip>
-                    </q-btn>
-                    <q-btn
-                      flat
-                      dense
-                      round
-                      class="status-btn"
-                      @click="openExtensionDialog(props.row, 'Rejected')"
-                    >
-                      <q-icon name="close" color="red" size="18px" />
-                      <q-tooltip>Reject</q-tooltip>
-                    </q-btn>
-                  </template>
-
-                  <template v-else>
-                    <q-badge
-                      :color="
-                        props.row.extension_status === 'Approved'
-                          ? 'green'
-                          : props.row.extension_status === 'Rejected'
-                            ? 'red'
-                            : 'grey'
-                      "
-                      :label="props.row.extension_status"
-                    />
-                  </template>
-                </template>
-
-                <template v-else-if="col.name === 'actions'">
-                  <q-btn
-                    flat
-                    dense
-                    round
-                    size="sm"
-                    :icon="props.expand ? 'expand_less' : 'expand_more'"
-                    @click="props.expand = !props.expand"
-                  >
-                    <q-tooltip>{{ props.expand ? 'Collapse' : 'Expand' }}</q-tooltip>
-                  </q-btn>
-                </template>
-
-                <template v-else>
-                  {{ col.value }}
-                </template>
-              </q-td>
-            </q-tr>
-
-            <!-- Expandable Row -->
-            <q-tr v-show="props.expand" :props="props">
-              <q-td colspan="100%">
-                <div class="q-pa-md" style="background-color: #f5f5f5">
-                  <div class="row q-col-gutter-md">
-                    <div class="col-6">
-                      <div class="text-weight-bold">Email:</div>
-                      <div>{{ props.row.visitor_email || '' }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Date Submitted:</div>
-                      <div>
-                        {{
-                          props.row.created_at
-                            ? new Date(props.row.created_at).toLocaleString()
-                            : ''
-                        }}
-                      </div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Reviewed By:</div>
-                      <div>{{ props.row.reviewed_by || '' }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Reviewed At:</div>
-                      <div>
-                        {{
-                          props.row.reviewed_at
-                            ? new Date(props.row.reviewed_at).toLocaleString()
-                            : ''
-                        }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </q-td>
-            </q-tr>
-          </template>
-        </q-table>
-      </q-tab-panel>
-    </q-tab-panels>
-
-    <!-- Regular Admin View - Approved Visitors and Registrations -->
-    <q-tab-panels v-if="!isSuperAdmin" v-model="activeTab" animated class="q-mt-md">
       <!-- Visitor Registrations Tab -->
-      <q-tab-panel name="registrations">
+      <q-tab-panel v-if="canManageVisitors" name="registrations">
         <q-table
           title="Visitor Registrations"
           :rows="registrations"
@@ -1059,162 +941,8 @@
         </q-table>
       </q-tab-panel>
 
-      <!-- Approved Visitors Tab -->
-      <q-tab-panel name="visitors">
-        <q-table
-          title="Approved Visitors"
-          :rows="visitors"
-          :columns="visitorColumns"
-          row-key="id"
-          :loading="loading"
-          :pagination="pagination"
-          flat
-          bordered
-          class="my-sticky-header-table"
-        >
-          <template v-slot:top-right>
-            <q-btn icon="refresh" flat round dense @click="fetchAllUsers" :loading="loading">
-              <q-tooltip>Reload Data</q-tooltip>
-            </q-btn>
-          </template>
-          <template v-slot:body="props">
-            <q-tr :props="props">
-              <q-td
-                v-for="col in props.cols"
-                :key="col.name"
-                :props="props"
-                :style="col.style"
-                :align="col.align"
-              >
-                <template v-if="col.name === 'name'">
-                  <span>{{ props.row.first_name }} {{ props.row.last_name }}</span>
-                </template>
-
-                <template v-else-if="col.name === 'email'">
-                  <div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis">
-                    {{ props.row.email }}
-                  </div>
-                </template>
-
-                <template v-else-if="col.name === 'account_status'">
-                  <q-badge
-                    :color="
-                      props.row.account_status === 'Active'
-                        ? 'green'
-                        : props.row.account_status === 'Expired'
-                          ? 'red'
-                          : props.row.account_status === 'Inactive'
-                            ? 'orange'
-                            : 'grey'
-                    "
-                    :label="props.row.account_status || 'Active'"
-                  />
-                </template>
-
-                <template v-else-if="col.name === 'end_date'">
-                  {{
-                    props.row.end_date ? new Date(props.row.end_date).toLocaleDateString() : 'N/A'
-                  }}
-                </template>
-
-                <template v-else-if="col.name === 'actions'">
-                  <q-btn
-                    flat
-                    dense
-                    round
-                    icon="event"
-                    color="primary"
-                    size="sm"
-                    @click="openExtendDateDialog(props.row)"
-                    class="q-mr-xs"
-                  >
-                    <q-tooltip>Extend Access</q-tooltip>
-                  </q-btn>
-
-                  <q-btn
-                    flat
-                    dense
-                    round
-                    size="sm"
-                    :icon="props.expand ? 'expand_less' : 'expand_more'"
-                    @click="props.expand = !props.expand"
-                    class="q-mr-xs"
-                  >
-                    <q-tooltip>{{ props.expand ? 'Collapse' : 'Expand' }}</q-tooltip>
-                  </q-btn>
-                </template>
-
-                <template v-else>
-                  {{ col.value }}
-                </template>
-              </q-td>
-            </q-tr>
-
-            <!-- Expandable Row -->
-            <q-tr v-show="props.expand" :props="props">
-              <q-td colspan="100%">
-                <div class="q-pa-md" style="background-color: #f5f5f5">
-                  <div class="row q-col-gutter-md">
-                    <div class="col-6">
-                      <div class="text-weight-bold">Full Name:</div>
-                      <div>{{ props.row.first_name }} {{ props.row.last_name }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Email:</div>
-                      <div>{{ props.row.email }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Institution:</div>
-                      <div>{{ props.row.institution || 'N/A' }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Purpose:</div>
-                      <div>{{ props.row.purpose || 'N/A' }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Access Period:</div>
-                      <div>
-                        {{
-                          props.row.start_date
-                            ? new Date(props.row.start_date).toLocaleDateString()
-                            : 'N/A'
-                        }}
-                        to
-                        {{
-                          props.row.end_date
-                            ? new Date(props.row.end_date).toLocaleDateString()
-                            : 'N/A'
-                        }}
-                      </div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Last Login:</div>
-                      <div>
-                        {{
-                          props.row.last_login
-                            ? new Date(props.row.last_login).toLocaleString()
-                            : 'Never'
-                        }}
-                      </div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Approved By:</div>
-                      <div>{{ props.row.approved_by }}</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-weight-bold">Approved At:</div>
-                      <div>{{ new Date(props.row.approved_at).toLocaleString() }}</div>
-                    </div>
-                  </div>
-                </div>
-              </q-td>
-            </q-tr>
-          </template>
-        </q-table>
-      </q-tab-panel>
-
-      <!-- Extension Requests Tab (For Regular Admin) -->
-      <q-tab-panel name="extensions">
+      <!-- Extension Requests Tab -->
+      <q-tab-panel v-if="canManageVisitors" name="extensions">
         <q-table
           title="Visitor Extension Requests"
           :rows="extensionRequests"
@@ -1463,6 +1191,208 @@
       </q-card>
     </q-dialog>
 
+    <!-- Access Management Dialog -->
+    <q-dialog v-model="showAccessManagementDialog" persistent>
+      <q-card style="min-width: 600px; max-width: 800px">
+        <q-card-section class="row items-center bg-primary text-white">
+          <q-icon name="admin_panel_settings" size="sm" class="q-mr-sm" />
+          <div class="text-h6">Manage Access & Permissions</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup color="white" />
+        </q-card-section>
+
+        <q-card-section v-if="selectedAdminForAccess">
+          <!-- Admin Info -->
+          <div class="q-mb-lg">
+            <div class="text-subtitle1 text-weight-medium">
+              {{ selectedAdminForAccess.first_name }} {{ selectedAdminForAccess.last_name }}
+            </div>
+            <div class="text-caption text-grey">{{ selectedAdminForAccess.email }}</div>
+          </div>
+
+          <q-separator class="q-mb-md" />
+
+          <!-- Super Admin Section -->
+          <div class="q-mb-lg q-pa-md" style="background: #fff3cd; border-radius: 8px">
+            <div class="row items-center">
+              <q-icon name="stars" color="orange" size="md" class="q-mr-md" />
+              <div class="col">
+                <div class="text-weight-bold text-orange-9">Super Admin Privileges</div>
+                <div class="text-caption text-grey-8">
+                  Full system access including user management, all security features, and the
+                  ability to grant/revoke permissions to other admins.
+                </div>
+              </div>
+              <q-toggle
+                v-model="accessForm.is_super_admin"
+                color="orange"
+                size="lg"
+                :disable="selectedAdminForAccess.id === userStore.profile?.id"
+              >
+                <q-tooltip v-if="selectedAdminForAccess.id === userStore.profile?.id">
+                  You cannot modify your own super admin status
+                </q-tooltip>
+              </q-toggle>
+            </div>
+            <q-banner
+              v-if="accessForm.is_super_admin"
+              class="bg-orange-1 text-orange-9 q-mt-md"
+              rounded
+            >
+              <template v-slot:avatar>
+                <q-icon name="info" color="orange" />
+              </template>
+              Super admins automatically receive all permissions below.
+            </q-banner>
+          </div>
+
+          <q-separator class="q-mb-md" />
+
+          <!-- Security Access Section -->
+          <div class="q-mb-md">
+            <div class="text-subtitle2 text-weight-bold q-mb-md">Security & Monitoring</div>
+
+            <q-item tag="label" class="q-mb-sm">
+              <q-item-section avatar top>
+                <q-checkbox
+                  v-model="accessForm.has_security_access"
+                  color="primary"
+                  :disable="accessForm.is_super_admin"
+                />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-medium">Security Logs Access</q-item-label>
+                <q-item-label caption class="text-grey-7">
+                  View and monitor security events, including failed login attempts, suspicious
+                  activities, and user actions in the secure PDF viewer.
+                </q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-icon name="shield" color="primary" />
+              </q-item-section>
+            </q-item>
+          </div>
+
+          <q-separator class="q-mb-md" />
+
+          <!-- User Management Access Section -->
+          <div class="q-mb-md">
+            <div class="text-subtitle2 text-weight-bold q-mb-md">User Management Permissions</div>
+
+            <q-item tag="label" class="q-mb-sm">
+              <q-item-section avatar top>
+                <q-checkbox
+                  v-model="accessForm.can_manage_students"
+                  color="primary"
+                  :disable="accessForm.is_super_admin"
+                />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-medium">Manage Students</q-item-label>
+                <q-item-label caption class="text-grey-7">
+                  View, edit, and manage student accounts in the User Management section.
+                </q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-icon name="school" color="primary" />
+              </q-item-section>
+            </q-item>
+
+            <q-item tag="label" class="q-mb-sm">
+              <q-item-section avatar top>
+                <q-checkbox
+                  v-model="accessForm.can_manage_faculty"
+                  color="primary"
+                  :disable="accessForm.is_super_admin"
+                />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-medium">Manage Faculty</q-item-label>
+                <q-item-label caption class="text-grey-7">
+                  View, edit, and manage faculty accounts in the User Management section.
+                </q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-icon name="work" color="primary" />
+              </q-item-section>
+            </q-item>
+
+            <q-item tag="label" class="q-mb-sm">
+              <q-item-section avatar top>
+                <q-checkbox
+                  v-model="accessForm.can_manage_visitors"
+                  color="primary"
+                  :disable="accessForm.is_super_admin"
+                />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-medium">Manage Visitors</q-item-label>
+                <q-item-label caption class="text-grey-7">
+                  Approve visitor registrations, manage visitor accounts, and handle extension
+                  requests.
+                </q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-icon name="badge" color="primary" />
+              </q-item-section>
+            </q-item>
+
+            <q-item tag="label" class="q-mb-sm">
+              <q-item-section avatar top>
+                <q-checkbox
+                  v-model="accessForm.can_manage_admins"
+                  color="primary"
+                  :disable="accessForm.is_super_admin"
+                />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-medium">Manage Administrators</q-item-label>
+                <q-item-label caption class="text-grey-7">
+                  View and manage other admin accounts (excluding super admins). Cannot create new
+                  admins.
+                </q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-icon name="admin_panel_settings" color="primary" />
+              </q-item-section>
+            </q-item>
+          </div>
+
+          <q-banner
+            v-if="
+              !accessForm.is_super_admin &&
+              !accessForm.has_security_access &&
+              !accessForm.can_manage_students &&
+              !accessForm.can_manage_faculty &&
+              !accessForm.can_manage_visitors &&
+              !accessForm.can_manage_admins
+            "
+            class="bg-orange-1 text-orange-9"
+            rounded
+          >
+            <template v-slot:avatar>
+              <q-icon name="warning" color="orange" />
+            </template>
+            This admin will have no special permissions. They can only view content and manage their
+            own collections.
+          </q-banner>
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn flat label="Cancel" v-close-popup no-caps />
+          <q-btn
+            label="Save Changes"
+            color="primary"
+            @click="saveAccessPermissions"
+            :loading="savingAccess"
+            no-caps
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Delete Confirmation Dialog -->
     <q-dialog v-model="showDeleteDialog">
       <q-card class="conf-box">
@@ -1638,6 +1568,33 @@ const isSuperAdmin = computed(() => {
   return userStore.profile?.is_super_admin === true
 })
 
+const canManageAdmins = computed(() => {
+  return isSuperAdmin.value || userStore.profile?.can_manage_admins === true
+})
+
+const canManageStudents = computed(() => {
+  return isSuperAdmin.value || userStore.profile?.can_manage_students === true
+})
+
+const canManageFaculty = computed(() => {
+  return isSuperAdmin.value || userStore.profile?.can_manage_faculty === true
+})
+
+const canManageVisitors = computed(() => {
+  return isSuperAdmin.value || userStore.profile?.can_manage_visitors === true
+})
+
+// Computed property to filter admins list for regular admins
+// Regular admins can view other regular admins but not super admins
+const filteredAdmins = computed(() => {
+  if (isSuperAdmin.value) {
+    // Super admins see all admins
+    return admins.value
+  }
+  // Regular admins only see other regular admins (filter out super admins)
+  return admins.value.filter((admin) => !admin.is_super_admin)
+})
+
 const activeTab = ref('admins')
 const loading = ref(false)
 const creatingAdmin = ref(false)
@@ -1658,8 +1615,10 @@ const showSuccessDialog = ref(false)
 const showExtendDateDialog = ref(false)
 const showConfirmDialog = ref(false)
 const showExtensionDialog = ref(false)
+const showAccessManagementDialog = ref(false)
 const isProcessingRegistration = ref(false)
 const isProcessingExtension = ref(false)
+const savingAccess = ref(false)
 const successTitle = ref('')
 const successMessage = ref('')
 
@@ -1670,6 +1629,15 @@ const confirmTarget = ref(null)
 const confirmAction = ref('')
 const extensionTarget = ref(null)
 const extensionAction = ref('')
+const selectedAdminForAccess = ref(null)
+const accessForm = ref({
+  is_super_admin: false,
+  has_security_access: false,
+  can_manage_students: false,
+  can_manage_faculty: false,
+  can_manage_visitors: true, // Default: all admins can manage visitors
+  can_manage_admins: false,
+})
 
 const visitorDates = ref({
   start_date: '',
@@ -1818,7 +1786,7 @@ onMounted(async () => {
   } else {
     // Set default tab for regular admins
     if (!isSuperAdmin.value) {
-      activeTab.value = 'registrations'
+      activeTab.value = 'visitors'
     }
   }
 })
@@ -2272,6 +2240,79 @@ async function resendConfirmationEmail(admin) {
     })
   } finally {
     resendingEmail.value = null
+  }
+}
+
+function openAccessManagementDialog(admin) {
+  selectedAdminForAccess.value = admin
+
+  // Populate form with current values
+  // Default: visitor management is true for all admins
+  accessForm.value = {
+    is_super_admin: admin.is_super_admin || false,
+    has_security_access: admin.has_security_access || false,
+    can_manage_students: admin.can_manage_students || false,
+    can_manage_faculty: admin.can_manage_faculty || false,
+    can_manage_visitors: admin.can_manage_visitors !== false, // Default true
+    can_manage_admins: admin.can_manage_admins || false,
+  }
+
+  showAccessManagementDialog.value = true
+}
+
+async function saveAccessPermissions() {
+  if (!selectedAdminForAccess.value) return
+
+  savingAccess.value = true
+
+  try {
+    // Prepare update object
+    const updateData = {
+      is_super_admin: accessForm.value.is_super_admin,
+      has_security_access: accessForm.value.is_super_admin
+        ? true
+        : accessForm.value.has_security_access,
+      can_manage_students: accessForm.value.is_super_admin
+        ? true
+        : accessForm.value.can_manage_students,
+      can_manage_faculty: accessForm.value.is_super_admin
+        ? true
+        : accessForm.value.can_manage_faculty,
+      can_manage_visitors: accessForm.value.is_super_admin
+        ? true
+        : accessForm.value.can_manage_visitors,
+      can_manage_admins: accessForm.value.is_super_admin
+        ? true
+        : accessForm.value.can_manage_admins,
+    }
+
+    const { error } = await supabase
+      .from('registered_admins')
+      .update(updateData)
+      .eq('id', selectedAdminForAccess.value.id)
+
+    if (error) throw error
+
+    $q.notify({
+      type: 'positive',
+      message: 'Access permissions updated successfully',
+      caption: `Changes applied to ${selectedAdminForAccess.value.first_name} ${selectedAdminForAccess.value.last_name}`,
+      position: 'top',
+    })
+
+    // Close dialog and refresh
+    showAccessManagementDialog.value = false
+    await fetchAllUsers()
+  } catch (error) {
+    console.error('Error saving access permissions:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to update access permissions',
+      caption: error.message,
+      position: 'top',
+    })
+  } finally {
+    savingAccess.value = false
   }
 }
 
@@ -2748,6 +2789,33 @@ async function processExtensionRequest() {
 
 .status-btn {
   margin: 0 0.25rem;
+}
+
+/* Permission Cards */
+.permission-card {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.permission-card.super-admin {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+  border-color: #ff9800;
+}
+
+.permission-card.granted {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-color: #2196f3;
+}
+
+.permission-card.auto-granted {
+  background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+  border-color: #9c27b0;
+  opacity: 0.8;
+}
+
+.permission-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 768px) {

@@ -588,6 +588,7 @@ let channel = null
 const baseNavItems = [
   { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
   { name: 'user-management', label: 'User Management', icon: '\\icons\\users-m.png' },
+  { name: 'security-logs', label: 'Security Logs', icon: '\\icons\\security.png' },
   { name: 'data-quality', label: 'Data Quality', icon: '\\icons\\data_quality.png' },
   { name: 'appointment', label: 'Appointment', icon: '\\icons\\appointment.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
@@ -612,6 +613,15 @@ const navItems = computed(() => {
     // Show collections only for users
     if (item.name === 'collections') {
       return isUser.value
+    }
+
+    // Show security logs only for admins with security access
+    if (item.name === 'security-logs') {
+      return (
+        isAdmin.value &&
+        (userProfile.value.is_super_admin === true ||
+          userProfile.value.has_security_access === true)
+      )
     }
 
     // Show pages only for admins
@@ -973,6 +983,8 @@ watch(
       activeItem.value = 'data-quality'
     } else if (newPath.includes('user-management')) {
       activeItem.value = 'user-management'
+    } else if (newPath.includes('security-logs')) {
+      activeItem.value = 'security-logs'
     } else {
       activeItem.value = ''
     }
