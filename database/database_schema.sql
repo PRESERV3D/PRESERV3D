@@ -195,7 +195,7 @@ CREATE TABLE public.notifications (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   receiver_id uuid,
   message text NOT NULL,
-  type text NOT NULL CHECK (type = ANY (ARRAY['appointment_booking'::text, 'appointment_status'::text, 'visitor_registration'::text])),
+  type text NOT NULL CHECK (type = ANY (ARRAY['appointment_booking'::text, 'appointment_status'::text, 'visitor_registration'::text, 'visitor_extension'::text])),
   read boolean DEFAULT false,
   created_at timestamp with time zone,
   receiver_role text,

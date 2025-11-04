@@ -14,10 +14,11 @@ PRESERV3D is a **Quasar + Vue 3 SPA** for managing PUP Library archives. It hand
 - **Entry**: `src/App.vue` initializes session tracking via `useUserStore` and `trackAuthChanges()`
 - **Routing**: `src/router/index.js` with Supabase auth guards - checks `requiresAuth` and `allowedRoles` meta
 - **Boot Files** (`src/boot/`): Initialize global plugins before app mounts (order matters in `quasar.config.js`)
-  - **Load order**: `['axios', 'supabase', 'r2', 'model-viewer']` - dependencies must load before consumers
+  - **Load order**: `['axios', 'supabase', 'r2', 'pdfjs', 'model-viewer']` - dependencies must load before consumers
   - `axios.js` - HTTP client configuration, exposes `$axios` and `$api` globally
   - `supabase.js` - Auth client with session persistence, exposes `$supabase` and `$supabaseAdmin`
   - `r2.js` - Cloudflare R2 storage uploads, exposes `$r2Upload`, `$getR2Url`, `$getPresignedUrl`
+  - `pdfjs.js` - Configures PDF.js worker globally for SecurePdfViewer component
   - `model-viewer.js` - Registers `<model-viewer>` custom element, exposes `$loadModelViewer` for lazy loading
 - **State**: Pinia stores in `src/stores/` - `user.js` handles multi-table auth (students, faculty, visitors, admins)
 - **Quasar Plugins**: Dialog, Loading, Notify (configured in `quasar.config.js` framework.plugins)
@@ -29,7 +30,28 @@ PRESERV3D is a **Quasar + Vue 3 SPA** for managing PUP Library archives. It hand
   - Extracts: title, author, date, organization, place, keywords (KeyBERT), summary (BART)
   - OCR fallback via Tesseract.js for scanned documents
   - Metadata quality validation with semantic similarity checks (SentenceTransformer)
-- **Web Scraper** (`services/web_scraper.js`): Node.js/Puppeteer for related links discovery
+- **Web Scraper** (`services/web_scraper.js`): Node.js/Puppeteer for discovering related academic resources
+  - **Purpose**: Finds related academic links for documents/artifacts using DuckDuckGo HTML search
+  - **Architecture**: Shared browser instance with idle timeout (5 min) to reduce memory usage
+  - **Memory Optimizations**:
+    - Single-process mode, blocks images/CSS/fonts/media during scraping
+    - Controlled concurrency (batch processing: 2 URLs at a time)
+    - Forced garbage collection between batches if available
+  - **Chrome/Chromium Discovery**: Auto-detects system Chrome or uses `PUPPETEER_EXECUTABLE_PATH` env var
+  - **Search Strategy**: Combines title + author + categories + date into DuckDuckGo query
+  - **Content Filtering**:
+    - Filters out document files (.pdf, .doc, .docx, .xls, .ppt)
+    - Language detection via `franc` library (prefers English results)
+    - Returns max 3-5 links with title, description, URL, and language code
+  - **Error Handling**: Returns structured error messages, continues on individual URL failures
+  - **Integration**: Called from `EditViewDocument.vue` and `EditViewArtifacts.vue` via `fetchRelatedLinks()` function
+  - **Storage**: Results saved to `related_links` JSONB column in respective metadata tables
+- **Additional Services** (utility/support functions):
+  - `ocr_service.js` - Tesseract.js integration for scanned document processing
+  - `email_service.js` - Email notifications for appointments and visitor approvals
+  - `narration_service.js` - Generates descriptive narration for 3D artifacts
+  - `report_service.js` & `report_charts.js` - Generate analytics reports and charts
+  - `auth_service.js` - Helper functions for authentication tracking
 
 ### Storage Architecture
 
@@ -79,6 +101,14 @@ cd services
 .\venv\Scripts\activate
 uvicorn nlp_service:app --reload --host 0.0.0.0 --port 8000
 ```
+
+**Web Scraper Service** (optional but recommended for related links feature):
+
+- Runs on-demand via command-line invocation from frontend
+- No persistent server needed - invoked as Node.js subprocess
+- Uses Puppeteer with shared browser instance for efficiency
+- Requires Chrome/Chromium installed or set via `PUPPETEER_EXECUTABLE_PATH` env var
+- Test manually: `node services/web_scraper.js "document title" "author" "categories" "date"`
 
 ### Python Virtual Environment Setup
 
@@ -224,8 +254,25 @@ async function uploadFileToR2(file, folder, fileName) {
   - Built-in zoom controls and page navigation
   - Uses PDF.js for client-side rendering
 - **Usage**: `<SecurePdfViewer v-model="show" :pdf-url="url" :document-title="title" :document-author="author" />`
-- **Implementation**: ViewDocumentPage.vue uses this instead of opening PDFs in new tabs
+- **Implementation**: `ViewDocumentPage.vue` uses this instead of opening PDFs in new tabs
 - **Worker Configuration**: PDF.js worker loaded from `public/pdf.worker.min.mjs` with CDN fallback
+- **Boot File**: `pdfjs.js` configures worker path globally before app mounts
+
+### Web Scraper Integration
+
+- **Purpose**: Discover related academic resources for documents and artifacts
+- **UI Components**: Integrated into `EditViewDocument.vue` and `EditViewArtifacts.vue`
+- **User Flow**:
+  1. Admin/editor clicks "Fetch Related Links" button
+  2. Frontend invokes Node.js subprocess: `node services/web_scraper.js <params>`
+  3. Scraper searches DuckDuckGo with metadata (title, author, categories, date)
+  4. Returns 3-5 filtered links (English preferred, no document files)
+  5. User reviews and saves selected links to `related_links` JSONB column
+- **Functions**:
+  - `fetchRelatedLinks(title, author, categories, date)` - Initiates search via child_process spawn
+  - `saveRelatedLinks()` - Persists selected links to database with audit trail
+- **Performance**: Shared browser instance reduces memory, batch scraping with concurrency control
+- **Error Handling**: Graceful degradation - continues on individual URL failures, returns partial results
 
 ### NLP Pipeline Details
 
@@ -249,13 +296,13 @@ async function uploadFileToR2(file, folder, fileName) {
 
 ### Appointment System
 
-- Users book via `/appointment` (`AppointmentBooking.vue`) → creates record in `appointments` table
+- Users book via `/appointment` (`AppointmentBooking.vue`) → creates record in `appointment_booking` table
 - Admins manage via `/admin/appointments` (`AdminAppointmentPage.vue`) → update status, send email notifications
 - Faculty/visitors have separate registration flows:
   - `UserFacultyPage.vue` - Faculty registration with institution validation
   - `UserVisitorPage.vue` - Multi-step visitor registration with letter upload (R2: `visitor-letters/`)
 - Notification system (`notifications` table) alerts admins of new registrations/appointments
-  - Types: 'appointment_booking', 'appointment_status', 'visitor_registration'
+  - Types: 'appointment_booking', 'appointment_status', 'visitor_registration', 'visitor_extension'
   - Admins see notifications in real-time via `receiver_role = 'admin'` query
 
 ## File Organization Patterns
@@ -338,6 +385,35 @@ import MyComponent from 'src/components/MyComponent.vue'
 **Symptom**: Global functions not available in components
 **Fix**: Check `quasar.config.js` boot array order - dependencies must load before consumers (e.g., `supabase` before `r2`)
 
+### Web Scraper Chrome/Chromium Not Found
+
+**Symptom**: Web scraper fails with "No Chrome/Chromium browser found" error
+**Fix**:
+
+- Set `PUPPETEER_EXECUTABLE_PATH` environment variable to Chrome executable path
+- Windows: `C:\Program Files\Google\Chrome\Application\chrome.exe`
+- Or run: `cd services; npm run install-chrome` (if script exists)
+- Check system paths: `/usr/bin/chromium`, `/usr/bin/google-chrome`, etc. (Linux)
+
+### Web Scraper Timeout or Memory Issues
+
+**Symptom**: Scraper times out or crashes during batch processing
+**Fix**:
+
+- Reduce concurrency in `scrapeAllContent()` (default: 2 URLs at a time)
+- Increase navigation timeout if network is slow (default: 15s)
+- Verify shared browser instance isn't being closed prematurely
+- Check memory usage with `logMemoryUsage()` calls in script
+
+### Related Links Not Saving
+
+**Symptom**: Fetched links don't persist to database
+**Fix**:
+
+- Verify `related_links` JSONB column exists in `documents_metadata` and `artifacts_metadata` tables
+- Check audit trail in `item_history` table for error messages
+- Ensure user has edit permissions for the document/artifact
+
 ### Visitor Extension Requests
 
 **Current Implementation**: "Request Extension" button exists in `ProfilePage.vue` but functionality not yet connected
@@ -377,19 +453,200 @@ await fetchPage(1) // Load first page
 
 Critical indexes for query performance - must be applied manually via Supabase SQL Editor:
 
-- `documents_metadata`: uploaded_at, updated_at, metadata GIN index, file_name
-- `artifacts_metadata`: same as documents
-- `collections`, `collection_items`: composite indexes for joins
-- `user_activity_log`, `logins`: user_id + timestamp
-- All user tables: email, created_at
+**Content Tables** (frequently fetched for listings, search, filtering):
 
-**Expected improvement: 30-50% faster queries**
+- `documents_metadata`: uploaded_at, updated_at, metadata GIN index, file_name, search_text (tsvector)
+- `artifacts_metadata`: uploaded_at, updated_at, metadata GIN index, file_name, search_text (tsvector)
+- Both tables indexed on `id` (primary key) for single-item lookups
+
+**Collections System** (heavily used in view/edit pages):
+
+- `collections`: user_id (for user's collections), composite (user_id + collection_name)
+- `collection_items`: composite (collection_id + item_type + item_id), reverse (item_id + item_type)
+- Enables fast lookups: "which collections contain this item?" and "what items in this collection?"
+
+**User Authentication** (parallel queries in `useUserStore.fetchProfile()`):
+
+- `registered_users`: email, created_at, account_status
+- `registered_faculty`: email, created_at, account_status
+- `registered_admins`: email, is_super_admin (partial index for super admins only), account_status
+- `approved_visitors`: email, user_id, registration_id, composite (start_date + end_date)
+- Speeds up login, profile resolution, and user management queries
+
+**Activity Tracking** (analytics, recent activity widgets):
+
+- `user_activity_log`: composite (user_id + clicked_at DESC), (item_id + user_id + clicked_at)
+- `logins`: composite (user_id + login_at DESC) for "last seen" queries
+- Enables fast "recent activity" and "last login" lookups
+
+**Audit & Quality Control** (admin features):
+
+- `item_history`: composite (item_id + item_type + performed_at DESC) for change tracking
+- `inconsistencies`: composite (status + source_type), record_id for resolution workflow
+- Speeds up data quality dashboard and edit history views
+
+**Notifications System** (real-time admin alerts):
+
+- `notifications`: composite (receiver_id + read + created_at DESC)
+- `notifications`: receiver_role for admin broadcast queries, type for notification filtering
+- Enables fast unread count and notification feed queries
+
+**Appointments** (visitor/user booking system):
+
+- `appointment_booking`: user_id, status, email, composite (date + status)
+- Speeds up "my appointments" and admin appointment management
+
+**Related Links** (web scraper integration):
+
+- `documents_metadata.related_links`: GIN index for JSONB queries
+- `artifacts_metadata.related_links`: GIN index for JSONB queries
+- Enables fast filtering/searching within related links
+
+**Account Extensions** (visitor extension requests):
+
+- `account_extensions`: approval_id, extension_status, reviewed_at indexes
+- Enables fast lookup of pending extension requests and approval history
+
+**Security & Audit** (compliance and monitoring):
+
+- `security_logs`: user_id, document_id, event_type, timestamp indexes
+- `all_users`: unified user view with email, user_type, created_at indexes
+- Enables fast security event tracking and cross-user-type queries
+
+**Email & Communication** (tracking and debugging):
+
+- `email_logs`: recipient, status, sent_at indexes for email delivery tracking
+
+**WebRTC Signaling** (peer connections):
+
+- `webrtc_signaling`: connection_code (unique), status, expires_at indexes
+- Enables fast peer connection lookup and cleanup of expired sessions
+
+**Expected improvement: 30-50% faster queries overall, 70%+ for filtered/sorted lists**
+
+**Index Maintenance**:
+
+- Indexes auto-update on INSERT/UPDATE/DELETE
+- Monitor index usage: `SELECT * FROM pg_stat_user_indexes WHERE schemaname = 'public'`
+- Rebuild if fragmented: `REINDEX INDEX CONCURRENTLY index_name`
+
+**Query Best Practices for Indexed Tables**:
+
+- **Use indexed columns in WHERE clauses**: Filter on `uploaded_at`, `user_id`, `status`, `email`
+- **Order by indexed columns**: Use `ORDER BY uploaded_at DESC` or `ORDER BY clicked_at DESC`
+- **Composite index order matters**: For `(user_id, clicked_at)`, query should filter user_id first
+- **JSONB queries**: Use `@>`, `?`, `?|` operators on `metadata` and `related_links` columns
+- **Full-text search**: Use `to_tsvector` and `@@` operators on `search_text` column
+- **Avoid LIKE patterns starting with %**: `LIKE '%text'` doesn't use index, but `LIKE 'text%'` does
+- **Limit large result sets**: Use pagination with `LIMIT` and `OFFSET` for better performance
+
+**Example Optimized Queries**:
+
+```javascript
+// ✅ Good: Uses idx_documents_uploaded_at
+const { data } = await supabase
+  .from('documents_metadata')
+  .select('*')
+  .order('uploaded_at', { ascending: false })
+  .limit(20)
+
+// ✅ Good: Uses idx_user_activity_recent composite index
+const { data } = await supabase
+  .from('user_activity_log')
+  .select('*')
+  .eq('user_id', userId)
+  .order('clicked_at', { ascending: false })
+  .limit(10)
+
+// ✅ Good: Uses idx_notifications_receiver composite index
+const { data } = await supabase
+  .from('notifications')
+  .select('*')
+  .eq('receiver_id', userId)
+  .eq('read', false)
+  .order('created_at', { ascending: false })
+
+// ✅ Good: Uses GIN index on metadata JSONB
+const { data } = await supabase
+  .from('documents_metadata')
+  .select('*')
+  .contains('metadata', { category: 'Research' })
+
+// ❌ Avoid: Fetching all records without limit
+const { data } = await supabase.from('documents_metadata').select('*') // Can return thousands of records
+
+// ❌ Avoid: Ordering by non-indexed column
+const { data } = await supabase
+  .from('documents_metadata')
+  .select('*')
+  .order('some_unindexed_field', { ascending: false })
+```
+
+### Adding New Indexes - Decision Guide
+
+**When to add an index**:
+
+1. **Slow queries**: Query takes >500ms consistently
+2. **Frequent queries**: Same query pattern executed >100x per day
+3. **WHERE clauses**: Filtering on columns not yet indexed
+4. **ORDER BY**: Sorting on columns not yet indexed
+5. **JOIN conditions**: Joining on foreign key columns
+6. **JSONB queries**: Frequently querying into JSONB columns
+
+**Index types to choose**:
+
+- **B-Tree (default)**: For equality (`=`) and range (`<`, `>`, `BETWEEN`) queries
+- **GIN**: For JSONB (`@>`, `?`), arrays, and full-text search (`@@`)
+- **Composite**: For multi-column filters (e.g., `WHERE user_id = X AND status = Y`)
+- **Partial**: For filtered queries (e.g., `WHERE deleted = false`)
+
+**Step-by-step process**:
+
+1. **Identify slow query**: Check Supabase logs or use `EXPLAIN ANALYZE`
+2. **Analyze query pattern**: What columns are in WHERE/ORDER BY/JOIN?
+3. **Check existing indexes**: `\d+ table_name` in psql or Supabase dashboard
+4. **Create index in SQL file**: Add to `database/optimization_indexes_safe.sql`
+5. **Test locally**: Run query before/after, measure improvement
+6. **Apply to production**: Run SQL in Supabase dashboard
+7. **Monitor**: Check `pg_stat_user_indexes` for index usage
+
+**Example: Adding index for new feature**:
+
+```sql
+-- Feature: Filter documents by category
+-- Query pattern: WHERE metadata->>'category' = 'Research'
+-- Solution: Expression index on JSONB field
+
+CREATE INDEX IF NOT EXISTS idx_documents_category
+ON documents_metadata((metadata->>'category'));
+
+-- Feature: Recent uploads by specific user
+-- Query pattern: WHERE uploaded_by = X ORDER BY uploaded_at DESC
+-- Solution: Composite index
+
+CREATE INDEX IF NOT EXISTS idx_documents_user_recent
+ON documents_metadata(uploaded_by, uploaded_at DESC);
+```
+
+**Common pitfalls to avoid**:
+
+- **Over-indexing**: Too many indexes slow down INSERT/UPDATE
+- **Duplicate indexes**: Check for overlapping index coverage
+- **Wrong column order**: In composite indexes, most selective column first
+- **Missing DESC**: For timestamp sorts, include DESC in index definition
 
 ## Testing Approach
 
 - **No formal test suite** (package.json has placeholder test script)
 - Manual testing via dev server + database inspection in Supabase dashboard
 - NER model training data in `services/nlp_training/training_data.jsonl`
+- **Test Files**:
+  - `services/test_scraper.js` - Manual testing script for web scraper functionality
+  - `services/tests/` - Additional test scripts for backend services
+- **Testing Workflow**:
+  - Frontend: Run `npm run dev`, manually test features in browser
+  - Backend: Test NLP service with curl/Postman, web scraper with command-line invocation
+  - Database: Verify data integrity through Supabase dashboard SQL editor
 
 ## Deployment
 
