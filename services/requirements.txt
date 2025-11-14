@@ -54,3 +54,5 @@ huggingface-hub
 filelock
 packaging
 tqdm
+cheerio
+franc
