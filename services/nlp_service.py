@@ -42,8 +42,18 @@ HF_API_BASE = "https://router.huggingface.co/models"
 
 # API endpoints for heavy models
 HF_SUMMARIZER = f"{HF_API_BASE}/facebook/bart-large-cnn"
-HF_EMBEDDINGS = f"{HF_API_BASE}/sentence-transformers/all-MiniLM-L6-v2"
 HF_KEYWORDS = f"{HF_API_BASE}/ml6team/keyphrase-extraction-kbir-inspec"
+
+# Try to load sentence-transformers for local embeddings
+_sentence_transformer = None
+try:
+    from sentence_transformers import SentenceTransformer
+    print("Attempting to load local sentence-transformers model...")
+    _sentence_transformer = SentenceTransformer('all-MiniLM-L6-v2')
+    print("Local embedding model loaded successfully")
+except Exception as e:
+    print(f"Warning: Could not load sentence-transformers locally: {e}")
+    print("Will use TF-IDF based similarity as fallback")
 
 _nlp = None
 
@@ -54,6 +64,58 @@ def get_nlp():
         _nlp = spacy.load("nlp_training/ner_model")
         print("Custom NER model loaded successfully")
     return _nlp
+
+def get_local_embeddings(text):
+    """Get embeddings using local sentence-transformers model"""
+    if _sentence_transformer is not None:
+        try:
+            # Truncate text to avoid memory issues
+            text_sample = text[:512]
+            embedding = _sentence_transformer.encode(text_sample, convert_to_tensor=False)
+            return embedding.tolist() if hasattr(embedding, 'tolist') else list(embedding)
+        except Exception as e:
+            print(f"Local embedding error: {e}")
+            return None
+    return None
+
+def get_tfidf_similarity(text1, text2):
+    """Simple TF-IDF based similarity as ultimate fallback"""
+    from collections import Counter
+    import re
+    
+    # Tokenize and normalize
+    def tokenize(text):
+        words = re.findall(r'\b\w+\b', text.lower())
+        # Remove common stop words
+        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+                      'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'be', 
+                      'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
+                      'would', 'should', 'could', 'may', 'might', 'must', 'can', 'this',
+                      'that', 'these', 'those', 'it', 'its', 'they', 'their', 'them'}
+        return [w for w in words if w not in stop_words and len(w) > 2]
+    
+    tokens1 = tokenize(text1)
+    tokens2 = tokenize(text2)
+    
+    if not tokens1 or not tokens2:
+        return 0.0
+    
+    # Calculate term frequencies
+    freq1 = Counter(tokens1)
+    freq2 = Counter(tokens2)
+    
+    # Get all unique terms
+    all_terms = set(freq1.keys()) | set(freq2.keys())
+    
+    # Calculate dot product and magnitudes
+    dot_product = sum(freq1.get(term, 0) * freq2.get(term, 0) for term in all_terms)
+    magnitude1 = math.sqrt(sum(count ** 2 for count in freq1.values()))
+    magnitude2 = math.sqrt(sum(count ** 2 for count in freq2.values()))
+    
+    if magnitude1 == 0 or magnitude2 == 0:
+        return 0.0
+    
+    return dot_product / (magnitude1 * magnitude2)
 
 def call_hf_api(endpoint, payload, max_retries=3):
     if not HF_API_TOKEN:
@@ -118,122 +180,15 @@ def call_hf_api(endpoint, payload, max_retries=3):
             time.sleep(1 + attempt)
     return None
 
-def call_hf_embeddings(model_name, text, max_retries=3):
-    if not HF_API_TOKEN:
-        print("Warning: HF_API_TOKEN not set, skipping embeddings API call")
-        return None
-
-    headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
-    endpoint = f"{HF_API_BASE}/{model_name}"
-    
-    # Try different payload formats based on the pipeline type
-    payloads_to_try = [
-        # Format 1: SentenceSimilarityPipeline format
-        {
-            "inputs": {
-                "source_sentence": text,
-                "sentences": [text]
-            },
-            "options": {"wait_for_model": True}
-        },
-        # Format 2: Standard feature-extraction format
-        {
-            "inputs": text,
-            "options": {"wait_for_model": True}
-        }
-    ]
-
-    for payload_idx, payload in enumerate(payloads_to_try):
-        for attempt in range(max_retries):
-            try:
-                print(f"Calling HF embeddings (payload format {payload_idx + 1}, attempt {attempt + 1}) model={model_name}")
-                response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
-
-                if response.status_code == 503:
-                    if attempt < max_retries - 1:
-                        import time
-                        print("Embeddings model loading, retrying in 3s...")
-                        time.sleep(3)
-                        continue
-                    else:
-                        print("Embeddings model failed to load after retries")
-                        break 
-
-                if response.status_code == 400:
-                    print(f"400 error with payload format {payload_idx + 1}, trying next format...")
-                    break 
-
-                try:
-                    response.raise_for_status()
-                except requests.exceptions.HTTPError as http_err:
-                    body = None
-                    try:
-                        body = response.text
-                    except Exception:
-                        body = '<unable to read response body>'
-                    print(f"HF Embeddings HTTP error ({response.status_code}): {http_err}. Response body: {body}")
-                    break 
-
-                data = None
-                try:
-                    data = response.json()
-                except Exception as e:
-                    print("Failed to parse HF embeddings response as JSON:", e)
-                    return None
-
-                # Handle different response formats
-                if isinstance(data, list):
-                    if len(data) > 0:
-                        # If it's a list of lists (batch embeddings)
-                        if isinstance(data[0], list):
-                            return [float(x) for x in data[0]]
-                        # If it's a flat list of numbers (single embedding or scores)
-                        elif all(isinstance(x, (float, int)) for x in data):
-                            return [float(x) for x in data]
-                
-                # Format 2: Dictionary with embedding/similarity keys
-                if isinstance(data, dict):
-                    for key in ("embeddings", "embedding", "vector", "features"):
-                        if key in data:
-                            emb = data[key]
-                            if isinstance(emb, list):
-                                if len(emb) > 0 and isinstance(emb[0], list):
-                                    return [float(x) for x in emb[0]]
-                                return [float(x) for x in emb]
-
-                print(f"Unexpected response format with payload {payload_idx + 1}. Response preview:", str(data)[:300])
-                break
-
-            except requests.exceptions.RequestException as e:
-                if attempt == max_retries - 1:
-                    print(f"HF Embeddings API error after {max_retries} attempts with payload format {payload_idx + 1}: {e}")
-                    break 
-                import time
-                time.sleep(1 + attempt)
-    
-    # If all formats failed, return None
-    print("All payload formats failed for embeddings")
-    return None
-
-
 def get_embeddings(text):
-    emb = call_hf_embeddings("sentence-transformers/all-MiniLM-L6-v2", text)
+    """Get embeddings using local model or fallback to TF-IDF"""
+    # Try local sentence-transformers first
+    emb = get_local_embeddings(text)
     if emb and isinstance(emb, list) and len(emb) > 0:
-        try:
-            return [float(x) for x in emb]
-        except Exception:
-            print("Failed to coerce embedding values to float")
+        return emb
     
-    # Fallback to a model that's definitely deployed as feature-extraction
-    print("Trying fallback embedding model...")
-    emb = call_hf_embeddings("sentence-transformers/paraphrase-MiniLM-L6-v2", text)
-    if emb and isinstance(emb, list) and len(emb) > 0:
-        try:
-            return [float(x) for x in emb]
-        except Exception:
-            print("Failed to coerce fallback embedding values to float")
-    
-    print("All embedding models failed, returning empty vector")
+    # If local embeddings fail, we'll use TF-IDF similarity directly in the calling function
+    print("Local embeddings unavailable, will use TF-IDF similarity")
     return []
 
 def extract_keywords_hf(text, top_n=10):
@@ -563,14 +518,14 @@ def check_summary_relevance(title, summary, keywords=None, categories=None, auth
         print("Warning: No context available for relevance check")
         return {}
     
-    # Semantic similarity check using embeddings
+    # Semantic similarity check using embeddings or TF-IDF
     try:
         context_emb = get_embeddings(context_text) or []
         summary_emb = get_embeddings(summary) or []
 
         if context_emb and summary_emb:
             similarity = cosine_similarity(context_emb, summary_emb)
-            print(f"Summary similarity score: {similarity:.3f}")
+            print(f"Summary similarity score (embeddings): {similarity:.3f}")
             
             # Adjusted thresholds with severity levels
             if similarity < 0.45:
@@ -588,9 +543,28 @@ def check_summary_relevance(title, summary, keywords=None, categories=None, auth
                     "severity": "medium"
                 }
         else:
-            print("Skipping embedding-based similarity check - embeddings unavailable")
+            # Use TF-IDF similarity as fallback
+            print("Using TF-IDF similarity check as fallback")
+            similarity = get_tfidf_similarity(context_text, summary)
+            print(f"Summary similarity score (TF-IDF): {similarity:.3f}")
+            
+            # Slightly adjusted thresholds for TF-IDF (more lenient)
+            if similarity < 0.15:
+                return {
+                    "field": "summary",
+                    "issue": f"Summary has low word overlap with document context (score: {similarity:.2f})",
+                    "suggestion": "Rewrite the summary to better reflect the main topics, themes, and key points of the document.",
+                    "severity": "high"
+                }
+            elif similarity < 0.25:
+                return {
+                    "field": "summary",
+                    "issue": f"Summary word overlap could be improved (score: {similarity:.2f})",
+                    "suggestion": "Consider revising the summary to include more key terms from the document.",
+                    "severity": "medium"
+                }
     except Exception as e:
-        print(f"Embedding similarity check failed: {e}")
+        print(f"Similarity check failed: {e}")
     
     # Keyword overlap check
     if keywords and len(keywords) >= 3:
@@ -1483,167 +1457,79 @@ async def related_links(
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         script_path = os.path.join(script_dir, "web_scraper.js")
-        node_modules_path = os.path.join(script_dir, 'node_modules')
         
-        print(f"=== Related Links Request ===")
-        print(f"Script directory: {script_dir}")
-        print(f"Script path: {script_path}")
-        print(f"Script exists: {os.path.exists(script_path)}")
-        print(f"node_modules exists: {os.path.exists(node_modules_path)}")
-        
-        # Verify both script and node_modules exist
+        # Verify script exists
         if not os.path.exists(script_path):
-            available_files = os.listdir(script_dir) if os.path.exists(script_dir) else []
             return {
                 "links": [], 
-                "error": f"web_scraper.js not found at {script_path}. Available files: {available_files[:10]}"
+                "error": f"web_scraper.js not found at {script_path}"
             }
         
-        if not os.path.exists(node_modules_path):
-            return {
-                "links": [],
-                "error": f"node_modules not found at {node_modules_path}. This usually means the build didn't complete properly. Please redeploy the service."
-            }
-        
-        # Check if critical dependencies exist
-        critical_deps = ['puppeteer-extra', 'puppeteer', 'cheerio', 'franc']
-        missing_deps = []
-        for dep in critical_deps:
-            dep_path = os.path.join(node_modules_path, dep)
-            if not os.path.exists(dep_path):
-                missing_deps.append(dep)
-        
-        if missing_deps:
-            print(f"Missing dependencies: {missing_deps}")
-            return {
-                "links": [],
-                "error": f"Missing Node.js dependencies: {', '.join(missing_deps)}. Please redeploy."
-            }
-        
-        # Check Node.js availability
-        try:
-            node_version = subprocess.run(
-                ["node", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            print(f"Node.js version: {node_version.stdout.strip()}")
-            if node_version.returncode != 0:
-                return {
-                    "links": [],
-                    "error": f"Node.js check failed: {node_version.stderr}"
-                }
-        except Exception as e:
-            return {
-                "links": [],
-                "error": f"Node.js not available: {str(e)}"
-            }
-        
-        # Prepare the command
+        # Prepare command
         cmd = ["node", "--expose-gc", script_path, title, author or "", categories or "", date or ""]
-        print(f"Running command: {' '.join(cmd)}")
         
-        # Set up environment with proper NODE_PATH
+        # Set up environment
         env = os.environ.copy()
         env["NODE_ENV"] = "production"
-        env["NODE_PATH"] = node_modules_path
+        env["NODE_PATH"] = os.path.join(script_dir, 'node_modules')
         
-        # Run the Node.js scraper
+        # Run scraper with 2-minute timeout
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             encoding='utf-8',
             errors='replace',
-            timeout=90,  # Increased timeout to 90 seconds
+            timeout=120,
             cwd=script_dir,
             env=env
         )
         
-        # Log the results
-        print(f"Return code: {result.returncode}")
-        print(f"Stdout length: {len(result.stdout)}")
-        print(f"Stderr length: {len(result.stderr)}")
-        if result.stderr:
-            print(f"STDERR preview: {result.stderr[:500]}")
-        
-        # Check for errors
+        # Handle errors
         if result.returncode != 0:
             error_msg = result.stderr or "Unknown error"
-            print(f"Scraper error (exit code {result.returncode}):")
-            print(f"STDERR: {error_msg[:1000]}")  # First 1000 chars
-            
-            # Try to parse stderr as JSON
             try:
                 error_data = json.loads(result.stderr)
                 return {
                     "links": [], 
-                    "error": error_data.get("error", error_msg),
-                    "stack": error_data.get("stack", "")[:500]  # Truncate stack trace
+                    "error": error_data.get("error", error_msg)
                 }
             except json.JSONDecodeError:
                 return {
                     "links": [], 
-                    "error": error_msg[:500]  # Truncate error message
+                    "error": error_msg[:500]
                 }
         
-        # Check if stdout is empty
+        # Parse and return results
         if not result.stdout or result.stdout.strip() == "":
-            print("Scraper returned empty output")
-            if result.stderr:
-                print(f"STDERR: {result.stderr[:1000]}")
             return {
                 "links": [], 
-                "error": "No output from scraper",
-                "stderr": result.stderr[:500] if result.stderr else None
+                "error": "No output from scraper"
             }
         
-        # Parse stdout as JSON
         try:
-            print(f"Parsing output (first 200 chars): {result.stdout[:200]}")
             data = json.loads(result.stdout)
-            
-            # Handle warning from scraper
-            if "warning" in data:
-                print(f"Scraper warning: {data['warning']}")
-            
             return data
-            
         except json.JSONDecodeError as e:
-            print(f"JSON parse error: {e}")
-            print(f"Raw stdout (first 500 chars): {result.stdout[:500]}")
-            print(f"Raw stderr: {result.stderr[:500]}")
-            
             return {
                 "links": [], 
-                "error": f"Invalid JSON from scraper: {str(e)}",
-                "raw_output": result.stdout[:200]
+                "error": f"Invalid JSON from scraper: {str(e)}"
             }
             
     except subprocess.TimeoutExpired:
-        print("Scraper timeout after 60 seconds")
         return {
             "links": [], 
-            "error": "Scraper timeout after 60 seconds"
+            "error": "Search timeout after 120 seconds. The search service may be slow or unavailable."
         }
-        
     except FileNotFoundError as e:
-        print(f"File not found error: {e}")
         return {
             "links": [], 
-            "error": f"Command not found: {str(e)}. Is Node.js installed?"
+            "error": f"Node.js not found: {str(e)}"
         }
-        
     except Exception as e:
-        print(f"Unexpected error in related_links: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        
         return {
             "links": [], 
-            "error": f"Unexpected error: {str(e)}",
-            "type": type(e).__name__
+            "error": f"Unexpected error: {str(e)}"
         }
     
 @app.post("/extract-text")

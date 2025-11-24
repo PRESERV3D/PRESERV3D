@@ -186,15 +186,37 @@ async function searchDuckDuckGo(query, maxResults = 3) {
       Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9',
     })
 
-    await page.setDefaultNavigationTimeout(30000)
+    await page.setDefaultNavigationTimeout(60000) // Increased to 60s
 
     const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
     console.error(`Searching: ${searchUrl}`)
 
-    await page.goto(searchUrl, {
-      waitUntil: 'domcontentloaded',
-      timeout: 30000,
-    })
+    // Try navigation with retries
+    let navigationSuccess = false
+    let lastError = null
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        console.error(`Navigation attempt ${attempt}/3...`)
+        await page.goto(searchUrl, {
+          waitUntil: 'domcontentloaded',
+          timeout: 60000, // Increased to 60s
+        })
+        navigationSuccess = true
+        console.error(`Navigation successful on attempt ${attempt}`)
+        break
+      } catch (navError) {
+        lastError = navError
+        console.error(`Navigation attempt ${attempt} failed: ${navError.message}`)
+        if (attempt < 3) {
+          await wait(2000) // Wait 2s before retry
+        }
+      }
+    }
+
+    if (!navigationSuccess) {
+      throw new Error(`Failed to navigate to DuckDuckGo after 3 attempts: ${lastError?.message}`)
+    }
 
     await wait(1000) // Reduced from 1500ms
 
@@ -279,15 +301,16 @@ async function scrapeContent(url) {
       }
     })
 
-    await page.setDefaultNavigationTimeout(15000) // Reduced from 20s
+    await page.setDefaultNavigationTimeout(20000) // Increased to 20s
 
     try {
       await page.goto(url, {
         waitUntil: 'domcontentloaded',
-        timeout: 15000,
+        timeout: 20000,
       })
     } catch (navError) {
       console.error(`Navigation to ${url} failed: ${navError.message}`)
+      // Continue even if navigation fails - we'll return partial data
     }
 
     await wait(500) // Reduced from 1000ms
@@ -391,7 +414,23 @@ async function main() {
 
     console.error(`Searching for: "${searchQuery}"`)
 
-    const searchResults = await searchDuckDuckGo(searchQuery, 5)
+    let searchResults
+    try {
+      searchResults = await searchDuckDuckGo(searchQuery, 5)
+    } catch (searchError) {
+      console.error(`Search failed: ${searchError.message}`)
+
+      // Return error with helpful message
+      const errorResponse = {
+        links: [],
+        error: `Search service unavailable: ${searchError.message}`,
+        suggestion:
+          'The search service may be experiencing connectivity issues. Please try again in a few moments.',
+      }
+
+      console.log(JSON.stringify(errorResponse))
+      return
+    }
 
     if (searchResults.length === 0) {
       console.error('No search results found')
