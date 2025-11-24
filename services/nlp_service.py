@@ -313,7 +313,7 @@ async def root():
     return {
         "message": "PRESERV3D NLP Service",
         "status": "running",
-        "endpoints": ["/health", "/process-text", "/generate-summary", "/extract-text"]
+        "endpoints": ["/health", "/process-text", "/generate-summary", "/extract-text", "/related-links", "/rescan-metadata" ]
     }
 
 @app.post("/process-text")
