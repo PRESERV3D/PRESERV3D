@@ -38,7 +38,7 @@ app.add_middleware(
 
 # Hugging Face API configuration
 HF_API_TOKEN = os.getenv("HF_API_TOKEN")
-HF_API_BASE = "https://api-inference.huggingface.co/models"
+HF_API_BASE = "https://router.huggingface.co/models"
 
 # API endpoints for heavy models
 HF_SUMMARIZER = f"{HF_API_BASE}/facebook/bart-large-cnn"

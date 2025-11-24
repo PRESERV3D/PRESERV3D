@@ -59,7 +59,7 @@ Important deployment notes:
 - Environment variable: `HF_API_TOKEN` (Hugging Face API token) is required for the NLP service to call Hugging Face inference endpoints. Add this to your Render/Vercel/host environment settings.
 - To avoid mismatches with different HF pipeline types (for example the SentenceSimilarity pipeline which expects `sentences`/`references`), the service uses the dedicated embeddings endpoint at:
 
-  https://api-inference.huggingface.co/embeddings
+  https://router.huggingface.co/embeddings
 
   The code sends payloads like `{ "model": "sentence-transformers/all-MiniLM-L6-v2", "input": "..." }` and includes normalization for common response shapes.
 
