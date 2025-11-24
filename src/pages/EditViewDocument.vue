@@ -262,6 +262,7 @@
                     </div>
 
                     <div v-else>
+                      <div class="text-h6 q-mb-md">Generated Summary</div>
                       <q-input
                         v-model="summary"
                         type="textarea"
@@ -269,6 +270,54 @@
                         dense
                         style="min-height: 120px"
                       />
+
+                      <!-- Relevance Error Display -->
+                      <div
+                        v-if="relevanceError"
+                        class="q-mt-sm q-pa-sm"
+                        style="
+                          background-color: #ffebee;
+                          border-left: 4px solid #f44336;
+                          border-radius: 4px;
+                        "
+                      >
+                        <div class="text-negative text-weight-medium" style="font-size: 13px">
+                          {{ relevanceError.issue }}
+                        </div>
+                        <div class="text-caption text-grey-8 q-mt-xs">
+                          Suggestion: {{ relevanceError.suggestion }}
+                        </div>
+                      </div>
+
+                      <!-- Action Buttons for Relevance Issues -->
+                      <div v-if="relevanceError" class="row q-gutter-sm q-mt-md">
+                        <q-btn
+                          flat
+                          dense
+                          label="Improve Summary"
+                          color="primary"
+                          icon="auto_fix_high"
+                          @click="improveSummary"
+                          :disable="summaryLoading"
+                        />
+                        <q-btn
+                          flat
+                          dense
+                          label="Re-check Relevance"
+                          color="secondary"
+                          icon="fact_check"
+                          @click="recheckRelevance"
+                          :disable="summaryLoading"
+                        />
+                      </div>
+
+                      <!-- Summary Method Indicator -->
+                      <div v-if="summaryMethod" class="q-mt-sm text-caption text-grey-7">
+                        Method:
+                        {{
+                          summaryMethod === 'bart' ? 'AI-Generated (BART)' : 'Extractive Summary'
+                        }}
+                      </div>
                     </div>
                   </q-card-section>
 
@@ -597,6 +646,9 @@ const $q = useQuasar()
 const summary = ref('')
 const showSummaryDialog = ref(false)
 const docId = route.params.id
+const relevanceError = ref(null)
+const improvedSummaryAvailable = ref(false)
+const summaryMethod = ref(null)
 
 // Loading Mini Game
 const colors = ['red', 'green', 'blue', 'yellow']
@@ -1049,13 +1101,122 @@ onMounted(async () => {
 const generateSummary = async () => {
   showSummaryDialog.value = true
   summaryLoading.value = true
+  relevanceError.value = null
+  improvedSummaryAvailable.value = false
 
   try {
     const { data } = await axios.post(getNlpEndpoint(`/generate-summary/${docId}`))
-    summary.value = data.summary
+
+    // Display initial BART summary
+    summary.value = data.initial_summary || ''
+    summaryMethod.value = data.summary_method
+
+    // Check if relevance check failed
+    if (data.initial_check && !data.initial_check.passed) {
+      relevanceError.value = {
+        issue: data.initial_check.issue,
+        suggestion: data.initial_check.suggestion,
+        severity: data.initial_check.severity,
+      }
+
+      // If improved summary exists, make it available
+      if (data.improved_summary) {
+        improvedSummaryAvailable.value = true
+      }
+    }
+
+    // If error occurred, show message
+    if (data.error) {
+      $q.notify({
+        type: 'negative',
+        message: `Error: ${data.error}`,
+      })
+    }
   } catch (err) {
     console.error(err)
     $q.notify({ type: 'negative', message: 'Failed to generate summary' })
+  } finally {
+    summaryLoading.value = false
+  }
+}
+
+const improveSummary = async () => {
+  summaryLoading.value = true
+
+  try {
+    const { data } = await axios.post(getNlpEndpoint(`/generate-summary/${docId}`))
+
+    if (data.improved_summary) {
+      summary.value = data.improved_summary
+      summaryMethod.value = 'extractive'
+
+      // Re-check improved summary
+      if (data.improved_check && !data.improved_check.passed) {
+        relevanceError.value = {
+          issue: data.improved_check.issue,
+          suggestion: data.improved_check.suggestion,
+          severity: data.improved_check.severity,
+        }
+      } else {
+        relevanceError.value = null
+        $q.notify({
+          type: 'positive',
+          message: 'Improved summary generated successfully',
+        })
+      }
+    }
+  } catch (err) {
+    console.error(err)
+    $q.notify({ type: 'negative', message: 'Failed to improve summary' })
+  } finally {
+    summaryLoading.value = false
+  }
+}
+
+const recheckRelevance = async () => {
+  if (!summary.value || !summary.value.trim()) {
+    $q.notify({ type: 'warning', message: 'Please enter a summary first' })
+    return
+  }
+
+  summaryLoading.value = true
+
+  try {
+    // Call backend to check relevance of edited summary
+    const endpoint = getNlpEndpoint('/check-relevance')
+    const { data } = await axios.post(endpoint, {
+      title: doc.value.metadata.title,
+      summary: summary.value,
+      keywords: doc.value.metadata.keywords,
+      categories: doc.value.metadata.categories,
+      author: doc.value.metadata.author,
+      date: doc.value.metadata.date,
+      extracted_text: doc.value.metadata.extracted_text?.substring(0, 1000),
+    })
+
+    if (data.passed) {
+      relevanceError.value = null
+      $q.notify({
+        type: 'positive',
+        message: 'Summary passed relevance check!',
+      })
+    } else {
+      relevanceError.value = {
+        issue: data.issue,
+        suggestion: data.suggestion,
+        severity: data.severity,
+      }
+      $q.notify({
+        type: 'warning',
+        message: 'Summary has relevance issues',
+      })
+    }
+  } catch (err) {
+    console.error(err)
+    $q.notify({
+      type: 'info',
+      message: 'Re-check feature not yet fully implemented on backend',
+    })
   } finally {
     summaryLoading.value = false
   }
@@ -1066,10 +1227,12 @@ const saveSummary = () => {
   try {
     if (doc.value && doc.value.metadata) {
       doc.value.metadata.summary = summary.value
+      editableData.value.summary = summary.value
     }
 
     $q.notify({ type: 'positive', message: 'Summary updated locally' })
     showSummaryDialog.value = false
+    relevanceError.value = null
   } catch (err) {
     console.error(err)
     $q.notify({ type: 'negative', message: 'Failed to update summary' })

@@ -3,6 +3,7 @@ import fitz
 import spacy
 import re
 import os
+import math
 import subprocess
 import base64
 import json
@@ -25,7 +26,6 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:9000",
-        "https://localhost:9000",
         "https://preserv3d.vercel.app",
         "https://*.vercel.app",
         "https://*.onrender.com",
@@ -35,14 +35,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Hugging Face API configuration
-HF_API_TOKEN = os.getenv("HF_API_TOKEN")
-HF_API_BASE = "https://router.huggingface.co/models"
-
-# API endpoints for heavy models
-HF_SUMMARIZER = f"{HF_API_BASE}/facebook/bart-large-cnn"
-HF_KEYWORDS = f"{HF_API_BASE}/ml6team/keyphrase-extraction-kbir-inspec"
 
 # Try to load sentence-transformers for local embeddings
 _sentence_transformer = None
@@ -117,69 +109,6 @@ def get_tfidf_similarity(text1, text2):
     
     return dot_product / (magnitude1 * magnitude2)
 
-def call_hf_api(endpoint, payload, max_retries=3):
-    if not HF_API_TOKEN:
-        print("Warning: HF_API_TOKEN not set, skipping API call")
-        return None
-        
-    headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
-    try:
-        if isinstance(payload, str):
-            payload = {"inputs": payload}
-        elif isinstance(payload, dict):
-            if "input" in payload and "inputs" not in payload:
-                payload["inputs"] = payload.pop("input")
-
-        preview_payload = None
-        try:
-            tmp = payload.get("inputs") if isinstance(payload, dict) else payload
-            if isinstance(tmp, str):
-                preview_payload = tmp[:200]
-            else:
-                preview_payload = str(tmp)[:200]
-        except Exception:
-            preview_payload = "<unprintable>"
-
-    except Exception as e:
-        print("Failed to normalize HF payload:", e)
-
-    for attempt in range(max_retries):
-        try:
-            print(f"Calling HF model endpoint: {endpoint} (attempt {attempt + 1}) payload-preview: {preview_payload}")
-            response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
-
-            if response.status_code == 503:
-                if attempt < max_retries - 1:
-                    print(f"Model loading, retrying in 5s... (attempt {attempt + 1})")
-                    import time
-                    time.sleep(5)
-                    continue
-                else:
-                    print("Model failed to load after retries")
-                    return None
-
-            try:
-                response.raise_for_status()
-            except requests.exceptions.HTTPError as http_err:
-                body = None
-                try:
-                    body = response.text
-                except Exception:
-                    body = '<unable to read response body>'
-                print(f"HF API HTTP error ({response.status_code}): {http_err}. Response body: {body}")
-                raise
-
-            return response.json()
-
-        except requests.exceptions.RequestException as e:
-            # If last attempt, log and return None
-            if attempt == max_retries - 1:
-                print(f"HF API error after {max_retries} attempts: {e}")
-                return None
-            import time
-            time.sleep(1 + attempt)
-    return None
-
 def get_embeddings(text):
     """Get embeddings using local model or fallback to TF-IDF"""
     # Try local sentence-transformers first
@@ -192,22 +121,7 @@ def get_embeddings(text):
     return []
 
 def extract_keywords_hf(text, top_n=10):
-    # Try HF API first
-    result = call_hf_api(HF_KEYWORDS, {"inputs": text[:1000]})
-    
-    if result and isinstance(result, list):
-        keywords = []
-        for item in result:
-            if isinstance(item, dict) and 'word' in item:
-                keywords.append(item['word'])
-            elif isinstance(item, str):
-                keywords.append(item)
-        
-        if keywords:
-            return keywords[:top_n]
-    
-    # Fallback: Use your custom NER to extract keywords
-    print("Using NER-based keyword extraction fallback")
+    """Extract keywords using NER and capitalized phrases"""
     doc = get_nlp()(text[:2000])
     
     # Extract important entities as keywords
@@ -234,24 +148,41 @@ def extract_keywords_hf(text, top_n=10):
     return keywords[:top_n]
 
 def summarize_text_hf(text, max_length=200, min_length=50):
-    result = call_hf_api(HF_SUMMARIZER, {
-        "inputs": text[:4000],
-        "parameters": {
-            "max_length": max_length,
-            "min_length": min_length,
-            "do_sample": False
-        }
-    })
-    
-    if result and isinstance(result, list) and len(result) > 0:
-        return result[0].get('summary_text', '')
-    
-    # Fallback: Create simple extractive summary
-    print("Using extractive summary fallback")
-    sentences = re.split(r'[.!?]\s+', text[:2000])
-    # Take first 3-5 sentences as summary
-    summary_sentences = sentences[:min(5, len(sentences))]
-    return ' '.join(summary_sentences) + '.'
+    """Create summary using BART model via transformers pipeline"""
+    try:
+        from transformers import pipeline
+        print("Attempting BART summarization...")
+        
+        # Initialize summarizer (cached after first call)
+        summarizer = pipeline("summarization", model="facebook/bart-large-cnn", device=-1)
+        
+        # Prepare text (BART works best with 512-1024 tokens)
+        input_text = text[:3000].strip()
+        
+        if len(input_text.split()) < 50:
+            print("Text too short for BART, using extractive method")
+            raise Exception("Text too short")
+        
+        # Generate summary
+        result = summarizer(
+            input_text,
+            max_length=max_length,
+            min_length=min_length,
+            do_sample=False,
+            truncation=True
+        )
+        
+        summary = result[0]['summary_text'].strip()
+        print(f"BART summary generated: {len(summary)} chars")
+        return summary
+        
+    except Exception as e:
+        print(f"BART summarization failed: {e}, falling back to extractive method")
+        # Extractive fallback
+        sentences = re.split(r'[.!?]\s+', text[:2000])
+        sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
+        summary_sentences = sentences[:min(5, len(sentences))]
+        return ' '.join(summary_sentences) + '.'
 
 @app.head("/health")
 @app.get("/health")
@@ -315,13 +246,65 @@ async def process_pdf(
                 print("Keyword extraction error:", e)
                 keywords = []
 
-            # Summarization via HF API (with extractive fallback)
+            # Summarization with BART + relevance checking + improvement
             try:
-                summary = summarize_text_hf(cleaned_text[:4000])
-                if not summary:
+                # Generate initial summary with BART
+                initial_summary = summarize_text_hf(cleaned_text[:4000])
+                
+                if not initial_summary:
                     print("Summarizer returned no output")
+                    summary = None
+                else:
+                    # Check relevance
+                    relevance_issue = check_summary_relevance(
+                        title=metadata.get("title"),
+                        summary=initial_summary,
+                        keywords=keywords,
+                        categories=metadata.get("categories"),
+                        author=metadata.get("author"),
+                        date=metadata.get("date"),
+                        extracted_text=cleaned_text[:1000]
+                    )
+                    
+                    if relevance_issue:
+                        print(f"Relevance issue detected: {relevance_issue.get('issue')}")
+                        print("Attempting to improve summary with extractive method...")
+                        
+                        # Use extractive method as improvement
+                        improved_summary = generate_summary(
+                            text=cleaned_text,
+                            title=metadata.get("title"),
+                            author=metadata.get("author"),
+                            date=metadata.get("date"),
+                            keywords=keywords,
+                            categories=metadata.get("categories")
+                        )
+                        
+                        # Re-check improved summary
+                        improved_issue = check_summary_relevance(
+                            title=metadata.get("title"),
+                            summary=improved_summary,
+                            keywords=keywords,
+                            categories=metadata.get("categories"),
+                            author=metadata.get("author"),
+                            date=metadata.get("date"),
+                            extracted_text=cleaned_text[:1000]
+                        )
+                        
+                        # Use whichever is better
+                        if not improved_issue:
+                            print("Extractive summary passed relevance check")
+                            summary = improved_summary
+                        else:
+                            print("Using original BART summary despite issues")
+                            summary = initial_summary
+                    else:
+                        print("BART summary passed relevance check")
+                        summary = initial_summary
+                        
             except Exception as e:
                 print("Summarizer error:", e)
+                summary = None
 
             return {
                 "file_name": filename or (file.filename if file else None),
@@ -1021,157 +1004,106 @@ def clean_place(place):
     place = re.sub(r'\s+', ' ', place.strip())
     return place
 
-def generate_summary(text, title=None, author=None, date=None, keywords=None, categories=None, max_attempts=3):
-    print("Generating summary with relevance optimization...")
+def generate_summary(text, title=None, author=None, date=None, keywords=None, categories=None, max_attempts=2):
+    """Generate structured, readable extractive summary using keyword-based sentence scoring"""
+    print("Generating extractive summary...")
     cleaned_text = clean_text(text)
-    
-    # Use more text for better context (increased from 2000 to 3000)
     input_text = cleaned_text[:3000]
     
     if len(input_text.strip()) < 100:
         return "Insufficient content for summary generation."
     
-    # Build rich context
-    context_parts = []
-    if title and title not in ["Unknown", "Unknown Document", ""]:
-        context_parts.append(f"Document Title: {title}")
-    if author and author not in ["Unknown", ""]:
-        context_parts.append(f"Author/Creator: {author}")
-    if date and date not in ["Unknown", ""]:
-        context_parts.append(f"Date: {date}")
-    if categories:
-        cat_str = ', '.join(categories) if isinstance(categories, list) else categories
-        context_parts.append(f"Category: {cat_str}")
-    if keywords and len(keywords) > 0:
-        # Prioritize top keywords
-        top_keywords = [k for k in keywords[:8] if k]
-        if top_keywords:
-            context_parts.append(f"Key Topics: {', '.join(top_keywords)}")
-    
-    context_str = "\n".join(context_parts)
-    
-    # Initial generation with rich context
-    instruction = f"""Write a comprehensive summary of the following document. The summary should:
-1. Capture the main purpose, themes, and key findings
-2. Be specific to this document (avoid generic phrases)
-3. Incorporate relevant details about the content
-4. Be 3-5 sentences long (50-150 words)
-5. Naturally reference key topics when relevant
-
-{context_str}
-
-Document Content:
-{input_text}
-
-Summary:"""
-    
-    best_summary = None
-    best_score = -1
-    
-    for attempt in range(max_attempts):
-        try:
-            print(f"Summary generation attempt {attempt + 1}/{max_attempts}")
-            
-            # Generate summary
-            if attempt == 0:
-                # First attempt: standard generation
-                current_summary = summarize_text_hf(instruction[:4000], max_length=150, min_length=50)
-            elif attempt == 1:
-                # Second attempt: emphasize keywords
-                keyword_emphasis = f"Ensure the summary explicitly mentions these key topics: {', '.join(keywords[:5])}" if keywords else ""
-                refined_instruction = f"{instruction}\n\nIMPORTANT: {keyword_emphasis}. Focus on specific content rather than generic descriptions."
-                current_summary = summarize_text_hf(refined_instruction[:4000], max_length=150, min_length=50)
-            else:
-                # Final attempt: use extractive fallback with context
-                print("Using context-aware extractive summary")
-                sentences = re.split(r'[.!?]+', input_text)
-                sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
-                
-                # Score sentences based on keyword presence and position
-                scored_sentences = []
-                for idx, sent in enumerate(sentences[:15]):  # Focus on first 15 sentences
-                    score = 0
-                    sent_lower = sent.lower()
-                    
-                    # Bonus for early sentences
-                    score += (15 - idx) * 0.5
-                    
-                    # Bonus for keyword matches
-                    if keywords:
-                        score += sum(3 for kw in keywords if kw and kw.lower() in sent_lower)
-                    
-                    # Bonus for title word matches
-                    if title and title != "Unknown":
-                        title_words = set(re.findall(r'\b\w{4,}\b', title.lower()))
-                        score += sum(2 for word in title_words if word in sent_lower)
-                    
-                    scored_sentences.append((score, sent))
-                
-                # Select top sentences
-                scored_sentences.sort(reverse=True)
-                top_sentences = [sent for score, sent in scored_sentences[:4]]
-                
-                # Add context prefix if we have metadata
-                prefix = ""
-                if context_parts:
-                    if author and author != "Unknown" and date and date != "Unknown":
-                        prefix = f"From {author} ({date}): "
-                    elif author and author != "Unknown":
-                        prefix = f"From {author}: "
-                    elif date and date != "Unknown":
-                        prefix = f"Dated {date}: "
-                
-                current_summary = prefix + " ".join(top_sentences)
-            
-            if not current_summary or current_summary.strip() in ["", "Summary not available."]:
-                print(f"Attempt {attempt + 1} produced no summary")
-                continue
-            
-            # Check relevance
-            relevance_check = check_summary_relevance(
-                title=title,
-                summary=current_summary,
-                keywords=keywords,
-                categories=categories,
-                author=author,
-                date=date,
-                extracted_text=input_text
-            )
-            
-            # Calculate a score (lower is better, 0 is perfect)
-            if not relevance_check:
-                current_score = 0  # Perfect score
-                print(f"Attempt {attempt + 1} passed all relevance checks!")
-                return current_summary.strip()
-            else:
-                severity_scores = {"low": 1, "medium": 2, "high": 3}
-                current_score = severity_scores.get(relevance_check.get("severity", "medium"), 2)
-                print(f"Attempt {attempt + 1} issue ({relevance_check.get('severity', 'medium')}): {relevance_check.get('issue', 'Unknown')}")
-            
-            # Track best summary
-            if best_summary is None or current_score < best_score:
-                best_summary = current_summary
-                best_score = current_score
-            
-            # If severity is low, accept it
-            if current_score <= 1:
-                print("Summary has low severity issues, accepting it")
-                return current_summary.strip()
-        
-        except Exception as e:
-            print(f"Summary generation attempt {attempt + 1} error: {e}")
-            continue
-    
-    # Return best summary found
-    if best_summary:
-        print(f"Returning best summary with score {best_score}")
-        return best_summary.strip()
-    
-    # Ultimate fallback
-    print("All attempts failed, using basic extractive summary")
-    sentences = re.split(r'[.!?]+', input_text[:1500])
+    # Split into proper sentences with better handling
+    sentences = re.split(r'[.!?]+', input_text)
     sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
-    return " ".join(sentences[:3]) + "."
+    
+    # Filter out metadata/header sentences
+    filtered_sentences = []
+    for sent in sentences:
+        sent_lower = sent.lower()
+        # Skip metadata, citations, URLs, journal info
+        if any(marker in sent_lower for marker in [
+            'issn', 'volume-', 'issue-', 'pp.', 'doi:', 'http://', 'https://',
+            'email:', '@', 'department of', 'school of', 'university',
+            'journal', 'copyright', 'reserved', 'published'
+        ]):
+            continue
+        
+        # Skip very short or very long sentences
+        word_count = len(sent.split())
+        if word_count < 8 or word_count > 45:
+            continue
+        
+        # Skip sentences that are mostly uppercase (headers)
+        if sum(1 for c in sent if c.isupper()) > len(sent) * 0.5:
+            continue
+            
+        filtered_sentences.append(sent)
+    
+    if not filtered_sentences:
+        # Fallback to original sentences if filtering removed everything
+        filtered_sentences = [s for s in sentences if len(s.split()) >= 8][:10]
+    
+    # Score sentences by relevance and content quality
+    scored = []
+    title_words = set(re.findall(r'\b\w{4,}\b', title.lower())) if title and title != "Unknown" else set()
+    
+    for idx, sent in enumerate(filtered_sentences[:15]):
+        score = 0
+        sent_lower = sent.lower()
+        
+        # Position score (earlier sentences slightly preferred)
+        score += (15 - idx) * 0.3
+        
+        # Keyword matches (high priority)
+        if keywords:
+            keyword_matches = sum(1 for kw in keywords if kw and kw.lower() in sent_lower)
+            score += keyword_matches * 4
+        
+        # Title word matches
+        title_matches = sum(1 for word in title_words if word in sent_lower)
+        score += title_matches * 2
+        
+        # Contextual quality indicators (prefer informative content)
+        quality_words = [
+            'study', 'research', 'analysis', 'result', 'finding', 'conclusion',
+            'investigate', 'examine', 'demonstrate', 'indicate', 'suggest',
+            'purpose', 'objective', 'method', 'approach', 'impact', 'effect'
+        ]
+        quality_matches = sum(1 for word in quality_words if word in sent_lower)
+        score += quality_matches * 1.5
+        
+        # Proper capitalization (quality indicator)
+        if sent and sent[0].isupper():
+            score += 0.5
+        
+        scored.append((score, sent, idx))
+    
+    # Select top 3-4 sentences with good scores
+    scored.sort(key=lambda x: x[0], reverse=True)
+    top_scored = scored[:4]
+    
+    # Preserve original document order for readability
+    top_scored.sort(key=lambda x: x[2])
+    
+    # Format summary with proper structure
+    summary_parts = []
+    for score, sent, idx in top_scored:
+        # Clean and capitalize
+        cleaned = sent.strip()
+        if cleaned and cleaned[0].islower():
+            cleaned = cleaned[0].upper() + cleaned[1:]
+        summary_parts.append(cleaned)
+    
+    # Join with proper punctuation
+    summary = '. '.join(summary_parts)
+    if summary and not summary.endswith('.'):
+        summary += '.'
+    
+    # Clean up spacing
+    summary = re.sub(r'\s+', ' ', summary).strip()
+    
+    return summary
 
 @app.post("/generate-summary/{doc_id}")
 def generate_summary_endpoint(doc_id: str):
@@ -1207,16 +1139,101 @@ def generate_summary_endpoint(doc_id: str):
 
         extracted_text = cleaned_text
 
-    summary = generate_summary(
-        text=extracted_text,
-        title=metadata.get("title"),
-        author=metadata.get("author"),
-        date=metadata.get("date"),
-        keywords=metadata.get("keywords", []),
-        categories=metadata.get("categories", [])
-    )
+    # Get keywords for relevance checking
+    keywords = metadata.get("keywords", [])
+    if not keywords:
+        try:
+            keywords = extract_keywords_hf(extracted_text, top_n=10)
+        except Exception as e:
+            print(f"Keyword extraction error: {e}")
+            keywords = []
 
-    return {"id": doc_id, "summary": summary}
+    # Summarization with BART + relevance checking + improvement
+    initial_summary = None
+    improved_summary = None
+    initial_check = None
+    improved_check = None
+    summary_method = None
+    error_message = None
+    
+    try:
+        # Generate initial summary with BART
+        initial_summary = summarize_text_hf(extracted_text[:4000])
+        
+        if not initial_summary:
+            print("Summarizer returned no output")
+            error_message = "Failed to generate summary"
+        else:
+            # Check relevance of initial summary
+            initial_check = check_summary_relevance(
+                title=metadata.get("title"),
+                summary=initial_summary,
+                keywords=keywords,
+                categories=metadata.get("categories"),
+                author=metadata.get("author"),
+                date=metadata.get("date"),
+                extracted_text=extracted_text[:1000]
+            )
+            
+            if initial_check:
+                # Initial summary has issues, generate improved version
+                print(f"Relevance issue detected: {initial_check.get('issue')}")
+                print("Generating improved summary with extractive method...")
+                
+                improved_summary = generate_summary(
+                    text=extracted_text,
+                    title=metadata.get("title"),
+                    author=metadata.get("author"),
+                    date=metadata.get("date"),
+                    keywords=keywords,
+                    categories=metadata.get("categories")
+                )
+                
+                # Re-check improved summary
+                improved_check = check_summary_relevance(
+                    title=metadata.get("title"),
+                    summary=improved_summary,
+                    keywords=keywords,
+                    categories=metadata.get("categories"),
+                    author=metadata.get("author"),
+                    date=metadata.get("date"),
+                    extracted_text=extracted_text[:1000]
+                )
+                
+                summary_method = "extractive" if not improved_check else "bart"
+            else:
+                # Initial summary passed all checks
+                print("BART summary passed relevance check")
+                summary_method = "bart"
+                
+    except Exception as e:
+        print(f"Summarizer error: {e}")
+        error_message = str(e)
+        # Fallback to extractive method
+        try:
+            improved_summary = generate_summary(
+                text=extracted_text,
+                title=metadata.get("title"),
+                author=metadata.get("author"),
+                date=metadata.get("date"),
+                keywords=keywords,
+                categories=metadata.get("categories")
+            )
+            summary_method = "extractive"
+        except Exception as fallback_error:
+            print(f"Fallback summary error: {fallback_error}")
+            error_message = str(fallback_error)
+
+    # Return detailed response for frontend
+    return {
+        "id": doc_id,
+        "initial_summary": initial_summary,
+        "improved_summary": improved_summary,
+        "initial_check": initial_check if initial_check else {"passed": True},
+        "improved_check": improved_check if improved_check else {"passed": True},
+        "summary_method": summary_method,
+        "error": error_message
+    }
 
 def download_file(file_url: str) -> bytes:
     if "supabase.co" in file_url:

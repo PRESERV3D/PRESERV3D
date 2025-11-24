@@ -1,58 +1,22 @@
 # Core FastAPI and HTTP dependencies
 fastapi
 uvicorn[standard]
-starlette
 python-multipart
-pydantic
-pydantic-core
 
-# Supabase dependencies
+# Supabase client
 supabase
-postgrest
-storage3
-realtime
-supabase-auth
-supabase-functions
 
 # PDF processing
 PyMuPDF
 
-# Machine Learning and NLP - Core PyTorch
-torch
-torchvision
-torchaudio
-
-# Transformers and NLP models
+# NLP and ML
 transformers
+torch
 sentence-transformers
-keybert
-
-# SpaCy and NER
 spacy
 en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
 
-# Data Science and ML utilities
-scikit-learn
-scipy
-joblib
-threadpoolctl
-
-# Utility libraries
+# Utilities
 python-dotenv
-regex
 python-dateutil
 requests
-typing-extensions
-deepdiff
-beautifulsoup4
-
-# Additional dependencies that may be needed
-numpy
-tokenizers
-safetensors
-huggingface-hub
-filelock
-packaging
-tqdm
-cheerio
-franc
