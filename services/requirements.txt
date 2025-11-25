@@ -1,6 +1,6 @@
 # Core FastAPI and HTTP dependencies
-fastapi
-uvicorn[standard]
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
 python-multipart
 
 # Supabase client
@@ -9,11 +9,13 @@ supabase
 # PDF processing
 PyMuPDF
 
-# NLP and ML - optimized versions
-transformers
-torch --index-url https://download.pytorch.org/whl/cpu
-sentence-transformers
+# Lightweight NLP with smaller models
 spacy>=3.0.0,<4.0.0
+
+# Lightweight transformers - CPU optimized, smaller models
+transformers==4.36.0
+torch==2.1.0 --index-url https://download.pytorch.org/whl/cpu
+sentence-transformers==2.2.2
 
 # Utilities
 python-dotenv

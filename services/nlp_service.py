@@ -36,15 +36,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Try to load sentence-transformers for local embeddings
+# Load lightweight sentence-transformers model
 _sentence_transformer = None
 try:
     from sentence_transformers import SentenceTransformer
-    print("Attempting to load local sentence-transformers model...")
-    _sentence_transformer = SentenceTransformer('all-MiniLM-L6-v2')
-    print("Local embedding model loaded successfully")
+    print("Loading lightweight paraphrase-MiniLM-L3-v2 model (~60MB)...")
+    # Use smaller, faster model: paraphrase-MiniLM-L3-v2 (60MB vs 120MB)
+    _sentence_transformer = SentenceTransformer('paraphrase-MiniLM-L3-v2')
+    print("Lightweight embedding model loaded successfully")
 except Exception as e:
-    print(f"Warning: Could not load sentence-transformers locally: {e}")
+    print(f"Warning: Could not load sentence-transformers: {e}")
     print("Will use TF-IDF based similarity as fallback")
 
 _nlp = None
@@ -148,41 +149,47 @@ def extract_keywords_hf(text, top_n=10):
     return keywords[:top_n]
 
 def summarize_text_hf(text, max_length=200, min_length=50):
-    """Create summary using BART model via transformers pipeline"""
+    """Create summary using lightweight DistilBART model"""
     try:
         from transformers import pipeline
-        print("Attempting BART summarization...")
+        print("Attempting DistilBART summarization...")
         
-        # Initialize summarizer (cached after first call)
-        summarizer = pipeline("summarization", model="facebook/bart-large-cnn", device=-1)
+        # Use lightweight DistilBART model (~300MB vs 1.6GB for BART-large)
+        summarizer = pipeline(
+            "summarization",
+            model="sshleifer/distilbart-cnn-12-6",
+            device=-1,  # CPU
+            framework="pt"
+        )
         
-        # Prepare text (BART works best with 512-1024 tokens)
-        input_text = text[:3000].strip()
+        # Prepare text
+        input_text = text[:2000].strip()  # Reduced from 3000 to save memory
         
         if len(input_text.split()) < 50:
-            print("Text too short for BART, using extractive method")
+            print("Text too short for summarization, using extractive method")
             raise Exception("Text too short")
         
-        # Generate summary
+        # Generate summary with memory-efficient settings
         result = summarizer(
             input_text,
-            max_length=max_length,
-            min_length=min_length,
+            max_length=min(max_length, 130),  # DistilBART max is 142
+            min_length=min(min_length, 30),
             do_sample=False,
-            truncation=True
+            truncation=True,
+            clean_up_tokenization_spaces=True
         )
         
         summary = result[0]['summary_text'].strip()
-        print(f"BART summary generated: {len(summary)} chars")
+        print(f"DistilBART summary generated: {len(summary)} chars")
         return summary
         
     except Exception as e:
-        print(f"BART summarization failed: {e}, falling back to extractive method")
+        print(f"DistilBART summarization failed: {e}, falling back to extractive method")
         # Extractive fallback
         sentences = re.split(r'[.!?]\s+', text[:2000])
         sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
         summary_sentences = sentences[:min(5, len(sentences))]
-        return ' '.join(summary_sentences) + '.'
+        return ' '.join(summary_sentences) + '.' if summary_sentences else text[:200]
 
 @app.head("/health")
 @app.get("/health")
