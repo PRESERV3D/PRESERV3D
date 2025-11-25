@@ -1789,6 +1789,8 @@ onMounted(async () => {
       activeTab.value = 'visitors'
     }
   }
+
+  fetchAllUsers()
 })
 
 async function fetchAllUsers() {

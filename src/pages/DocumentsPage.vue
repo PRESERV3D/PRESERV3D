@@ -547,6 +547,8 @@ const userType = computed(() => userStore.profile?.user_type ?? 'Unknown') // fr
 
 onMounted(async () => {
   loading.value = true
+  await fetchAllDocuments()
+  loading.value = false
 
   const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
 
@@ -596,6 +598,7 @@ onMounted(async () => {
 
   if (!searchStore.query) {
     await fetchAllDocuments()
+    loading.value = false
   } else {
     console.log('🔍 Search query detected:', searchStore.query)
     console.log('📊 Search results ready:', searchStore.searchedDocuments.length, 'documents')
@@ -625,6 +628,9 @@ onMounted(async () => {
   console.log('Applied sorting:', searchStore.sortBy, searchStore.sortOrder)
 
   loading.value = false
+
+  updateDocumentsPerPage()
+  window.addEventListener('resize', updateDocumentsPerPage)
 })
 
 // Re-fetch documents when this component is re-activated (e.g. via back navigation)
@@ -2082,11 +2088,6 @@ function updateDocumentsPerPage() {
     documentsPerPage.value = 6
   }
 }
-
-onMounted(() => {
-  updateDocumentsPerPage()
-  window.addEventListener('resize', updateDocumentsPerPage)
-})
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateDocumentsPerPage)

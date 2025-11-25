@@ -223,22 +223,34 @@ async function searchDuckDuckGo(query, maxResults = 3) {
     const results = await page.evaluate(() => {
       const items = []
       const resultElements = document.querySelectorAll('.result')
+      console.log(`[Page Evaluate] Found ${resultElements.length} result elements`)
 
-      resultElements.forEach((element) => {
+      resultElements.forEach((element, index) => {
         const linkElement = element.querySelector('.result__a')
         const snippetElement = element.querySelector('.result__snippet')
         const urlElement = element.querySelector('.result__url')
+        console.log(
+          `[Result ${index + 1}] linkElement:`,
+          !!linkElement,
+          'snippetElement:',
+          !!snippetElement,
+          'urlElement:',
+          !!urlElement,
+        )
 
         if (linkElement) {
           let url = linkElement.getAttribute('href') || linkElement.href
+          console.log(`[Result ${index + 1}] Initial URL:`, url)
 
           if (url && url.startsWith('//duckduckgo.com/l/?')) {
+            console.log(`[Result ${index + 1}] Detected DuckDuckGo redirect URL`)
             try {
               const urlParams = new URLSearchParams(url.split('?')[1])
               const actualUrl = urlParams.get('uddg')
+              console.log(`[Result ${index + 1}] Extracted actual URL:`, actualUrl)
               if (actualUrl) url = actualUrl
             } catch (e) {
-              console.error(`Error parsing redirect URL: ${e.message}`)
+              console.log(`[Result ${index + 1}] Error parsing redirect URL: ${e.message}`)
               if (urlElement) {
                 const displayUrl = urlElement.textContent.trim()
                 url = displayUrl.startsWith('http') ? displayUrl : 'https://' + displayUrl
@@ -256,13 +268,32 @@ async function searchDuckDuckGo(query, maxResults = 3) {
           const documentExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx']
           const urlLower = url.toLowerCase()
           const isDocument = documentExtensions.some((ext) => urlLower.includes(ext))
+          console.log(
+            `[Result ${index + 1}] URL:`,
+            url,
+            '| isDocument:',
+            isDocument,
+            '| title:',
+            title.substring(0, 50),
+          )
 
           if (url && url.startsWith('http') && !isDocument) {
+            console.log(`[Result ${index + 1}] ✓ Added to results`)
             items.push({ url, title, snippet })
+          } else {
+            console.log(
+              `[Result ${index + 1}] ✗ Filtered out - url:`,
+              !!url,
+              'startsWithHttp:',
+              url?.startsWith('http'),
+              'isDocument:',
+              isDocument,
+            )
           }
         }
       })
 
+      console.log(`[Page Evaluate] Total items collected: ${items.length}`)
       return items
     })
 
@@ -270,7 +301,9 @@ async function searchDuckDuckGo(query, maxResults = 3) {
     page = null
     logMemoryUsage('after search')
 
+    console.error(`=== Search Results Summary ===`)
     console.error(`Found ${results.length} results from DuckDuckGo`)
+    console.error(`Results:`, JSON.stringify(results, null, 2))
     return results.slice(0, maxResults)
   } catch (error) {
     if (page) await page.close().catch(() => {})
@@ -285,6 +318,7 @@ async function searchDuckDuckGo(query, maxResults = 3) {
 async function scrapeContent(url) {
   let page
   try {
+    console.error(`>>> Scraping URL: ${url}`)
     const browser = await getBrowser()
     page = await browser.newPage()
 
@@ -331,13 +365,19 @@ async function scrapeContent(url) {
       $('meta[property="og:description"]').attr('content') ||
       ''
 
-    return {
+    const result = {
       url,
       title: title.trim(),
       description: description.trim(),
-      content: cleanText.substring(0, 1500), // Reduced from 2000
-      language: franc(cleanText.substring(0, 300)), // Reduced from 500
+      content: cleanText.substring(0, 1500),
+      language: franc(cleanText.substring(0, 300)),
     }
+
+    console.error(`>>> Scraped successfully: ${url}`)
+    console.error(`    Title: ${result.title.substring(0, 60)}...`)
+    console.error(`    Language: ${result.language}`)
+
+    return result
   } catch (error) {
     if (page) await page.close().catch(() => {})
     console.error(`Scraping error for ${url}: ${error.message}`)
@@ -382,10 +422,29 @@ async function scrapeAllContent(searchResults, concurrency = 2) {
  * Filter results based on language
  */
 function filterByLanguage(results, preferredLang = 'eng') {
+  console.error(`=== Language Filtering ===`)
+  console.error(`Total results to filter: ${results.length}`)
+
   const englishResults = results.filter((r) => r.language === preferredLang && !r.error)
   const otherResults = results.filter((r) => r.language !== preferredLang && !r.error)
+  const errorResults = results.filter((r) => r.error)
 
-  return englishResults.length >= 3 ? englishResults : [...englishResults, ...otherResults]
+  console.error(`English results: ${englishResults.length}`)
+  console.error(`Other language results: ${otherResults.length}`)
+  console.error(`Error results: ${errorResults.length}`)
+
+  if (errorResults.length > 0) {
+    console.error(
+      `Errors encountered:`,
+      errorResults.map((r) => ({ url: r.url, error: r.error })),
+    )
+  }
+
+  const finalResults =
+    englishResults.length >= 3 ? englishResults : [...englishResults, ...otherResults]
+  console.error(`Returning ${finalResults.length} filtered results`)
+
+  return finalResults
 }
 
 /**
@@ -452,7 +511,9 @@ async function main() {
       language: result.language,
     }))
 
+    console.error(`=== Final Results ===`)
     console.error(`Returning ${links.length} links`)
+    console.error(`Links:`, JSON.stringify(links, null, 2))
     logMemoryUsage('before output')
 
     console.log(JSON.stringify({ links }))
