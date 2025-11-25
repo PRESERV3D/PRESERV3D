@@ -1,6 +1,5 @@
 # Core FastAPI and HTTP dependencies
 fastapi
-uvicorn[standard]
 python-multipart
 
 # Supabase client
