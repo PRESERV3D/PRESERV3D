@@ -16,7 +16,7 @@
             :rules="[(val) => !!val || 'Please enter your first name.']"
             class="text-box"
           />
-          <label class="labelNames">Last <span class="required">*</span></label>
+          <label class="labelNames">Last Name<span class="required">*</span></label>
           <q-input
             dense
             v-model="form.last_name"
