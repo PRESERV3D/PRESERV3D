@@ -8,8 +8,10 @@ services:
     # Optimized build: install dependencies in stages to reduce memory spikes
     buildCommand: |
       pip install --no-cache-dir --upgrade pip setuptools wheel
+      pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
       pip install --no-cache-dir -r requirements.txt
       python -m spacy download en_core_web_sm
+      python preload_models.py
     startCommand: uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --timeout-keep-alive 30 --limit-concurrency 10
     # System packages - Render will install these with proper permissions
     nativeEnvironments:
