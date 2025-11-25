@@ -14,7 +14,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     storageKey: 'preserv3d-auth',
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    flowType: 'pkce', // Use PKCE flow for better security
+    flowType: 'pkce',
   },
   global: {
     headers: {

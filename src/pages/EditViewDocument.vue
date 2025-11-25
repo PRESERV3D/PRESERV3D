@@ -1214,8 +1214,8 @@ const recheckRelevance = async () => {
   } catch (err) {
     console.error(err)
     $q.notify({
-      type: 'info',
-      message: 'Re-check feature not yet fully implemented on backend',
+      type: 'negative',
+      message: err.response?.data?.issue || 'Failed to check relevance',
     })
   } finally {
     summaryLoading.value = false
@@ -1233,6 +1233,7 @@ const saveSummary = () => {
     $q.notify({ type: 'positive', message: 'Summary updated locally' })
     showSummaryDialog.value = false
     relevanceError.value = null
+    hasChanges.value = true
   } catch (err) {
     console.error(err)
     $q.notify({ type: 'negative', message: 'Failed to update summary' })

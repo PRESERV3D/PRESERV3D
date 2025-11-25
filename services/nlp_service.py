@@ -10,7 +10,7 @@ import json
 import requests
 import sys
 from pathlib import Path
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
@@ -1248,6 +1248,58 @@ def download_file(file_url: str) -> bytes:
         return res.content
     else:
         raise ValueError(f"Unknown file storage provider for {file_url}")
+
+@app.post("/check-relevance")
+async def check_relevance_endpoint(request: Request):
+    """
+    Endpoint to check the relevance of a user-edited summary.
+    Returns validation results with passed status and any issues found.
+    """
+    try:
+        data = await request.json()
+        
+        title = data.get("title", "")
+        summary = data.get("summary", "")
+        keywords = data.get("keywords", [])
+        categories = data.get("categories", "")
+        author = data.get("author", "")
+        date = data.get("date", "")
+        extracted_text = data.get("extracted_text", "")
+        
+        # Check relevance using existing function
+        relevance_issue = check_summary_relevance(
+            title=title,
+            summary=summary,
+            keywords=keywords or [],
+            categories=categories,
+            author=author,
+            date=date,
+            extracted_text=extracted_text
+        )
+        
+        if relevance_issue:
+            return {
+                "passed": False,
+                "field": relevance_issue.get("field", "summary"),
+                "issue": relevance_issue.get("issue", "Relevance check failed"),
+                "suggestion": relevance_issue.get("suggestion", "Please revise the summary"),
+                "severity": relevance_issue.get("severity", "medium")
+            }
+        else:
+            return {
+                "passed": True,
+                "message": "Summary passed all relevance checks"
+            }
+            
+    except Exception as e:
+        print(f"Relevance check error: {e}")
+        return {
+            "passed": False,
+            "field": "summary",
+            "issue": f"Error checking relevance: {str(e)}",
+            "suggestion": "Please try again or contact support",
+            "severity": "high"
+        }
 
 def detect_inconsistencies(metadata, source_type="document"):
     issues = []
