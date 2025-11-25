@@ -38,29 +38,19 @@
             height="300"
             class="q-mb-md"
           ></canvas>
-        </q-card-section>
 
-        <q-card-section>
-          <div class="text-subtitle2 q-mb-sm">Or paste answer from phone manually:</div>
-          <q-input
-            v-model="phoneAnswer"
-            filled
-            type="textarea"
-            label="Paste phone answer here"
-            rows="3"
-          />
+          <!-- Fallback URL for manual connection -->
+          <div v-if="iceGatheringComplete" class="q-mt-md text-center">
+            <div class="text-caption text-grey-7 q-mb-xs">Can't scan QR code?</div>
+            <div class="text-body2 text-weight-medium q-mb-xs">Open this URL on your phone:</div>
+            <div
+              class="text-primary text-weight-medium"
+              style="word-break: break-all; padding: 0 20px"
+            >
+              {{ phoneConnectionUrl }}
+            </div>
+          </div>
         </q-card-section>
-
-        <q-card-actions align="right">
-          <q-btn flat label="Cancel" @click="cancelPhoneSetup" />
-          <q-btn
-            flat
-            label="Process Answer"
-            color="primary"
-            @click="processPhoneAnswer"
-            :disable="!phoneAnswer"
-          />
-        </q-card-actions>
 
         <q-card-section v-if="connectionStatus === 'connected'">
           <q-banner class="bg-positive text-white" rounded>
@@ -108,7 +98,7 @@
     </div>
 
     <!-- Camera & Canvas Area -->
-    <div class="q-mt-lg items-center justify-center">
+    <div class="q-mt-lg items-center justify-center" v-if="cameraMode === 'laptop' || cameraMode === 'phone' && connectionStatus === 'connected'">
       <video
         ref="video"
         autoplay
@@ -226,7 +216,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { jsPDF } from 'jspdf'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useWebRTC } from '../composables/useWebRTC'
@@ -238,8 +228,6 @@ const {
   initializeHostConnection,
   disconnectWebRTC,
   generateConnectionQR,
-  processPhoneAnswer: processAnswer,
-  phoneAnswer,
   connectionStatus,
   connectionCode,
   iceGatheringComplete,
@@ -273,6 +261,12 @@ const showSave = ref(false)
 const showExportDialog = ref(false)
 const pdfFileName = ref('scanned-document')
 const formattedPdfSize = ref('Calculating...')
+
+// Computed property for phone connection URL
+const phoneConnectionUrl = computed(() => {
+  const baseUrl = import.meta.env.DEV ? 'http://localhost:9000' : window.location.origin
+  return `${baseUrl}/phone-camera?code=${connectionCode.value}`
+})
 
 onMounted(async () => {
   openCamera()
@@ -348,17 +342,6 @@ async function setupPhoneConnection() {
 
   // The QR code will be generated automatically when ICE gathering completes
   // via the watch on iceGatheringComplete
-}
-
-function cancelPhoneSetup() {
-  showPhoneSetup.value = false
-  cameraMode.value = 'laptop'
-  // Don't fully disconnect - just switch back to laptop camera
-  openCamera()
-}
-
-async function processPhoneAnswer() {
-  await processAnswer()
 }
 
 // Watch for successful connection

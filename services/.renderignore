@@ -1,0 +1,39 @@
+# Ignore development files
+
+**pycache**/
+_.pyc
+_.pyo
+_.pyd
+.Python
+_.so
+_.egg
+_.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Ignore test files
+
+tests/
+test\__.py
+_\_test.py
+
+# Ignore documentation
+
+\*.md
+
+# Ignore node modules if any
+
+node_modules/
+package-lock.json
+
+# Ignore training data
+
+nlp_training/training_data.jsonl
+nlp_training/test_ner.py
+nlp_training/train_ner.py
+
+# Keep only the trained model
+
+!nlp_training/ner_model/

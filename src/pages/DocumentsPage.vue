@@ -547,9 +547,6 @@ const userType = computed(() => userStore.profile?.user_type ?? 'Unknown') // fr
 
 onMounted(async () => {
   loading.value = true
-  await fetchAllDocuments()
-  loading.value = false
-
   const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
 
   // Get user's favorites for top documents too
