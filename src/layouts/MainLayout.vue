@@ -502,7 +502,7 @@ const clearAllNotifications = async () => {
     } = await supabase.auth.getUser()
     if (!user) return
 
-    // Mark all notifications as read in database
+    // Mark all unread notifications as read for the current user in database
     const { error } = await supabase
       .from('notifications')
       .update({ read: true })
@@ -511,10 +511,15 @@ const clearAllNotifications = async () => {
 
     if (error) {
       console.error('Error clearing notifications:', error)
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to mark notifications as read',
+        timeout: 2000,
+      })
       return
     }
 
-    // Update local state
+    // Update local state - mark all notifications as read
     notifications.value = notifications.value.map((notif) => ({
       ...notif,
       read: true,
@@ -523,14 +528,14 @@ const clearAllNotifications = async () => {
 
     $q.notify({
       type: 'positive',
-      message: 'All notifications cleared',
+      message: 'All notifications marked as read',
       timeout: 2000,
     })
   } catch (error) {
     console.error('Error clearing notifications:', error)
     $q.notify({
       type: 'negative',
-      message: 'Failed to clear notifications',
+      message: 'Failed to mark notifications as read',
       timeout: 2000,
     })
   }
