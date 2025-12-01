@@ -114,6 +114,7 @@
                 clearable
                 clear-icon="close"
                 @keyup.enter="performSearch"
+                @clear="handleSearchClear"
                 class="search-input no-gap"
                 style="width: 100%"
               >
@@ -750,6 +751,26 @@ function formatDate(date) {
 
 const today = formatDate(new Date())
 
+// Handle search input clear (X button or manual clear)
+const handleSearchClear = async () => {
+  console.log('Search cleared, showing all items...')
+
+  // Clear search in store
+  await searchStore.clearAll()
+
+  // Clear filters
+  documentsStore.resetFilters()
+  modelStore.resetFilters()
+  clearFilters()
+
+  // Trigger re-fetch based on current route
+  const currentPath = route.path
+  if (currentPath === '/documents' || currentPath === '/artifacts') {
+    // Force a route refresh to trigger data re-fetch
+    await router.replace(currentPath)
+  }
+}
+
 // Basic Search functionality
 const performSearch = async () => {
   documentsStore.resetFilters()
@@ -759,7 +780,8 @@ const performSearch = async () => {
   // Use search input value, or fall back to existing query in store (for dropdown changes)
   const query = search.value || searchStore.query
   if (!query.trim()) {
-    searchStore.clear()
+    // If search is empty, clear and show all items
+    await handleSearchClear()
     return
   }
 
