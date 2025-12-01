@@ -279,27 +279,53 @@ const appointments = ref([])
 
 // Fetch appointments of the logged-in user
 const fetchAppointments = async () => {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  try {
+    loading.value = true
 
-  const { data, error } = await supabase
-    .from('appointment_booking')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+    // Get user auth
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
 
-  if (!error && data) {
-    appointments.value = data.map((a) => ({
-      appointment_id: a.appointment_id,
-      purpose: a.purpose,
-      appointmentDate: a.date,
-      time: formatTimeTo12Hour(a.time),
-      status: a.status,
-      user_remarks: a.user_remarks,
-      admin_remarks: a.admin_remarks,
-      reviewed_by: a.reviewed_by,
-    }))
+    if (authError || !user) {
+      console.error('Auth error fetching appointments:', authError)
+      appointments.value = []
+      return
+    }
+
+    // Fetch appointments with indexed ORDER BY created_at
+    const { data, error } = await supabase
+      .from('appointment_booking')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching appointments:', error)
+      appointments.value = []
+      return
+    }
+
+    if (data) {
+      appointments.value = data.map((a) => ({
+        appointment_id: a.appointment_id,
+        purpose: a.purpose,
+        appointmentDate: a.date,
+        time: formatTimeTo12Hour(a.time),
+        status: a.status,
+        user_remarks: a.user_remarks,
+        admin_remarks: a.admin_remarks,
+        reviewed_by: a.reviewed_by,
+      }))
+    } else {
+      appointments.value = []
+    }
+  } catch (err) {
+    console.error('Unexpected error fetching appointments:', err)
+    appointments.value = []
+  } finally {
+    loading.value = false
   }
 }
 
@@ -340,7 +366,6 @@ const hourOptions = (hr) => {
 }
 
 async function submitBooking() {
-  isBookLoading.value = true
   const { name, email, date, time, purpose, user_remarks } = form.value
 
   if (!date || !time || !purpose) {
@@ -348,11 +373,20 @@ async function submitBooking() {
     return
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  isBookLoading.value = true
 
   try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      console.error('Auth error:', authError)
+      alert('Authentication error. Please log in again.')
+      return
+    }
+
     const { error } = await supabase.from('appointment_booking').insert([
       {
         name,
@@ -364,15 +398,13 @@ async function submitBooking() {
         user_type: userStore.profile?.user_type || 'User',
         user_id: user.id,
         status: 'Pending',
-        // reviewed_by: null,
-        // reviewed_at: null,
         created_at: new Date().toISOString(),
       },
     ])
 
     if (error) {
-      alert('Failed to save appointment booking.')
       console.error('Insert error:', error)
+      alert('Failed to save appointment booking.')
       return
     }
 
@@ -382,11 +414,12 @@ async function submitBooking() {
 
     console.log('Appointment booking successfully saved.')
     showSuccessModal.value = true
-    isBookLoading.value = false
     resetForm()
   } catch (err) {
-    console.log('Error during appointment booking:', err)
+    console.error('Error during appointment booking:', err)
     alert('An error occurred during booking. Please try again later.')
+  } finally {
+    isBookLoading.value = false
   }
 }
 
@@ -396,7 +429,6 @@ async function adminNotification(notifMessage) {
     const { data: admins, error: adminError } = await supabase
       .from('registered_admins')
       .select('id')
-    // console.log('Admins:', admins, 'Error:', adminError)
 
     if (adminError) {
       console.error('Error fetching admins:', adminError)
@@ -420,7 +452,7 @@ async function adminNotification(notifMessage) {
     const { error: notifError } = await supabase.from('notifications').insert(notifications)
 
     if (notifError) {
-      console.log('Error sending notification to all admins:', notifError)
+      console.error('Error sending notification to all admins:', notifError)
     } else {
       console.log('Notification sent to all admins.')
     }

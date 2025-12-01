@@ -482,7 +482,7 @@ const preventContextMenu = (e) => {
 
 const preventScreenshotKeys = (e) => {
   // Prevent PrintScreen, Ctrl+P, Ctrl+S, F12, Ctrl+Shift+I, etc.
-  const forbiddenKeys = ['PrintScreen', 'F12', 'F11']
+  const forbiddenKeys = ['PrintScreen', 'F12']
 
   const forbiddenCombos = [
     { key: 'p', ctrl: true, event: 'print_attempt', desc: 'Print' }, // Print
