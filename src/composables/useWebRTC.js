@@ -242,6 +242,34 @@ export function useWebRTC() {
     )
   }
 
+  async function checkExistingConnection() {
+    try {
+      const { data, error } = await supabase
+        .from('webrtc_signaling')
+        .select('connection_code, offer_data, answer_data, status')
+        .in('status', ['waiting', 'answered', 'connected'])
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (error) {
+        console.error('❌ Error checking existing connection:', error)
+        return null
+      }
+
+      if (data) {
+        console.log('🔍 Found existing connection:', data.connection_code, 'Status:', data.status)
+        return data
+      }
+
+      return null
+    } catch (err) {
+      console.error('❌ Error in checkExistingConnection:', err)
+      return null
+    }
+  }
+
   function resumeExistingConnection(videoElement) {
     if (videoElement && remoteStream.value) {
       videoElement.srcObject = remoteStream.value
@@ -258,6 +286,31 @@ export function useWebRTC() {
   async function initializeHostConnection(videoElement = null) {
     if (isConnectionActive()) {
       return resumeExistingConnection(videoElement)
+    }
+
+    // Check for existing connection in database
+    const existingConnection = await checkExistingConnection()
+    if (existingConnection) {
+      console.log('♻️ Resuming existing connection:', existingConnection.connection_code)
+      connectionCode.value = existingConnection.connection_code
+      connectionId.value = existingConnection.connection_code
+
+      // If there's already an answer, process it
+      if (existingConnection.status === 'answered' && existingConnection.answer_data) {
+        isHost.value = true
+        iceGatheringComplete.value = true
+
+        // Recreate the peer connection with the existing offer
+        await recreateHostConnection(existingConnection, videoElement)
+        return
+      } else if (existingConnection.status === 'waiting') {
+        // Resume waiting for answer
+        connectionCode.value = existingConnection.connection_code
+        iceGatheringComplete.value = true
+        offerData.value = { offer: existingConnection.offer_data }
+        startAnswerPolling()
+        return
+      }
     }
 
     isHost.value = true
@@ -303,21 +356,27 @@ export function useWebRTC() {
     }
 
     localConnection.value.onconnectionstatechange = () => {
+      console.log('🔗 Connection state:', localConnection.value.connectionState)
       if (localConnection.value.connectionState === 'failed') {
         connectionStatus.value = 'failed'
         stopAnswerPolling()
       } else if (localConnection.value.connectionState === 'disconnected') {
         connectionStatus.value = 'disconnected'
+      } else if (localConnection.value.connectionState === 'connected') {
+        connectionStatus.value = 'connected'
       }
     }
 
     localConnection.value.oniceconnectionstatechange = () => {
+      console.log('🧊 ICE connection state:', localConnection.value.iceConnectionState)
       if (
         localConnection.value.iceConnectionState === 'disconnected' ||
         localConnection.value.iceConnectionState === 'failed'
       ) {
         connectionStatus.value = 'failed'
         stopAnswerPolling()
+      } else if (localConnection.value.iceConnectionState === 'connected') {
+        console.log('✅ ICE connected')
       }
     }
 
@@ -348,6 +407,60 @@ export function useWebRTC() {
     updateSignalingData()
 
     connectionStep.value = 2
+  }
+
+  async function recreateHostConnection(existingData, videoElement = null) {
+    localConnection.value = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+      ],
+    })
+
+    localConnection.value.ontrack = (event) => {
+      remoteStream.value = event.streams[0]
+
+      if (videoElement) {
+        videoElement.srcObject = remoteStream.value
+        videoElement.style.display = 'block'
+
+        videoElement.play().catch((err) => {
+          console.error('❌ Error playing video:', err)
+          videoElement.muted = true
+          videoElement.play()
+        })
+      }
+
+      connectionStatus.value = 'connected'
+      stopAnswerPolling()
+    }
+
+    localConnection.value.onconnectionstatechange = () => {
+      console.log('🔗 Connection state:', localConnection.value.connectionState)
+      if (localConnection.value.connectionState === 'failed') {
+        connectionStatus.value = 'failed'
+        stopAnswerPolling()
+      } else if (localConnection.value.connectionState === 'disconnected') {
+        connectionStatus.value = 'disconnected'
+      } else if (localConnection.value.connectionState === 'connected') {
+        connectionStatus.value = 'connected'
+      }
+    }
+
+    dataChannel.value = localConnection.value.createDataChannel('cameraControl')
+
+    // Set the local description from existing offer
+    await localConnection.value.setLocalDescription(
+      new RTCSessionDescription(existingData.offer_data),
+    )
+
+    // Process the answer if available
+    if (existingData.answer_data) {
+      await processAnswerFromDatabase(existingData.answer_data)
+    } else {
+      // Start polling for answer
+      startAnswerPolling()
+    }
   }
 
   async function storeOfferInDatabase() {
@@ -543,5 +656,6 @@ export function useWebRTC() {
     disconnectWebRTC,
     isConnectionActive,
     resumeExistingConnection,
+    checkExistingConnection,
   }
 }
