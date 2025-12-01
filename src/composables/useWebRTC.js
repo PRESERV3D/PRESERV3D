@@ -20,6 +20,7 @@ export function useWebRTC() {
   const iceGatheringComplete = ref(false)
 
   let answerPollingInterval = null
+  let realtimeSubscription = null
 
   function generateConnectionId() {
     return Math.random().toString(36).substr(2, 6).toUpperCase()
@@ -116,26 +117,61 @@ export function useWebRTC() {
     }
   }
 
-  function startAnswerPolling() {
-    answerPollingInterval = setInterval(async () => {
-      try {
-        const { data, error } = await supabase
-          .from('webrtc_signaling')
-          .select('answer_data, status')
-          .eq('connection_code', connectionCode.value)
-          .single()
+  async function checkForAnswer() {
+    try {
+      const { data, error } = await supabase
+        .from('webrtc_signaling')
+        .select('answer_data, status')
+        .eq('connection_code', connectionCode.value)
+        .single()
 
-        if (error) return
+      if (error) return false
 
-        if (data?.answer_data && data.status === 'answered') {
-          console.log('✅ Phone connected')
-          stopAnswerPolling()
-          await processAnswerFromDatabase(data.answer_data)
-        }
-      } catch (err) {
-        console.error('❌ Polling error:', err)
+      if (data?.answer_data && data.status === 'answered') {
+        console.log('✅ Phone answered detected')
+        stopAnswerPolling()
+        await processAnswerFromDatabase(data.answer_data)
+        return true
       }
-    }, 2000)
+      return false
+    } catch (err) {
+      console.error('❌ Check error:', err)
+      return false
+    }
+  }
+
+  function startAnswerPolling() {
+    // Immediate first check
+    checkForAnswer()
+
+    // Start realtime subscription for instant updates
+    startRealtimeSubscription()
+
+    // Fallback polling every 500ms
+    answerPollingInterval = setInterval(checkForAnswer, 500)
+  }
+
+  function startRealtimeSubscription() {
+    realtimeSubscription = supabase
+      .channel(`webrtc:${connectionCode.value}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'webrtc_signaling',
+          filter: `connection_code=eq.${connectionCode.value}`,
+        },
+        async (payload) => {
+          console.log('🔄 Realtime update:', payload.new.status)
+          if (payload.new.status === 'answered' && payload.new.answer_data) {
+            console.log('✅ Phone connected (realtime)')
+            stopAnswerPolling()
+            await processAnswerFromDatabase(payload.new.answer_data)
+          }
+        },
+      )
+      .subscribe()
   }
 
   function stopAnswerPolling() {
@@ -143,21 +179,34 @@ export function useWebRTC() {
       clearInterval(answerPollingInterval)
       answerPollingInterval = null
     }
+    if (realtimeSubscription) {
+      supabase.removeChannel(realtimeSubscription)
+      realtimeSubscription = null
+    }
   }
 
   async function processAnswerFromDatabase(answerData) {
     try {
+      console.log('📱 Processing answer from phone...')
       const answer = new RTCSessionDescription({
         type: answerData.type,
         sdp: answerData.sdp,
       })
 
       await localConnection.value.setRemoteDescription(answer)
+      console.log('✅ Remote description set')
 
-      await supabase
+      // Update status to connected
+      const { error: updateError } = await supabase
         .from('webrtc_signaling')
         .update({ status: 'connected' })
         .eq('connection_code', connectionCode.value)
+
+      if (updateError) {
+        console.error('❌ Failed to update status:', updateError)
+      }
+
+      connectionStatus.value = 'connected'
     } catch (error) {
       console.error('❌ Error processing answer:', error)
       connectionStatus.value = 'failed'
@@ -317,14 +366,18 @@ export function useWebRTC() {
 
       if (error) throw error
 
+      console.log('✅ Offer stored, starting monitoring...')
+      // Start monitoring immediately
       startAnswerPolling()
     } catch (error) {
       console.error('❌ Error storing offer:', error)
+      connectionStatus.value = 'failed'
     }
   }
 
   async function initializeClientConnection(connectionCodeFromUrl) {
     isClient.value = true
+    connectionStatus.value = 'waiting'
 
     const { data: signalingData, error: fetchError } = await supabase
       .from('webrtc_signaling')
@@ -333,6 +386,7 @@ export function useWebRTC() {
       .single()
 
     if (fetchError || !signalingData?.offer_data) {
+      connectionStatus.value = 'failed'
       throw new Error('Connection code not found or expired')
     }
 
@@ -342,6 +396,19 @@ export function useWebRTC() {
         { urls: 'stun:stun1.l.google.com:19302' },
       ],
     })
+
+    // Monitor connection state changes on client side
+    remoteConnection.value.onconnectionstatechange = () => {
+      console.log('📱 Connection state:', remoteConnection.value.connectionState)
+      if (remoteConnection.value.connectionState === 'connected') {
+        connectionStatus.value = 'connected'
+        console.log('✅ Fully connected to laptop')
+      } else if (remoteConnection.value.connectionState === 'failed') {
+        connectionStatus.value = 'failed'
+      } else if (remoteConnection.value.connectionState === 'disconnected') {
+        connectionStatus.value = 'disconnected'
+      }
+    }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -358,6 +425,7 @@ export function useWebRTC() {
       })
     } catch (error) {
       console.error('❌ Camera access error:', error)
+      connectionStatus.value = 'failed'
       throw new Error('Camera access denied')
     }
 
@@ -398,8 +466,8 @@ export function useWebRTC() {
       })
       .eq('connection_code', connectionCodeFromUrl)
 
-    connectionStatus.value = 'connected'
-    console.log('✅ Connected to laptop')
+    connectionStatus.value = 'answered'
+    console.log('📤 Answer sent to laptop, waiting for confirmation...')
 
     return answerData
   }
@@ -411,6 +479,7 @@ export function useWebRTC() {
   }
 
   function disconnectWebRTC() {
+    console.log('🔌 Disconnecting WebRTC...')
     stopAnswerPolling()
 
     if (localConnection.value) {
@@ -429,12 +498,16 @@ export function useWebRTC() {
     }
 
     if (remoteStream.value) {
-      remoteStream.value.getTracks().forEach((track) => track.stop())
+      remoteStream.value.getTracks().forEach((track) => {
+        track.stop()
+        track.enabled = false
+      })
       remoteStream.value = null
     }
 
     if (connectionCode.value) {
       supabase.from('webrtc_signaling').delete().eq('connection_code', connectionCode.value)
+      connectionCode.value = ''
     }
 
     isHost.value = false

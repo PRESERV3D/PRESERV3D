@@ -19,7 +19,14 @@
           </div>
         </div>
 
-        <div v-else class="success-message">
+        <div v-else-if="connectionStatus === 'answered'" class="success-message">
+          <q-spinner-dots size="64px" color="primary" />
+          <h6>Camera Stream Sent</h6>
+          <p>Waiting for device to establish connection...</p>
+          <p class="text-caption">Keep this page open.</p>
+        </div>
+
+        <div v-else-if="connectionStatus === 'connected'" class="success-message">
           <q-icon name="check_circle" size="64px" color="positive" />
           <h6>Connected!</h6>
           <p>Your phone camera is now connected to your laptop.</p>
@@ -55,11 +62,13 @@ onMounted(async () => {
 async function connectToLaptop() {
   try {
     errorMessage.value = ''
+    connectionStatus.value = 'waiting'
     await initializeClientConnection(connectionCode.value)
     showSuccess.value = true
   } catch (error) {
     console.error('Connection failed:', error)
     errorMessage.value = error.message || 'Failed to connect. Please check the code and try again.'
+    connectionStatus.value = 'failed'
   }
 }
 </script>
