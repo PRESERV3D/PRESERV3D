@@ -285,7 +285,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onActivated, watch, computed } from 'vue'
+import { ref, onMounted, onActivated, onUnmounted, watch, computed } from 'vue'
 import { useQuasar } from 'quasar'
 import '@google/model-viewer'
 import { supabase } from 'boot/supabase'
@@ -448,47 +448,76 @@ async function init() {
       await userStore.fetchProfile(userStore.session.user.id)
     }
 
-    if (usersPerMonth.value) {
-      const usersData = await prepareUsersData()
+    // Parallelize all independent data fetching operations
+    const [
+      usersData,
+      chartData,
+      topArtsResult,
+      topDocusResult,
+      artifactsCountResult,
+      documentsCountResult,
+      userCountResult,
+    ] = await Promise.all([
+      prepareUsersData(),
+      prepareChartData(),
+      // Utilize idx_artifacts_view index with limit
+      supabase.from('artifacts_view').select('*').limit(3),
+      // Utilize idx_documents_view index with limit
+      supabase.from('documents_view').select('*').limit(3),
+      // Use indexed count queries (head: true avoids fetching data)
+      supabase.from('artifacts_metadata').select('*', { count: 'exact', head: true }),
+      supabase.from('documents_metadata').select('*', { count: 'exact', head: true }),
+      supabase
+        .from('all_users')
+        .select('*', { count: 'exact', head: true })
+        .neq('user_type', 'admin'),
+    ])
+
+    // Fetch recent uploads in parallel with chart initialization
+    const recentUploadsPromise = recentStore.fetchRecentUploads()
+
+    // Initialize charts with fetched data
+    if (usersPerMonth.value && usersData) {
       initUsersPerMonthChart(usersData)
     }
 
-    if (uploadedArchives.value) {
-      const chartData = await prepareChartData()
+    if (uploadedArchives.value && chartData) {
       initChart(chartData)
     }
 
-    const { data: topArts } = await supabase.from('artifacts_view').select('*').limit(3)
-    const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
-    const { count: artifactsCount } = await supabase
-      .from('artifacts_metadata')
-      .select('*', { count: 'exact', head: true })
+    // Update state with fetched data
+    topArtifacts.value = topArtsResult?.data || []
+    topDocuments.value = topDocusResult?.data || []
+    artifacts.value = artifactsCountResult?.count || 0
+    documents.value = documentsCountResult?.count || 0
+    users.value = userCountResult?.count || 0
 
-    const { count: documentsCount } = await supabase
-      .from('documents_metadata')
-      .select('*', { count: 'exact', head: true })
-
-    const { count: userCount } = await supabase
-      .from('all_users')
-      .select('*', { count: 'exact', head: true })
-      .neq('user_type', 'admin')
-
-    await recentStore.fetchRecentUploads()
-
-    topArtifacts.value = topArts
-    topDocuments.value = topDocus
-
-    // Update counts from chartData and usersData
-    artifacts.value = artifactsCount
-    documents.value = documentsCount
-    users.value = userCount
+    // Ensure recent uploads finish
+    await recentUploadsPromise
   } catch (err) {
     console.error('Error initializing AdminDashboard:', err)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to load dashboard data. Please refresh the page.',
+      position: 'top',
+    })
   }
 }
 
 onMounted(() => init())
 onActivated(() => init())
+
+// Cleanup chart instances on unmount to prevent memory leaks
+onUnmounted(() => {
+  if (chartInstance) {
+    chartInstance.destroy()
+    chartInstance = null
+  }
+  if (usersChartInstance) {
+    usersChartInstance.destroy()
+    usersChartInstance = null
+  }
+})
 
 function initChart(data) {
   chartInstance = new Chart(uploadedArchives.value, {
@@ -527,22 +556,38 @@ function initChart(data) {
 }
 
 async function prepareChartData() {
-  const { data: artifacts } = await supabase.from('artifacts_metadata').select('uploaded_at')
-  const { data: documents } = await supabase.from('documents_metadata').select('uploaded_at')
+  // Parallelize queries and utilize idx_artifacts_uploaded_at and idx_documents_uploaded_at indexes
+  const [artifactsResult, documentsResult] = await Promise.all([
+    supabase
+      .from('artifacts_metadata')
+      .select('uploaded_at')
+      .order('uploaded_at', { ascending: true }),
+    supabase
+      .from('documents_metadata')
+      .select('uploaded_at')
+      .order('uploaded_at', { ascending: true }),
+  ])
+
+  const artifacts = artifactsResult?.data || []
+  const documents = documentsResult?.data || []
 
   const artifactsCounts = Array(12).fill(0)
   const documentsCounts = Array(12).fill(0)
 
-  function incrementCount(data, counter) {
-    data.forEach((item) => {
-      const date = new Date(item.uploaded_at)
-      const monthIndex = date.getMonth() // 0 = Jan, 11 = Dec
-      counter[monthIndex]++
-    })
-  }
+  // Optimized single-pass counting
+  artifacts.forEach((item) => {
+    if (item.uploaded_at) {
+      const monthIndex = new Date(item.uploaded_at).getMonth()
+      artifactsCounts[monthIndex]++
+    }
+  })
 
-  incrementCount(artifacts, artifactsCounts)
-  incrementCount(documents, documentsCounts)
+  documents.forEach((item) => {
+    if (item.uploaded_at) {
+      const monthIndex = new Date(item.uploaded_at).getMonth()
+      documentsCounts[monthIndex]++
+    }
+  })
 
   return {
     artifactsCounts,
@@ -620,23 +665,42 @@ function initUsersPerMonthChart(data) {
 }
 
 async function prepareUsersData() {
-  const { data: users } = await supabase.from('all_users').select('created_at, user_type')
+  // Utilize idx_all_users_created_at index with ORDER BY
+  const { data: users, error } = await supabase
+    .from('all_users')
+    .select('created_at, user_type')
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching users data:', error)
+    return {
+      studentCounts: Array(12).fill(0),
+      facultyCounts: Array(12).fill(0),
+      visitorCounts: Array(12).fill(0),
+    }
+  }
 
   // Initialize counters for each user type
   const studentCounts = Array(12).fill(0)
   const facultyCounts = Array(12).fill(0)
   const visitorCounts = Array(12).fill(0)
 
-  users.forEach((user) => {
-    const date = new Date(user.created_at)
-    const monthIndex = date.getMonth()
+  // Optimized single-pass counting with null check
+  users?.forEach((user) => {
+    if (user.created_at) {
+      const monthIndex = new Date(user.created_at).getMonth()
 
-    if (user.user_type === 'student') {
-      studentCounts[monthIndex]++
-    } else if (user.user_type === 'faculty') {
-      facultyCounts[monthIndex]++
-    } else if (user.user_type === 'visitor') {
-      visitorCounts[monthIndex]++
+      switch (user.user_type) {
+        case 'student':
+          studentCounts[monthIndex]++
+          break
+        case 'faculty':
+          facultyCounts[monthIndex]++
+          break
+        case 'visitor':
+          visitorCounts[monthIndex]++
+          break
+      }
     }
   })
 

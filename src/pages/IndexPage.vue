@@ -471,19 +471,20 @@ async function init() {
       await userStore.fetchProfile(authUser.id)
     }
 
-    // Load all data
+    // Parallelize ALL independent data fetching operations for better performance
     await Promise.all([
       loadCollections(authUser.id),
       loadRecentViews(authUser.id),
       loadModels(),
-      loadDocuments(), // CHANGED: Added loadDocuments
+      loadDocuments(),
+      modelStore.fetchViewCounts(),
+      modelStore.fetchStarCounts(),
+      documentsStore.fetchViewCounts(),
+      documentsStore.fetchStarCounts(),
     ])
 
+    // Load user collections after initial data (depends on collections being loaded)
     await loadUserCollections()
-    await modelStore.fetchViewCounts()
-    await modelStore.fetchStarCounts()
-    await documentsStore.fetchViewCounts() // CHANGED: Added documents view counts
-    await documentsStore.fetchStarCounts() // CHANGED: Added documents star counts
   } catch (err) {
     console.error('Error initializing page:', err)
   }
@@ -557,14 +558,16 @@ async function loadCollections(userId) {
 async function loadDocuments() {
   isLoadingDocuments.value = true
   try {
+    // Utilize idx_documents_uploaded_at index with ORDER BY for better performance
     const { data, error } = await supabase
       .from('documents_metadata')
       .select('id, file_name, metadata, file_url, preview_url, uploaded_at, updated_at')
-      .limit(5)
       .order('uploaded_at', { ascending: false })
+      .limit(5)
 
     if (error) {
       console.error('Error loading documents:', error)
+      documents.value = []
       return
     }
 
@@ -600,13 +603,16 @@ async function loadDocuments() {
     }
   } catch (err) {
     console.error('Failed to load documents:', err)
+    documents.value = []
+  } finally {
+    isLoadingDocuments.value = false
   }
-  isLoadingDocuments.value = false
 }
 
 // Load recent views with proper database fields and error handling
 async function loadRecentViews(userId) {
   try {
+    // Utilize idx_user_activity_recent composite index (user_id + clicked_at DESC)
     const { data, error } = await supabase
       .from('user_activity_log')
       .select('item_id, item_type, clicked_at')
@@ -616,40 +622,48 @@ async function loadRecentViews(userId) {
 
     if (error) {
       console.error('Failed to fetch recent views:', error)
+      recentItems.value = []
+      return
+    }
+
+    if (!data || data.length === 0) {
+      recentItems.value = []
       return
     }
 
     const artifactIds = data.filter((d) => d.item_type === 'artifact').map((d) => d.item_id)
     const documentIds = data.filter((d) => d.item_type === 'document').map((d) => d.item_id)
 
-    const { data: artifactData = [] } = artifactIds.length
-      ? await supabase
-          .from('artifacts_metadata')
-          .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
-          .in('id', artifactIds)
-      : { data: [] }
+    // Parallelize artifact, document, and favorites collection fetches
+    const [artifactDataResult, documentDataResult, favoritesCollectionResult] = await Promise.all([
+      artifactIds.length
+        ? supabase
+            .from('artifacts_metadata')
+            .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
+            .in('id', artifactIds)
+        : Promise.resolve({ data: [] }),
+      documentIds.length
+        ? supabase
+            .from('documents_metadata')
+            .select('id, file_name, metadata, file_url, preview_url, uploaded_at, updated_at')
+            .in('id', documentIds)
+        : Promise.resolve({ data: [] }),
+      // Utilize idx_collections_user_id and idx_collections_user_name composite indexes
+      supabase
+        .from('collections')
+        .select('collection_id')
+        .eq('user_id', userId)
+        .eq('collection_name', 'Favorites')
+        .maybeSingle(),
+    ])
 
-    const { data: documentData = [] } = documentIds.length
-      ? await supabase
-          .from('documents_metadata')
-          .select('id, file_name, metadata, file_url, preview_url, uploaded_at, updated_at')
-          .in('id', documentIds)
-      : { data: [] }
-
-    // Fetch user favorites and bookmarks
-    const { data: favoritesCollection, error: favError } = await supabase
-      .from('collections')
-      .select('collection_id')
-      .eq('user_id', userId)
-      .eq('collection_name', 'Favorites')
-      .maybeSingle()
-
-    if (favError) {
-      console.error('Error fetching favorite items:', favError)
-    }
+    const artifactData = artifactDataResult.data || []
+    const documentData = documentDataResult.data || []
+    const favoritesCollection = favoritesCollectionResult.data
 
     let favoriteKeySet = new Set()
     if (favoritesCollection) {
+      // Utilize idx_collection_items_collection composite index
       const { data: favItems, error: favItemsError } = await supabase
         .from('collection_items')
         .select('item_id, item_type')
@@ -722,77 +736,112 @@ async function loadRecentViews(userId) {
 async function loadModels() {
   isLoadingModels.value = true
   try {
-    const { data, error } = await supabase
-      .from('artifacts_metadata')
-      .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
-      .limit(3)
-      .order('uploaded_at', { ascending: false })
+    // Parallelize auth check and model fetch
+    const [authDataResult, modelsResult] = await Promise.all([
+      supabase.auth.getUser(),
+      // Utilize idx_artifacts_uploaded_at index with ORDER BY
+      supabase
+        .from('artifacts_metadata')
+        .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
+        .order('uploaded_at', { ascending: false })
+        .limit(3),
+    ])
+
+    const { data, error } = modelsResult
+    const authData = authDataResult.data
+    const userId = authData?.user?.id
 
     if (error) {
       console.error('Error loading models:', error)
+      modelStore.setModels([])
       return
     }
 
-    // Fetch user favorites and bookmarks
-    const { data: authData } = await supabase.auth.getUser()
-    const userId = authData?.user?.id
-
-    // Fetch Favorites collection items
-    const { data: favoritesCollection, error: favError } = await supabase
-      .from('collections')
-      .select('collection_id')
-      .eq('user_id', userId)
-      .eq('collection_name', 'Favorites')
-      .maybeSingle()
-
-    if (favError) {
-      console.error('Error fetching favorite items:', favError)
+    if (!userId) {
+      // If no user, just set models without favorites
+      const enhancedModels = await Promise.all(
+        (data || []).map(async (model) => {
+          let workingUrl = model.file_url
+          try {
+            workingUrl = await convertToWorkingUrl(model.file_url)
+          } catch (err) {
+            console.warn('Could not convert model URL:', model.id, err)
+          }
+          return {
+            ...model,
+            file_url: workingUrl,
+            is_favorite: false,
+            is_bookmarked: false,
+          }
+        }),
+      )
+      modelStore.setModels(enhancedModels)
+      return
     }
 
-    // Get ALL user collections (for bookmarked check)
-    const { data: allUserCollections, error: allCollError } = await supabase
-      .from('collections')
-      .select('collection_id, collection_name')
-      .eq('user_id', userId)
+    // Parallelize Favorites collection fetch and all user collections fetch
+    const [favoritesCollectionResult, allUserCollectionsResult] = await Promise.all([
+      // Utilize idx_collections_user_id and idx_collections_user_name composite indexes
+      supabase
+        .from('collections')
+        .select('collection_id')
+        .eq('user_id', userId)
+        .eq('collection_name', 'Favorites')
+        .maybeSingle(),
+      supabase.from('collections').select('collection_id, collection_name').eq('user_id', userId),
+    ])
+
+    const favoritesCollection = favoritesCollectionResult.data
+    const allUserCollections = allUserCollectionsResult.data || []
 
     let favoriteIds = []
     let bookmarkedIds = []
 
-    if (favoritesCollection) {
-      const { data: favItems, error: favItemsError } = await supabase
-        .from('collection_items')
-        .select('item_id')
-        .eq('collection_id', favoritesCollection.collection_id)
-        .eq('item_type', 'artifact')
+    // Parallelize favorite items and bookmarked items fetches
+    const collectionItemsPromises = []
 
-      if (!favItemsError) {
-        favoriteIds = favItems.map((i) => i.item_id)
-      }
+    if (favoritesCollection) {
+      // Utilize idx_collection_items_collection composite index
+      collectionItemsPromises.push(
+        supabase
+          .from('collection_items')
+          .select('item_id')
+          .eq('collection_id', favoritesCollection.collection_id)
+          .eq('item_type', 'artifact')
+          .then((result) => ({ type: 'favorites', data: result.data })),
+      )
     }
 
     // Get bookmarked artifact IDs (from non-Favorites collections)
-    if (allUserCollections && !allCollError) {
-      const nonFavoritesCollections = allUserCollections.filter(
-        (col) => col.collection_name !== 'Favorites',
-      )
+    const nonFavoritesCollections = allUserCollections.filter(
+      (col) => col.collection_name !== 'Favorites',
+    )
 
-      if (nonFavoritesCollections.length > 0) {
-        const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
+    if (nonFavoritesCollections.length > 0) {
+      const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
 
-        const { data: bookmarkedItems, error: bookmarkError } = await supabase
+      collectionItemsPromises.push(
+        supabase
           .from('collection_items')
           .select('item_id')
           .in('collection_id', collectionIds)
           .eq('item_type', 'artifact')
-
-        if (!bookmarkError && bookmarkedItems) {
-          bookmarkedIds = [...new Set(bookmarkedItems.map((i) => i.item_id))]
-        }
-      }
+          .then((result) => ({ type: 'bookmarks', data: result.data })),
+      )
     }
 
+    const collectionItemsResults = await Promise.all(collectionItemsPromises)
+
+    collectionItemsResults.forEach((result) => {
+      if (result.type === 'favorites' && result.data) {
+        favoriteIds = result.data.map((i) => i.item_id)
+      } else if (result.type === 'bookmarks' && result.data) {
+        bookmarkedIds = [...new Set(result.data.map((i) => i.item_id))]
+      }
+    })
+
     const enhancedModels = await Promise.all(
-      data.map(async (model) => {
+      (data || []).map(async (model) => {
         let workingUrl = model.file_url
         try {
           workingUrl = await convertToWorkingUrl(model.file_url)
@@ -812,8 +861,10 @@ async function loadModels() {
     modelStore.setModels(enhancedModels)
   } catch (err) {
     console.error('Failed to load models:', err)
+    modelStore.setModels([])
+  } finally {
+    isLoadingModels.value = false
   }
-  isLoadingModels.value = false
 }
 
 // Time ago helper function
