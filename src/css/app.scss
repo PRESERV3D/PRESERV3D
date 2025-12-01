@@ -1412,3 +1412,76 @@ document-title-2 {
 .footer-link:hover {
   opacity: 0.8;
 }
+
+/* Global dialog styling for confirmation prompts (logout/gallery) */
+.logout-confirmation-dialog .q-card {
+  max-width: 25rem;
+  width: 92vw;
+  border-radius: 15px !important;
+  background-color: #fbf4d0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+  padding: 1rem;
+}
+
+.logout-confirmation-dialog .text-h6,
+.logout-confirmation-dialog .q-dialog__title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: #560505;
+}
+
+.logout-confirmation-dialog .q-dialog__message,
+.logout-confirmation-dialog .warning-message,
+.logout-confirmation-dialog .q-card-section.text-body2 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: #560505;
+}
+
+.logout-confirmation-dialog .q-checkbox .q-checkbox__label {
+  color: #560505;
+  font-family: 'Poppins', sans-serif;
+}
+
+.logout-confirmation-dialog .q-btn {
+  min-width: 4rem;
+  height: 2rem;
+  border-radius: 5px;
+  background-color: #880000 !important;
+  color: #fbf4d0 !important;
+  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  padding: 0.25rem 1rem;
+  text-transform: uppercase;
+}
+
+.logout-confirmation-dialog .q-btn:hover {
+  background-color: #6d0000 !important;
+}
+
+.logout-confirmation-dialog .dialog-header {
+  margin-top: 0.25rem;
+}
+
+.logout-confirmation-dialog .dialog-warning-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Center content and actions for confirmation dialogs */
+.logout-confirmation-dialog .q-card__section {
+  text-align: center;
+}
+
+.logout-confirmation-dialog .q-card__actions {
+  justify-content: center;
+}

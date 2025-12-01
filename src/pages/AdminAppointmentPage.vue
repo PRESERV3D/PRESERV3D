@@ -120,26 +120,6 @@
           </q-tr>
         </template>
       </q-table>
-
-      <!-- Confirmation Dialog -->
-      <q-dialog v-model="confirmDialog.show">
-        <q-card class="conf-box">
-          <q-card-section class="sub-font" style="color: black">
-            Are you sure you want to set this appointment as {{ confirmDialog.action }}?
-          </q-card-section>
-          <q-card-actions align="center">
-            <q-btn flat label="Yes" class="btn-save" @click="confirmAction" />
-            <q-btn
-              flat
-              label="No"
-              class="sub-font-2"
-              style="color: #000000"
-              v-close-popup
-              no-caps
-            />
-          </q-card-actions>
-        </q-card>
-      </q-dialog>
     </div>
 
     <!-- Calendar Tab -->
@@ -240,15 +220,33 @@
                 @click="selectDate(day)"
               >
                 <span class="day-number">{{ day.day }}</span>
-                <span v-if="day.appointmentCount > 0" class="appointment-count">
-                  {{ day.appointmentCount }}
-                </span>
+                <div v-if="day.appointmentCount > 0" class="appointment-counts">
+                  <span v-if="day.approvedCount > 0" class="appointment-count approved">
+                    {{ day.approvedCount }}
+                  </span>
+                  <span v-if="day.pendingCount > 0" class="appointment-count pending">
+                    {{ day.pendingCount }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Confirmation Dialog -->
+    <q-dialog v-model="confirmDialog.show" persistent>
+      <q-card class="conf-box">
+        <q-card-section class="sub-font" style="color: black">
+          Are you sure you want to set this appointment as {{ confirmDialog.action }}?
+        </q-card-section>
+        <q-card-actions align="center">
+          <q-btn flat label="Yes" class="btn-save" @click="confirmAction" />
+          <q-btn flat label="No" class="sub-font-2" style="color: #000000" v-close-popup no-caps />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -367,9 +365,13 @@ const calendarDays = computed(() => {
 
   return days.map((day) => {
     const dateStr = format(day, 'yyyy-MM-dd')
-    const appointmentCount = appointments.value.filter(
+    const dayAppointments = appointments.value.filter(
       (apt) => apt.appointmentDate === dateStr && apt.status !== 'Rejected',
-    ).length
+    )
+
+    const pendingCount = dayAppointments.filter((apt) => apt.status === 'Pending').length
+    const approvedCount = dayAppointments.filter((apt) => apt.status === 'Approved').length
+    const appointmentCount = dayAppointments.length
 
     return {
       date: dateStr,
@@ -378,6 +380,8 @@ const calendarDays = computed(() => {
       isSelected: isSameDay(day, selectedDate.value),
       isToday: isToday(day),
       appointmentCount,
+      pendingCount,
+      approvedCount,
     }
   })
 })
@@ -429,10 +433,15 @@ async function confirmAction() {
     const notifMessage = `Your appointment on ${row.appointmentDate} at ${row.time} has been ${formatAction}.`
     await userNotification(updateResponse.user_id, notifMessage)
 
+    // Close dialog first
     confirmDialog.value.show = false
+
+    // Refresh appointments data
     await fetchAppointments()
   } catch (err) {
     console.error('Error updating appointment status:', err)
+    // Close dialog even on error
+    confirmDialog.value.show = false
   }
 }
 
@@ -954,11 +963,17 @@ function nextMonth() {
   z-index: 1;
 }
 
-.calendar-day .appointment-count {
+.calendar-day .appointment-counts {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: #560505;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 2;
+}
+
+.calendar-day .appointment-count {
   color: white;
   font:
     700 10px 'Poppins',
@@ -970,11 +985,22 @@ function nextMonth() {
   align-items: center;
   justify-content: center;
   padding: 0 6px;
-  z-index: 2;
 }
 
-.calendar-day.selected .appointment-count {
+.calendar-day .appointment-count.approved {
+  background: #560505;
+}
+
+.calendar-day .appointment-count.pending {
+  background: #ff9800;
+}
+
+.calendar-day.selected .appointment-count.approved {
   background: #8d1c1c;
+}
+
+.calendar-day.selected .appointment-count.pending {
+  background: #fb8c00;
 }
 
 /* Responsive */

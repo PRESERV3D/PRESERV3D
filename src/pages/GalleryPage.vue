@@ -32,6 +32,28 @@
       </div>
     </div>
 
+    <!-- Warning Dialog -->
+    <q-dialog v-model="showWarningDialog" persistent class="logout-confirmation-dialog">
+      <q-card>
+        <q-card-section class="column items-center q-gutter-y-sm dialog-header">
+          <q-icon class="dialog-warning-icon" name="warning" color="amber-8" size="40px" />
+          <div class="text-h6">Virtual Gallery – High Memory Usage</div>
+        </q-card-section>
+        <q-card-section class="text-body2 warning-message">
+          The Virtual Gallery is resource-intensive and can consume a large amount of memory. On
+          lower-spec devices or with many tabs open, it may become unresponsive or crash. Do you
+          want to continue?
+        </q-card-section>
+        <q-card-section>
+          <q-checkbox v-model="dontShowAgain" label="Don't show this again" />
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="grey-7" @click="cancelStartTour" />
+          <q-btn unelevated label="Start Tour" color="primary" @click="confirmStartTour" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
     <!-- Godot Iframe Section -->
     <div v-if="showGodot" class="godot-section">
       <div class="godot-container">
@@ -63,6 +85,9 @@ const godotIframeSrc = ref('')
 const godotIframe = ref(null)
 const showGodot = ref(false)
 const loading = ref(false)
+const showWarningDialog = ref(false)
+const dontShowAgain = ref(false)
+const WARN_KEY = 'gallery_skip_warning'
 
 onMounted(async () => {
   await loadModelUrls()
@@ -74,6 +99,28 @@ function startGallery() {
     return
   }
 
+  const skipWarning = localStorage.getItem(WARN_KEY) === 'true'
+  if (skipWarning) {
+    launchGallery()
+  } else {
+    dontShowAgain.value = false
+    showWarningDialog.value = true
+  }
+}
+
+function confirmStartTour() {
+  if (dontShowAgain.value) {
+    localStorage.setItem(WARN_KEY, 'true')
+  }
+  showWarningDialog.value = false
+  launchGallery()
+}
+
+function cancelStartTour() {
+  showWarningDialog.value = false
+}
+
+function launchGallery() {
   loading.value = true
 
   // Send optimized data to Godot
