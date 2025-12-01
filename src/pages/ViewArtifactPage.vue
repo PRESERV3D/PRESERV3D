@@ -23,6 +23,7 @@
             loading="lazy"
             shadow-intensity="1"
             class="large-artifacts"
+
           />
 
           <!-- Control Buttons -->
@@ -1024,146 +1025,120 @@ const showNotifyDialog = (title, message) => {
 }
 
 onMounted(async () => {
-  try {
-    // Parallelize voice init and artifact fetch
-    const [artifactResult, authResult] = await Promise.all([
-      initVoices(),
-      supabase.from('artifacts_metadata').select('*').eq('id', route.params.id).single(),
-      supabase.auth.getUser(),
-    ])
+  await initVoices()
+  const { data, error } = await supabase
+    .from('artifacts_metadata')
+    .select('*')
+    .eq('id', route.params.id)
+    .single()
 
-    const { data, error } = artifactResult
-    const { data: authData } = authResult
-    const userId = authData?.user?.id
-
-    if (error || !data) {
-      console.error('Artifact not found from Supabase:', error)
-      // Fallback to modelStore if Supabase fails
-      model.value = modelStore.models.find((m) => m.id == route.params.id) || null
-      console.log('Fallback Model from Store:', model.value)
-      if (!model.value) {
-        loading.value = false
-        router.replace('/not-found')
-        return
-      }
-    } else {
-      // Set model with default values
-      model.value = {
-        ...data,
-        bookmarked: false,
-        starred: false,
-      }
-
-      // Parallelize URL conversion and related links processing
-      try {
-        if (data.file_url) {
-          workingModelUrl.value = await convertToWorkingUrl(data.file_url)
-          console.log('✅ Generated working URL for artifact')
-        }
-      } catch (urlError) {
-        console.error('⚠️ Could not generate working URL, using stored URL:', urlError)
-        workingModelUrl.value = data.file_url
-      }
-
-      if (data.related_links && Array.isArray(data.related_links)) {
-        links.value = data.related_links.map((link, idx) => ({
-          id: link.id || Date.now() + idx,
-          title: link.title,
-          url: link.url,
-        }))
-      }
-    }
-
-    if (!data?.donated_by || data.donated_by === '[Donor/Lender Name]') {
-      hasValue.value = false
-    } else {
-      hasValue.value = true
-    }
-
-    // Parallelize favorites and bookmarks checks if user is logged in
-    if (userId) {
-      const [favoritesResult, userCollectionsResult] = await Promise.all([
-        supabase
-          .from('collections')
-          .select('collection_id')
-          .eq('user_id', userId)
-          .eq('collection_name', 'Favorites')
-          .maybeSingle(),
-        supabase
-          .from('collections')
-          .select('collection_id')
-          .neq('collection_name', 'Favorites')
-          .eq('user_id', userId),
-      ])
-
-      const favoritesCollection = favoritesResult.data
-      const userCollections = userCollectionsResult.data
-
-      // Parallelize favorites and bookmarks item checks
-      const itemCheckPromises = []
-
-      if (favoritesCollection) {
-        itemCheckPromises.push(
-          supabase
-            .from('collection_items')
-            .select('item_id')
-            .eq('collection_id', favoritesCollection.collection_id)
-            .eq('item_type', 'artifact')
-            .eq('item_id', route.params.id)
-            .then((result) => ({ type: 'favorites', data: result.data })),
-        )
-      }
-
-      if (userCollections?.length > 0) {
-        itemCheckPromises.push(
-          supabase
-            .from('collection_items')
-            .select('item_id')
-            .in(
-              'collection_id',
-              userCollections.map((c) => c.collection_id),
-            )
-            .eq('item_type', 'artifact')
-            .eq('item_id', route.params.id)
-            .then((result) => ({ type: 'bookmarks', data: result.data })),
-        )
-      }
-
-      if (itemCheckPromises.length > 0) {
-        const itemCheckResults = await Promise.all(itemCheckPromises)
-
-        itemCheckResults.forEach((result) => {
-          if (result.type === 'favorites' && result.data?.length > 0) {
-            model.value.starred = true
-          } else if (result.type === 'bookmarks' && result.data?.length > 0) {
-            model.value.bookmarked = true
-          }
-        })
-      }
-    }
-
-    // Parallelize star and view counts fetching
-    await Promise.all([modelStore.fetchStarCounts(), modelStore.fetchViewCounts()])
-
-    // Wait for model to render & load
-    nextTick(() => {
-      if (artifactViewer.value) {
-        artifactViewer.value.addEventListener('load', () => {
-          defaultOrbit = artifactViewer.value.getAttribute('camera-orbit') || '0deg 75deg auto'
-          defaultFOV = artifactViewer.value.getAttribute('field-of-view') || 'auto'
-          defaultTarget = artifactViewer.value.getAttribute('camera-target') || 'auto'
-        })
-      }
-    })
-  } catch (err) {
-    console.error('Unexpected error loading artifact:', err)
+  if (error || !data) {
+    console.error('Artifact not found from Supabase:', error)
+    // Fallback to modelStore if Supabase fails
     model.value = modelStore.models.find((m) => m.id == route.params.id) || null
+    console.log('Fallback Model from Store:', model.value)
     if (!model.value) {
+      loading.value = false
       router.replace('/not-found')
+      return
     }
-  } finally {
-    loading.value = false
+  } else {
+    // Add some default values for compatibility
+    model.value = {
+      ...data,
+      bookmarked: false,
+      starred: false,
+    }
+
+    // Convert stored URL to working presigned URL
+    try {
+      if (data.file_url) {
+        workingModelUrl.value = await convertToWorkingUrl(data.file_url)
+        console.log('✅ Generated working URL for artifact')
+      }
+    } catch (urlError) {
+      console.error('⚠️ Could not generate working URL, using stored URL:', urlError)
+      workingModelUrl.value = data.file_url
+    }
+
+    if (data.related_links && Array.isArray(data.related_links)) {
+      links.value = data.related_links.map((link, idx) => ({
+        id: link.id || Date.now() + idx,
+        title: link.title,
+        url: link.url,
+      }))
+    }
   }
+
+  if (!data.donated_by || data.donated_by === '[Donor/Lender Name]') {
+    hasValue.value = false
+  } else {
+    hasValue.value = true
+  }
+
+  loading.value = false
+
+  // Check if the artifact is in user's Favorites collection
+  const { data: authData } = await supabase.auth.getUser()
+  const userId = authData?.user?.id
+
+  if (userId) {
+    const { data: favoritesCollection } = await supabase
+      .from('collections')
+      .select('collection_id')
+      .eq('user_id', userId)
+      .eq('collection_name', 'Favorites')
+      .maybeSingle()
+
+    if (favoritesCollection) {
+      const { data: favItems } = await supabase
+        .from('collection_items')
+        .select('item_id')
+        .eq('collection_id', favoritesCollection.collection_id)
+        .eq('item_type', 'artifact')
+        .eq('item_id', route.params.id)
+
+      if (favItems?.length > 0) {
+        model.value.starred = true
+      }
+    }
+
+    const { data: userCollections } = await supabase
+      .from('collections')
+      .select('collection_id')
+      .neq('collection_name', 'Favorites') // Exclude Favorites
+      .eq('user_id', userId)
+
+    if (userCollections) {
+      const { data: collItems } = await supabase
+        .from('collection_items')
+        .select('item_id')
+        .in(
+          'collection_id',
+          userCollections.map((c) => c.collection_id),
+        )
+        .eq('item_type', 'artifact')
+        .eq('item_id', route.params.id)
+
+      if (collItems?.length > 0) {
+        model.value.bookmarked = true
+      }
+    }
+  }
+
+  await modelStore.fetchStarCounts()
+  await modelStore.fetchViewCounts()
+
+  // ADDED: Wait for model to render & load
+  nextTick(() => {
+    if (artifactViewer.value) {
+      artifactViewer.value.addEventListener('load', () => {
+        defaultOrbit = artifactViewer.value.getAttribute('camera-orbit') || '0deg 75deg auto'
+        defaultFOV = artifactViewer.value.getAttribute('field-of-view') || 'auto'
+        defaultTarget = artifactViewer.value.getAttribute('camera-target') || 'auto'
+      })
+    }
+  })
 })
 
 onUnmounted(() => {
@@ -1371,7 +1346,7 @@ model-viewer:-ms-fullscreen {
   right: 20px;
   display: flex;
   gap: 8px;
-  z-index: 1000;
+  z-index: 1000; 
   pointer-events: auto;
 }
 

@@ -195,3 +195,28 @@ FOR EACH ROW
 EXECUTE FUNCTION public.trigger_update_account_status_non_visitors();
 
 COMMENT ON FUNCTION public.trigger_update_account_status_non_visitors() IS 'Trigger wrapper that runs update_account_status_non_visitors() after login inserts.';
+
+-- Cleanup function: delete expired/weakened WebRTC signaling records
+CREATE OR REPLACE FUNCTION public.delete_expired_signaling()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- Delete by explicit expiry timestamp
+  DELETE FROM public.webrtc_signaling
+  WHERE expires_at IS NOT NULL AND expires_at < NOW();
+
+  -- Safety: also delete any lingering 'waiting' connections older than 10 minutes
+  DELETE FROM public.webrtc_signaling
+  WHERE status != 'connected'
+    AND created_at < (NOW() - INTERVAL '10 minutes');
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.delete_expired_signaling() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.delete_expired_signaling() TO anon;
+GRANT EXECUTE ON FUNCTION public.delete_expired_signaling() TO service_role;
+
+COMMENT ON FUNCTION public.delete_expired_signaling() IS 'Deletes expired WebRTC signaling rows: those past expires_at and waiting connections older than 10 minutes.';

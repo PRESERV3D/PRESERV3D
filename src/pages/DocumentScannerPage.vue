@@ -1,5 +1,28 @@
 <template>
   <q-page class="q-pa-md column items-center justify-start">
+    <!-- Camera Mode Toggle (always visible, sticky) -->
+    <div class="q-mb-md camera-toggle-bar">
+      <q-btn-toggle
+        v-model="cameraMode"
+        spread
+        no-caps
+        rounded
+        toggle-color="primary"
+        :options="[
+          { value: 'webcam', icon: 'videocam' },
+          { value: 'phone', icon: 'smartphone' },
+        ]"
+        @update:model-value="switchCameraMode"
+      >
+        <template v-slot:label="scope">
+          <q-icon :name="scope.opt.icon" />
+          <q-tooltip anchor="bottom middle" self="top middle" content-class="camera-tooltip">
+            {{ scope.opt.label }}
+          </q-tooltip>
+        </template>
+      </q-btn-toggle>
+    </div>
+
     <!-- Phone Camera Connection Section -->
     <div v-if="showPhoneSetup" class="phone-setup-card q-mb-lg">
       <q-card class="q-pa-md" style="max-width: 600px">
@@ -81,24 +104,11 @@
       </q-card>
     </div>
 
-    <!-- Camera Mode Toggle -->
-    <div class="q-mb-md" v-if="!showPhoneSetup">
-      <q-btn-toggle
-        v-model="cameraMode"
-        spread
-        no-caps
-        rounded
-        toggle-color="primary"
-        :options="[
-          { label: '💻 Laptop Camera', value: 'laptop' },
-          { label: '📱 Phone Camera', value: 'phone' },
-        ]"
-        @update:model-value="switchCameraMode"
-      />
-    </div>
-
     <!-- Camera & Canvas Area -->
-    <div class="q-mt-lg items-center justify-center" v-if="cameraMode === 'laptop' || cameraMode === 'phone' && connectionStatus === 'connected'">
+    <div
+      class="q-mt-lg items-center justify-center"
+      v-if="cameraMode === 'webcam' || (cameraMode === 'phone' && connectionStatus === 'connected')"
+    >
       <video
         ref="video"
         autoplay
@@ -236,7 +246,7 @@ const {
 } = useWebRTC()
 
 // NEW: Camera mode state
-const cameraMode = ref('laptop')
+const cameraMode = ref('webcam')
 const showPhoneSetup = ref(false)
 const qrCanvas = ref(null)
 
@@ -275,7 +285,23 @@ onMounted(async () => {
 onUnmounted(() => {
   stopCamera()
   disconnectWebRTC()
+
+  // Clean up scanned images
   scannedImages.value.forEach((imgUrl) => URL.revokeObjectURL(imgUrl))
+  scannedImages.value = []
+
+  // Clean up transformed image
+  if (transformedImage.value) {
+    URL.revokeObjectURL(transformedImage.value)
+    transformedImage.value = null
+  }
+
+  // Remove canvas event listeners
+  if (canvas.value) {
+    canvas.value.removeEventListener('mousedown', onMouseDown)
+    canvas.value.removeEventListener('mousemove', onMouseMove)
+    canvas.value.removeEventListener('mouseup', onMouseUp)
+  }
 })
 
 onBeforeRouteLeave(() => {
@@ -327,7 +353,7 @@ async function switchCameraMode(mode) {
       await setupPhoneConnection()
     }
   } else {
-    // Switching to laptop camera
+    // Switching to webcam camera
     // Don't disconnect WebRTC - just pause the phone stream
     if (video.value && video.value.srcObject === remoteStream.value) {
       video.value.pause()
@@ -397,25 +423,35 @@ async function handleFileSelection(event) {
   }
 
   for (const file of validImages) {
+    let imageUrl = null
+    let tempCanvas = null
+
     try {
-      const imageUrl = URL.createObjectURL(file)
+      imageUrl = URL.createObjectURL(file)
       const imageElement = await createImageElement(imageUrl)
 
-      const canvas = document.createElement('canvas')
-      canvas.width = imageElement.width
-      canvas.height = imageElement.height
-      const ctx = canvas.getContext('2d')
+      tempCanvas = document.createElement('canvas')
+      tempCanvas.width = imageElement.width
+      tempCanvas.height = imageElement.height
+      const ctx = tempCanvas.getContext('2d', { willReadFrequently: false })
       ctx.drawImage(imageElement, 0, 0)
 
-      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 0.9))
+      const blob = await new Promise((resolve) => tempCanvas.toBlob(resolve, 'image/png', 0.9))
       const scannedImageUrl = URL.createObjectURL(blob)
 
       scannedImages.value.push(scannedImageUrl)
-
-      URL.revokeObjectURL(imageUrl)
     } catch (error) {
       console.error('Error processing image:', error)
       alert(`Error processing ${file.name}. Please try again.`)
+    } finally {
+      // Clean up resources immediately
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl)
+      }
+      if (tempCanvas) {
+        tempCanvas.width = 0
+        tempCanvas.height = 0
+      }
     }
   }
 
@@ -451,16 +487,16 @@ function takePhoto() {
 }
 
 async function openCamera() {
-  // If switching from phone to laptop, keep phone connection alive
-  if (cameraMode.value === 'laptop' && remoteStream.value) {
+  // If switching from phone to webcam, keep phone connection alive
+  if (cameraMode.value === 'webcam' && remoteStream.value) {
     // Keep phone connection alive but hide video
     if (video.value && video.value.srcObject === remoteStream.value) {
       video.value.pause()
     }
   }
 
-  // Only open local camera if in laptop mode
-  if (cameraMode.value === 'laptop') {
+  // Only open local camera if in webcam mode
+  if (cameraMode.value === 'webcam') {
     try {
       localStream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -497,14 +533,23 @@ async function openCamera() {
     resultCanvas.value.height = videoHeight
   }
 
-  canvas.value.addEventListener('mousedown', onMouseDown)
-  canvas.value.addEventListener('mousemove', onMouseMove)
-  canvas.value.addEventListener('mouseup', onMouseUp)
+  // Remove existing listeners before adding new ones to prevent duplicates
+  canvas.value.removeEventListener('mousedown', onMouseDown)
+  canvas.value.removeEventListener('mousemove', onMouseMove)
+  canvas.value.removeEventListener('mouseup', onMouseUp)
+
+  // Add event listeners
+  canvas.value.addEventListener('mousedown', onMouseDown, { passive: true })
+  canvas.value.addEventListener('mousemove', onMouseMove, { passive: true })
+  canvas.value.addEventListener('mouseup', onMouseUp, { passive: true })
 }
 
 function stopLocalCamera() {
   if (localStream) {
-    localStream.getTracks().forEach((track) => track.stop())
+    localStream.getTracks().forEach((track) => {
+      track.stop()
+      track.enabled = false
+    })
     localStream = null
   }
 }
@@ -515,8 +560,12 @@ function stopCamera() {
   if (video.value && video.value.srcObject && video.value.srcObject !== remoteStream.value) {
     const stream = video.value.srcObject
     const tracks = stream.getTracks()
-    tracks.forEach((track) => track.stop())
+    tracks.forEach((track) => {
+      track.stop()
+      track.enabled = false
+    })
     video.value.srcObject = null
+    video.value.pause()
   }
 }
 
@@ -575,13 +624,25 @@ async function detectEdges() {
 
   drawCorners()
 
+  // Clean up OpenCV matrices immediately
   src.delete()
   gray.delete()
   blurred.delete()
   edges.delete()
-  contours.delete()
   hierarchy.delete()
-  bestContour?.delete()
+
+  // Clean up all contours
+  for (let i = 0; i < contours.size(); i++) {
+    const contour = contours.get(i)
+    if (contour !== bestContour) {
+      contour.delete()
+    }
+  }
+  contours.delete()
+
+  if (bestContour) {
+    bestContour.delete()
+  }
 }
 
 function drawCorners() {
@@ -727,6 +788,7 @@ async function transformDocument() {
   showRetake.value = true
   showSave.value = true
 
+  // Clean up all OpenCV matrices and temporary canvas
   kernel.delete()
   sharpened.delete()
   src.delete()
@@ -734,6 +796,10 @@ async function transformDocument() {
   srcTri.delete()
   dstTri.delete()
   M.delete()
+
+  // Clean up temporary canvas
+  tempCanvas.width = 0
+  tempCanvas.height = 0
 }
 
 function rotateTransformedImage() {
@@ -761,7 +827,15 @@ function rotateTransformedImage() {
 
   resultCanvas.value.toBlob(
     (blob) => {
+      // Revoke old URL before creating new one
+      if (transformedImage.value) {
+        URL.revokeObjectURL(transformedImage.value)
+      }
       transformedImage.value = URL.createObjectURL(blob)
+
+      // Clean up temp canvas
+      tempCanvas.width = 0
+      tempCanvas.height = 0
     },
     'image/png',
     1.0,
@@ -772,6 +846,8 @@ function saveImage() {
   if (transformedImage.value) {
     scannedImages.value = [...scannedImages.value, transformedImage.value]
     transformedImage.value = null
+  } else {
+    return // Exit early if no transformed image
   }
 
   resultCanvas.value.style.display = 'none'
@@ -788,9 +864,16 @@ function saveImage() {
 }
 
 function deleteScan(index) {
+  if (index < 0 || index >= scannedImages.value.length) return
+
   const imgUrl = scannedImages.value[index]
   URL.revokeObjectURL(imgUrl)
   scannedImages.value.splice(index, 1)
+
+  // Force garbage collection hint
+  if (scannedImages.value.length === 0) {
+    formattedPdfSize.value = '0 MB'
+  }
 }
 
 function resetScan() {
@@ -835,13 +918,18 @@ async function confirmExport({ uploadPdf = false } = {}) {
   const pageHeight = 297
 
   const loadImage = (src) =>
-    new Promise((resolve) => {
+    new Promise((resolve, reject) => {
       const img = new Image()
-      img.src = src
       img.onload = () => resolve(img)
+      img.onerror = reject
+      img.src = src
     })
 
   const images = await Promise.all(scannedImages.value.map(loadImage))
+
+  // Reuse a single canvas for all images
+  const tempCanvas = document.createElement('canvas')
+  const ctx = tempCanvas.getContext('2d', { willReadFrequently: false })
 
   images.forEach((image, i) => {
     if (i !== 0) pdf.addPage()
@@ -855,15 +943,18 @@ async function confirmExport({ uploadPdf = false } = {}) {
     const x = (pageWidth - width) / 2
     const y = (pageHeight - height) / 2
 
-    const canvas = document.createElement('canvas')
-    canvas.width = imgWidth
-    canvas.height = imgHeight
-    const ctx = canvas.getContext('2d')
+    // Resize canvas for current image
+    tempCanvas.width = imgWidth
+    tempCanvas.height = imgHeight
     ctx.drawImage(image, 0, 0, imgWidth, imgHeight)
 
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+    const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.85)
     pdf.addImage(dataUrl, 'JPEG', x, y, width, height)
   })
+
+  // Clean up temp canvas
+  tempCanvas.width = 0
+  tempCanvas.height = 0
 
   stopCamera()
   const pdfBlob = pdf.output('blob')
@@ -872,6 +963,9 @@ async function confirmExport({ uploadPdf = false } = {}) {
   })
 
   if (uploadPdf) {
+    // Clean up scanned images before navigation
+    scannedImages.value.forEach((imgUrl) => URL.revokeObjectURL(imgUrl))
+    scannedImages.value = []
     router.push({ name: 'documents', state: { scannedFile: file } })
   } else {
     pdf.save(`${pdfFileName.value || 'scanned-document'}.pdf`)
@@ -906,7 +1000,7 @@ canvas {
   border-radius: 8px;
 }
 
-/* Landscape camera (laptop) */
+/* Landscape camera (webcam) */
 .camera-preview {
   width: 100%;
   max-width: 80vw;
