@@ -328,7 +328,6 @@ const showExtensionDialog = ref(false)
 const hasActiveExtension = ref(false)
 const letterInput = ref(null)
 
-// Computed properties for extension validation
 const extensionDurationDays = computed(() => {
   if (!extensionRequest.newEndDate || !visitorData.endDate) return 0
 
@@ -354,7 +353,6 @@ const isExtensionFormValid = computed(() => {
     extensionRequest.newEndDate &&
     extensionRequest.reason.trim().length > 0
 
-  // If letter is required (extension > 7 days), check if letter is uploaded
   if (requiresLetterUpload.value) {
     return basicFieldsValid && extensionRequest.letter !== null
   }
@@ -404,7 +402,6 @@ const visitorData = reactive({
 
 onMounted(async () => {
   try {
-    // Ensure profile is loaded (if not already)
     if (!userStore.profile) {
       await userStore.fetchProfile()
     }
@@ -417,7 +414,6 @@ onMounted(async () => {
       return
     }
 
-    // Use data already loaded in the store - no additional queries needed!
     if (userType.value === 'student') {
       studentData.firstName = profile.first_name || ''
       studentData.lastName = profile.last_name || ''
@@ -447,7 +443,6 @@ onMounted(async () => {
       visitorData.startDate = profile.start_date || ''
       visitorData.endDate = profile.end_date || ''
 
-      // Check for pending extension requests
       await checkPendingExtension(profile.approval_id)
     }
   } catch (error) {
@@ -460,7 +455,6 @@ onMounted(async () => {
   }
 })
 
-// Check if visitor has a pending extension request
 const checkPendingExtension = async (approvalId) => {
   if (!approvalId) return
 
@@ -487,14 +481,13 @@ const checkPendingExtension = async (approvalId) => {
 const extensionRequest = reactive({
   newEndDate: '',
   reason: '',
-  letter: null, // Required for extensions > 7 days
+  letter: null,
   certificationAccepted: false,
 })
 
 const handleLetterSelect = (event) => {
   const file = event.target.files[0]
   if (file) {
-    // Validate file type (PDF only)
     if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
       $q.notify({
         type: 'negative',
@@ -505,7 +498,6 @@ const handleLetterSelect = (event) => {
       return
     }
 
-    // Validate file size
     if (file.size > 5242880) {
       $q.notify({
         type: 'negative',
@@ -528,8 +520,6 @@ const removeLetterFile = () => {
 }
 
 const checkExtensionDuration = () => {
-  // This is called when newEndDate changes
-  // The computed properties will automatically update
   console.log('Extension duration:', extensionDurationDays.value, 'days')
   console.log('Requires letter:', requiresLetterUpload.value)
 }
@@ -546,7 +536,6 @@ const resetExtensionForm = () => {
 }
 
 const submitExtensionRequest = async () => {
-  // Validate required fields
   if (!isExtensionFormValid.value) {
     $q.notify({
       type: 'negative',
@@ -572,11 +561,9 @@ const submitExtensionRequest = async () => {
     let letterUrl = null
     let uploadedFileName = null
 
-    // Upload letter to R2 first (if required)
     if (requiresLetterUpload.value && extensionRequest.letter) {
       $q.loading.show({ message: 'Uploading letter...' })
 
-      // Generate unique filename to avoid conflicts
       const timestamp = Date.now()
       const originalName = extensionRequest.letter.name.replace(/[^a-zA-Z0-9.-]/g, '_')
       const fileName = `${profile.approval_id}_${timestamp}_${originalName}`
@@ -592,13 +579,11 @@ const submitExtensionRequest = async () => {
         throw new Error(`Failed to upload letter: ${uploadError.message}`)
       }
 
-      // Use permanent public R2 URL instead of pre-signed URL
       const r2PublicUrl = import.meta.env.VITE_R2_PUBLIC_URL
       letterUrl = `${r2PublicUrl}/visitor-letters/${fileName}`
       console.log('Letter uploaded successfully:', letterUrl)
     }
 
-    // Insert extension request into database with letter URL
     $q.loading.show({ message: 'Saving extension request...' })
     const { error: insertError } = await supabase.from('account_extensions').insert([
       {
@@ -612,7 +597,6 @@ const submitExtensionRequest = async () => {
     ])
 
     if (insertError) {
-      // If database insert fails and we uploaded a file, delete it from R2
       if (uploadedFileName) {
         console.log('Database insert failed. Deleting uploaded file from R2:', uploadedFileName)
         const { error: deleteError } = await deleteFileFromR2('visitor-letters', uploadedFileName)
@@ -627,9 +611,8 @@ const submitExtensionRequest = async () => {
 
     console.log('Extension request created successfully')
 
-    // Notify all admins about the extension request (non-blocking)
     const notifMessage = `${visitorData.firstName} ${visitorData.lastName} has requested an account extension from ${formatDate(visitorData.endDate)} to ${formatDate(extensionRequest.newEndDate)}.`
-    adminNotification(notifMessage) // Don't await - let it run in background
+    adminNotification(notifMessage)
 
     hasActiveExtension.value = true
     showExtensionDialog.value = false
@@ -645,7 +628,6 @@ const submitExtensionRequest = async () => {
       timeout: 3000,
     })
 
-    // Reset form
     resetExtensionForm()
   } catch (error) {
     console.error('Error submitting extension request:', error)
@@ -660,7 +642,6 @@ const submitExtensionRequest = async () => {
   }
 }
 
-// Notify all admins of extension request
 async function adminNotification(notifMessage) {
   try {
     const { data: admins, error: adminError } = await supabase
