@@ -23,7 +23,6 @@
             loading="lazy"
             shadow-intensity="1"
             class="large-artifacts"
-
           />
 
           <!-- Control Buttons -->
@@ -583,12 +582,8 @@ function formatDate(dateStr) {
   const date = new Date(dateStr)
 
   const formattedDate = date.toLocaleDateString('en-CA')
-  const formattedTime = date.toLocaleTimeString('en-PH', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 
-  return `${formattedDate} ${formattedTime}`
+  return `${formattedDate}`
 }
 
 const isSpeaking = ref(false)
@@ -1346,7 +1341,7 @@ model-viewer:-ms-fullscreen {
   right: 20px;
   display: flex;
   gap: 8px;
-  z-index: 1000; 
+  z-index: 1000;
   pointer-events: auto;
 }
 

@@ -463,7 +463,7 @@
                     outlined
                     dense
                     class="detail-input"
-                    type="datetime-local"
+                    type="date"
                   />
                 </div>
               </div>
