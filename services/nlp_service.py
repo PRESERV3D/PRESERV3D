@@ -148,7 +148,6 @@ def extract_keywords_hf(text, top_n=10):
     return keywords[:top_n]
 
 def summarize_text_hf(text, max_length=200, min_length=50):
-    """Create summary using BART model via transformers pipeline"""
     try:
         from transformers import pipeline
         print("Attempting BART summarization...")

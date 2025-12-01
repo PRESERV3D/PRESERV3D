@@ -5,30 +5,22 @@ services:
     region: singapore
     plan: free
     rootDir: services
-    buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm && npm install --legacy-peer-deps
-    startCommand: uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000}
-
+    # Optimized build: install dependencies in stages to reduce memory spikes
+    buildCommand: |
+      pip install --no-cache-dir --upgrade pip setuptools wheel
+      pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+      pip install --no-cache-dir -r requirements.txt
+      python -m spacy download en_core_web_sm
+      python preload_models.py
+    startCommand: uvicorn nlp_service:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --timeout-keep-alive 30 --limit-concurrency 10
     # System packages - Render will install these with proper permissions
     nativeEnvironments:
       - name: python
         version: 3.11.7
-      - name: node
-        version: 20.18.1
-
-    # These get installed automatically by Render
-    systemPackages:
-      - chromium
-      - chromium-sandbox
-      - fonts-liberation
-      - libnss3
-      - libxss1
-      - libasound2
 
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.7
-      - key: NODE_VERSION
-        value: 20.18.1
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
@@ -39,3 +31,15 @@ services:
         value: https://preserv3d.vercel.app
       - key: NODE_ENV
         value: production
+      # Memory optimization for transformers
+      - key: HF_HOME
+        value: /opt/render/project/.cache
+      - key: TOKENIZERS_PARALLELISM
+        value: 'false'
+      - key: OMP_NUM_THREADS
+        value: '1'
+      - key: MKL_NUM_THREADS
+        value: '1'
+      # Prevent model download on startup (models installed during build)
+      - key: TRANSFORMERS_OFFLINE
+        value: '0'
