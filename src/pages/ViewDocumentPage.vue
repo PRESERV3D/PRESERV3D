@@ -529,6 +529,36 @@ const saveToSelectedCollections = async () => {
       showNotifyDialog('Notice', message.trim())
     }
 
+    // Update bookmarked state by checking if document is still in any collection
+    const { data: authData } = await supabase.auth.getUser()
+    const userId = authData?.user?.id
+
+    if (userId) {
+      // Get all collections for this user
+      const { data: userColls } = await supabase
+        .from('collections')
+        .select('collection_id')
+        .eq('user_id', userId)
+        .neq('collection_name', 'Favorites')
+
+      const collectionIds = userColls ? userColls.map((c) => c.collection_id) : []
+
+      // Check if document is in any of these collections
+      const { data: remainingItems } = await supabase
+        .from('collection_items')
+        .select('collection_id')
+        .eq('item_id', docItem.id)
+        .eq('item_type', selectedItemType.value)
+        .in('collection_id', collectionIds.length > 0 ? collectionIds : [-1])
+
+      const bookmarked = remainingItems && remainingItems.length > 0
+
+      docItem.bookmarked = bookmarked
+      if (doc.value && doc.value.id === docItem.id) {
+        doc.value.bookmarked = bookmarked
+      }
+    }
+
     dialogOpen.value = false
   } catch (err) {
     console.error('Unexpected error:', err)
@@ -735,6 +765,28 @@ onMounted(async () => {
 
         if (favItems?.length > 0) {
           doc.value.starred = true
+        }
+      }
+
+      // Check if document is in any NON-FAVORITES collection (for bookmarked state)
+      const { data: userColls } = await supabase
+        .from('collections')
+        .select('collection_id')
+        .eq('user_id', userId)
+        .neq('collection_name', 'Favorites')
+
+      if (userColls && userColls.length > 0) {
+        const collectionIds = userColls.map((c) => c.collection_id)
+
+        const { data: bookmarkedItems } = await supabase
+          .from('collection_items')
+          .select('collection_id')
+          .eq('item_id', route.params.id)
+          .eq('item_type', 'document')
+          .in('collection_id', collectionIds)
+
+        if (bookmarkedItems && bookmarkedItems.length > 0) {
+          doc.value.bookmarked = true
         }
       }
     }
