@@ -101,6 +101,15 @@
             Connection failed. Please try again.
           </q-banner>
         </q-card-section>
+
+        <q-card-section v-else-if="connectionStatus === 'disconnected'">
+          <q-banner class="bg-warning text-white" rounded>
+            <template v-slot:avatar>
+              <q-icon name="warning" />
+            </template>
+            Connection disconnected. Reconnecting...
+          </q-banner>
+        </q-card-section>
       </q-card>
     </div>
 
@@ -386,6 +395,16 @@ watch(connectionStatus, (status) => {
           .catch((err) => console.error('Play error:', err))
       }
     }, 1000)
+  } else if (status === 'disconnected' || status === 'failed') {
+    // Connection lost or failed - show setup again if in phone mode
+    if (cameraMode.value === 'phone') {
+      console.log('Connection lost, showing setup again')
+      showPhoneSetup.value = true
+      if (video.value) {
+        video.value.pause()
+        video.value.style.display = 'none'
+      }
+    }
   }
 })
 
