@@ -521,7 +521,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, onBeforeUnmount, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useModelStore } from 'stores/modelStore'
@@ -534,6 +534,7 @@ const route = useRoute()
 const router = useRouter()
 const modelStore = useModelStore()
 const userStore = useUserStore()
+let modelLoadHandler = null
 
 // Safe profile accessors
 const userRole = computed(() => userStore.profile?.role ?? null)
@@ -1134,6 +1135,14 @@ onMounted(async () => {
       })
     }
   })
+})
+
+onBeforeUnmount(() => {
+  // Clean up model-viewer event listener
+  if (artifactViewer.value && modelLoadHandler) {
+    artifactViewer.value.removeEventListener('load', modelLoadHandler)
+    modelLoadHandler = null
+  }
 })
 
 onUnmounted(() => {

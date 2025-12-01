@@ -76,7 +76,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { supabase } from 'src/boot/supabase'
 import { convertToWorkingUrl } from 'src/composables/useR2Url'
 
@@ -88,9 +88,18 @@ const loading = ref(false)
 const showWarningDialog = ref(false)
 const dontShowAgain = ref(false)
 const WARN_KEY = 'gallery_skip_warning'
+let iframeLoadHandler = null
 
 onMounted(async () => {
   await loadModelUrls()
+})
+
+onBeforeUnmount(() => {
+  // Clean up iframe event listener
+  if (godotIframe.value && iframeLoadHandler) {
+    godotIframe.value.removeEventListener('load', iframeLoadHandler)
+    iframeLoadHandler = null
+  }
 })
 
 function startGallery() {
@@ -139,13 +148,21 @@ function launchGallery() {
 
   setTimeout(() => {
     if (godotIframe.value) {
-      godotIframe.value.addEventListener('load', () => {
+      // Remove old listener if exists
+      if (iframeLoadHandler) {
+        godotIframe.value.removeEventListener('load', iframeLoadHandler)
+      }
+
+      // Create new listener
+      iframeLoadHandler = () => {
         console.log('Godot gallery loaded')
         loading.value = false
         setTimeout(() => {
           sendURLsToGodot()
         }, 500) // Reduced delay
-      })
+      }
+
+      godotIframe.value.addEventListener('load', iframeLoadHandler)
     }
   }, 100)
 }

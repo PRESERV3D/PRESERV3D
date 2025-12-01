@@ -68,15 +68,25 @@ export function useWebRTC() {
   async function generateConnectionQR(qrCodeCanvas, isDevelopment) {
     if (!iceGatheringComplete.value) {
       await new Promise((resolve) => {
-        const checkInterval = setInterval(() => {
+        let checkInterval = null
+        let timeoutId = null
+
+        const cleanup = () => {
+          if (checkInterval) clearInterval(checkInterval)
+          if (timeoutId) clearTimeout(timeoutId)
+          checkInterval = null
+          timeoutId = null
+        }
+
+        checkInterval = setInterval(() => {
           if (iceGatheringComplete.value) {
-            clearInterval(checkInterval)
+            cleanup()
             resolve()
           }
         }, 100)
 
-        setTimeout(() => {
-          clearInterval(checkInterval)
+        timeoutId = setTimeout(() => {
+          cleanup()
           resolve()
         }, 10000)
       })

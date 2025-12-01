@@ -599,69 +599,74 @@ async function detectEdges() {
   let edges = new cv.Mat()
   let contours = new cv.MatVector()
   let hierarchy = new cv.Mat()
-
-  cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY)
-  cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0)
-  cv.Canny(blurred, edges, 75, 200)
-  cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-
-  let maxArea = 0
   let bestContour = null
 
-  for (let i = 0; i < contours.size(); i++) {
-    const contour = contours.get(i)
-    const approx = new cv.Mat()
-    cv.approxPolyDP(contour, approx, 0.02 * cv.arcLength(contour, true), true)
+  try {
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY)
+    cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0)
+    cv.Canny(blurred, edges, 75, 200)
+    cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
-    if (approx.rows === 4) {
-      const area = cv.contourArea(approx)
-      if (area > maxArea) {
-        maxArea = area
-        bestContour = approx
+    let maxArea = 0
+
+    for (let i = 0; i < contours.size(); i++) {
+      const contour = contours.get(i)
+      const approx = new cv.Mat()
+      try {
+        cv.approxPolyDP(contour, approx, 0.02 * cv.arcLength(contour, true), true)
+
+        if (approx.rows === 4) {
+          const area = cv.contourArea(approx)
+          if (area > maxArea) {
+            maxArea = area
+            if (bestContour) bestContour.delete()
+            bestContour = approx
+          } else {
+            approx.delete()
+          }
+        } else {
+          approx.delete()
+        }
+      } catch (err) {
+        approx.delete()
+        throw err
       }
     }
-  }
 
-  if (bestContour) {
-    corners.value = []
-    for (let i = 0; i < 4; i++) {
-      const point = bestContour.intPtr(i)
-      corners.value.push({ x: point[0], y: point[1] })
+    if (bestContour) {
+      corners.value = []
+      for (let i = 0; i < 4; i++) {
+        const point = bestContour.intPtr(i)
+        corners.value.push({ x: point[0], y: point[1] })
+      }
+    } else {
+      alert('No document-like shape found.')
+
+      const marginX = width * 0.1
+      const marginY = height * 0.1
+      corners.value = [
+        { x: marginX, y: marginY },
+        { x: width - marginX, y: marginY },
+        { x: width - marginX, y: height - marginY },
+        { x: marginX, y: height - marginY },
+      ]
     }
-  } else {
-    alert('No document-like shape found.')
 
-    const marginX = width * 0.1
-    const marginY = height * 0.1
-    corners.value = [
-      { x: marginX, y: marginY },
-      { x: width - marginX, y: marginY },
-      { x: width - marginX, y: height - marginY },
-      { x: marginX, y: height - marginY },
-    ]
+    drawCorners()
+  } finally {
+    // Ensure all OpenCV objects are cleaned up
+    src.delete()
+    gray.delete()
+    blurred.delete()
+    edges.delete()
+    hierarchy.delete()
+    contours.delete()
+    if (bestContour) bestContour.delete()
   }
 
-  drawCorners()
-
-  // Clean up OpenCV matrices immediately
-  src.delete()
-  gray.delete()
-  blurred.delete()
-  edges.delete()
-  hierarchy.delete()
-
-  // Clean up all contours
-  for (let i = 0; i < contours.size(); i++) {
-    const contour = contours.get(i)
-    if (contour !== bestContour) {
-      contour.delete()
-    }
-  }
-  contours.delete()
-
-  if (bestContour) {
-    bestContour.delete()
-  }
+  showTake.value = false
+  showTransform.value = true
+  showRetake.value = true
 }
 
 function drawCorners() {
@@ -682,10 +687,6 @@ function drawCorners() {
     ctx.closePath()
     ctx.stroke()
   }
-
-  showTake.value = false
-  showTransform.value = true
-  showRetake.value = true
 }
 
 function getMousePos(e) {
