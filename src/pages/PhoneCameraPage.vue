@@ -24,6 +24,13 @@
           <h6>Camera Stream Sent</h6>
           <p>Waiting for device to establish connection...</p>
           <p class="text-caption">Keep this page open.</p>
+          <q-btn
+            label="Terminate Connection"
+            color="negative"
+            outline
+            @click="terminateConnection"
+            class="q-mt-md"
+          />
         </div>
 
         <div v-else-if="connectionStatus === 'connected'" class="success-message">
@@ -31,6 +38,13 @@
           <h6>Connected!</h6>
           <p>Your phone camera is now connected to your laptop.</p>
           <p class="text-caption">Keep this page open.</p>
+          <q-btn
+            label="Terminate Connection"
+            color="negative"
+            outline
+            @click="terminateConnection"
+            class="q-mt-md"
+          />
         </div>
       </q-page>
     </q-page-container>
@@ -43,7 +57,7 @@ import { useRoute } from 'vue-router'
 import { useWebRTC } from '../composables/useWebRTC'
 
 const route = useRoute()
-const { initializeClientConnection, connectionStatus } = useWebRTC()
+const { initializeClientConnection, connectionStatus, disconnectWebRTC } = useWebRTC()
 
 const connectionCode = ref('')
 const showSuccess = ref(false)
@@ -70,6 +84,14 @@ async function connectToLaptop() {
     errorMessage.value = error.message || 'Failed to connect. Please check the code and try again.'
     connectionStatus.value = 'failed'
   }
+}
+
+function terminateConnection() {
+  disconnectWebRTC()
+  showSuccess.value = false
+  connectionCode.value = ''
+  errorMessage.value = ''
+  connectionStatus.value = 'waiting'
 }
 </script>
 
