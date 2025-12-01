@@ -256,7 +256,7 @@
                         label="Mark All as Read"
                         color="primary"
                         class="full-width clear-all-bottom-btn"
-                        @click="clearAllNotifications"
+                        @click="markAllAsRead"
                       />
                     </q-card-actions>
                   </q-card>
@@ -494,15 +494,15 @@ const advancedSearch = ref({
   // sortOrder: 'desc',
 })
 
-// Add clear all notifications function
-const clearAllNotifications = async () => {
+// Mark all notifications as read
+const markAllAsRead = async () => {
   try {
     const {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) return
 
-    // Mark all notifications as read in database
+    // Mark all unread notifications as read for the current user in database
     const { error } = await supabase
       .from('notifications')
       .update({ read: true })
@@ -510,15 +510,60 @@ const clearAllNotifications = async () => {
       .eq('read', false)
 
     if (error) {
-      console.error('Error clearing notifications:', error)
+      console.error('Error marking notifications as read:', error)
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to mark notifications as read',
+        timeout: 2000,
+      })
       return
     }
 
-    // Update local state
+    // Update local state - mark all notifications as read
     notifications.value = notifications.value.map((notif) => ({
       ...notif,
       read: true,
     }))
+    notificationCount.value = 0
+
+    $q.notify({
+      type: 'positive',
+      message: 'All notifications marked as read',
+      timeout: 2000,
+    })
+  } catch (error) {
+    console.error('Error marking notifications as read:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Failed to mark notifications as read',
+      timeout: 2000,
+    })
+  }
+}
+
+// Clear all notifications (delete permanently)
+const clearAllNotifications = async () => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+
+    // Delete all notifications for the current user from database
+    const { error } = await supabase.from('notifications').delete().eq('receiver_id', user.id)
+
+    if (error) {
+      console.error('Error clearing notifications:', error)
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to clear notifications',
+        timeout: 2000,
+      })
+      return
+    }
+
+    // Update local state - remove all notifications
+    notifications.value = []
     notificationCount.value = 0
 
     $q.notify({

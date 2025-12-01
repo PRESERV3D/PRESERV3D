@@ -40,7 +40,9 @@
         </div>
 
         <div class="text-right full-width no-gutter-top">
-          <router-link to="/forgotpassword" class="forgot-password-link">Forgot Password</router-link>
+          <router-link to="/forgotpassword" class="forgot-password-link"
+            >Forgot Password</router-link
+          >
         </div>
 
         <!-- Error message -->
@@ -76,11 +78,11 @@
       <q-dialog v-model="notifyDialogOpen">
         <q-card class="sucess-add-to-collection">
           <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
-              notifyDialogTitle
-            }}</q-card-section>
+            notifyDialogTitle
+          }}</q-card-section>
           <q-card-section class="sub-font-3" style="font-size: 14px; font-weight: 400">{{
-              notifyDialogMessage
-            }}</q-card-section>
+            notifyDialogMessage
+          }}</q-card-section>
           <q-card-actions>
             <q-btn flat label="Close" class="btn-save" v-close-popup />
           </q-card-actions>
@@ -230,7 +232,8 @@ async function loginUser() {
 
       const accountStatus = visitorStatus?.account_status
 
-      if (accountStatus !== 'Active') {
+      // Allow Active and Inactive users to log in
+      if (accountStatus !== 'Active' && accountStatus !== 'Inactive') {
         if (accountStatus === 'Expired') {
           showNotifyDialog('Access Expired', 'Your access has expired.')
         } else if (accountStatus === 'Not Started') {
@@ -419,6 +422,4 @@ onMounted(() => {
   padding: 1.5rem 2rem;
   margin-top: 1rem;
 }
-
-
 </style>
