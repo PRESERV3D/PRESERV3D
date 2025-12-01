@@ -215,24 +215,10 @@
         <!-- Right Side - Calendar -->
         <div class="calendar-view">
           <div class="calendar-header">
-            <q-btn
-              flat
-              dense
-              round
-              icon="chevron_left"
-              @click="previousMonth"
-              class="nav-btn"
-            />
+            <q-btn flat dense round icon="chevron_left" @click="previousMonth" class="nav-btn" />
             <div class="calendar-title">{{ currentMonthYear }}</div>
             <div class="year-display">{{ currentYear }}</div>
-            <q-btn
-              flat
-              dense
-              round
-              icon="chevron_right"
-              @click="nextMonth"
-              class="nav-btn"
-            />
+            <q-btn flat dense round icon="chevron_right" @click="nextMonth" class="nav-btn" />
           </div>
 
           <div class="calendar-grid">
@@ -247,9 +233,9 @@
                 class="calendar-day"
                 :class="{
                   'other-month': day.isOtherMonth,
-                  'selected': day.isSelected,
-                  'today': day.isToday,
-                  'has-appointments': day.appointmentCount > 0
+                  selected: day.isSelected,
+                  today: day.isToday,
+                  'has-appointments': day.appointmentCount > 0,
                 }"
                 @click="selectDate(day)"
               >
@@ -270,7 +256,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isToday } from 'date-fns'
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameDay,
+  addMonths,
+  subMonths,
+  startOfWeek,
+  endOfWeek,
+  isToday,
+} from 'date-fns'
 
 const activeTab = ref('information')
 const appointments = ref([])
@@ -338,7 +335,6 @@ const currentYear = computed(() => {
   return format(currentDate.value, 'yyyy')
 })
 
-
 const selectedDay = computed(() => {
   return format(selectedDate.value, 'd')
 })
@@ -348,11 +344,16 @@ const selectedDayName = computed(() => {
 })
 
 const filteredAppointments = computed(() => {
-  return appointments.value.filter(apt => {
-    return apt.appointmentDate === format(selectedDate.value, 'yyyy-MM-dd')
-  }).sort((a, b) => {
-    return a.time.localeCompare(b.time)
-  })
+  return appointments.value
+    .filter((apt) => {
+      return (
+        apt.appointmentDate === format(selectedDate.value, 'yyyy-MM-dd') &&
+        apt.status !== 'Rejected'
+      )
+    })
+    .sort((a, b) => {
+      return a.time.localeCompare(b.time)
+    })
 })
 
 const calendarDays = computed(() => {
@@ -364,9 +365,11 @@ const calendarDays = computed(() => {
 
   const days = eachDayOfInterval({ start: startDate, end: endDate })
 
-  return days.map(day => {
+  return days.map((day) => {
     const dateStr = format(day, 'yyyy-MM-dd')
-    const appointmentCount = appointments.value.filter(apt => apt.appointmentDate === dateStr).length
+    const appointmentCount = appointments.value.filter(
+      (apt) => apt.appointmentDate === dateStr && apt.status !== 'Rejected',
+    ).length
 
     return {
       date: dateStr,
@@ -374,7 +377,7 @@ const calendarDays = computed(() => {
       isOtherMonth: day.getMonth() !== currentDate.value.getMonth(),
       isSelected: isSameDay(day, selectedDate.value),
       isToday: isToday(day),
-      appointmentCount
+      appointmentCount,
     }
   })
 })
@@ -415,11 +418,11 @@ async function confirmAction() {
       .single()
 
     if (updateError) {
-      console.log('Update error:', updateError)
+      console.error('Update error:', updateError)
       throw updateError
     }
 
-    console.log('Appointment updated: ', updateResponse)
+    console.log('Appointment updated:', updateResponse)
 
     // Send notification to user about admin review
     const formatAction = action === 'Approved' ? 'approved' : 'rejected'
@@ -427,15 +430,20 @@ async function confirmAction() {
     await userNotification(updateResponse.user_id, notifMessage)
 
     confirmDialog.value.show = false
-    fetchAppointments()
+    await fetchAppointments()
   } catch (err) {
-    console.error('Error updating status:', err)
+    console.error('Error updating appointment status:', err)
   }
 }
 
 // Notify user of appointment booking review
 async function userNotification(receiverId, notifMessage) {
   try {
+    if (!receiverId) {
+      console.error('Cannot send notification: receiverId is missing')
+      return
+    }
+
     const { error: notifError } = await supabase.from('notifications').insert([
       {
         receiver_id: receiverId,
@@ -453,41 +461,58 @@ async function userNotification(receiverId, notifMessage) {
       console.log('Notification sent to user:', receiverId)
     }
   } catch (err) {
-    console.error('Error sending notification to user:', err)
+    console.error('Unexpected error sending notification to user:', err)
   }
 }
 
 // Fetch appointments from DB
 async function fetchAppointments() {
-  const { data, error } = await supabase
-    .from('appointment_booking')
-    .select('*')
-    .order('created_at', { ascending: false })
+  try {
+    // Utilize idx_appointment_booking_created_at index with ORDER BY
+    const { data, error } = await supabase
+      .from('appointment_booking')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-  if (error) {
-    console.error('Error fetching appointments:', error.message)
-    return
+    if (error) {
+      console.error('Error fetching appointments:', error.message)
+      appointments.value = []
+      return
+    }
+
+    if (!data || data.length === 0) {
+      appointments.value = []
+      return
+    }
+
+    appointments.value = data.map((a) => ({
+      appointment_id: a.appointment_id,
+      name: a.name,
+      email: a.email,
+      user_type: a.user_type,
+      purpose: a.purpose,
+      appointmentDate: a.date,
+      time: formatTimeTo12Hour(a.time),
+      status: a.status,
+      user_remarks: a.user_remarks,
+      admin_remarks: a.admin_remarks || '',
+      reviewed_by: a.reviewed_by,
+      reviewed_at: a.reviewed_at,
+      adminRemarksSaved: !!a.admin_remarks,
+    }))
+  } catch (err) {
+    console.error('Unexpected error fetching appointments:', err)
+    appointments.value = []
   }
-
-  appointments.value = data.map((a) => ({
-    appointment_id: a.appointment_id,
-    name: a.name,
-    email: a.email,
-    user_type: a.user_type,
-    purpose: a.purpose,
-    appointmentDate: a.date,
-    time: formatTimeTo12Hour(a.time),
-    status: a.status,
-    user_remarks: a.user_remarks,
-    admin_remarks: a.admin_remarks || '',
-    reviewed_by: a.reviewed_by,
-    reviewed_at: a.reviewed_at,
-    adminRemarksSaved: !!a.admin_remarks,
-  }))
 }
 
 async function saveRemarks(row) {
   try {
+    if (!row.admin_remarks?.trim()) {
+      console.warn('Cannot save empty remarks')
+      return
+    }
+
     const { error } = await supabase
       .from('appointment_booking')
       .update({ admin_remarks: row.admin_remarks })
@@ -565,7 +590,9 @@ function nextMonth() {
 
 .appointment-tabs :deep(.q-tab) {
   text-transform: none;
-  font: 500 16px 'Poppins', sans-serif;
+  font:
+    500 16px 'Poppins',
+    sans-serif;
   color: #666;
   padding: 0.75rem 2rem;
   min-height: 48px;
@@ -648,14 +675,18 @@ function nextMonth() {
 }
 
 .date-display .day-number {
-  font: 700 5rem 'Poppins', sans-serif;
+  font:
+    700 5rem 'Poppins',
+    sans-serif;
   color: #000;
   line-height: 0.9;
   margin-bottom: 0.25rem;
 }
 
 .date-display .day-name {
-  font: 600 14px 'Poppins', sans-serif;
+  font:
+    600 14px 'Poppins',
+    sans-serif;
   color: #000;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -668,7 +699,9 @@ function nextMonth() {
 }
 
 .appointments-header h6 {
-  font: 700 11px 'Poppins', sans-serif;
+  font:
+    700 11px 'Poppins',
+    sans-serif;
   color: #000;
   margin: 0 0 1rem 0;
   text-transform: uppercase;
@@ -685,7 +718,9 @@ function nextMonth() {
 }
 
 .no-appointments p {
-  font: 400 14px 'Poppins', sans-serif;
+  font:
+    400 14px 'Poppins',
+    sans-serif;
   color: #999;
   margin-top: 1rem;
 }
@@ -702,7 +737,9 @@ function nextMonth() {
   padding: 1rem;
   border: 1px solid #e0e0e0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .appointment-item:hover {
@@ -713,7 +750,9 @@ function nextMonth() {
 .appointment-time {
   display: flex;
   align-items: center;
-  font: 400 13px 'Poppins', sans-serif;
+  font:
+    400 13px 'Poppins',
+    sans-serif;
   color: #666;
   margin-bottom: 0.5rem;
 }
@@ -725,12 +764,16 @@ function nextMonth() {
 }
 
 .appointment-name {
-  font: 600 15px 'Poppins', sans-serif;
+  font:
+    600 15px 'Poppins',
+    sans-serif;
   color: #000;
 }
 
 .appointment-purpose {
-  font: 400 13px 'Poppins', sans-serif;
+  font:
+    400 13px 'Poppins',
+    sans-serif;
   color: #666;
 }
 
@@ -796,7 +839,9 @@ function nextMonth() {
 }
 
 .calendar-title {
-  font: 700 28px 'Poppins', sans-serif;
+  font:
+    700 28px 'Poppins',
+    sans-serif;
   color: white;
   text-transform: uppercase;
   letter-spacing: 3px;
@@ -806,7 +851,9 @@ function nextMonth() {
 }
 
 .year-display {
-  font: 700 28px 'Poppins', sans-serif;
+  font:
+    700 28px 'Poppins',
+    sans-serif;
   color: white;
   text-align: right;
   flex: 1;
@@ -830,7 +877,9 @@ function nextMonth() {
 
 .weekday {
   text-align: center;
-  font: 600 10px 'Poppins', sans-serif;
+  font:
+    600 10px 'Poppins',
+    sans-serif;
   color: #666;
   padding: 0.5rem;
   text-transform: uppercase;
@@ -898,7 +947,9 @@ function nextMonth() {
 }
 
 .calendar-day .day-number {
-  font: 500 16px 'Poppins', sans-serif;
+  font:
+    500 16px 'Poppins',
+    sans-serif;
   color: #000;
   z-index: 1;
 }
@@ -909,7 +960,9 @@ function nextMonth() {
   right: 8px;
   background: #560505;
   color: white;
-  font: 700 10px 'Poppins', sans-serif;
+  font:
+    700 10px 'Poppins',
+    sans-serif;
   border-radius: 50%;
   min-width: 20px;
   height: 20px;

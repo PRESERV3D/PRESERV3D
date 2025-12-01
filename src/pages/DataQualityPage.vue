@@ -348,18 +348,39 @@ const truncateText = (text, maxLength) => {
 
 // Load inconsistencies from Supabase
 const loadInconsistencies = async () => {
-  let query = supabase.from('inconsistencies').select('*').order('created_at', { ascending: false })
+  try {
+    // Utilize idx_inconsistencies_status_source composite index with ORDER BY
+    let query = supabase
+      .from('inconsistencies')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-  if (props.recordId) {
-    query = query.eq('record_id', props.recordId)
-  }
+    if (props.recordId) {
+      query = query.eq('record_id', props.recordId)
+    }
 
-  const { data, error } = await query
+    const { data, error } = await query
 
-  if (error) {
-    console.error('Error fetching inconsistencies:', error)
-  } else {
-    inconsistencies.value = sortInconsistencies(data)
+    if (error) {
+      console.error('Error fetching inconsistencies:', error)
+      inconsistencies.value = []
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to load data quality issues',
+        position: 'top',
+      })
+      return
+    }
+
+    inconsistencies.value = data ? sortInconsistencies(data) : []
+  } catch (err) {
+    console.error('Unexpected error loading inconsistencies:', err)
+    inconsistencies.value = []
+    $q.notify({
+      type: 'negative',
+      message: 'An unexpected error occurred',
+      position: 'top',
+    })
   }
 }
 
@@ -386,49 +407,87 @@ const confirmAction = async () => {
   const row = confirmDialog.value.row
   const action = confirmDialog.value.action
 
-  if (action === 'delete') {
-    await deleteInconsistency(row)
+  if (!row) {
+    console.error('No row selected for action')
     confirmDialog.value.show = false
     return
   }
 
-  const { error } = await supabase
-    .from('inconsistencies')
-    .update({
-      resolution: action,
-      status: 'Resolved',
-      reviewed_by: user,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq('id', row.id)
+  try {
+    if (action === 'delete') {
+      await deleteInconsistency(row)
+      confirmDialog.value.show = false
+      return
+    }
 
-  if (error) {
-    console.error('Error updating resolution:', error)
-    $q.notify({ type: 'negative', message: 'Failed to update resolution' })
-  } else {
-    await loadInconsistencies()
-    $q.notify({ type: 'positive', message: 'Resolution updated successfully' })
+    const { error } = await supabase
+      .from('inconsistencies')
+      .update({
+        resolution: action,
+        status: 'Resolved',
+        reviewed_by: user,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', row.id)
+
+    if (error) {
+      console.error('Error updating resolution:', error)
+      $q.notify({ type: 'negative', message: 'Failed to update resolution' })
+    } else {
+      $q.notify({ type: 'positive', message: 'Resolution updated successfully' })
+      await loadInconsistencies()
+    }
+  } catch (err) {
+    console.error('Unexpected error updating resolution:', err)
+    $q.notify({ type: 'negative', message: 'An unexpected error occurred' })
+  } finally {
+    confirmDialog.value.show = false
   }
-
-  confirmDialog.value.show = false
-  await loadInconsistencies()
 }
 
 // Save admin remarks
 const saveRemarks = async (row) => {
-  const { error } = await supabase
-    .from('inconsistencies')
-    .update({
-      admin_remarks: row.admin_remarks,
-      reviewed_by: user,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq('id', row.id)
+  try {
+    if (!row.admin_remarks?.trim()) {
+      $q.notify({
+        type: 'warning',
+        message: 'Please enter remarks before saving',
+        position: 'top',
+      })
+      return
+    }
 
-  if (error) {
-    console.error('Error saving remarks:', error)
-  } else {
-    row.adminRemarksSaved = true
+    const { error } = await supabase
+      .from('inconsistencies')
+      .update({
+        admin_remarks: row.admin_remarks,
+        reviewed_by: user,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', row.id)
+
+    if (error) {
+      console.error('Error saving remarks:', error)
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to save remarks',
+        position: 'top',
+      })
+    } else {
+      row.adminRemarksSaved = true
+      $q.notify({
+        type: 'positive',
+        message: 'Remarks saved successfully',
+        position: 'top',
+      })
+    }
+  } catch (err) {
+    console.error('Unexpected error saving remarks:', err)
+    $q.notify({
+      type: 'negative',
+      message: 'An unexpected error occurred',
+      position: 'top',
+    })
   }
 }
 
@@ -437,17 +496,38 @@ const manualRescan = async () => {
     loading.value = true
     const response = await fetch(getNlpEndpoint('/rescan-metadata'), {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
 
     const result = await response.json()
     if (result.success) {
       await loadInconsistencies()
+      $q.notify({
+        type: 'positive',
+        message: 'Metadata scan completed successfully',
+        position: 'top',
+      })
     } else {
-      console.log('Scan failed: ' + result.error)
-      $q.notify({ type: 'negative', message: 'Scan failed: ' + result.error })
+      console.error('Scan failed:', result.error)
+      $q.notify({
+        type: 'negative',
+        message: 'Scan failed: ' + (result.error || 'Unknown error'),
+        position: 'top',
+      })
     }
   } catch (err) {
     console.error('Error during manual rescan:', err)
+    $q.notify({
+      type: 'negative',
+      message: 'An error occurred during scanning',
+      position: 'top',
+    })
   } finally {
     loading.value = false
   }
@@ -459,27 +539,41 @@ const viewItem = (row) => {
 }
 
 const undoResolution = async (row) => {
-  const { error } = await supabase
-    .from('inconsistencies')
-    .update({
-      resolution: null,
-      status: 'Open',
-      reviewed_by: null,
-      reviewed_at: null,
-    })
-    .eq('id', row.id)
+  try {
+    const { error } = await supabase
+      .from('inconsistencies')
+      .update({
+        resolution: null,
+        status: 'Open',
+        reviewed_by: null,
+        reviewed_at: null,
+      })
+      .eq('id', row.id)
 
-  if (error) {
-    console.error('Error undoing resolution:', error)
-    $q.notify({ type: 'negative', message: 'Failed to undo resolution' })
-  } else {
-    await loadInconsistencies()
-    $q.notify({ type: 'positive', message: 'Resolution undone' })
+    if (error) {
+      console.error('Error undoing resolution:', error)
+      $q.notify({ type: 'negative', message: 'Failed to undo resolution' })
+    } else {
+      await loadInconsistencies()
+      $q.notify({ type: 'positive', message: 'Resolution undone successfully' })
+    }
+  } catch (err) {
+    console.error('Unexpected error undoing resolution:', err)
+    $q.notify({ type: 'negative', message: 'An unexpected error occurred' })
   }
 }
 
 const deleteInconsistency = async (row) => {
   try {
+    if (!row?.id) {
+      console.error('Cannot delete: invalid row data')
+      $q.notify({
+        type: 'negative',
+        message: 'Invalid inconsistency data',
+      })
+      return
+    }
+
     const { error } = await supabase.from('inconsistencies').delete().eq('id', row.id)
 
     if (error) throw error
@@ -491,7 +585,7 @@ const deleteInconsistency = async (row) => {
       message: 'Inconsistency deleted successfully',
     })
   } catch (err) {
-    console.error(err)
+    console.error('Error deleting inconsistency:', err)
     $q.notify({
       type: 'negative',
       message: 'Failed to delete inconsistency',
