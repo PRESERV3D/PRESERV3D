@@ -903,29 +903,6 @@ const editableCategories = ref([])
 //   }
 // }
 
-// Fetch categories from Supabase when dialog opens or on mount
-async function loadCategories(doc) {
-  const docCategories = doc.metadata?.categories || []
-  const { data, error } = await supabase.from('categories').select('id, type, category')
-
-  if (error) {
-    console.error('Error loading categories:', error)
-    return
-  }
-
-  // Populate the chips with existing selected categories
-  editableCategories.value = docCategories
-
-  // Map DB data to local structure with checkbox state
-  categories.value = data
-    .filter((c) => c.type === 'document')
-    .map((c) => ({
-      id: c.id,
-      name: c.category,
-      selected: docCategories.includes(c.category),
-    }))
-}
-
 // Add new category (save to DB + local list)
 async function addCategory() {
   const name = newCategory.value.trim()
@@ -1034,67 +1011,88 @@ async function deleteCategory(categoryId) {
 }
 
 onMounted(async () => {
-  const { data, error } = await supabase
-    .from('documents_metadata')
-    .select('*')
-    .eq('id', route.params.id)
-    .single()
+  try {
+    // Parallelize document fetch, categories fetch, and auth check
+    const [documentResult, categoriesResult, authResult] = await Promise.all([
+      supabase.from('documents_metadata').select('*').eq('id', route.params.id).single(),
+      supabase.from('categories').select('id, type, category'),
+      supabase.auth.getUser(),
+    ])
 
-  if (error || !data) {
-    console.error('Document not found from Supabase:', error)
-    doc.value = documentsStore.documents.find((d) => d.id == route.params.id) || null
-    console.log('Fallback Document from Store:', doc.value)
-  } else {
-    doc.value = {
-      ...data,
-      bookmarked: false,
-      starred: false,
-    }
+    const { data, error } = documentResult
+    const { data: categoriesData, error: categoriesError } = categoriesResult
+    const { data: authData } = authResult
+    const userId = authData?.user?.id
 
-    // Add null/undefined check before mapping
-    if (data.related_links && Array.isArray(data.related_links)) {
-      links.value = data.related_links.map((link, idx) => ({
-        id: link.id || Date.now() + idx,
-        title: link.title || '',
-        url: link.url || '',
-      }))
+    if (error || !data) {
+      console.error('Document not found from Supabase:', error)
+      doc.value = documentsStore.documents.find((d) => d.id == route.params.id) || null
+      console.log('Fallback Document from Store:', doc.value)
     } else {
-      // Initialize as empty array if no related links exist
-      links.value = []
-    }
-  }
+      doc.value = {
+        ...data,
+        bookmarked: false,
+        starred: false,
+      }
 
-  loading.value = false
-
-  // ADDED: Check if the document is in user's Favorites collection
-  const { data: authData } = await supabase.auth.getUser()
-  const userId = authData?.user?.id
-
-  if (userId) {
-    const { data: favoritesCollection } = await supabase
-      .from('collections')
-      .select('collection_id')
-      .eq('user_id', userId)
-      .eq('collection_name', 'Favorites')
-      .maybeSingle()
-
-    if (favoritesCollection) {
-      const { data: favItems } = await supabase
-        .from('collection_items')
-        .select('item_id')
-        .eq('collection_id', favoritesCollection.collection_id)
-        .eq('item_type', 'document')
-        .eq('item_id', route.params.id)
-
-      if (favItems?.length > 0) {
-        doc.value.starred = true
+      // Process related links
+      if (data.related_links && Array.isArray(data.related_links)) {
+        links.value = data.related_links.map((link, idx) => ({
+          id: link.id || Date.now() + idx,
+          title: link.title || '',
+          url: link.url || '',
+        }))
+      } else {
+        links.value = []
       }
     }
-  }
 
-  await documentsStore.fetchStarCounts()
-  await documentsStore.fetchViewCounts()
-  loadCategories(data)
+    // Process categories
+    if (!categoriesError && categoriesData) {
+      const docCategories = data?.metadata?.categories || []
+      categories.value = categoriesData
+        .filter((c) => c.type === 'document')
+        .map((c) => ({
+          id: c.id,
+          name: c.category,
+          selected: docCategories.includes(c.category),
+        }))
+    } else {
+      console.error('Error loading categories:', categoriesError)
+      categories.value = []
+    }
+
+    // Check favorites if user is logged in
+    if (userId) {
+      const { data: favoritesCollection } = await supabase
+        .from('collections')
+        .select('collection_id')
+        .eq('user_id', userId)
+        .eq('collection_name', 'Favorites')
+        .maybeSingle()
+
+      if (favoritesCollection) {
+        const { data: favItems } = await supabase
+          .from('collection_items')
+          .select('item_id')
+          .eq('collection_id', favoritesCollection.collection_id)
+          .eq('item_type', 'document')
+          .eq('item_id', route.params.id)
+
+        if (favItems?.length > 0) {
+          doc.value.starred = true
+        }
+      }
+    }
+
+    // Parallelize star and view counts fetching
+    await Promise.all([documentsStore.fetchStarCounts(), documentsStore.fetchViewCounts()])
+  } catch (err) {
+    console.error('Unexpected error loading document:', err)
+    doc.value = documentsStore.documents.find((d) => d.id == route.params.id) || null
+  } finally {
+    loading.value = false
+  }
 })
 
 // Generate Summary

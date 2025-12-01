@@ -713,26 +713,6 @@ const deleteErrorMessage = ref('')
 //   }, 100)
 // }
 
-// Fetch categories from Supabase when dialog opens or on mount
-async function loadCategories(artifacts) {
-  const artifactCategories = artifacts?.metadata?.categories || []
-  const { data, error } = await supabase.from('categories').select('id, type, category')
-
-  if (error) {
-    console.error('Error loading categories:', error)
-    return
-  }
-
-  // Map DB data to local structure with checkbox state
-  categories.value = data
-    .filter((c) => c.type === 'artifact') // Changed from 'document' to 'artifact'
-    .map((c) => ({
-      id: c.id,
-      name: c.category,
-      selected: artifactCategories.includes(c.category),
-    }))
-}
-
 // Add new category (save to DB + local list)
 async function addCategory() {
   const name = newCategory.value.trim()
@@ -1260,37 +1240,58 @@ const showNotifyDialog = (title, message) => {
 }
 
 onMounted(async () => {
-  const { data, error } = await supabase
-    .from('artifacts_metadata')
-    .select('*')
-    .eq('id', route.params.id)
-    .single()
+  try {
+    // Parallelize artifact fetch and categories fetch
+    const [artifactResult, categoriesResult] = await Promise.all([
+      supabase.from('artifacts_metadata').select('*').eq('id', route.params.id).single(),
+      supabase.from('categories').select('id, type, category'),
+    ])
 
-  if (error || !data) {
-    console.error('Artifact not found from Supabase:', error)
-    model.value = modelStore.models.find((m) => m.id == route.params.id) || null
-    console.log('Fallback Model from Store:', model.value)
-  } else {
-    model.value = {
-      ...data,
-      starred: false,
-    }
+    const { data, error } = artifactResult
+    const { data: categoriesData, error: categoriesError } = categoriesResult
 
-    // Add null/undefined check before mapping
-    if (data.related_links && Array.isArray(data.related_links)) {
-      links.value = data.related_links.map((link, idx) => ({
-        id: link.id || Date.now() + idx,
-        title: link.title || '',
-        url: link.url || '',
-      }))
+    if (error || !data) {
+      console.error('Artifact not found from Supabase:', error)
+      model.value = modelStore.models.find((m) => m.id == route.params.id) || null
+      console.log('Fallback Model from Store:', model.value)
     } else {
-      // Initialize as empty array if no related links exist
-      links.value = []
-    }
-  }
+      model.value = {
+        ...data,
+        starred: false,
+      }
 
-  loading.value = false
-  loadCategories(data)
+      // Process related links
+      if (data.related_links && Array.isArray(data.related_links)) {
+        links.value = data.related_links.map((link, idx) => ({
+          id: link.id || Date.now() + idx,
+          title: link.title || '',
+          url: link.url || '',
+        }))
+      } else {
+        links.value = []
+      }
+    }
+
+    // Process categories
+    if (!categoriesError && categoriesData) {
+      const artifactCategories = data?.metadata?.categories || []
+      categories.value = categoriesData
+        .filter((c) => c.type === 'artifact')
+        .map((c) => ({
+          id: c.id,
+          name: c.category,
+          selected: artifactCategories.includes(c.category),
+        }))
+    } else {
+      console.error('Error loading categories:', categoriesError)
+      categories.value = []
+    }
+  } catch (err) {
+    console.error('Unexpected error loading artifact:', err)
+    model.value = modelStore.models.find((m) => m.id == route.params.id) || null
+  } finally {
+    loading.value = false
+  }
 })
 
 // Related Links

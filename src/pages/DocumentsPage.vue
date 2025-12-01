@@ -692,83 +692,131 @@ async function logClick(itemId, itemType, action) {
 // Fetch all documents from Supabase
 const fetchAllDocuments = async () => {
   try {
-    // Load first 50 documents for faster initial load
-    const { data, error } = await supabase
-      .from('documents_metadata')
-      .select('id, file_name, file_url, preview_url, metadata, uploaded_at, updated_at')
-      .order('uploaded_at', { ascending: false })
-      .limit(50)
+    // Parallelize auth check and documents fetch - utilize idx_documents_uploaded_at index
+    const [authDataResult, documentsResult] = await Promise.all([
+      supabase.auth.getUser(),
+      supabase
+        .from('documents_metadata')
+        .select('id, file_name, file_url, preview_url, metadata, uploaded_at, updated_at')
+        .order('uploaded_at', { ascending: false })
+        .limit(50),
+    ])
+
+    const { data, error } = documentsResult
+    const authData = authDataResult.data
+    const userId = authData?.user?.id
 
     if (error) {
       console.error('Supabase error fetching documents:', error)
+      documentsStore.setDocuments([])
       return
     }
 
-    // Fetch Favorites collection items
-    const { data: authData } = await supabase.auth.getUser()
-
-    const userId = authData?.user?.id
-
-    const { data: favoritesCollection, error: favError } = await supabase
-      .from('collections')
-      .select('collection_id')
-      .eq('user_id', userId)
-      .eq('collection_name', 'Favorites')
-      .maybeSingle()
-
-    if (favError) {
-      console.error('Error fetching favorite items:', favError)
+    if (!data || data.length === 0) {
+      documentsStore.setDocuments([])
+      extractDocumentFilterOptions([])
+      return
     }
 
-    // Get ALL user collections (for bookmarked check)
-    const { data: allUserCollections, error: allCollError } = await supabase
-      .from('collections')
-      .select('collection_id, collection_name')
-      .eq('user_id', userId)
+    if (!userId) {
+      // If no user, set documents without favorites
+      const enhancedDocs = await Promise.all(
+        data.map(async (docs) => {
+          let workingFileUrl = docs.file_url
+          let workingPreviewUrl = docs.preview_url
+
+          try {
+            if (docs.file_url) {
+              workingFileUrl = await convertToWorkingUrl(docs.file_url)
+            }
+            if (docs.preview_url) {
+              workingPreviewUrl = await convertToWorkingUrl(docs.preview_url)
+            }
+          } catch (err) {
+            console.warn('Could not convert URL for document:', docs.id, err)
+          }
+
+          return {
+            ...docs,
+            file_url: workingFileUrl,
+            preview_url: workingPreviewUrl,
+            bookmarked: false,
+            starred: false,
+          }
+        }),
+      )
+      documentsStore.setDocuments(enhancedDocs)
+      extractDocumentFilterOptions(data)
+      return
+    }
+
+    // Parallelize Favorites and all collections queries - utilize idx_collections_user_id
+    const [favoritesCollectionResult, allUserCollectionsResult] = await Promise.all([
+      supabase
+        .from('collections')
+        .select('collection_id')
+        .eq('user_id', userId)
+        .eq('collection_name', 'Favorites')
+        .maybeSingle(),
+      supabase.from('collections').select('collection_id, collection_name').eq('user_id', userId),
+    ])
+
+    const favoritesCollection = favoritesCollectionResult.data
+    const allUserCollections = allUserCollectionsResult.data || []
 
     let favoriteIds = []
     let bookmarkedIds = []
 
-    if (favoritesCollection) {
-      const { data: favItems, error: favItemsError } = await supabase
-        .from('collection_items')
-        .select('item_id')
-        .eq('collection_id', favoritesCollection.collection_id)
-        .eq('item_type', 'document')
+    // Parallelize collection items fetches - utilize idx_collection_items_collection
+    const collectionItemsPromises = []
 
-      if (!favItemsError) {
-        favoriteIds = favItems.map((i) => i.item_id)
-      }
+    if (favoritesCollection) {
+      collectionItemsPromises.push(
+        supabase
+          .from('collection_items')
+          .select('item_id')
+          .eq('collection_id', favoritesCollection.collection_id)
+          .eq('item_type', 'document')
+          .then((result) => ({ type: 'favorites', data: result.data })),
+      )
     }
 
-    // Get bookmarked document IDs (from non-Favorites collections)
-    if (allUserCollections && !allCollError) {
-      const nonFavoritesCollections = allUserCollections.filter(
-        (col) => col.collection_name !== 'Favorites',
-      )
+    const nonFavoritesCollections = allUserCollections.filter(
+      (col) => col.collection_name !== 'Favorites',
+    )
 
-      if (nonFavoritesCollections.length > 0) {
-        const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
+    if (nonFavoritesCollections.length > 0) {
+      const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
 
-        const { data: bookmarkedItems, error: bookmarkError } = await supabase
+      collectionItemsPromises.push(
+        supabase
           .from('collection_items')
           .select('item_id')
           .in('collection_id', collectionIds)
           .eq('item_type', 'document')
-
-        if (!bookmarkError && bookmarkedItems) {
-          bookmarkedIds = [...new Set(bookmarkedItems.map((i) => i.item_id))]
-        }
-      }
+          .then((result) => ({ type: 'bookmarks', data: result.data })),
+      )
     }
 
+    if (collectionItemsPromises.length > 0) {
+      const collectionItemsResults = await Promise.all(collectionItemsPromises)
+
+      collectionItemsResults.forEach((result) => {
+        if (result.type === 'favorites' && result.data) {
+          favoriteIds = result.data.map((i) => i.item_id)
+        } else if (result.type === 'bookmarks' && result.data) {
+          bookmarkedIds = [...new Set(result.data.map((i) => i.item_id))]
+        }
+      })
+    }
+
+    // Convert URLs and enhance documents
     const enhancedDocs = await Promise.all(
       data.map(async (docs) => {
         let workingFileUrl = docs.file_url
         let workingPreviewUrl = docs.preview_url
 
         try {
-          // Convert stored URLs to working presigned URLs
           if (docs.file_url) {
             workingFileUrl = await convertToWorkingUrl(docs.file_url)
           }
@@ -781,8 +829,8 @@ const fetchAllDocuments = async () => {
 
         return {
           ...docs,
-          file_url: workingFileUrl, // Replace with working URL
-          preview_url: workingPreviewUrl, // Replace with working preview URL
+          file_url: workingFileUrl,
+          preview_url: workingPreviewUrl,
           bookmarked: bookmarkedIds.includes(docs.id),
           starred: favoriteIds.includes(docs.id),
         }
@@ -790,34 +838,38 @@ const fetchAllDocuments = async () => {
     )
 
     documentsStore.setDocuments(enhancedDocs)
-
-    // Extract unique author and date values for filters
-    const authors = new Set()
-    const years = new Set()
-    const categories = new Set(['All'])
-
-    data.forEach((doc) => {
-      if (doc.metadata?.author) {
-        // Support multiple authors split by comma
-        const authorList = doc.metadata.author.split(',').map((a) => a.trim())
-        authorList.forEach((a) => authors.add(a))
-      }
-
-      if (doc.metadata?.date) years.add(doc.metadata.date?.slice(0, 4)) // get year part
-
-      if (Array.isArray(doc.metadata?.categories)) {
-        doc.metadata.categories.forEach((cat) => categories.add(cat))
-      }
-    })
-
-    authorOptions.value = Array.from(authors)
-    categoryOptions.value = [...Array.from(categories).sort()]
-    dateOptions.value = Array.from(years).sort((a, b) => b - a)
+    extractDocumentFilterOptions(data)
   } catch (err) {
     console.error('Unexpected error while loading documents:', err)
+    documentsStore.setDocuments([])
+    extractDocumentFilterOptions([])
   } finally {
     loading.value = false
   }
+}
+
+// Extract filter options from document data
+function extractDocumentFilterOptions(data) {
+  const authors = new Set()
+  const years = new Set()
+  const categories = new Set(['All'])
+
+  data.forEach((doc) => {
+    if (doc.metadata?.author) {
+      const authorList = doc.metadata.author.split(',').map((a) => a.trim())
+      authorList.forEach((a) => authors.add(a))
+    }
+
+    if (doc.metadata?.date) years.add(doc.metadata.date?.slice(0, 4))
+
+    if (Array.isArray(doc.metadata?.categories)) {
+      doc.metadata.categories.forEach((cat) => categories.add(cat))
+    }
+  })
+
+  authorOptions.value = [...authors].sort()
+  categoryOptions.value = [...categories].sort()
+  dateOptions.value = [...years].sort((a, b) => b - a)
 }
 
 // for populating filter options

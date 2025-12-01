@@ -653,80 +653,100 @@ const toggleFavorite = async (doc, itemType = 'document') => {
 }
 
 onMounted(async () => {
-  const { data, error } = await supabase
-    .from('documents_metadata')
-    .select('*')
-    .eq('id', route.params.id)
-    .single()
+  try {
+    // Parallelize document fetch and auth check
+    const [documentResult, authResult] = await Promise.all([
+      supabase.from('documents_metadata').select('*').eq('id', route.params.id).single(),
+      supabase.auth.getUser(),
+    ])
 
-  if (error || !data) {
-    console.error('Document not found from Supabase:', error)
-    // Optional: fallback to store if you have a docuStore like modelStore
-    // const docuStore = useDocuStore()
+    const { data, error } = documentResult
+    const { data: authData } = authResult
+    const userId = authData?.user?.id
+
+    if (error || !data) {
+      console.error('Document not found from Supabase:', error)
+      doc.value = documentsStore.documents.find((d) => d.id == route.params.id) || null
+      console.log('Fallback Document from Store:', doc.value)
+    } else {
+      // Initialize with default bookmark/star states
+      doc.value = {
+        ...data,
+        bookmarked: false,
+        starred: false,
+      }
+
+      // Parallelize URL conversion
+      try {
+        const urlPromises = []
+        if (data.file_url) {
+          urlPromises.push(
+            convertToWorkingUrl(data.file_url).then((url) => ({ type: 'file', url })),
+          )
+        }
+        if (data.preview_url) {
+          urlPromises.push(
+            convertToWorkingUrl(data.preview_url).then((url) => ({ type: 'preview', url })),
+          )
+        }
+
+        if (urlPromises.length > 0) {
+          const urlResults = await Promise.all(urlPromises)
+          urlResults.forEach((result) => {
+            if (result.type === 'file') {
+              doc.value.file_url = result.url
+            } else if (result.type === 'preview') {
+              doc.value.preview_url = result.url
+              // Preload preview image for instant display
+              preloadPreviews([result.url])
+            }
+          })
+        }
+      } catch (urlError) {
+        console.warn('Error converting URLs, using original:', urlError)
+        // Keep original URLs as fallback
+      }
+
+      if (data.related_links && Array.isArray(data.related_links)) {
+        links.value = data.related_links.map((link, idx) => ({
+          id: link.id || Date.now() + idx,
+          title: link.title,
+          url: link.url,
+        }))
+      }
+    }
+
+    // Check favorites if user is logged in
+    if (userId) {
+      const { data: favoritesCollection } = await supabase
+        .from('collections')
+        .select('collection_id')
+        .eq('user_id', userId)
+        .eq('collection_name', 'Favorites')
+        .maybeSingle()
+
+      if (favoritesCollection) {
+        const { data: favItems } = await supabase
+          .from('collection_items')
+          .select('item_id')
+          .eq('collection_id', favoritesCollection.collection_id)
+          .eq('item_type', 'document')
+          .eq('item_id', route.params.id)
+
+        if (favItems?.length > 0) {
+          doc.value.starred = true
+        }
+      }
+    }
+
+    // Parallelize star and view counts fetching
+    await Promise.all([documentsStore.fetchStarCounts(), documentsStore.fetchViewCounts()])
+  } catch (err) {
+    console.error('Unexpected error loading document:', err)
     doc.value = documentsStore.documents.find((d) => d.id == route.params.id) || null
-    console.log('Fallback Document from Store:', doc.value)
-  } else {
-    // Initialize with default bookmark/star states
-    doc.value = {
-      ...data,
-      bookmarked: false,
-      starred: false,
-    }
-
-    // Convert URLs to working presigned URLs with caching
-    try {
-      if (data.file_url) {
-        doc.value.file_url = await convertToWorkingUrl(data.file_url)
-      }
-      if (data.preview_url) {
-        doc.value.preview_url = await convertToWorkingUrl(data.preview_url)
-        // Preload preview image for instant display
-        preloadPreviews([doc.value.preview_url])
-      }
-    } catch (urlError) {
-      console.warn('Error converting URLs, using original:', urlError)
-      // Keep original URLs as fallback
-    }
-
-    if (data.related_links && Array.isArray(data.related_links)) {
-      links.value = data.related_links.map((link, idx) => ({
-        id: link.id || Date.now() + idx,
-        title: link.title,
-        url: link.url,
-      }))
-    }
+  } finally {
+    loading.value = false
   }
-
-  loading.value = false
-
-  // ADDED: Check if the document is in user's Favorites collection
-  const { data: authData } = await supabase.auth.getUser()
-  const userId = authData?.user?.id
-
-  if (userId) {
-    const { data: favoritesCollection } = await supabase
-      .from('collections')
-      .select('collection_id')
-      .eq('user_id', userId)
-      .eq('collection_name', 'Favorites')
-      .maybeSingle()
-
-    if (favoritesCollection) {
-      const { data: favItems } = await supabase
-        .from('collection_items')
-        .select('item_id')
-        .eq('collection_id', favoritesCollection.collection_id)
-        .eq('item_type', 'document')
-        .eq('item_id', route.params.id)
-
-      if (favItems?.length > 0) {
-        doc.value.starred = true
-      }
-    }
-  }
-
-  await documentsStore.fetchStarCounts()
-  await documentsStore.fetchViewCounts()
 })
 
 function openLink(url) {

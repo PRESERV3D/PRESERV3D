@@ -151,13 +151,17 @@ export const useSearchStore = defineStore('search', {
         }
       }
 
-      // Fetch favorites
-      const favoriteIds = await this.fetchFavorites(type)
+      // Fetch favorites and bookmarks
+      const [favoriteIds, bookmarkedIds] = await Promise.all([
+        this.fetchFavorites(type),
+        this.fetchBookmarks(type),
+      ])
 
-      // Attach starred flag
+      // Attach starred and bookmarked flags
       const searched = data.map((item) => ({
         ...item,
         starred: favoriteIds.includes(item.id),
+        bookmarked: bookmarkedIds.includes(item.id),
       }))
 
       if (type === 'documents') {
@@ -198,6 +202,47 @@ export const useSearchStore = defineStore('search', {
         return favItems.map((item) => item.item_id)
       } else {
         console.error('Error fetching favorite items:', favItemsError)
+        return []
+      }
+    },
+
+    async fetchBookmarks(type) {
+      const { data: authData } = await supabase.auth.getUser()
+      const userId = authData?.user?.id
+      if (!userId) return []
+
+      // Fetch all user collections
+      const { data: allUserCollections, error: allCollError } = await supabase
+        .from('collections')
+        .select('collection_id, collection_name')
+        .eq('user_id', userId)
+
+      if (allCollError || !allUserCollections) {
+        console.error('Error fetching user collections:', allCollError)
+        return []
+      }
+
+      // Get bookmarked item IDs (from non-Favorites collections)
+      const nonFavoritesCollections = allUserCollections.filter(
+        (col) => col.collection_name !== 'Favorites',
+      )
+
+      if (nonFavoritesCollections.length === 0) {
+        return []
+      }
+
+      const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
+
+      const { data: bookmarkedItems, error: bookmarkError } = await supabase
+        .from('collection_items')
+        .select('item_id')
+        .in('collection_id', collectionIds)
+        .eq('item_type', type === 'documents' ? 'document' : 'artifact')
+
+      if (!bookmarkError && bookmarkedItems) {
+        return [...new Set(bookmarkedItems.map((item) => item.item_id))]
+      } else {
+        console.error('Error fetching bookmarked items:', bookmarkError)
         return []
       }
     },
@@ -456,12 +501,16 @@ export const useSearchStore = defineStore('search', {
       //   }
       // }
 
-      // Favorites
-      const favoriteIds = await this.fetchFavorites(params.type)
+      // Fetch favorites and bookmarks
+      const [favoriteIds, bookmarkedIds] = await Promise.all([
+        this.fetchFavorites(params.type),
+        this.fetchBookmarks(params.type),
+      ])
 
       const searched = data.map((item) => ({
         ...item,
         starred: favoriteIds.includes(item.id),
+        bookmarked: bookmarkedIds.includes(item.id),
       }))
 
       if (params.type === 'documents') {

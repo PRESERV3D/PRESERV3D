@@ -817,118 +817,165 @@ async function logClick(itemId, itemType, action) {
 // Fetch all artifacts from Supabase
 const fetchAllArtifacts = async () => {
   try {
-    // Load first 50 artifacts for faster initial load
-    const { data, error } = await supabase
-      .from('artifacts_metadata')
-      .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
-      .order('uploaded_at', { ascending: false })
-      .limit(50)
+    // Parallelize auth check and artifact fetch - utilize idx_artifacts_uploaded_at index
+    const [authDataResult, artifactsResult] = await Promise.all([
+      supabase.auth.getUser(),
+      supabase
+        .from('artifacts_metadata')
+        .select('id, file_name, file_url, metadata, uploaded_at, updated_at')
+        .order('uploaded_at', { ascending: false })
+        .limit(50),
+    ])
 
-    if (!error) {
-      const { data: authData } = await supabase.auth.getUser()
-      const userId = authData?.user?.id
+    const { data, error } = artifactsResult
+    const authData = authDataResult.data
+    const userId = authData?.user?.id
 
-      // Fetch Favorites collection items
-      const { data: favoritesCollection, error: favError } = await supabase
-        .from('collections')
-        .select('collection_id')
-        .eq('user_id', userId)
-        .eq('collection_name', 'Favorites')
-        .maybeSingle()
+    if (error) {
+      console.error('Error fetching artifacts:', error)
+      modelStore.setModels([])
+      return
+    }
 
-      if (favError) {
-        console.error('Error fetching favorite items:', favError)
-      }
+    if (!data || data.length === 0) {
+      modelStore.setModels([])
+      extractFilterOptions([])
+      return
+    }
 
-      let favoriteIds = []
-      let bookmarkedIds = []
-
-      if (favoritesCollection) {
-        const { data: favItems, error: favItemsError } = await supabase
-          .from('collection_items')
-          .select('item_id')
-          .eq('collection_id', favoritesCollection.collection_id)
-          .eq('item_type', 'artifact')
-
-        if (!favItemsError) {
-          favoriteIds = favItems.map((i) => i.item_id)
-        }
-      }
-
-      // Get ALL user collections (for bookmarked check)
-      const { data: allUserCollections, error: allCollError } = await supabase
-        .from('collections')
-        .select('collection_id, collection_name')
-        .eq('user_id', userId)
-
-      // Get bookmarked document IDs (from non-Favorites collections)
-      if (allUserCollections && !allCollError) {
-        const nonFavoritesCollections = allUserCollections.filter(
-          (col) => col.collection_name !== 'Favorites',
-        )
-
-        if (nonFavoritesCollections.length > 0) {
-          const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
-
-          const { data: bookmarkedItems, error: bookmarkError } = await supabase
-            .from('collection_items')
-            .select('item_id')
-            .in('collection_id', collectionIds)
-            .eq('item_type', 'artifact')
-
-          if (!bookmarkError && bookmarkedItems) {
-            bookmarkedIds = [...new Set(bookmarkedItems.map((i) => i.item_id))]
-          }
-        }
-      }
-
-      // Add some mock data for demonstration compatibility
+    if (!userId) {
+      // If no user, just set models without favorites
       const enhancedModels = await Promise.all(
         data.map(async (model) => {
           let workingUrl = model.file_url
           try {
-            // Convert stored URL to working presigned URL
             workingUrl = await convertToWorkingUrl(model.file_url)
           } catch (err) {
             console.warn('Could not convert URL for model:', model.id, err)
           }
-
           return {
             ...model,
-            file_url: workingUrl, // Replace with working URL
-            bookmarked: bookmarkedIds.includes(model.id),
-            starred: favoriteIds.includes(model.id),
+            file_url: workingUrl,
+            bookmarked: false,
+            starred: false,
           }
         }),
       )
-
       modelStore.setModels(enhancedModels)
+      extractFilterOptions(data)
+      return
+    }
 
-      // Extract unique values for filters
-      const authors = new Set()
-      const years = new Set()
-      const categories = new Set()
+    // Parallelize Favorites and all collections queries - utilize idx_collections_user_id
+    const [favoritesCollectionResult, allUserCollectionsResult] = await Promise.all([
+      supabase
+        .from('collections')
+        .select('collection_id')
+        .eq('user_id', userId)
+        .eq('collection_name', 'Favorites')
+        .maybeSingle(),
+      supabase.from('collections').select('collection_id, collection_name').eq('user_id', userId),
+    ])
 
-      data.forEach((model) => {
-        if (model.metadata?.author) {
-          const authorList = model.metadata.author.split(',').map((a) => a.trim())
-          authorList.forEach((a) => authors.add(a))
-        }
+    const favoritesCollection = favoritesCollectionResult.data
+    const allUserCollections = allUserCollectionsResult.data || []
 
-        if (model.metadata?.date) years.add(model.metadata.date?.slice(0, 4))
+    let favoriteIds = []
+    let bookmarkedIds = []
 
-        if (Array.isArray(model.metadata?.categories)) {
-          model.metadata.categories.forEach((cat) => categories.add(cat))
+    // Parallelize collection items fetches - utilize idx_collection_items_collection
+    const collectionItemsPromises = []
+
+    if (favoritesCollection) {
+      collectionItemsPromises.push(
+        supabase
+          .from('collection_items')
+          .select('item_id')
+          .eq('collection_id', favoritesCollection.collection_id)
+          .eq('item_type', 'artifact')
+          .then((result) => ({ type: 'favorites', data: result.data })),
+      )
+    }
+
+    const nonFavoritesCollections = allUserCollections.filter(
+      (col) => col.collection_name !== 'Favorites',
+    )
+
+    if (nonFavoritesCollections.length > 0) {
+      const collectionIds = nonFavoritesCollections.map((col) => col.collection_id)
+
+      collectionItemsPromises.push(
+        supabase
+          .from('collection_items')
+          .select('item_id')
+          .in('collection_id', collectionIds)
+          .eq('item_type', 'artifact')
+          .then((result) => ({ type: 'bookmarks', data: result.data })),
+      )
+    }
+
+    if (collectionItemsPromises.length > 0) {
+      const collectionItemsResults = await Promise.all(collectionItemsPromises)
+
+      collectionItemsResults.forEach((result) => {
+        if (result.type === 'favorites' && result.data) {
+          favoriteIds = result.data.map((i) => i.item_id)
+        } else if (result.type === 'bookmarks' && result.data) {
+          bookmarkedIds = [...new Set(result.data.map((i) => i.item_id))]
         }
       })
-
-      authorOptions.value = Array.from(authors)
-      categoryOptions.value = Array.from(categories)
-      dateOptions.value = Array.from(years).sort((a, b) => b - a)
     }
-  } catch (error) {
-    console.error('Error loading artifacts:', error)
+
+    // Convert URLs and enhance models
+    const enhancedModels = await Promise.all(
+      data.map(async (model) => {
+        let workingUrl = model.file_url
+        try {
+          workingUrl = await convertToWorkingUrl(model.file_url)
+        } catch (err) {
+          console.warn('Could not convert URL for model:', model.id, err)
+        }
+
+        return {
+          ...model,
+          file_url: workingUrl,
+          bookmarked: bookmarkedIds.includes(model.id),
+          starred: favoriteIds.includes(model.id),
+        }
+      }),
+    )
+
+    modelStore.setModels(enhancedModels)
+    extractFilterOptions(data)
+  } catch (err) {
+    console.error('Unexpected error fetching artifacts:', err)
+    modelStore.setModels([])
+    extractFilterOptions([])
   }
+}
+
+// Extract filter options from artifact data
+function extractFilterOptions(data) {
+  const authors = new Set()
+  const years = new Set()
+  const categories = new Set()
+
+  data.forEach((model) => {
+    if (model.metadata?.author) {
+      const authorList = model.metadata.author.split(',').map((a) => a.trim())
+      authorList.forEach((a) => authors.add(a))
+    }
+
+    if (model.metadata?.date) years.add(model.metadata.date?.slice(0, 4))
+
+    if (Array.isArray(model.metadata?.categories)) {
+      model.metadata.categories.forEach((cat) => categories.add(cat))
+    }
+  })
+
+  authorOptions.value = [...authors].sort()
+  categoryOptions.value = [...categories].sort()
+  dateOptions.value = [...years].sort((a, b) => b - a)
 }
 
 // // Watch for filter changes
