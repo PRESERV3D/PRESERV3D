@@ -574,10 +574,15 @@ const submitExtensionRequest = async () => {
 
     // Upload letter to R2 first (if required)
     if (requiresLetterUpload.value && extensionRequest.letter) {
-      const fileName = extensionRequest.letter.name
+      $q.loading.show({ message: 'Uploading letter...' })
+
+      // Generate unique filename to avoid conflicts
+      const timestamp = Date.now()
+      const originalName = extensionRequest.letter.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+      const fileName = `${profile.approval_id}_${timestamp}_${originalName}`
       uploadedFileName = fileName
 
-      const { error: uploadError, publicUrl } = await uploadFileToR2(
+      const { error: uploadError } = await uploadFileToR2(
         extensionRequest.letter,
         'visitor-letters',
         fileName,
@@ -587,24 +592,24 @@ const submitExtensionRequest = async () => {
         throw new Error(`Failed to upload letter: ${uploadError.message}`)
       }
 
-      letterUrl = publicUrl
+      // Use permanent public R2 URL instead of pre-signed URL
+      const r2PublicUrl = import.meta.env.VITE_R2_PUBLIC_URL
+      letterUrl = `${r2PublicUrl}/visitor-letters/${fileName}`
       console.log('Letter uploaded successfully:', letterUrl)
     }
 
     // Insert extension request into database with letter URL
-    const { data: extensionData, error: insertError } = await supabase
-      .from('account_extensions')
-      .insert([
-        {
-          approval_id: profile.approval_id,
-          old_end_date: visitorData.endDate,
-          extended_end_date: extensionRequest.newEndDate,
-          letter: letterUrl,
-          purpose: extensionRequest.reason,
-          extension_status: 'Pending',
-        },
-      ])
-      .select()
+    $q.loading.show({ message: 'Saving extension request...' })
+    const { error: insertError } = await supabase.from('account_extensions').insert([
+      {
+        approval_id: profile.approval_id,
+        old_end_date: visitorData.endDate,
+        extended_end_date: extensionRequest.newEndDate,
+        letter: letterUrl,
+        purpose: extensionRequest.reason,
+        extension_status: 'Pending',
+      },
+    ])
 
     if (insertError) {
       // If database insert fails and we uploaded a file, delete it from R2
@@ -620,11 +625,11 @@ const submitExtensionRequest = async () => {
       throw insertError
     }
 
-    console.log('Extension request created:', extensionData)
+    console.log('Extension request created successfully')
 
-    // Notify all admins about the extension request
+    // Notify all admins about the extension request (non-blocking)
     const notifMessage = `${visitorData.firstName} ${visitorData.lastName} has requested an account extension from ${formatDate(visitorData.endDate)} to ${formatDate(extensionRequest.newEndDate)}.`
-    await adminNotification(notifMessage)
+    adminNotification(notifMessage) // Don't await - let it run in background
 
     hasActiveExtension.value = true
     showExtensionDialog.value = false

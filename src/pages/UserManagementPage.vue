@@ -989,15 +989,17 @@
                 </template>
 
                 <template v-else-if="col.name === 'letter'">
-                  <a
+                  <q-btn
                     v-if="props.row.letter"
-                    :href="props.row.letter"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    flat
+                    dense
+                    no-caps
+                    color="primary"
+                    label="View Letter"
+                    icon="picture_as_pdf"
+                    @click="viewLetter(props.row.letter)"
                     class="view-more-link"
-                  >
-                    View Letter
-                  </a>
+                  />
                   <span v-else>Not Required</span>
                 </template>
 
@@ -1538,6 +1540,43 @@ import { createNotification } from '/services/email_service.js'
 const $q = useQuasar()
 const userStore = useUserStore()
 const route = useRoute()
+
+// Helper: View letter with proper URL validation and error handling
+function viewLetter(letterUrl) {
+  if (!letterUrl) {
+    $q.notify({
+      type: 'warning',
+      message: 'No letter available',
+      position: 'top',
+    })
+    return
+  }
+
+  // Check if URL is valid
+  try {
+    // If it's a relative path, construct full R2 URL
+    let fullUrl = letterUrl
+    if (!letterUrl.startsWith('http://') && !letterUrl.startsWith('https://')) {
+      // Construct R2 public URL
+      const r2PublicUrl = import.meta.env.VITE_R2_PUBLIC_URL || ''
+      fullUrl = `${r2PublicUrl}/${letterUrl.startsWith('/') ? letterUrl.slice(1) : letterUrl}`
+    }
+
+    // Validate URL format
+    new URL(fullUrl)
+
+    // Open in new tab
+    window.open(fullUrl, '_blank', 'noopener,noreferrer')
+  } catch (error) {
+    console.error('Invalid letter URL:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Unable to open letter',
+      caption: 'Invalid or inaccessible file URL',
+      position: 'top',
+    })
+  }
+}
 
 // Helper: get the most recent login timestamp from `logins` table for a user
 async function getLastLogin(userId) {
