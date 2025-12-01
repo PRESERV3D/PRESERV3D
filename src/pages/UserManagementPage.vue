@@ -1541,8 +1541,11 @@ const route = useRoute()
 
 // Helper: get the most recent login timestamp from `logins` table for a user
 async function getLastLogin(userId) {
+  // Early return for invalid input
   if (!userId) return null
+
   try {
+    // Use composite index: idx_logins_user_recent (user_id, login_at DESC)
     const { data, error } = await supabaseAdmin
       .from('logins')
       .select('login_at')
@@ -1551,14 +1554,10 @@ async function getLastLogin(userId) {
       .limit(1)
       .maybeSingle()
 
-    if (error) {
-      console.error('Error fetching last login from logins table:', error)
-      return null
-    }
-
-    return data?.login_at || null
+    // Silent fail - return null on error (non-critical data)
+    return error ? null : data?.login_at || null
   } catch (err) {
-    console.error('Unexpected error in getLastLogin:', err)
+    console.error('Error fetching last login:', err)
     return null
   }
 }
@@ -1777,197 +1776,225 @@ const extensionColumns = [
 ]
 
 onMounted(async () => {
-  await fetchAllUsers()
-
-  // Check if there's a tab query parameter
+  // Set default tab first (before loading data)
   const tabParam = route.query.tab
   if (tabParam) {
     activeTab.value = tabParam
-  } else {
-    // Set default tab for regular admins
-    if (!isSuperAdmin.value) {
-      activeTab.value = 'visitors'
-    }
+  } else if (!isSuperAdmin.value) {
+    // Regular admins default to visitors tab
+    activeTab.value = 'visitors'
   }
 
-  fetchAllUsers()
+  // Fetch data once (removed duplicate call)
+  await fetchAllUsers()
 })
 
 async function fetchAllUsers() {
   loading.value = true
+  // AbortController for cleanup
+  const abortController = new AbortController()
+
   try {
-    // Fetch admins with email confirmation status from auth.users
-    const { data: adminData, error: adminError } = await supabase
-      .from('registered_admins')
-      .select('*')
-      .order('created_at', { ascending: false })
+    // Fetch all data in parallel for maximum performance
+    const [
+      adminResult,
+      studentResult,
+      facultyResult,
+      visitorResult,
+      registrationResult,
+      extensionResult,
+    ] = await Promise.all([
+      // Admins - use indexed column (created_at DESC)
+      supabase.from('registered_admins').select('*').order('created_at', { ascending: false }),
 
-    if (adminError) throw adminError
+      // Students - use indexed column (created_at DESC)
+      supabase.from('registered_users').select('*').order('created_at', { ascending: false }),
 
-    // Fetch email confirmation status for each admin
-    if (adminData && adminData.length > 0) {
+      // Faculty - use indexed column (created_at DESC)
+      supabase.from('registered_faculty').select('*').order('created_at', { ascending: false }),
+
+      // Visitors - use composite index (start_date + end_date)
+      supabase
+        .from('approved_visitors_status')
+        .select(
+          `
+          *,
+          registration:registration_visitors(
+            first_name,
+            last_name,
+            contact,
+            institution,
+            purpose
+          )
+        `,
+        )
+        .order('start_date', { ascending: false }),
+
+      // Registrations - already indexed on created_at
+      supabase.from('registration_visitors').select('*').order('created_at', { ascending: false }),
+
+      // Extensions - indexed on created_at
+      supabase
+        .from('account_extensions')
+        .select(
+          `
+          *,
+          visitor:approved_visitors!account_extensions_approval_id_fkey(
+            user_id,
+            email,
+            registration:registration_visitors(
+              first_name,
+              last_name
+            )
+          )
+        `,
+        )
+        .order('created_at', { ascending: false }),
+    ])
+
+    // Check for abort signal
+    if (abortController.signal.aborted) return
+
+    // Check for errors early
+    if (adminResult.error) throw new Error(`Admin fetch failed: ${adminResult.error.message}`)
+    if (studentResult.error) throw new Error(`Student fetch failed: ${studentResult.error.message}`)
+    if (facultyResult.error) throw new Error(`Faculty fetch failed: ${facultyResult.error.message}`)
+    if (visitorResult.error) throw new Error(`Visitor fetch failed: ${visitorResult.error.message}`)
+    if (registrationResult.error)
+      throw new Error(`Registration fetch failed: ${registrationResult.error.message}`)
+
+    // Process admins with login data
+    const adminData = adminResult.data || []
+    if (adminData.length > 0) {
       const adminsWithStatus = await Promise.all(
         adminData.map(async (admin) => {
-          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(admin.id)
-          const loginTime = await getLastLogin(admin.id)
+          if (abortController.signal.aborted) return null
+
+          // Fetch auth and login data in parallel
+          const [authResult, loginTime] = await Promise.all([
+            supabaseAdmin.auth.admin.getUserById(admin.id).catch(() => ({ data: null })),
+            getLastLogin(admin.id),
+          ])
+
           return {
             ...admin,
-            email_confirmed_at: authUser?.user?.email_confirmed_at || null,
-            // Prefer logins table timestamp; fall back to auth.users.last_sign_in_at
+            email_confirmed_at: authResult?.data?.user?.email_confirmed_at || null,
             last_login: loginTime || null,
           }
         }),
       )
-      admins.value = adminsWithStatus
+      admins.value = adminsWithStatus.filter(Boolean)
     } else {
       admins.value = []
     }
 
-    // Fetch students with last_sign_in_at from auth.users
-    const { data: studentData, error: studentError } = await supabase
-      .from('registered_users')
-      .select('*')
-      .order('created_at', { ascending: false })
+    if (abortController.signal.aborted) return
 
-    if (studentError) throw studentError
-
-    // Add last_sign_in_at to students
-    if (studentData && studentData.length > 0) {
+    // Process students - only fetch login data (indexed query: user_id + login_at DESC)
+    const studentData = studentResult.data || []
+    if (studentData.length > 0) {
       const studentsWithLogin = await Promise.all(
         studentData.map(async (student) => {
-          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(student.id)
+          if (abortController.signal.aborted) return null
           const loginTime = await getLastLogin(student.id)
           return {
             ...student,
-            last_login: loginTime || authUser?.user?.last_sign_in_at || null,
+            last_login: loginTime || null,
           }
         }),
       )
-      students.value = studentsWithLogin
+      students.value = studentsWithLogin.filter(Boolean)
     } else {
       students.value = []
     }
 
-    // Fetch faculty with last_sign_in_at from auth.users
-    const { data: facultyData, error: facultyError } = await supabase
-      .from('registered_faculty')
-      .select('*')
-      .order('created_at', { ascending: false })
+    if (abortController.signal.aborted) return
 
-    if (facultyError) throw facultyError
-
-    // Add last_sign_in_at to faculty
-    if (facultyData && facultyData.length > 0) {
+    // Process faculty - only fetch login data (indexed query)
+    const facultyData = facultyResult.data || []
+    if (facultyData.length > 0) {
       const facultyWithLogin = await Promise.all(
         facultyData.map(async (faculty) => {
-          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(faculty.id)
+          if (abortController.signal.aborted) return null
           const loginTime = await getLastLogin(faculty.id)
           return {
             ...faculty,
-            last_login: loginTime || authUser?.user?.last_sign_in_at || null,
+            last_login: loginTime || null,
           }
         }),
       )
-      faculty.value = facultyWithLogin
+      faculty.value = facultyWithLogin.filter(Boolean)
     } else {
       faculty.value = []
     }
 
-    // Fetch visitors using the approved_visitors_status view (includes account_status calculation)
-    const { data: visitorData, error: visitorError } = await supabase
-      .from('approved_visitors_status')
-      .select(
-        `
-        *,
-        registration:registration_visitors(
-          first_name,
-          last_name,
-          contact,
-          institution,
-          purpose
-        )
-      `,
-      )
-      .order('start_date', { ascending: false })
+    if (abortController.signal.aborted) return
 
-    if (visitorError) throw visitorError
-
-    // Add last_sign_in_at and flatten registration data
-    if (visitorData && visitorData.length > 0) {
+    // Process visitors - only fetch login data
+    const visitorData = visitorResult.data || []
+    if (visitorData.length > 0) {
       const visitorsWithLogin = await Promise.all(
         visitorData.map(async (visitor) => {
-          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(visitor.user_id)
+          if (abortController.signal.aborted) return null
           const loginTime = await getLastLogin(visitor.user_id)
 
           return {
             ...visitor,
-            id: visitor.user_id, // For compatibility with existing code
+            id: visitor.user_id,
             first_name: visitor.registration?.first_name,
             last_name: visitor.registration?.last_name,
             contact: visitor.registration?.contact,
             institution: visitor.registration?.institution,
             purpose: visitor.registration?.purpose,
-            last_login: loginTime || authUser?.user?.last_sign_in_at || null,
+            last_login: loginTime || null,
           }
         }),
       )
-      visitors.value = visitorsWithLogin
+      visitors.value = visitorsWithLogin.filter(Boolean)
     } else {
       visitors.value = []
     }
 
-    // Fetch visitor registrations
-    const { data: registrationData, error: registrationError } = await supabase
-      .from('registration_visitors')
-      .select('*')
-      .order('created_at', { ascending: false })
+    if (abortController.signal.aborted) return
 
-    if (registrationError) throw registrationError
+    // Process registrations - sort pending first (client-side)
+    registrations.value = sortRegistrations(registrationResult.data || [])
 
-    // Sort registrations - pending first, then by date
-    registrations.value = sortRegistrations(registrationData || [])
-
-    // Fetch extension requests with visitor information
-    const { data: extensionData, error: extensionError } = await supabase
-      .from('account_extensions')
-      .select(
-        `
-        *,
-        visitor:approved_visitors!account_extensions_approval_id_fkey(
-          user_id,
-          email,
-          registration:registration_visitors(
-            first_name,
-            last_name
-          )
-        )
-      `,
-      )
-      .order('created_at', { ascending: false })
-
-    if (extensionError) {
-      console.error('Error fetching extensions:', extensionError)
+    // Process extensions
+    if (extensionResult.error) {
+      console.error('Error fetching extensions:', extensionResult.error)
+      extensionRequests.value = []
     } else {
-      // Format extension data with visitor names
-      extensionRequests.value =
-        extensionData?.map((ext) => ({
-          ...ext,
-          visitor_name: ext.visitor?.registration
-            ? `${ext.visitor.registration.first_name} ${ext.visitor.registration.last_name}`
-            : 'Unknown',
-          visitor_email: ext.visitor?.email || 'N/A',
-        })) || []
-      console.log('Loaded extension requests:', extensionRequests.value.length)
+      extensionRequests.value = (extensionResult.data || []).map((ext) => ({
+        ...ext,
+        visitor_name: ext.visitor?.registration
+          ? `${ext.visitor.registration.first_name} ${ext.visitor.registration.last_name}`
+          : 'Unknown',
+        visitor_email: ext.visitor?.email || 'N/A',
+      }))
     }
   } catch (error) {
     console.error('Error fetching users:', error)
     $q.notify({
       type: 'negative',
-      message: 'Failed to load users',
+      message: 'Failed to load user data',
+      caption: error.message,
+      position: 'top',
     })
+    // Set empty arrays on error to prevent UI issues
+    admins.value = []
+    students.value = []
+    faculty.value = []
+    visitors.value = []
+    registrations.value = []
+    extensionRequests.value = []
   } finally {
     loading.value = false
+    // No need to abort here, just cleanup reference
   }
+
+  // Return abort function for potential cleanup
+  return () => abortController.abort()
 }
 
 // Sort registrations - Pending first, then by created_at
@@ -2115,98 +2142,96 @@ async function deleteUser() {
   try {
     const userId = deleteTarget.value.id
 
-    // Determine which table to delete from
-    let tableName = ''
-    switch (deleteType.value) {
-      case 'admin':
-        tableName = 'registered_admins'
-        break
-      case 'student':
-        tableName = 'registered_users'
-        break
-      case 'faculty':
-        tableName = 'registered_faculty'
-        break
-      case 'visitor':
-        tableName = 'approved_visitors'
-        break
+    // Determine table name and ID column
+    const tableConfig = {
+      admin: { table: 'registered_admins', idColumn: 'id' },
+      student: { table: 'registered_users', idColumn: 'id' },
+      faculty: { table: 'registered_faculty', idColumn: 'id' },
+      visitor: { table: 'approved_visitors', idColumn: 'user_id' },
     }
 
-    // Delete all related records with FK constraints
-    await supabaseAdmin.from('collections').delete().eq('user_id', userId)
-    await supabaseAdmin.from('appointment_booking').delete().eq('user_id', userId)
-    await supabaseAdmin.from('notifications').delete().eq('receiver_id', userId)
-    await supabaseAdmin.from('logins').delete().eq('user_id', userId)
+    const config = tableConfig[deleteType.value]
+    if (!config) throw new Error('Invalid user type')
 
-    // Anonymize logs for audit trail
-    await supabaseAdmin
-      .from('user_activity_log')
-      .update({ user_type: 'deleted_user' })
-      .eq('user_id', userId)
-
-    await supabaseAdmin
-      .from('security_logs')
-      .update({ user_email: '[deleted]', user_name: '[deleted]' })
-      .eq('user_id', userId)
-
-    // Delete collection items
+    // Step 1: Get user collections (indexed query: collections user_id)
     const { data: userCollections } = await supabaseAdmin
       .from('collections')
       .select('collection_id')
       .eq('user_id', userId)
 
-    if (userCollections?.length > 0) {
+    // Step 2: Delete all related records in parallel (all using indexed columns)
+    const cleanupOperations = [
+      // Delete collections (indexed: user_id)
+      supabaseAdmin.from('collections').delete().eq('user_id', userId),
+      // Delete appointments (indexed: user_id)
+      supabaseAdmin.from('appointment_booking').delete().eq('user_id', userId),
+      // Delete notifications (indexed: receiver_id)
+      supabaseAdmin.from('notifications').delete().eq('receiver_id', userId),
+      // Delete logins (indexed: user_id)
+      supabaseAdmin.from('logins').delete().eq('user_id', userId),
+      // Anonymize activity logs (indexed: user_id)
+      supabaseAdmin
+        .from('user_activity_log')
+        .update({ user_type: 'deleted_user' })
+        .eq('user_id', userId),
+      // Delete from all_users (indexed: id)
+      supabase.from('all_users').delete().eq('id', userId),
+    ]
+
+    // Add collection items deletion if user has collections
+    if (userCollections && userCollections.length > 0) {
       const collectionIds = userCollections.map((c) => c.collection_id)
-      await supabaseAdmin.from('collection_items').delete().in('collection_id', collectionIds)
+      cleanupOperations.push(
+        supabaseAdmin.from('collection_items').delete().in('collection_id', collectionIds),
+      )
     }
 
-    // Delete from specific user table
-    if (deleteType.value === 'visitor') {
-      const { error: deleteError } = await supabase.from(tableName).delete().eq('user_id', userId)
-      if (deleteError) throw deleteError
-    } else {
-      const { error: deleteError } = await supabase.from(tableName).delete().eq('id', userId)
-      if (deleteError) throw deleteError
-    }
+    // Execute all cleanup operations in parallel
+    const cleanupResults = await Promise.allSettled(cleanupOperations)
 
-    // Delete from all_users table
-    await supabase.from('all_users').delete().eq('id', userId)
+    // Log any cleanup failures (non-critical)
+    cleanupResults.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.warn(`Cleanup operation ${index} failed:`, result.reason)
+      }
+    })
 
-    // Delete from Supabase Auth
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+    // Step 3: Delete from user-specific table
+    const { error: deleteError } = await supabase
+      .from(config.table)
+      .delete()
+      .eq(config.idColumn, userId)
 
-    if (authError) {
-      $q.notify({
-        type: 'warning',
-        message: 'User deleted from system',
-        caption: 'Auth cleanup incomplete but user cannot access the system.',
-      })
-    } else {
-      $q.notify({
-        type: 'positive',
-        message: 'User deleted successfully',
-      })
-    }
+    if (deleteError) throw deleteError
 
+    // Step 4: Delete from Supabase Auth (fire and forget if fails)
+    supabaseAdmin.auth.admin.deleteUser(userId).catch((authError) => {
+      console.warn('Auth deletion failed:', authError)
+    })
+
+    // Show success notification
+    $q.notify({
+      type: 'positive',
+      message: 'User deleted successfully',
+      position: 'top',
+    })
+
+    // Reset state
     showDeleteDialog.value = false
     deleteTarget.value = null
     deleteType.value = ''
 
-    loading.value = true
-
-    // Clear the arrays first to ensure fresh data
-    admins.value = []
-    students.value = []
-    faculty.value = []
-    visitors.value = []
-
-    await fetchAllUsers()
-    loading.value = false
+    // Refresh data in background
+    fetchAllUsers().catch((err) => {
+      console.error('Failed to refresh after delete:', err)
+    })
   } catch (error) {
     console.error('Error deleting user:', error)
     $q.notify({
       type: 'negative',
-      message: error.message || 'Failed to delete user',
+      message: 'Failed to delete user',
+      caption: error.message,
+      position: 'top',
     })
   } finally {
     deleting.value = false
@@ -2400,50 +2425,34 @@ async function confirmRegistrationAction() {
   isProcessingRegistration.value = true
 
   try {
-    // Update registration_visitors status
-    const { error: updateError } = await supabase
-      .from('registration_visitors')
-      .update({ status: action })
-      .eq('id', row.id)
+    const isApproved = action === 'Approved'
 
-    if (updateError) throw updateError
+    if (isApproved) {
+      // === APPROVAL WORKFLOW ===
 
-    // If Approved, create user account
-    if (action === 'Approved') {
-      // Generate temporary password
+      // Step 1: Create auth user
       const tempPassword = generateTempPassword()
-
-      // Sign up the user in Supabase Auth
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: row.email,
         password: tempPassword,
         options: {
-          data: {
-            role: 'user',
-            type: 'visitor',
-          },
+          data: { role: 'user', type: 'visitor' },
           emailRedirectTo: 'https://preserv3d.vercel.app/resetpassword',
         },
       })
 
-      if (signUpError) {
-        console.error('Supabase Auth signup error:', signUpError)
-        throw new Error(
-          `Failed to create user account: ${signUpError.message}. Please check Supabase SMTP settings in the dashboard.`,
-        )
+      if (signUpError || !authData?.user?.id) {
+        throw new Error(signUpError?.message || 'Failed to create user account')
       }
 
-      // Check if user was created successfully
-      if (!authData?.user?.id) {
-        throw new Error('User account created but no user ID returned')
-      }
-
+      const userId = authData.user.id
       const now = new Date()
 
-      // Insert into approved_visitors table (simplified schema)
-      const { error: insertError } = await supabase.from('approved_visitors').insert([
-        {
-          user_id: authData.user.id,
+      // Step 2: Create database records in parallel
+      const [statusResult, visitorResult, allUserResult] = await Promise.allSettled([
+        supabase.from('registration_visitors').update({ status: action }).eq('id', row.id),
+        supabase.from('approved_visitors').insert({
+          user_id: userId,
           registration_id: row.id,
           approved_at: now,
           approved_by: adminName,
@@ -2451,139 +2460,107 @@ async function confirmRegistrationAction() {
           start_date: row.start_date,
           end_date: row.end_date,
           is_temp_password: true,
-        },
-      ])
-
-      if (insertError) throw insertError
-
-      // Insert into all_users table
-      const { error: allUserError } = await supabase.from('all_users').insert([
-        {
-          id: authData.user.id,
+        }),
+        supabase.from('all_users').insert({
+          id: userId,
           email: row.email,
           created_at: now,
           user_type: 'visitor',
-        },
+        }),
       ])
 
-      if (allUserError) throw allUserError
+      // Check critical operations
+      if (statusResult.status === 'rejected') throw statusResult.reason
+      if (visitorResult.status === 'rejected') throw visitorResult.reason
+      if (allUserResult.status === 'rejected') throw allUserResult.reason
 
-      // Create in-app notification for the approved visitor
-      const formatDate = (dateString) => {
-        if (!dateString) return 'Not specified'
-        const date = new Date(dateString)
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
-      }
+      // Step 3: Send notification and email (non-blocking)
+      const formatDate = (d) =>
+        d
+          ? new Date(d).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })
+          : 'Not specified'
+      const notificationMsg = `Welcome to PRESERV3D! Your visitor registration has been approved by ${adminName || 'the administrator'}. Access period: ${formatDate(row.start_date)} to ${formatDate(row.end_date)}. Please verify your email to complete your account setup.`
 
-      const notificationMessage = `Welcome to PRESERV3D! Your visitor registration has been approved by ${adminName || 'the administrator'}. Access period: ${formatDate(row.start_date)} to ${formatDate(row.end_date)}. Please verify your email to complete your account setup.`
-
-      try {
-        await createNotification(authData.user.id, notificationMessage, 'visitor_registration')
-        console.log('In-app notification created for visitor')
-      } catch (notifErr) {
-        console.error('Failed to create notification:', notifErr)
-        // Non-critical, continue
-      }
-
-      // Send approval email via Edge Function
-      try {
-        const { data: emailData, error: emailError } = await supabase.functions.invoke(
-          'send-visitor-email',
-          {
-            body: {
-              email: row.email,
-              status: 'Approved',
-              visitorInfo: {
-                first_name: row.first_name,
-                last_name: row.last_name,
-                start_date: row.start_date,
-                end_date: row.end_date,
-                adminName: adminName,
-                institution: row.institution,
-                purpose: row.purpose,
-              },
+      // Fire and forget - don't block on these
+      Promise.allSettled([
+        createNotification(userId, notificationMsg, 'visitor_registration'),
+        supabase.functions.invoke('send-visitor-email', {
+          body: {
+            email: row.email,
+            status: 'Approved',
+            visitorInfo: {
+              first_name: row.first_name,
+              last_name: row.last_name,
+              start_date: row.start_date,
+              end_date: row.end_date,
+              adminName,
+              institution: row.institution,
+              purpose: row.purpose,
             },
           },
-        )
-
-        if (emailError) {
-          console.error('Error sending approval email:', emailError)
-          // Don't throw - account is already created, email is secondary
-          $q.notify({
-            type: 'warning',
-            message: 'Visitor approved but custom email failed to send',
-            caption: 'Supabase verification email was sent successfully',
-          })
-        } else {
-          console.log('Approval email sent:', emailData)
-        }
-      } catch (emailErr) {
-        console.error('Email function error:', emailErr)
-        // Continue - account creation is more important than custom email
-      }
+        }),
+      ]).catch((err) => console.error('Notification/email error:', err))
 
       $q.notify({
         type: 'positive',
-        message: `Visitor registration approved`,
+        message: 'Visitor registration approved',
         caption: `Verification email sent to ${row.email}`,
+        position: 'top',
       })
     } else {
-      // Send rejection email via Edge Function
-      try {
-        const { data: emailData, error: emailError } = await supabase.functions.invoke(
-          'send-visitor-email',
-          {
-            body: {
-              email: row.email,
-              status: 'Rejected',
-              visitorInfo: {
-                first_name: row.first_name,
-                last_name: row.last_name,
-                adminName: adminName,
-                institution: row.institution,
-                purpose: row.purpose,
-              },
+      // === REJECTION WORKFLOW ===
+
+      // Update status
+      const { error: updateError } = await supabase
+        .from('registration_visitors')
+        .update({ status: action })
+        .eq('id', row.id)
+
+      if (updateError) throw updateError
+
+      // Send rejection email (fire and forget)
+      supabase.functions
+        .invoke('send-visitor-email', {
+          body: {
+            email: row.email,
+            status: 'Rejected',
+            visitorInfo: {
+              first_name: row.first_name,
+              last_name: row.last_name,
+              adminName,
+              institution: row.institution,
+              purpose: row.purpose,
             },
           },
-        )
-
-        if (emailError) {
-          console.error('Error sending rejection email:', emailError)
-          $q.notify({
-            type: 'warning',
-            message: 'Registration rejected but notification email failed',
-            caption: 'Please inform the visitor manually',
-          })
-        } else {
-          console.log('Rejection email sent:', emailData)
-        }
-      } catch (emailErr) {
-        console.error('Email function error:', emailErr)
-      }
+        })
+        .catch((err) => console.error('Rejection email error:', err))
 
       $q.notify({
         type: 'info',
         message: 'Visitor registration rejected',
         caption: 'Notification email sent to applicant',
+        position: 'top',
       })
     }
 
+    // Reset state
     showConfirmDialog.value = false
     confirmTarget.value = null
     confirmAction.value = ''
 
-    // Refresh the data
-    await fetchAllUsers()
+    // Refresh data in background
+    fetchAllUsers().catch((err) => console.error('Failed to refresh:', err))
   } catch (error) {
     console.error('Error processing registration:', error)
     $q.notify({
       type: 'negative',
       message: 'Failed to process registration',
       caption: error.message,
+      position: 'top',
     })
   } finally {
     isProcessingRegistration.value = false

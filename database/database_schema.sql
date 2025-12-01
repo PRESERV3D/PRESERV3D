@@ -212,6 +212,11 @@ CREATE TABLE public.registered_admins (
   account_status text DEFAULT 'Inactive'::text CHECK (account_status = ANY (ARRAY['Active'::text, 'Inactive'::text])),
   is_temp_password boolean,
   contact text,
+  has_security_access boolean DEFAULT false,
+  can_manage_students boolean DEFAULT false,
+  can_manage_faculty boolean DEFAULT false,
+  can_manage_visitors boolean DEFAULT true,
+  can_manage_admins boolean DEFAULT false,
   CONSTRAINT registered_admins_pkey PRIMARY KEY (id),
   CONSTRAINT registered_admins_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
