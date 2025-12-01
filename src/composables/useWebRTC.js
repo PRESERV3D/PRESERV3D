@@ -291,25 +291,27 @@ export function useWebRTC() {
     // Check for existing connection in database
     const existingConnection = await checkExistingConnection()
     if (existingConnection) {
-      console.log('♻️ Resuming existing connection:', existingConnection.connection_code)
-      connectionCode.value = existingConnection.connection_code
-      connectionId.value = existingConnection.connection_code
+      console.log('♻️ Found existing connection:', existingConnection.connection_code)
 
-      // If there's already an answer, process it
-      if (existingConnection.status === 'answered' && existingConnection.answer_data) {
-        isHost.value = true
-        iceGatheringComplete.value = true
-
-        // Recreate the peer connection with the existing offer
-        await recreateHostConnection(existingConnection, videoElement)
-        return
-      } else if (existingConnection.status === 'waiting') {
-        // Resume waiting for answer
+      // Only resume if it's still waiting (no answer yet)
+      if (existingConnection.status === 'waiting') {
+        console.log('♻️ Resuming waiting connection')
         connectionCode.value = existingConnection.connection_code
+        connectionId.value = existingConnection.connection_code
         iceGatheringComplete.value = true
         offerData.value = { offer: existingConnection.offer_data }
-        startAnswerPolling()
+
+        // Need to recreate peer connection with same offer
+        isHost.value = true
+        await recreateWaitingConnection(existingConnection, videoElement)
         return
+      } else {
+        // If already answered/connected, clean up old connection and create new one
+        console.log('🗑️ Cleaning up old connection, creating new one')
+        await supabase
+          .from('webrtc_signaling')
+          .delete()
+          .eq('connection_code', existingConnection.connection_code)
       }
     }
 
@@ -409,7 +411,7 @@ export function useWebRTC() {
     connectionStep.value = 2
   }
 
-  async function recreateHostConnection(existingData, videoElement = null) {
+  async function recreateWaitingConnection(existingData, videoElement = null) {
     localConnection.value = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -447,19 +449,37 @@ export function useWebRTC() {
       }
     }
 
+    localConnection.value.oniceconnectionstatechange = () => {
+      console.log('🧊 ICE connection state:', localConnection.value.iceConnectionState)
+      if (
+        localConnection.value.iceConnectionState === 'disconnected' ||
+        localConnection.value.iceConnectionState === 'failed'
+      ) {
+        connectionStatus.value = 'failed'
+        stopAnswerPolling()
+      } else if (localConnection.value.iceConnectionState === 'connected') {
+        console.log('✅ ICE connected')
+      }
+    }
+
     dataChannel.value = localConnection.value.createDataChannel('cameraControl')
 
-    // Set the local description from existing offer
-    await localConnection.value.setLocalDescription(
-      new RTCSessionDescription(existingData.offer_data),
-    )
+    // Set the existing offer as local description
+    try {
+      await localConnection.value.setLocalDescription(
+        new RTCSessionDescription(existingData.offer_data),
+      )
 
-    // Process the answer if available
-    if (existingData.answer_data) {
-      await processAnswerFromDatabase(existingData.answer_data)
-    } else {
       // Start polling for answer
       startAnswerPolling()
+    } catch (error) {
+      console.error('❌ Error setting local description from existing offer:', error)
+      // If it fails, clean up and let the main flow create a new connection
+      await supabase
+        .from('webrtc_signaling')
+        .delete()
+        .eq('connection_code', existingData.connection_code)
+      throw error
     }
   }
 
