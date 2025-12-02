@@ -9,6 +9,8 @@ import base64
 import json
 import requests
 import sys
+import psutil
+import time
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from datetime import datetime
@@ -48,6 +50,7 @@ except Exception as e:
     print("Will use TF-IDF based similarity as fallback")
 
 _nlp = None
+_summarizer = None
 
 def get_nlp():
     global _nlp
@@ -56,6 +59,30 @@ def get_nlp():
         _nlp = spacy.load("nlp_training/ner_model")
         print("Custom NER model loaded successfully")
     return _nlp
+
+def get_summarizer():
+    """Get cached summarizer instance to avoid reloading model"""
+    global _summarizer
+    if _summarizer is None:
+        from transformers import pipeline
+        print("Loading DistilBART summarizer (one-time load)...")
+        _summarizer = pipeline(
+            "summarization",
+            model="sshleifer/distilbart-cnn-12-6",
+            device=-1,  # CPU only
+            framework="pt"
+        )
+        print("Summarizer loaded and cached")
+    return _summarizer
+
+def clear_memory():
+    """Force garbage collection and clear unused memory"""
+    import gc
+    gc.collect()
+    if hasattr(psutil.Process(), 'memory_info'):
+        process = psutil.Process()
+        mem_mb = process.memory_info().rss / 1024 / 1024
+        print(f"Memory after cleanup: {mem_mb:.2f} MB")
 
 def get_local_embeddings(text):
     """Get embeddings using local sentence-transformers model"""
@@ -149,20 +176,34 @@ def extract_keywords_hf(text, top_n=10):
 
 def summarize_text_hf(text, max_length=200, min_length=50):
     try:
-        from transformers import pipeline
+        import gc
+        import torch
+        
+        # Get process for monitoring
+        process = psutil.Process()
+        
+        # Record initial state
+        start_time = time.time()
+        mem_before = process.memory_info().rss / 1024 / 1024  # MB
+        cpu_before = process.cpu_percent(interval=0.1)
+        
         print("Attempting lightweight summarization...")
+        print(f"Initial RAM: {mem_before:.2f} MB, CPU: {cpu_before:.1f}%")
         
-        # Use DistilBART - much lighter model (~330MB vs 1.6GB)
-        # Works well on 2GB RAM servers
-        summarizer = pipeline(
-            "summarization", 
-            model="sshleifer/distilbart-cnn-12-6", 
-            device=-1,
-            framework="pt"
-        )
+        # Check if we're approaching memory limit (1800 MB threshold for 2GB system)
+        if mem_before > 1800:
+            print(f"⚠️ High memory usage detected ({mem_before:.2f} MB), forcing cleanup...")
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            mem_before = process.memory_info().rss / 1024 / 1024
+            print(f"After cleanup: {mem_before:.2f} MB")
         
-        # Prepare text
-        input_text = text[:3000].strip()
+        # Use cached summarizer (avoids reloading model each time)
+        summarizer = get_summarizer()
+        
+        # Prepare text - reduce to 2000 chars to lower memory usage
+        input_text = text[:2000].strip()
         
         if len(input_text.split()) < 50:
             print("Text too short for summarization, using extractive method")
@@ -175,11 +216,34 @@ def summarize_text_hf(text, max_length=200, min_length=50):
             min_length=min_length,
             do_sample=False,
             truncation=True,
-            clean_up_tokenization_spaces=True
+            clean_up_tokenization_spaces=True,
+            batch_size=1  # Process one at a time to minimize memory
         )
         
         summary = result[0]['summary_text'].strip()
+        
+        # Force cleanup after generation
+        del result
+        gc.collect()
+        
+        # Record final state
+        end_time = time.time()
+        mem_after = process.memory_info().rss / 1024 / 1024  # MB
+        cpu_after = process.cpu_percent(interval=0.1)
+        
+        # Calculate metrics
+        duration = end_time - start_time
+        mem_used = mem_after - mem_before
+        mem_peak = mem_after if mem_after > mem_before else mem_before
+        cpu_avg = (cpu_before + cpu_after) / 2
+        
         print(f"Summary generated: {len(summary)} chars")
+        print(f"Resource usage - Duration: {duration:.2f}s, RAM: {mem_after:.2f} MB (Δ{mem_used:+.2f} MB, Peak: {mem_peak:.2f} MB), CPU: {cpu_avg:.1f}%")
+        
+        # Warn if approaching limit
+        if mem_after > 1700:
+            print(f"⚠️ Warning: Memory usage high ({mem_after:.2f} MB / 2048 MB limit)")
+        
         return summary
         
     except Exception as e:
@@ -193,10 +257,21 @@ def summarize_text_hf(text, max_length=200, min_length=50):
 @app.head("/health")
 @app.get("/health")
 async def health_check():
+    process = psutil.Process()
+    mem_mb = process.memory_info().rss / 1024 / 1024
+    cpu_percent = process.cpu_percent(interval=0.1)
+    
     return {
         "status": "healthy",
         "service": "nlp_service",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
+        "memory_mb": round(mem_mb, 2),
+        "memory_percent": round((mem_mb / 2048) * 100, 1),  # Assuming 2GB limit
+        "cpu_percent": round(cpu_percent, 1),
+        "models_loaded": {
+            "ner": _nlp is not None,
+            "summarizer": _summarizer is not None
+        }
     }
 
 @app.head("/")
@@ -1012,9 +1087,29 @@ def clean_place(place):
 
 def generate_summary(text, title=None, author=None, date=None, keywords=None, categories=None, max_attempts=2):
     """Generate structured, readable extractive summary using keyword-based sentence scoring"""
+    import gc
+    
+    # Get process for monitoring
+    process = psutil.Process()
+    
+    # Record initial state
+    start_time = time.time()
+    mem_before = process.memory_info().rss / 1024 / 1024  # MB
+    cpu_before = process.cpu_percent(interval=0.1)
+    
     print("Generating extractive summary...")
+    print(f"Initial RAM: {mem_before:.2f} MB, CPU: {cpu_before:.1f}%")
+    
+    # Check memory threshold
+    if mem_before > 1800:
+        print(f"⚠️ High memory usage, forcing cleanup before extractive summary...")
+        gc.collect()
+        mem_before = process.memory_info().rss / 1024 / 1024
+        print(f"After cleanup: {mem_before:.2f} MB")
+    
     cleaned_text = clean_text(text)
-    input_text = cleaned_text[:3000]
+    # Reduce to 2500 chars to lower memory usage
+    input_text = cleaned_text[:2500]
     
     if len(input_text.strip()) < 100:
         return "Insufficient content for summary generation."
@@ -1108,6 +1203,28 @@ def generate_summary(text, title=None, author=None, date=None, keywords=None, ca
     
     # Clean up spacing
     summary = re.sub(r'\s+', ' ', summary).strip()
+    
+    # Cleanup
+    del filtered_sentences, scored, top_scored
+    gc.collect()
+    
+    # Record final state
+    end_time = time.time()
+    mem_after = process.memory_info().rss / 1024 / 1024  # MB
+    cpu_after = process.cpu_percent(interval=0.1)
+    
+    # Calculate metrics
+    duration = end_time - start_time
+    mem_used = mem_after - mem_before
+    mem_peak = mem_after if mem_after > mem_before else mem_before
+    cpu_avg = (cpu_before + cpu_after) / 2
+    
+    print(f"Extractive summary complete")
+    print(f"Resource usage - Duration: {duration:.2f}s, RAM: {mem_after:.2f} MB (Δ{mem_used:+.2f} MB, Peak: {mem_peak:.2f} MB), CPU: {cpu_avg:.1f}%")
+    
+    # Warn if approaching limit
+    if mem_after > 1700:
+        print(f"⚠️ Warning: Memory usage high ({mem_after:.2f} MB / 2048 MB limit)")
     
     return summary
 
