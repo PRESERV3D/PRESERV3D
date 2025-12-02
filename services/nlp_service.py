@@ -150,33 +150,40 @@ def extract_keywords_hf(text, top_n=10):
 def summarize_text_hf(text, max_length=200, min_length=50):
     try:
         from transformers import pipeline
-        print("Attempting BART summarization...")
+        print("Attempting lightweight summarization...")
         
-        # Initialize summarizer (cached after first call)
-        summarizer = pipeline("summarization", model="facebook/bart-large-cnn", device=-1)
+        # Use DistilBART - much lighter model (~330MB vs 1.6GB)
+        # Works well on 2GB RAM servers
+        summarizer = pipeline(
+            "summarization", 
+            model="sshleifer/distilbart-cnn-12-6", 
+            device=-1,
+            framework="pt"
+        )
         
-        # Prepare text (BART works best with 512-1024 tokens)
+        # Prepare text
         input_text = text[:3000].strip()
         
         if len(input_text.split()) < 50:
-            print("Text too short for BART, using extractive method")
+            print("Text too short for summarization, using extractive method")
             raise Exception("Text too short")
         
-        # Generate summary
+        # Generate summary with memory-efficient settings
         result = summarizer(
             input_text,
             max_length=max_length,
             min_length=min_length,
             do_sample=False,
-            truncation=True
+            truncation=True,
+            clean_up_tokenization_spaces=True
         )
         
         summary = result[0]['summary_text'].strip()
-        print(f"BART summary generated: {len(summary)} chars")
+        print(f"Summary generated: {len(summary)} chars")
         return summary
         
     except Exception as e:
-        print(f"BART summarization failed: {e}, falling back to extractive method")
+        print(f"Summarization failed: {e}, falling back to extractive method")
         # Extractive fallback
         sentences = re.split(r'[.!?]\s+', text[:2000])
         sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
