@@ -645,6 +645,11 @@ onActivated(async () => {
   }
 })
 
+// Clean up event listeners to prevent memory leaks
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateDocumentsPerPage)
+})
+
 // Don't clear search when unmounting - keep search state persistent
 // onUnmounted(() => {
 //   searchStore.clear()
