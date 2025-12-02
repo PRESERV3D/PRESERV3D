@@ -280,7 +280,7 @@ async def root():
     return {
         "message": "PRESERV3D NLP Service",
         "status": "running",
-        "endpoints": ["/health", "/process-text", "/generate-summary", "/extract-text", "/related-links", "/rescan-metadata" ]
+        "endpoints": ["/health", "/process-text", "/extract-text", "/check-relevance", "/related-links", "/rescan-metadata" ]
     }
 
 @app.post("/process-text")
@@ -584,8 +584,12 @@ def check_summary_relevance(title, summary, keywords=None, categories=None, auth
     
     # Semantic similarity check using embeddings or TF-IDF
     try:
+        print(f"\nDocument Title: {title}")
+
         context_emb = get_embeddings(context_text) or []
         summary_emb = get_embeddings(summary) or []
+
+        high_similarity = False
 
         if context_emb and summary_emb:
             similarity = cosine_similarity(context_emb, summary_emb)
@@ -606,6 +610,15 @@ def check_summary_relevance(title, summary, keywords=None, categories=None, auth
                     "suggestion": "Consider revising the summary to more closely match the document's key themes and topics.",
                     "severity": "medium"
                 }
+            else:
+                # High semantic similarity (>= 0.55) -> mark and only log keyword coverage as a note
+                high_similarity = True
+                print(f"High semantic similarity ({similarity:.3f}) - skipping strict keyword check")
+                if keywords and len(keywords) >= 3:
+                    summary_lower = summary.lower()
+                    keyword_matches = sum(1 for kw in keywords if kw and kw.lower() in summary_lower)
+                    keyword_coverage = keyword_matches / len(keywords)
+                    print(f"Note: Keyword coverage: {keyword_matches}/{len(keywords)} ({keyword_coverage:.1%})")
         else:
             # Use TF-IDF similarity as fallback
             print("Using TF-IDF similarity check as fallback")
@@ -627,11 +640,20 @@ def check_summary_relevance(title, summary, keywords=None, categories=None, auth
                     "suggestion": "Consider revising the summary to include more key terms from the document.",
                     "severity": "medium"
                 }
+            else:
+                # Good TF-IDF similarity (>= 0.25) -> mark and only log keyword coverage as a note
+                high_similarity = True
+                print(f"Good TF-IDF similarity ({similarity:.3f}) - skipping strict keyword check")
+                if keywords and len(keywords) >= 3:
+                    summary_lower = summary.lower()
+                    keyword_matches = sum(1 for kw in keywords if kw and kw.lower() in summary_lower)
+                    keyword_coverage = keyword_matches / len(keywords)
+                    print(f"Note: Keyword coverage: {keyword_matches}/{len(keywords)} ({keyword_coverage:.1%})")
     except Exception as e:
         print(f"Similarity check failed: {e}")
     
-    # Keyword overlap check
-    if keywords and len(keywords) >= 3:
+    # Keyword overlap check - only runs if similarity was LOW
+    if not high_similarity and keywords and len(keywords) >= 3:
         summary_lower = summary.lower()
         keyword_matches = sum(1 for kw in keywords if kw and kw.lower() in summary_lower)
         keyword_coverage = keyword_matches / len(keywords)
@@ -1228,136 +1250,6 @@ def generate_summary(text, title=None, author=None, date=None, keywords=None, ca
     
     return summary
 
-@app.post("/generate-summary/{doc_id}")
-def generate_summary_endpoint(doc_id: str):
-    doc = supabase.table("documents_metadata").select("*").eq("id", doc_id).single().execute()
-    if not doc.data:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    metadata = doc.data.get("metadata") or {}
-    extracted_text = metadata.get("extracted_text")
-    file_url = doc.data.get("file_url")
-
-    if not extracted_text or extracted_text.strip() == "":
-        print("No extracted text found, downloading and extracting from file_url...")
-        try:
-            file_bytes = download_file(file_url)
-            extracted_result = extract_text(file_bytes, filename=file_url.split("/")[-1])            
-            cleaned_text = clean_text(extracted_result.get("text", ""))
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to download or extract file: {e}")
-
-        if isinstance(extracted_result, dict) and extracted_result.get("status") == "ocr_required":
-            return {
-                "id": doc_id,
-                "summary": None,
-                "ocr_required": True,
-                "pages": extracted_result["pages"],
-                "filename": extracted_result["filename"]
-            }
-
-        supabase.table("documents_metadata").update({
-            "metadata": {**metadata, "extracted_text": cleaned_text}
-        }).eq("id", doc_id).execute()
-
-        extracted_text = cleaned_text
-
-    # Get keywords for relevance checking
-    keywords = metadata.get("keywords", [])
-    if not keywords:
-        try:
-            keywords = extract_keywords_hf(extracted_text, top_n=10)
-        except Exception as e:
-            print(f"Keyword extraction error: {e}")
-            keywords = []
-
-    # Summarization with BART + relevance checking + improvement
-    initial_summary = None
-    improved_summary = None
-    initial_check = None
-    improved_check = None
-    summary_method = None
-    error_message = None
-    
-    try:
-        # Generate initial summary with BART
-        initial_summary = summarize_text_hf(extracted_text[:4000])
-        
-        if not initial_summary:
-            print("Summarizer returned no output")
-            error_message = "Failed to generate summary"
-        else:
-            # Check relevance of initial summary
-            initial_check = check_summary_relevance(
-                title=metadata.get("title"),
-                summary=initial_summary,
-                keywords=keywords,
-                categories=metadata.get("categories"),
-                author=metadata.get("author"),
-                date=metadata.get("date"),
-                extracted_text=extracted_text[:1000]
-            )
-            
-            if initial_check:
-                # Initial summary has issues, generate improved version
-                print(f"Relevance issue detected: {initial_check.get('issue')}")
-                print("Generating improved summary with extractive method...")
-                
-                improved_summary = generate_summary(
-                    text=extracted_text,
-                    title=metadata.get("title"),
-                    author=metadata.get("author"),
-                    date=metadata.get("date"),
-                    keywords=keywords,
-                    categories=metadata.get("categories")
-                )
-                
-                # Re-check improved summary
-                improved_check = check_summary_relevance(
-                    title=metadata.get("title"),
-                    summary=improved_summary,
-                    keywords=keywords,
-                    categories=metadata.get("categories"),
-                    author=metadata.get("author"),
-                    date=metadata.get("date"),
-                    extracted_text=extracted_text[:1000]
-                )
-                
-                summary_method = "extractive" if not improved_check else "bart"
-            else:
-                # Initial summary passed all checks
-                print("BART summary passed relevance check")
-                summary_method = "bart"
-                
-    except Exception as e:
-        print(f"Summarizer error: {e}")
-        error_message = str(e)
-        # Fallback to extractive method
-        try:
-            improved_summary = generate_summary(
-                text=extracted_text,
-                title=metadata.get("title"),
-                author=metadata.get("author"),
-                date=metadata.get("date"),
-                keywords=keywords,
-                categories=metadata.get("categories")
-            )
-            summary_method = "extractive"
-        except Exception as fallback_error:
-            print(f"Fallback summary error: {fallback_error}")
-            error_message = str(fallback_error)
-
-    # Return detailed response for frontend
-    return {
-        "id": doc_id,
-        "initial_summary": initial_summary,
-        "improved_summary": improved_summary,
-        "initial_check": initial_check if initial_check else {"passed": True},
-        "improved_check": improved_check if improved_check else {"passed": True},
-        "summary_method": summary_method,
-        "error": error_message
-    }
-
 def download_file(file_url: str) -> bytes:
     if "supabase.co" in file_url:
         res = requests.get(file_url)
@@ -1478,7 +1370,8 @@ def detect_inconsistencies(metadata, source_type="document"):
             metadata.get("keywords"),
             metadata.get("categories"),
             metadata.get("author"),
-            metadata.get("date")
+            metadata.get("date"),
+            metadata.get("extracted_text", "")[:1000] if metadata.get("extracted_text") else ""
         )
         if summary_issue:
             issues.append(summary_issue)
@@ -1622,7 +1515,8 @@ async def rescan_metadata():
                         "date": metadata_json.get("date"),
                         "summary": metadata_json.get("summary"),
                         "keywords": metadata_json.get("keywords", []),
-                        "categories": metadata_json.get("categories", [])
+                        "categories": metadata_json.get("categories", []),
+                        "extracted_text": metadata_json.get("extracted_text", "")
                     },
                     supabase=supabase,
                     source_type=source["type"],
