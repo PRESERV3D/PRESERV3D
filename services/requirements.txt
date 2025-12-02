@@ -14,7 +14,7 @@ spacy>=3.0.0,<4.0.0
 
 # Lightweight transformers - CPU optimized, smaller models
 transformers==4.36.0
-sentence-transformers==2.2.2
+sentence-transformers>=2.5.0
 
 # Utilities
 python-dotenv
