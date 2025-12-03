@@ -487,6 +487,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
 import { useModelStore } from 'stores/modelStore'
 import { useDocumentsStore } from 'stores/documentsStore'
 import { useUserStore } from 'stores/user'
@@ -501,6 +502,7 @@ import '@google/model-viewer'
 
 const route = useRoute()
 const router = useRouter()
+const $q = useQuasar()
 const modelStore = useModelStore()
 const documentsStore = useDocumentsStore()
 const userStore = useUserStore()
@@ -847,6 +849,57 @@ const cancelEditCollection = () => {
 // Update collection
 async function updateCollection() {
   isGenerateCollectionLoading.value = true
+
+  const newName = editData.value.collection_name.trim()
+
+  if (!newName) {
+    $q.dialog({
+      title: 'Validation Error',
+      message: 'Collection name is required.',
+      color: 'negative',
+    })
+    isGenerateCollectionLoading.value = false
+    return
+  }
+
+  // Get current user
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser()
+
+  // Only check for duplicates if the name has changed
+  if (newName.toLowerCase() !== collection.value.collection_name.toLowerCase()) {
+    // Check for duplicate collection name for this user (case-insensitive)
+    const { data: existingCollection, error: checkError } = await supabase
+      .from('collections')
+      .select('collection_id')
+      .eq('user_id', authUser.id)
+      .ilike('collection_name', newName)
+      .neq('collection_id', collectionId)
+      .maybeSingle()
+
+    if (checkError) {
+      console.error('Error checking collection name:', checkError)
+      $q.dialog({
+        title: 'Error',
+        message: 'Failed to verify collection name. Please try again.',
+        color: 'negative',
+      })
+      isGenerateCollectionLoading.value = false
+      return
+    }
+
+    if (existingCollection) {
+      $q.dialog({
+        title: 'Duplicate Collection Name',
+        message: 'You already have a collection with this name. Please choose a different name.',
+        color: 'warning',
+      })
+      isGenerateCollectionLoading.value = false
+      return
+    }
+  }
+
   const { error } = await supabase
     .from('collections')
     .update({

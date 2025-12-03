@@ -171,6 +171,11 @@ ON appointment_booking(date DESC);
 CREATE INDEX IF NOT EXISTS idx_appointment_booking_email 
 ON appointment_booking(email);
 
+-- Composite index for time slot validation (date + time + status)
+-- Optimizes checking if a time slot already has an approved appointment
+CREATE INDEX IF NOT EXISTS idx_appointment_booking_timeslot 
+ON appointment_booking(date, time, status);
+
 -- Login tracking indexes (last seen, analytics)
 -- ============================================
 CREATE INDEX IF NOT EXISTS idx_logins_user_recent 

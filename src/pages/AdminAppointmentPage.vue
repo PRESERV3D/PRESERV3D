@@ -252,6 +252,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
 import {
@@ -271,6 +272,8 @@ const activeTab = ref('information')
 const appointments = ref([])
 const currentDate = ref(new Date())
 const selectedDate = ref(new Date())
+
+const $q = useQuasar()
 
 const pagination = {
   page: 1,
@@ -405,6 +408,40 @@ async function confirmAction() {
     `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
 
   try {
+    // If approving, check if there's already an approved appointment at this date and time
+    if (action === 'Approved') {
+      const { data: existingAppt, error: checkError } = await supabase
+        .from('appointment_booking')
+        .select('appointment_id, status')
+        .eq('date', row.date)
+        .eq('time', row.rawTime) // Use raw time format for comparison
+        .eq('status', 'Approved')
+        .neq('appointment_id', row.appointment_id) // Exclude current appointment
+        .maybeSingle()
+
+      if (checkError) {
+        console.error('Error checking existing appointments:', checkError)
+        $q.dialog({
+          title: 'Validation Error',
+          message: 'Failed to verify time slot availability. Please try again.',
+          color: 'negative',
+        })
+        confirmDialog.value.show = false
+        return
+      }
+
+      if (existingAppt) {
+        $q.dialog({
+          title: 'Time Slot Already Booked',
+          message:
+            'This time slot already has an approved appointment. Please reject this booking or ask the user to choose a different time.',
+          color: 'warning',
+        })
+        confirmDialog.value.show = false
+        return
+      }
+    }
+
     // Data to update
     const updateData = {
       status: action,
@@ -501,7 +538,9 @@ async function fetchAppointments() {
       user_type: a.user_type,
       purpose: a.purpose,
       appointmentDate: a.date,
+      date: a.date, // Raw date for validation
       time: formatTimeTo12Hour(a.time),
+      rawTime: a.time, // Raw time for validation
       status: a.status,
       user_remarks: a.user_remarks,
       admin_remarks: a.admin_remarks || '',
