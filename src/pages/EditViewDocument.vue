@@ -442,7 +442,7 @@
                           fetchRelatedLinks(
                             doc.metadata.title,
                             doc.metadata.author,
-                            doc.metadata.categories,
+                            editableCategories.join(','),
                             doc.metadata.date.slice(0, 4),
                           )
                         "
@@ -468,7 +468,7 @@
                           fetchRelatedLinks(
                             doc.metadata.title,
                             doc.metadata.author,
-                            doc.metadata.categories,
+                            editableCategories.join(','),
                             doc.metadata.date.slice(0, 4),
                           )
                         "

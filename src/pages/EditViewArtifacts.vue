@@ -333,7 +333,7 @@
                       fetchRelatedLinks(
                         model.metadata.title,
                         model.metadata.author,
-                        model.metadata.categories,
+                        editableCategories.join(','),
                         model.metadata.date.slice(0, 4),
                       )
                     "
@@ -359,7 +359,7 @@
                       fetchRelatedLinks(
                         model.metadata.title,
                         model.metadata.author,
-                        model.metadata.categories,
+                        editableCategories.join(','),
                         model.metadata.date.slice(0, 4),
                       )
                     "
