@@ -18,6 +18,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from dateutil.parser import parse as date_parse
+import nltk
+
+# Configure NLTK data path to use virtual environment
+nltk_data_path = os.path.join(os.path.dirname(__file__), 'nltk_data')
+os.makedirs(nltk_data_path, exist_ok=True)
+nltk.data.path.insert(0, nltk_data_path)
+
+# Download required NLTK data
+try:
+    nltk.data.find('tokenizers/punkt_tab')
+    print("NLTK punkt_tab tokenizer already downloaded")
+except LookupError:
+    print("Downloading NLTK punkt_tab tokenizer...")
+    nltk.download('punkt_tab', download_dir=nltk_data_path, quiet=False)
+    print("NLTK punkt_tab downloaded successfully")
 
 app = FastAPI()
 load_dotenv()
@@ -1689,24 +1704,43 @@ async def related_links(
     categories: str = "",
     date: str = ""
 ):
+    import time
+    start_time = time.time()
+    
     try:
+        print(f"\n{'='*60}")
+        print(f"[NLP Service] Related Links Request Started")
+        print(f"{'='*60}")
+        print(f"Title: {title}")
+        print(f"Author: {author or '(none)'}")
+        print(f"Categories: {categories or '(none)'}")
+        print(f"Date: {date or '(none)'}")
+        print(f"{'='*60}\n")
+        
         script_dir = os.path.dirname(os.path.abspath(__file__))
         script_path = os.path.join(script_dir, "web_scraper.js")
         
         # Verify script exists
         if not os.path.exists(script_path):
+            print(f"[ERROR] web_scraper.js not found at {script_path}")
             return {
                 "links": [], 
                 "error": f"web_scraper.js not found at {script_path}"
             }
         
+        print(f"[OK] Found web_scraper.js at: {script_path}")
+        
         # Prepare command
         cmd = ["node", "--expose-gc", script_path, title, author or "", categories or "", date or ""]
+        print(f"[CMD] Executing: {' '.join(cmd)}")
         
         # Set up environment
         env = os.environ.copy()
         env["NODE_ENV"] = "production"
         env["NODE_PATH"] = os.path.join(script_dir, 'node_modules')
+        
+        print(f"[INFO] Starting subprocess with 120s timeout...")
+        subprocess_start = time.time()
         
         # Run scraper with 2-minute timeout
         result = subprocess.run(
@@ -1720,8 +1754,15 @@ async def related_links(
             env=env
         )
         
+        subprocess_duration = time.time() - subprocess_start
+        print(f"[INFO] Subprocess completed in {subprocess_duration:.2f}s")
+        subprocess_duration = time.time() - subprocess_start
+        print(f"[INFO] Subprocess completed in {subprocess_duration:.2f}s")
+        
         # Handle errors
         if result.returncode != 0:
+            print(f"[ERROR] Subprocess failed with return code {result.returncode}")
+            print(f"[STDERR] {result.stderr[:1000] if result.stderr else '(empty)'}")
             error_msg = result.stderr or "Unknown error"
             try:
                 error_data = json.loads(result.stderr)
@@ -1735,33 +1776,56 @@ async def related_links(
                     "error": error_msg[:500]
                 }
         
+        print(f"[OK] Subprocess succeeded")
+        
         # Parse and return results
         if not result.stdout or result.stdout.strip() == "":
+            print(f"[ERROR] No output from scraper")
+            print(f"[STDERR] {result.stderr[:1000] if result.stderr else '(empty)'}")
             return {
                 "links": [], 
                 "error": "No output from scraper"
             }
         
+        print(f"[INFO] Parsing JSON output...")
+        print(f"[STDOUT LENGTH] {len(result.stdout)} characters")
+        
         try:
             data = json.loads(result.stdout)
+            links_count = len(data.get('links', []))
+            print(f"[SUCCESS] Parsed {links_count} links")
+            
+            total_duration = time.time() - start_time
+            print(f"\n{'='*60}")
+            print(f"[NLP Service] Related Links Request Complete")
+            print(f"Total Duration: {total_duration:.2f}s")
+            print(f"Links Returned: {links_count}")
+            print(f"{'='*60}\n")
+            
             return data
         except json.JSONDecodeError as e:
+            print(f"[ERROR] Invalid JSON from scraper: {str(e)}")
+            print(f"[STDOUT] {result.stdout[:500]}")
             return {
                 "links": [], 
                 "error": f"Invalid JSON from scraper: {str(e)}"
             }
             
     except subprocess.TimeoutExpired:
+        print(f"[ERROR] Subprocess timeout after 120 seconds")
         return {
             "links": [], 
             "error": "Search timeout after 120 seconds. The search service may be slow or unavailable."
         }
     except FileNotFoundError as e:
+        print(f"[ERROR] Node.js not found: {str(e)}")
         return {
             "links": [], 
             "error": f"Node.js not found: {str(e)}"
         }
     except Exception as e:
+        print(f"[ERROR] Unexpected error: {str(e)}")
+        print(f"[TRACEBACK] {traceback.format_exc()}")
         return {
             "links": [], 
             "error": f"Unexpected error: {str(e)}"

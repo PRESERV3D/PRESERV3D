@@ -23,6 +23,18 @@ const BROWSER_IDLE_TIMEOUT = 5 * 60 * 1000 // 5 minutes
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
+ * Log with timestamp
+ */
+function logWithTimestamp(message, data = null) {
+  const timestamp = new Date().toISOString()
+  if (data) {
+    console.error(`[${timestamp}] ${message}`, data)
+  } else {
+    console.error(`[${timestamp}] ${message}`)
+  }
+}
+
+/**
  * Log memory usage
  */
 function logMemoryUsage(label = '') {
@@ -35,26 +47,53 @@ function logMemoryUsage(label = '') {
 }
 
 /**
- * Find Chrome executable in browsers directory
+ * Find Chrome executable in browsers directory or system
  */
 function findChromeExecutable() {
-  const browsersDir = join(__dirname, 'browsers')
+  // Windows Chrome paths
+  const windowsPaths = [
+    process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe',
+    process.env.PROGRAMFILES + '\\Google\\Chrome\\Application\\chrome.exe',
+    process.env['PROGRAMFILES(X86)'] + '\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  ]
 
-  if (!existsSync(browsersDir)) {
-    console.error(`Browsers directory not found at: ${browsersDir}`)
-    return null
+  // Check Windows paths first
+  if (process.platform === 'win32') {
+    for (const path of windowsPaths) {
+      if (path && existsSync(path)) {
+        console.error(`Found Chrome at: ${path}`)
+        return path
+      }
+    }
   }
 
-  try {
-    const findCmd = `find ${browsersDir} -name chrome -type f -executable 2>/dev/null | head -1`
-    const chromePath = execSync(findCmd, { encoding: 'utf-8' }).trim()
+  // Check browsers directory (for downloaded Chrome)
+  const browsersDir = join(__dirname, 'browsers')
 
-    if (chromePath && existsSync(chromePath)) {
-      console.error(`Found Chrome at: ${chromePath}`)
-      return chromePath
+  if (existsSync(browsersDir)) {
+    try {
+      if (process.platform === 'win32') {
+        // Windows: Use PowerShell to find chrome.exe
+        const findCmd = `powershell -Command "Get-ChildItem -Path '${browsersDir}' -Recurse -Filter chrome.exe | Select-Object -First 1 -ExpandProperty FullName"`
+        const chromePath = execSync(findCmd, { encoding: 'utf-8' }).trim()
+        if (chromePath && existsSync(chromePath)) {
+          console.error(`Found Chrome in browsers directory at: ${chromePath}`)
+          return chromePath
+        }
+      } else {
+        // Linux/Mac: Use find command
+        const findCmd = `find ${browsersDir} -name chrome -type f -executable 2>/dev/null | head -1`
+        const chromePath = execSync(findCmd, { encoding: 'utf-8' }).trim()
+        if (chromePath && existsSync(chromePath)) {
+          console.error(`Found Chrome in browsers directory at: ${chromePath}`)
+          return chromePath
+        }
+      }
+    } catch (err) {
+      console.error(`Error finding Chrome in browsers directory: ${err.message}`)
     }
-  } catch (err) {
-    console.error(`Error finding Chrome: ${err.message}`)
   }
 
   return null
@@ -104,6 +143,7 @@ function getPuppeteerConfig() {
     return config
   }
 
+  // Linux/Mac system paths
   const chromiumPaths = [
     '/usr/bin/chromium',
     '/usr/bin/chromium-browser',
@@ -111,16 +151,23 @@ function getPuppeteerConfig() {
     '/usr/bin/google-chrome-stable',
   ]
 
-  for (const path of chromiumPaths) {
-    if (existsSync(path)) {
-      config.executablePath = path
-      console.error(`Found system Chromium at: ${path}`)
-      return config
+  if (process.platform !== 'win32') {
+    for (const path of chromiumPaths) {
+      if (existsSync(path)) {
+        config.executablePath = path
+        console.error(`Found system Chromium at: ${path}`)
+        return config
+      }
     }
   }
 
   console.error('ERROR: No Chrome/Chromium executable found!')
-  throw new Error('No Chrome/Chromium browser found. Please run: npm run install-chrome')
+  console.error(
+    'Please install Google Chrome or set PUPPETEER_EXECUTABLE_PATH environment variable',
+  )
+  throw new Error(
+    'No Chrome/Chromium browser found. Please install Google Chrome or set PUPPETEER_EXECUTABLE_PATH',
+  )
 }
 
 /**
@@ -160,16 +207,21 @@ async function getBrowser() {
  */
 async function searchDuckDuckGo(query, maxResults = 3) {
   let page
+  const startTime = Date.now()
   try {
-    console.error(`=== Starting DuckDuckGo search ===`)
-    console.error(`Query: "${query}"`)
+    logWithTimestamp('=== Starting DuckDuckGo search ===')
+    logWithTimestamp(`Query: "${query}"`)
+    logWithTimestamp('Getting browser instance...')
 
     const browser = await getBrowser()
+    logWithTimestamp(`Browser ready (took ${Date.now() - startTime}ms)`)
     page = await browser.newPage()
+    logWithTimestamp('New page created, configuring...')
 
     // Reduce memory usage by limiting page resources
     await page.setViewport({ width: 1280, height: 720 })
     await page.setRequestInterception(true)
+    logWithTimestamp('Request interception enabled')
 
     // Block unnecessary resources to save memory
     page.on('request', (request) => {
@@ -189,7 +241,7 @@ async function searchDuckDuckGo(query, maxResults = 3) {
     await page.setDefaultNavigationTimeout(60000) // Increased to 60s
 
     const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
-    console.error(`Searching: ${searchUrl}`)
+    logWithTimestamp(`Navigating to: ${searchUrl}`)
 
     // Try navigation with retries
     let navigationSuccess = false
@@ -197,18 +249,22 @@ async function searchDuckDuckGo(query, maxResults = 3) {
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        console.error(`Navigation attempt ${attempt}/3...`)
+        logWithTimestamp(`Navigation attempt ${attempt}/3...`)
+        const navStartTime = Date.now()
         await page.goto(searchUrl, {
           waitUntil: 'domcontentloaded',
           timeout: 60000, // Increased to 60s
         })
         navigationSuccess = true
-        console.error(`Navigation successful on attempt ${attempt}`)
+        logWithTimestamp(
+          `✓ Navigation successful on attempt ${attempt} (took ${Date.now() - navStartTime}ms)`,
+        )
         break
       } catch (navError) {
         lastError = navError
-        console.error(`Navigation attempt ${attempt} failed: ${navError.message}`)
+        logWithTimestamp(`✗ Navigation attempt ${attempt} failed: ${navError.message}`)
         if (attempt < 3) {
+          logWithTimestamp(`Waiting 2s before retry...`)
           await wait(2000) // Wait 2s before retry
         }
       }
@@ -218,8 +274,11 @@ async function searchDuckDuckGo(query, maxResults = 3) {
       throw new Error(`Failed to navigate to DuckDuckGo after 3 attempts: ${lastError?.message}`)
     }
 
+    logWithTimestamp('Waiting for page to settle (1s)...')
     await wait(1000) // Reduced from 1500ms
 
+    logWithTimestamp('Extracting search results from page...')
+    const evalStartTime = Date.now()
     const results = await page.evaluate(() => {
       const items = []
       const resultElements = document.querySelectorAll('.result')
@@ -297,17 +356,21 @@ async function searchDuckDuckGo(query, maxResults = 3) {
       return items
     })
 
+    logWithTimestamp(`Page evaluation complete (took ${Date.now() - evalStartTime}ms)`)
+
     await page.close()
     page = null
     logMemoryUsage('after search')
 
-    console.error(`=== Search Results Summary ===`)
-    console.error(`Found ${results.length} results from DuckDuckGo`)
+    logWithTimestamp('=== Search Results Summary ===')
+    logWithTimestamp(`Found ${results.length} results from DuckDuckGo`)
+    logWithTimestamp(`Total search time: ${Date.now() - startTime}ms`)
     console.error(`Results:`, JSON.stringify(results, null, 2))
     return results.slice(0, maxResults)
   } catch (error) {
     if (page) await page.close().catch(() => {})
-    console.error(`DuckDuckGo search error: ${error.message}`)
+    logWithTimestamp(`✗ DuckDuckGo search error: ${error.message}`)
+    logWithTimestamp(`Error stack: ${error.stack}`)
     throw error
   }
 }
@@ -317,10 +380,12 @@ async function searchDuckDuckGo(query, maxResults = 3) {
  */
 async function scrapeContent(url) {
   let page
+  const startTime = Date.now()
   try {
-    console.error(`>>> Scraping URL: ${url}`)
+    logWithTimestamp(`>>> Scraping URL: ${url}`)
     const browser = await getBrowser()
     page = await browser.newPage()
+    logWithTimestamp(`Page created for ${url}`)
 
     await page.setViewport({ width: 1280, height: 720 })
     await page.setRequestInterception(true)
@@ -338,12 +403,14 @@ async function scrapeContent(url) {
     await page.setDefaultNavigationTimeout(20000) // Increased to 20s
 
     try {
+      logWithTimestamp(`Navigating to content page: ${url}`)
       await page.goto(url, {
         waitUntil: 'domcontentloaded',
         timeout: 20000,
       })
+      logWithTimestamp(`✓ Content page loaded: ${url}`)
     } catch (navError) {
-      console.error(`Navigation to ${url} failed: ${navError.message}`)
+      logWithTimestamp(`✗ Navigation to ${url} failed: ${navError.message}`)
       // Continue even if navigation fails - we'll return partial data
     }
 
@@ -373,14 +440,16 @@ async function scrapeContent(url) {
       language: franc(cleanText.substring(0, 300)),
     }
 
-    console.error(`>>> Scraped successfully: ${url}`)
-    console.error(`    Title: ${result.title.substring(0, 60)}...`)
-    console.error(`    Language: ${result.language}`)
+    logWithTimestamp(`>>> ✓ Scraped successfully: ${url} (took ${Date.now() - startTime}ms)`)
+    logWithTimestamp(`    Title: ${result.title.substring(0, 60)}...`)
+    logWithTimestamp(`    Language: ${result.language}`)
 
     return result
   } catch (error) {
     if (page) await page.close().catch(() => {})
-    console.error(`Scraping error for ${url}: ${error.message}`)
+    logWithTimestamp(
+      `✗ Scraping error for ${url}: ${error.message} (took ${Date.now() - startTime}ms)`,
+    )
     return {
       url,
       error: error.message,
@@ -397,24 +466,39 @@ async function scrapeContent(url) {
  */
 async function scrapeAllContent(searchResults, concurrency = 2) {
   const results = []
+  const totalBatches = Math.ceil(searchResults.length / concurrency)
+
+  logWithTimestamp(
+    `=== Starting content scraping: ${searchResults.length} URLs in ${totalBatches} batches ===`,
+  )
 
   for (let i = 0; i < searchResults.length; i += concurrency) {
     const batch = searchResults.slice(i, i + concurrency)
-    console.error(`Scraping batch ${Math.floor(i / concurrency) + 1}: ${batch.length} URLs`)
+    const batchNum = Math.floor(i / concurrency) + 1
+    logWithTimestamp(`Scraping batch ${batchNum}/${totalBatches}: ${batch.length} URLs`)
+    const batchStartTime = Date.now()
 
     const batchResults = await Promise.all(batch.map((result) => scrapeContent(result.url)))
 
     results.push(...batchResults)
+    logWithTimestamp(
+      `✓ Batch ${batchNum}/${totalBatches} complete (took ${Date.now() - batchStartTime}ms)`,
+    )
 
     // Give system time to free memory between batches
     if (i + concurrency < searchResults.length) {
+      logWithTimestamp('Waiting 500ms between batches...')
       await wait(500)
-      if (global.gc) global.gc() // Force garbage collection if available
+      if (global.gc) {
+        logWithTimestamp('Running garbage collection...')
+        global.gc()
+      }
     }
 
-    logMemoryUsage(`after batch ${Math.floor(i / concurrency) + 1}`)
+    logMemoryUsage(`after batch ${batchNum}`)
   }
 
+  logWithTimestamp(`=== Content scraping complete: ${results.length} results ===`)
   return results
 }
 
@@ -422,27 +506,27 @@ async function scrapeAllContent(searchResults, concurrency = 2) {
  * Filter results based on language
  */
 function filterByLanguage(results, preferredLang = 'eng') {
-  console.error(`=== Language Filtering ===`)
-  console.error(`Total results to filter: ${results.length}`)
+  logWithTimestamp('=== Language Filtering ===')
+  logWithTimestamp(`Total results to filter: ${results.length}`)
 
   const englishResults = results.filter((r) => r.language === preferredLang && !r.error)
   const otherResults = results.filter((r) => r.language !== preferredLang && !r.error)
   const errorResults = results.filter((r) => r.error)
 
-  console.error(`English results: ${englishResults.length}`)
-  console.error(`Other language results: ${otherResults.length}`)
-  console.error(`Error results: ${errorResults.length}`)
+  logWithTimestamp(`English results: ${englishResults.length}`)
+  logWithTimestamp(`Other language results: ${otherResults.length}`)
+  logWithTimestamp(`Error results: ${errorResults.length}`)
 
   if (errorResults.length > 0) {
-    console.error(
-      `Errors encountered:`,
-      errorResults.map((r) => ({ url: r.url, error: r.error })),
-    )
+    logWithTimestamp('Errors encountered:')
+    errorResults.forEach((r) => {
+      logWithTimestamp(`  - ${r.url}: ${r.error}`)
+    })
   }
 
   const finalResults =
     englishResults.length >= 3 ? englishResults : [...englishResults, ...otherResults]
-  console.error(`Returning ${finalResults.length} filtered results`)
+  logWithTimestamp(`Returning ${finalResults.length} filtered results`)
 
   return finalResults
 }
@@ -451,9 +535,11 @@ function filterByLanguage(results, preferredLang = 'eng') {
  * Main function
  */
 async function main() {
+  const totalStartTime = Date.now()
   try {
-    console.error(`=== Web Scraper Starting ===`)
-    console.error(`Node version: ${process.version}`)
+    logWithTimestamp('=== Web Scraper Starting ===')
+    logWithTimestamp(`Node version: ${process.version}`)
+    logWithTimestamp(`Platform: ${process.platform}`)
     logMemoryUsage('startup')
 
     const args = process.argv.slice(2)
@@ -471,13 +557,20 @@ async function main() {
     if (categories) searchQuery += ` ${categories}`
     if (date) searchQuery += ` ${date}`
 
-    console.error(`Searching for: "${searchQuery}"`)
+    logWithTimestamp('=== Search Parameters ===')
+    logWithTimestamp(`Title: ${title}`)
+    logWithTimestamp(`Author: ${author || '(none)'}`)
+    logWithTimestamp(`Categories: ${categories || '(none)'}`)
+    logWithTimestamp(`Date: ${date || '(none)'}`)
+    logWithTimestamp(`Full query: "${searchQuery}"`)
 
     let searchResults
     try {
+      logWithTimestamp('=== PHASE 1: Searching DuckDuckGo ===')
       searchResults = await searchDuckDuckGo(searchQuery, 5)
+      logWithTimestamp(`✓ Phase 1 complete: Found ${searchResults.length} results`)
     } catch (searchError) {
-      console.error(`Search failed: ${searchError.message}`)
+      logWithTimestamp(`✗ Phase 1 failed: ${searchError.message}`)
 
       // Return error with helpful message
       const errorResponse = {
@@ -492,17 +585,21 @@ async function main() {
     }
 
     if (searchResults.length === 0) {
-      console.error('No search results found')
+      logWithTimestamp('No search results found')
       console.log(JSON.stringify({ links: [], warning: 'No search results found' }))
       return
     }
 
-    console.error(`Found ${searchResults.length} search results, scraping content...`)
+    logWithTimestamp(`Found ${searchResults.length} search results`)
+    logWithTimestamp('=== PHASE 2: Scraping content from URLs ===')
 
     // Use controlled concurrency instead of Promise.all
     const scrapedResults = await scrapeAllContent(searchResults, 2)
+    logWithTimestamp(`✓ Phase 2 complete: Scraped ${scrapedResults.length} pages`)
 
+    logWithTimestamp('=== PHASE 3: Filtering by language ===')
     const filteredResults = filterByLanguage(scrapedResults, 'eng')
+    logWithTimestamp(`✓ Phase 3 complete: ${filteredResults.length} results after filtering`)
 
     const links = filteredResults.map((result) => ({
       url: result.url,
@@ -511,12 +608,18 @@ async function main() {
       language: result.language,
     }))
 
-    console.error(`=== Final Results ===`)
-    console.error(`Returning ${links.length} links`)
-    console.error(`Links:`, JSON.stringify(links, null, 2))
+    logWithTimestamp('=== Final Results ===')
+    logWithTimestamp(`Returning ${links.length} links`)
+    logWithTimestamp(`Total execution time: ${Date.now() - totalStartTime}ms`)
+    logWithTimestamp('Links:')
+    links.forEach((link, idx) => {
+      logWithTimestamp(`  ${idx + 1}. ${link.title} - ${link.url}`)
+    })
     logMemoryUsage('before output')
 
+    logWithTimestamp('=== OUTPUTTING RESULTS TO STDOUT ===')
     console.log(JSON.stringify({ links }))
+    logWithTimestamp('✓ Results output complete')
 
     // Don't close browser - keep it alive for next request
   } catch (error) {
