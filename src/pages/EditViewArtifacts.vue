@@ -194,6 +194,9 @@
                 style="font-size: 16px; font-weight: 700"
               >
                 Show Related Links
+                <div class="text-caption text-grey-7 q-mt-xs">
+                  Changes will be saved when you save the artifact
+                </div>
               </q-card-section>
               <q-separator />
               <div v-if="loadingRelatedLinks" class="q-pa-md flex flex-center">
@@ -335,16 +338,7 @@
                       )
                     "
                   />
-                  <q-btn
-                    v-if="!savingRelatedLinks"
-                    label="Save"
-                    class="btn-save"
-                    flat
-                    @click="saveRelatedLinks"
-                  />
-                  <div v-if="savingRelatedLinks" class="q-pa-sm">
-                    <q-spinner-dots size="2em" color="primary" />
-                  </div>
+                  <q-btn label="Close" class="btn-save" flat v-close-popup />
                 </template>
                 <template v-else>
                   <q-btn
@@ -853,7 +847,10 @@ const saveChanges = async () => {
       data_source: editableData.value.dataSource,
       donated_by: editableData.value.donatedBy,
       date_received: toUTC(editableData.value.dateReceived),
-      related_links: [...links.value],
+      related_links: links.value.map((link) => ({
+        title: link.title || '',
+        url: link.url || '',
+      })),
     }
 
     let changes = getChanges(oldData, newData)
@@ -1302,7 +1299,6 @@ const showAddLinkForm = ref(false)
 const links = ref([])
 const hasChanges = ref(false)
 const loadingRelatedLinks = ref(false)
-const savingRelatedLinks = ref(false)
 let draggedIndex = null
 
 // Edit link state
@@ -1413,50 +1409,10 @@ function drop(index) {
   hasChanges.value = true
 }
 
-async function saveRelatedLinks() {
-  savingRelatedLinks.value = true
-  try {
-    // Clean the links data before saving - remove the id field if it's just a timestamp
-    const cleanedLinks = links.value.map((link) => ({
-      title: link.title || '',
-      url: link.url || '',
-    }))
-
-    const { error } = await supabase
-      .from('artifacts_metadata')
-      .update({
-        related_links: cleanedLinks,
-      })
-      .eq('id', route.params.id)
-
-    if (error) throw error
-
-    // Update the local model object
-    if (model.value) {
-      model.value.related_links = cleanedLinks
-    }
-
-    console.log('Related links saved successfully:', cleanedLinks)
-    $q.notify({ type: 'positive', message: 'Related links saved successfully' })
-    hasChanges.value = false
-    showRelatedDialog.value = false
-  } catch (err) {
-    console.error('Error saving related links:', err)
-    $q.notify({ type: 'negative', message: 'Failed to save related links' })
-  } finally {
-    savingRelatedLinks.value = false
-  }
-}
-
-async function cancelLinksChanges() {
-  const { data } = await supabase
-    .from('artifacts_metadata')
-    .select('related_links')
-    .eq('id', route.params.id)
-    .single()
-
-  if (data && data.related_links && Array.isArray(data.related_links)) {
-    links.value = data.related_links.map((link, idx) => ({
+function cancelLinksChanges() {
+  // Reset links to the current artifact state
+  if (model.value && model.value.related_links && Array.isArray(model.value.related_links)) {
+    links.value = model.value.related_links.map((link, idx) => ({
       id: link.id || Date.now() + idx,
       title: link.title || '',
       url: link.url || '',
