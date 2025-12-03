@@ -328,23 +328,29 @@
           </div>
           <q-dialog v-model="showRelatedDialog" persistent>
             <q-card class="related-box">
-              <q-card-section
-                class="column sub-font-3 items-start"
-                style="font-size: 16px; font-weight: 700"
-              >
-                Related Links
+              <q-card-section class="dialog-header">
+                <div class="sub-font-3" style="font-size: 18px; font-weight: 700">
+                  Related Links
+                </div>
               </q-card-section>
               <q-separator />
-              <q-card-section class="column items-start">
-                <div
-                  v-for="link in links"
-                  :key="link.id"
-                  class="row items-center q-mb-xs full-width"
-                  @click="openLink(link.url)"
-                >
-                  <div class="link-style" @click="openLink(link.url)">
-                    {{ link.title || link.url }}
+              <q-card-section class="links-container">
+                <div v-if="links.length > 0">
+                  <div
+                    v-for="link in links"
+                    :key="link.id"
+                    class="link-item"
+                    @click="openLink(link.url)"
+                  >
+                    <q-icon name="link" size="18px" class="link-icon" />
+                    <div class="link-style">
+                      {{ link.title || link.url }}
+                    </div>
                   </div>
+                </div>
+                <div v-else class="empty-state">
+                  <q-icon name="link_off" size="48px" color="grey-5" />
+                  <p class="empty-text">No related links available</p>
                 </div>
               </q-card-section>
               <q-card-actions align="right">
@@ -1806,6 +1812,93 @@ model-viewer:-ms-fullscreen .control-buttons {
   color: #b0b0b0;
   font-style: italic;
   margin: 0.15rem 0;
+}
+
+/* Related Links Dialog */
+.related-box {
+  min-width: 500px;
+  max-width: 600px;
+  border-radius: 15px;
+  font-family: 'Poppins', sans-serif;
+  background-color: #fbf4d0;
+}
+
+.dialog-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 2px solid #e0dbc7;
+}
+
+.links-container {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+}
+
+.link-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.link-item:hover {
+  background-color: #f5f5f5;
+}
+
+.link-icon {
+  color: #880000;
+  flex-shrink: 0;
+}
+
+.link-style {
+  cursor: pointer;
+  color: #880000;
+  text-decoration: none;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-item:hover .link-style {
+  text-decoration: underline;
+  color: #560505;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.empty-text {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #666;
+  margin-top: 1rem;
+}
+
+.btn-save {
+  background: #560505;
+  color: white;
+  border-radius: 6px;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  padding: 8px 16px;
+}
+
+.btn-save:hover {
+  background: #6b0707;
 }
 
 /* Base responsive container improvements */
