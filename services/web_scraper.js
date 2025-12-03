@@ -466,7 +466,7 @@ async function scrapeContent(url) {
       title: title.trim(),
       description: description.trim(),
       content: cleanText.substring(0, 1500),
-      language: franc(cleanText.substring(0, 300)),
+      language: franc(cleanText.substring(0, 1000)) || 'und', // Check first 1000 chars instead of 300
     }
 
     logWithTimestamp(`>>> ✓ Scraped successfully: ${url} (took ${Date.now() - startTime}ms)`)
@@ -539,10 +539,16 @@ function filterByLanguage(results, preferredLang = 'eng') {
   logWithTimestamp(`Total results to filter: ${results.length}`)
 
   const englishResults = results.filter((r) => r.language === preferredLang && !r.error)
-  const otherResults = results.filter((r) => r.language !== preferredLang && !r.error)
+  const filipinoResults = results.filter((r) => (r.language === 'tgl' || r.language === 'fil') && !r.error)
+  const undefinedLangResults = results.filter((r) => r.language === 'und' && !r.error)
+  const otherResults = results.filter(
+    (r) => r.language !== preferredLang && r.language !== 'tgl' && r.language !== 'fil' && r.language !== 'und' && !r.error,
+  )
   const errorResults = results.filter((r) => r.error)
 
   logWithTimestamp(`English results: ${englishResults.length}`)
+  logWithTimestamp(`Filipino results: ${filipinoResults.length}`)
+  logWithTimestamp(`Undefined language results: ${undefinedLangResults.length}`)
   logWithTimestamp(`Other language results: ${otherResults.length}`)
   logWithTimestamp(`Error results: ${errorResults.length}`)
 
@@ -553,8 +559,13 @@ function filterByLanguage(results, preferredLang = 'eng') {
     })
   }
 
-  const finalResults =
-    englishResults.length >= 3 ? englishResults : [...englishResults, ...otherResults]
+  // Accept both English and Filipino pages, plus undefined language results
+  const finalResults = [
+    ...englishResults,
+    ...filipinoResults,
+    ...undefinedLangResults,
+    ...otherResults.slice(0, 1),
+  ].slice(0, 5)
   logWithTimestamp(`Returning ${finalResults.length} filtered results`)
 
   return finalResults
