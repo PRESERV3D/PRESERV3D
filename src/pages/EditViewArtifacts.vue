@@ -189,11 +189,10 @@
           <!-- q-dialog for related links -->
           <q-dialog v-model="showRelatedDialog" persistent>
             <q-card class="related-box">
-              <q-card-section
-                class="column sub-font-3 items-start"
-                style="font-size: 16px; font-weight: 700"
-              >
-                Show Related Links
+              <q-card-section class="dialog-header">
+                <div class="sub-font-3" style="font-size: 18px; font-weight: 700">
+                  Related Links
+                </div>
                 <div class="text-caption text-grey-7 q-mt-xs">
                   Changes will be saved when you save the artifact
                 </div>
@@ -202,7 +201,7 @@
               <div v-if="loadingRelatedLinks" class="q-pa-md flex flex-center">
                 <q-spinner color="primary" size="40px" />
               </div>
-              <div v-else class="q-pt-md q-px-md column items-start">
+              <div v-else class="links-container">
                 <!-- Links List with Drag and Edit -->
                 <div v-for="(link, index) in links" :key="link.id" class="full-width q-mb-sm">
                   <div v-if="editingLinkIndex === index" class="column q-gutter-sm q-pa-sm">
@@ -224,16 +223,17 @@
 
                   <div
                     v-else
-                    class="row items-center q-mb-xs full-width draggable-item"
+                    class="link-item draggable-item"
                     draggable="true"
                     @dragstart="dragStart(index)"
                     @dragover.prevent
                     @drop="drop(index)"
                   >
                     <!-- Drag handle -->
-                    <q-icon name="menu" class="q-mr-md cursor-pointer" size="xs" color="black" />
+                    <q-icon name="drag_indicator" class="drag-handle" size="sm" />
 
-                    <!-- Link Title (clickable) -->
+                    <!-- Link icon and title -->
+                    <q-icon name="link" size="18px" class="link-icon" />
                     <div class="link-style" @click="openLink(link.url)">
                       {{ link.title || link.url }}
                     </div>
@@ -1488,34 +1488,76 @@ function cancelLinksChanges() {
   background-color: #f5f5f5;
 }
 
-/* Related Links */
+/* Related Links Dialog */
+.related-box {
+  min-width: 500px;
+  max-width: 600px;
+  border-radius: 15px;
+  font-family: 'Poppins', sans-serif;
+  background-color: #fbf4d0;
+}
+
+.dialog-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 2px solid #e0dbc7;
+}
+
+.links-container {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+}
+
+.link-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.link-item:hover {
+  background-color: #f5f5f5;
+}
+
+.drag-handle {
+  color: #999;
+  cursor: move;
+  flex-shrink: 0;
+}
+
+.link-icon {
+  color: #880000;
+  flex-shrink: 0;
+}
+
 .link-style {
   cursor: pointer;
-  color: var(--q-primary);
+  color: #880000;
   text-decoration: none;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.link-style:hover {
+.link-item:hover .link-style {
   text-decoration: underline;
+  color: #560505;
 }
 
 .draggable-item {
-  padding: 8px;
-  border-radius: 4px;
   transition: background-color 0.2s;
 }
 
 .draggable-item:hover {
-  background-color: #ffffe9;
-}
-
-.related-box {
-  min-width: 500px;
-  max-width: 600px;
+  background-color: #f5f5f5;
 }
 
 /* Save/Cancel actions */
