@@ -912,7 +912,8 @@ async function generatePdfPreview(file) {
   try {
     window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
   } catch (e) {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.mjs'
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.mjs'
     console.warn('Could not set local pdf.worker path, using CDN fallback:', e)
   }
 
