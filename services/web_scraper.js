@@ -311,34 +311,22 @@ async function searchDuckDuckGo(query, maxResults = 3) {
     const results = await page.evaluate(() => {
       const items = []
       const resultElements = document.querySelectorAll('.result')
-      console.log(`[Page Evaluate] Found ${resultElements.length} result elements`)
 
-      resultElements.forEach((element, index) => {
+      resultElements.forEach((element) => {
         const linkElement = element.querySelector('.result__a')
         const snippetElement = element.querySelector('.result__snippet')
         const urlElement = element.querySelector('.result__url')
-        console.log(
-          `[Result ${index + 1}] linkElement:`,
-          !!linkElement,
-          'snippetElement:',
-          !!snippetElement,
-          'urlElement:',
-          !!urlElement,
-        )
 
         if (linkElement) {
           let url = linkElement.getAttribute('href') || linkElement.href
-          console.log(`[Result ${index + 1}] Initial URL:`, url)
 
           if (url && url.startsWith('//duckduckgo.com/l/?')) {
-            console.log(`[Result ${index + 1}] Detected DuckDuckGo redirect URL`)
             try {
               const urlParams = new URLSearchParams(url.split('?')[1])
               const actualUrl = urlParams.get('uddg')
-              console.log(`[Result ${index + 1}] Extracted actual URL:`, actualUrl)
               if (actualUrl) url = actualUrl
             } catch (e) {
-              console.log(`[Result ${index + 1}] Error parsing redirect URL: ${e.message}`)
+              console.error('Error parsing redirect URL:', e)
               if (urlElement) {
                 const displayUrl = urlElement.textContent.trim()
                 url = displayUrl.startsWith('http') ? displayUrl : 'https://' + displayUrl
@@ -356,32 +344,13 @@ async function searchDuckDuckGo(query, maxResults = 3) {
           const documentExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx']
           const urlLower = url.toLowerCase()
           const isDocument = documentExtensions.some((ext) => urlLower.includes(ext))
-          console.log(
-            `[Result ${index + 1}] URL:`,
-            url,
-            '| isDocument:',
-            isDocument,
-            '| title:',
-            title.substring(0, 50),
-          )
 
           if (url && url.startsWith('http') && !isDocument) {
-            console.log(`[Result ${index + 1}] ✓ Added to results`)
             items.push({ url, title, snippet })
-          } else {
-            console.log(
-              `[Result ${index + 1}] ✗ Filtered out - url:`,
-              !!url,
-              'startsWithHttp:',
-              url?.startsWith('http'),
-              'isDocument:',
-              isDocument,
-            )
           }
         }
       })
 
-      console.log(`[Page Evaluate] Total items collected: ${items.length}`)
       return items
     })
 
