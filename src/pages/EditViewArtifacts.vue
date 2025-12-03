@@ -868,6 +868,8 @@ const saveChanges = async () => {
       updated_at: { old: normalizeDate(oldData.updated_at), new: normalizeDate(updatedAt) },
     }
 
+    console.log('Saving changes...')
+
     const { error: updateError } = await supabase
       .from('artifacts_metadata')
       .update(newData)
