@@ -526,14 +526,17 @@ import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useModelStore } from 'stores/modelStore'
 import { useUserStore } from 'stores/user'
+import { useQuasar } from 'quasar'
 import { generateNarration } from '/services/narration_service.js'
 import { convertToWorkingUrl } from 'src/composables/useR2Url'
+import axios from 'axios'
 import '@google/model-viewer'
 
 const route = useRoute()
 const router = useRouter()
 const modelStore = useModelStore()
 const userStore = useUserStore()
+const $q = useQuasar()
 let modelLoadHandler = null
 
 // Safe profile accessors
@@ -588,97 +591,100 @@ function formatDate(dateStr) {
 }
 
 const isSpeaking = ref(false)
-let currentUtterance = null
-
-const initVoices = () => {
-  return new Promise((resolve) => {
-    let voices = window.speechSynthesis.getVoices()
-    if (voices.length > 0) {
-      resolve(voices)
-    } else {
-      window.speechSynthesis.onvoiceschanged = () => {
-        voices = window.speechSynthesis.getVoices()
-
-        resolve(voices)
-      }
-    }
-  })
-}
+let currentAudio = null
 
 const toggleTextToSpeech = async () => {
-  const { data: artifactData } = await supabase
-    .from('artifacts_metadata')
-    .select('*')
-    .eq('id', route.params.id)
-    .single()
-
-  if (isSpeaking.value) {
-    window.speechSynthesis.cancel()
+  // If already speaking, stop the audio
+  if (isSpeaking.value && currentAudio) {
+    currentAudio.pause()
+    currentAudio = null
     isSpeaking.value = false
     return
   }
 
-  const narration = generateNarration(artifactData)
-  if (!narration) return
+  try {
+    // Fetch artifact data
+    const { data: artifactData, error } = await supabase
+      .from('artifacts_metadata')
+      .select('*')
+      .eq('id', route.params.id)
+      .single()
 
-  // Create speech utterance
-  currentUtterance = new SpeechSynthesisUtterance(narration)
-  currentUtterance.lang = 'en-US'
-  currentUtterance.rate = 0.85
-  currentUtterance.pitch = 1.7
-  currentUtterance.volume = 1.0
+    if (error) throw error
 
-  const voices = window.speechSynthesis.getVoices()
+    // Generate narration text
+    const narration = generateNarration(artifactData)
+    if (!narration || !narration.text) {
+      $q.notify({
+        type: 'warning',
+        message: 'No narration text available',
+        position: 'top',
+      })
+      return
+    }
 
-  const femaleVoicePatterns = [
-    'Google US English Female',
-    'Microsoft Zira',
-    'Samantha',
-    'Victoria',
-    'Karen',
-    'Moira',
-    'Tessa',
-    'Google UK English Female',
-    'female',
-  ]
-
-  let selectedVoice = null
-  for (const pattern of femaleVoicePatterns) {
-    selectedVoice = voices.find(
-      (v) =>
-        v.lang.startsWith('en') &&
-        (v.name.toLowerCase().includes(pattern.toLowerCase()) ||
-          v.name.toLowerCase().includes('female')),
+    // Call TTS service
+    const response = await axios.post(
+      'http://localhost:8001/generate-tts',
+      {
+        text: narration.text,
+        language_code: 'en-US',
+        voice_name: 'en-US-Neural2-F', // Female voice
+        use_ssml: narration.isSSML || false,
+      },
+      {
+        responseType: 'blob',
+      },
     )
-    if (selectedVoice) break
-  }
 
-  // Fallback
-  if (!selectedVoice) {
-    selectedVoice = voices.find(
-      (v) => v.lang.startsWith('en') && v.name.toLowerCase().includes('female'),
-    )
-  }
+    // Create audio from blob
+    const audioBlob = new Blob([response.data], { type: 'audio/mpeg' })
+    const audioUrl = URL.createObjectURL(audioBlob)
+    currentAudio = new Audio(audioUrl)
 
-  if (selectedVoice) {
-    currentUtterance.voice = selectedVoice
-    console.log('Using voice:', selectedVoice.name)
-  } else {
-    console.log('No female voice found, using default')
-  }
+    // Set up event listeners
+    currentAudio.onended = () => {
+      isSpeaking.value = false
+      URL.revokeObjectURL(audioUrl)
+      currentAudio = null
+    }
 
-  currentUtterance.onend = () => {
-    isSpeaking.value = false
-  }
+    currentAudio.onerror = (error) => {
+      console.error('Audio playback error:', error)
+      isSpeaking.value = false
+      URL.revokeObjectURL(audioUrl)
+      currentAudio = null
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to play audio',
+        position: 'top',
+      })
+    }
 
-  currentUtterance.onerror = (event) => {
-    console.error('Speech synthesis error:', event)
-    isSpeaking.value = false
+    // Play the audio
+    await currentAudio.play()
+    isSpeaking.value = true
+  } catch (error) {
+    console.error('TTS error:', error)
+    $q.notify({
+      type: 'negative',
+      message:
+        error.response?.data?.detail ||
+        'Failed to generate speech. Make sure the TTS service is running on port 8001.',
+      position: 'top',
+    })
+  } finally {
+    $q.loading.hide()
   }
-
-  window.speechSynthesis.speak(currentUtterance)
-  isSpeaking.value = true
 }
+
+// Cleanup on unmount
+onBeforeUnmount(() => {
+  if (currentAudio) {
+    currentAudio.pause()
+    currentAudio = null
+  }
+})
 
 // Help button click
 const toggleHelp = () => {
@@ -1021,7 +1027,6 @@ const showNotifyDialog = (title, message) => {
 }
 
 onMounted(async () => {
-  await initVoices()
   const { data, error } = await supabase
     .from('artifacts_metadata')
     .select('*')
