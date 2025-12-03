@@ -539,10 +539,17 @@ function filterByLanguage(results, preferredLang = 'eng') {
   logWithTimestamp(`Total results to filter: ${results.length}`)
 
   const englishResults = results.filter((r) => r.language === preferredLang && !r.error)
-  const filipinoResults = results.filter((r) => (r.language === 'tgl' || r.language === 'fil') && !r.error)
+  const filipinoResults = results.filter(
+    (r) => (r.language === 'tgl' || r.language === 'fil') && !r.error,
+  )
   const undefinedLangResults = results.filter((r) => r.language === 'und' && !r.error)
   const otherResults = results.filter(
-    (r) => r.language !== preferredLang && r.language !== 'tgl' && r.language !== 'fil' && r.language !== 'und' && !r.error,
+    (r) =>
+      r.language !== preferredLang &&
+      r.language !== 'tgl' &&
+      r.language !== 'fil' &&
+      r.language !== 'und' &&
+      !r.error,
   )
   const errorResults = results.filter((r) => r.error)
 
@@ -559,10 +566,10 @@ function filterByLanguage(results, preferredLang = 'eng') {
     })
   }
 
-  // Accept both English and Filipino pages, plus undefined language results
+  // Prioritize Filipino results first, then English, then undefined language results
   const finalResults = [
-    ...englishResults,
     ...filipinoResults,
+    ...englishResults,
     ...undefinedLangResults,
     ...otherResults.slice(0, 1),
   ].slice(0, 5)
