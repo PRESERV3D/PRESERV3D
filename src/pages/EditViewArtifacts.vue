@@ -1345,7 +1345,7 @@ async function fetchRelatedLinks(title, author, categories, date) {
     if (!data || !data.links || !Array.isArray(data.links)) {
       console.warn('No valid links returned from API')
       links.value = []
-      hasChanges.value = false
+      showRelatedDialog.value = true
       return
     }
 
@@ -1355,7 +1355,6 @@ async function fetchRelatedLinks(title, author, categories, date) {
       url: link.url || '',
     }))
 
-    hasChanges.value = true
     showRelatedDialog.value = true
   } catch (err) {
     console.error('Error fetching related links:', err)
@@ -1364,7 +1363,6 @@ async function fetchRelatedLinks(title, author, categories, date) {
       message: 'Failed to fetch related links. Please try again.',
     })
     links.value = []
-    hasChanges.value = false
   } finally {
     loadingRelatedLinks.value = false
   }
