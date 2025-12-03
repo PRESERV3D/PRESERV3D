@@ -186,6 +186,56 @@
 /* ========================
  RESPONSIVE DESIGN
 ======================== */
+
+@media (min-width: 110rem) {
+  .content-text {
+    margin: 5rem;
+    padding-left: 4rem;
+  }
+
+  .hero-title {
+    font-size: 3rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.25rem;
+  }
+
+  .trophy-center {
+    width: 48rem;
+    bottom: -20rem !important;
+  }
+
+  .trophy-left {
+    width: 25rem;
+    right: 84rem;
+  }
+
+  .trophy-right {
+    width: 28rem;
+    left: 84rem;
+  }
+
+  .bottom-shadow-overlay {
+    height: 30rem;
+  }
+
+  .brand-title {
+    font-size: 10rem;
+    letter-spacing: 0.625rem;
+  }
+
+  .main-tile {
+    bottom: 3rem;
+  }
+
+  .logo-img {
+    width: 6rem;
+    height: 6rem;
+  }
+}
+
+
 @media (max-width: 90rem) {
   .trophy-left {
     right: 50rem;
