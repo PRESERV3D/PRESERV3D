@@ -42,7 +42,7 @@
       <!-- Recently Viewed Section -->
       <div class="box-2">
         <p class="q-ml-lg title-font-2">Recently Viewed</p>
-        <div class="q-px-md q-pb-md">
+        <div class="q-pb-md">
           <div v-if="recentItems.length > 0" class="column q-gutter-xs">
             <div
               v-for="(item, index) in recentItems.slice(0, 3)"
@@ -1609,6 +1609,7 @@ async function addCollection() {
   padding: 0.4rem 0.5rem;
   border-radius: 8px;
   transition: background-color 0.2s ease;
+  position: relative;
 }
 
 .recently-viewed-item:hover {
@@ -1934,7 +1935,7 @@ async function addCollection() {
   }
 
   .recently-viewed-item {
-    padding: 0.7rem 0.5rem;
+    padding: 0.7rem 1.5rem;
     min-height: 3.4375rem;
   }
 
@@ -2002,21 +2003,26 @@ async function addCollection() {
   }
 
   .recently-viewed-item {
-    padding: 0.5rem 0.8rem;
+    padding: 1.1rem 1.75rem;
     min-height: 4.0625rem;
   }
 
   .circular-holder {
     width: 3.125rem;
     height: 3.125rem;
+    margin-top: -0.6rem;
   }
 
   .circle-icon-center {
     font-size: 1.75rem;
   }
 
+  .title-font-2 {
+    font-size: 1.125rem;
+    margin-bottom: 1.2rem !important;
+  }
   .artifact-name {
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
   }
 
   .view-info {
@@ -2025,19 +2031,23 @@ async function addCollection() {
 
   .view-icon,
   .star-icon {
-    font-size: 1.25rem;
+    font-size: 1.10rem;
   }
 
   .action-icons {
-    gap: 0.3rem;
+    gap: 0.07rem;
+    margin-top: -0.6rem;
   }
 
   .item-details {
-    margin: 0 0.6rem;
+    margin: 0.5rem 0.6rem;
   }
 
   .my-card {
     min-height: 20rem;
+  }
+  .trophies {
+    max-width: 355px;
   }
 }
 
@@ -2054,17 +2064,17 @@ async function addCollection() {
   }
 
   .recently-viewed-item {
-    padding: 0.6rem 1rem;
+    padding: 0.2rem 1.75rem;
     min-height: 4.375rem;
   }
 
   .circular-holder {
-    width: 3.4375rem;
-    height: 3.4375rem;
+    width: 3rem;
+    height: 3em;
   }
 
   .circle-icon-center {
-    font-size: 1.875rem;
+    font-size: 1.8rem;
   }
 
   .artifact-name {
@@ -2077,15 +2087,16 @@ async function addCollection() {
 
   .view-icon,
   .star-icon {
-    font-size: 1.375rem;
+    font-size: 1.2rem;
   }
 
   .action-icons {
     gap: 0.4rem;
+    margin-top: -0.6rem;
   }
 
   .item-details {
-    margin: 0 0.8rem;
+    margin: 1.25rem 0.8rem;
   }
 
   .my-card {
@@ -2094,6 +2105,9 @@ async function addCollection() {
 
   .artifact-card-section {
     padding: 1rem;
+  }
+  .trophies {
+    max-width: 355px;
   }
 }
 
