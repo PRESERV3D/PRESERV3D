@@ -99,6 +99,7 @@ async def generate_tts(request: TTSRequest):
         print(f"Error during TTS generation: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate speech: {e}")
 
+@app.head("/health")
 @app.get("/health")
 def health_check():
     """Health check endpoint to verify service status."""
