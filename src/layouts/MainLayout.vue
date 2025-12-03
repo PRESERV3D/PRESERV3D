@@ -634,7 +634,7 @@ let channel = null
 const baseNavItems = [
   { name: 'home', label: 'Home', icon: '\\icons\\home.png' },
   { name: 'user-management', label: 'User Management', icon: '\\icons\\users-m.png' },
-  { name: 'security-logs', label: 'Security Logs', icon: '\\icons\\security.png' },
+  { name: 'security-logs', label: 'Security Logs', icon: '\\icons\\security2.png' },
   { name: 'data-quality', label: 'Data Quality', icon: '\\icons\\data_quality.png' },
   { name: 'appointment', label: 'Appointment', icon: '\\icons\\appointment.png' },
   { name: 'artifacts', label: 'Artifacts', icon: '\\icons\\artifacts.png' },
@@ -1406,6 +1406,7 @@ watch(
   margin-top: auto;
 }
 
+
 /* ========================
    TEXT VISIBILITY IMPROVEMENTS
 ======================== */
@@ -1938,8 +1939,8 @@ watch(
 }
 
 .icon-wrapper {
-  width: 44px;
-  height: 44px;
+  width: 37px;
+  height: 37px;
   display: flex;
   align-items: center;
   justify-content: center;
