@@ -17,6 +17,18 @@ let browserInstance = null
 let browserLastUsed = Date.now()
 const BROWSER_IDLE_TIMEOUT = 5 * 60 * 1000 // 5 minutes
 
+// Set up aggressive process timeout - kill if we exceed 170 seconds
+const HARD_TIMEOUT_MS = 170000 // 170 seconds
+const hardTimeoutHandle = setTimeout(() => {
+  console.error('[HARD TIMEOUT] Process exceeded 170 seconds - force exiting')
+  console.log(JSON.stringify({ 
+    links: [], 
+    error: 'Request timeout - search service took too long to respond',
+    timeout: true 
+  }))
+  process.exit(1)
+}, HARD_TIMEOUT_MS)
+
 /**
  * Wait utility function
  */
@@ -238,7 +250,7 @@ async function searchDuckDuckGo(query, maxResults = 3) {
       Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9',
     })
 
-    await page.setDefaultNavigationTimeout(60000) // Increased to 60s
+    await page.setDefaultNavigationTimeout(30000) // 30 seconds
 
     const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
     logWithTimestamp(`Navigating to: ${searchUrl}`)
@@ -253,7 +265,7 @@ async function searchDuckDuckGo(query, maxResults = 3) {
         const navStartTime = Date.now()
         await page.goto(searchUrl, {
           waitUntil: 'domcontentloaded',
-          timeout: 60000, // Increased to 60s
+          timeout: 30000, // 30 seconds per attempt
         })
         navigationSuccess = true
         logWithTimestamp(
@@ -274,6 +286,21 @@ async function searchDuckDuckGo(query, maxResults = 3) {
       throw new Error(`Failed to navigate to DuckDuckGo after 3 attempts: ${lastError?.message}`)
     }
 
+    // Check if we got blocked by checking page content
+    logWithTimestamp('Checking if page loaded successfully...')
+    const pageContent = await page.content()
+    
+    if (pageContent.includes('captcha') || pageContent.includes('CAPTCHA')) {
+      logWithTimestamp('⚠ CAPTCHA detected - DuckDuckGo is blocking automated access')
+      throw new Error('DuckDuckGo is blocking automated access with CAPTCHA')
+    }
+    
+    if (pageContent.includes('Access Denied') || pageContent.includes('403')) {
+      logWithTimestamp('⚠ Access denied - DuckDuckGo is blocking this request')
+      throw new Error('DuckDuckGo blocked access to search results')
+    }
+
+    logWithTimestamp('✓ Page appears to be valid search results')
     logWithTimestamp('Waiting for page to settle (1s)...')
     await wait(1000) // Reduced from 1500ms
 
@@ -621,6 +648,9 @@ async function main() {
     console.log(JSON.stringify({ links }))
     logWithTimestamp('✓ Results output complete')
 
+    // Clear the hard timeout since we finished successfully
+    clearTimeout(hardTimeoutHandle)
+    
     // Don't close browser - keep it alive for next request
   } catch (error) {
     console.error(`=== Error in main function ===`)
@@ -631,17 +661,37 @@ async function main() {
         name: error.name,
       }),
     )
+    
+    // Clear hard timeout before exiting
+    clearTimeout(hardTimeoutHandle)
     process.exit(1)
   }
 }
 
-// Run the script
-main().catch((error) => {
-  console.error(
-    JSON.stringify({
-      error: error.message,
-      stack: error.stack,
-    }),
-  )
-  process.exit(1)
-})
+// Global timeout wrapper to prevent hanging indefinitely
+async function runWithTimeout(promise, timeoutMs) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs),
+    ),
+  ])
+}
+
+// Run the script with global timeout
+runWithTimeout(main(), 165000) // 165 seconds (leaves 15s buffer before hard timeout)
+  .then(() => {
+    logWithTimestamp('=== Script completed successfully ===')
+    clearTimeout(hardTimeoutHandle)
+    process.exit(0)
+  })
+  .catch((error) => {
+    console.error(
+      JSON.stringify({
+        error: error.message,
+        stack: error.stack,
+      }),
+    )
+    clearTimeout(hardTimeoutHandle)
+    process.exit(1)
+  })

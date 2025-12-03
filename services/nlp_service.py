@@ -1739,17 +1739,17 @@ async def related_links(
         env["NODE_ENV"] = "production"
         env["NODE_PATH"] = os.path.join(script_dir, 'node_modules')
         
-        print(f"[INFO] Starting subprocess with 120s timeout...")
+        print(f"[INFO] Starting subprocess with 180s timeout...")
         subprocess_start = time.time()
         
-        # Run scraper with 2-minute timeout
+        # Run scraper with 3-minute timeout
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             encoding='utf-8',
             errors='replace',
-            timeout=120,
+            timeout=180,
             cwd=script_dir,
             env=env
         )
@@ -1812,10 +1812,12 @@ async def related_links(
             }
             
     except subprocess.TimeoutExpired:
-        print(f"[ERROR] Subprocess timeout after 120 seconds")
+        print(f"[ERROR] Subprocess timeout after 180 seconds")
+        print(f"[INFO] Total request time: {time.time() - start_time:.2f}s")
         return {
             "links": [], 
-            "error": "Search timeout after 120 seconds. The search service may be slow or unavailable."
+            "error": "Search timeout after 180 seconds. The search service may be slow or unavailable.",
+            "suggestion": "DuckDuckGo may be blocking automated requests. Try again in a few minutes."
         }
     except FileNotFoundError as e:
         print(f"[ERROR] Node.js not found: {str(e)}")
