@@ -1522,13 +1522,44 @@ async function addCollection() {
     const description = newCollectionDesc.value.trim()
 
     if (!title) {
-      console.warn('Collection title is required')
+      $q.dialog({
+        title: 'Validation Error',
+        message: 'Collection title is required.',
+        color: 'negative',
+      })
       return
     }
 
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser()
+
+    // Check for duplicate collection name for this user (case-insensitive)
+    const { data: existingCollection, error: checkError } = await supabase
+      .from('collections')
+      .select('collection_id')
+      .eq('user_id', authUser.id)
+      .ilike('collection_name', title)
+      .maybeSingle()
+
+    if (checkError) {
+      console.error('Error checking collection name:', checkError)
+      $q.dialog({
+        title: 'Error',
+        message: 'Failed to verify collection name. Please try again.',
+        color: 'negative',
+      })
+      return
+    }
+
+    if (existingCollection) {
+      $q.dialog({
+        title: 'Duplicate Collection Name',
+        message: 'You already have a collection with this name. Please choose a different name.',
+        color: 'warning',
+      })
+      return
+    }
 
     let coverUrl = ''
 
