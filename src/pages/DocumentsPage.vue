@@ -500,6 +500,7 @@ import { processOCRPages } from '/services/ocr_service'
 import { PDFDocument } from 'pdf-lib'
 import { allSortOptions } from 'src/stores/searchStore'
 import { getNlpEndpoint } from 'src/utils/nlpConfig'
+import * as pdfjsLib from 'pdfjs-dist'
 
 import ConfirmMetadata from 'src/components/ConfirmMetadata.vue'
 import UploadDialog from 'src/components/UploadDialog.vue'
@@ -908,17 +909,15 @@ async function uploadFileToStorage(file, fileName) {
 }
 
 async function generatePdfPreview(file) {
-  // Prefer the local worker shipped in /public, fallback to CDN if error
-  try {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
-  } catch (e) {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-      'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.mjs'
-    console.warn('Could not set local pdf.worker path, using CDN fallback:', e)
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+  const pdfjs = pdfjsLib
+  if (!pdfjsLib) {
+    console.warn('[DocumentsPage] pdfjsLib not available; skipping preview generation.')
+    return null
   }
 
   const arrayBuffer = await file.arrayBuffer()
-  const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise
 
   const page = await pdf.getPage(1)
   const scale = 1.5
@@ -1314,8 +1313,8 @@ const handleUpload = async () => {
     const nlpData = response.data
     console.log('NLP Response:', nlpData)
 
-    // Preview image
-    currentProcess.value = 'Generating preview...'
+    // Preview image (disabled for now to avoid worker issues)
+    currentProcess.value = 'Skipping preview generation...'
     const preview = await generatePdfPreview(compressedFile)
     const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
 
@@ -1326,9 +1325,11 @@ const handleUpload = async () => {
       return
     }
 
-    const previewUploadError = await uploadPreviewImage(preview, previewFileName)
-    if (previewUploadError && !cancelRequested) {
-      throw previewUploadError
+    if (preview) {
+      const previewUploadError = await uploadPreviewImage(preview, previewFileName)
+      if (previewUploadError && !cancelRequested) {
+        throw previewUploadError
+      }
     }
 
     // Upload file
