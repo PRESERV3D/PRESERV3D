@@ -298,17 +298,19 @@
               <!-- Related Links Dialog -->
               <q-dialog v-model="showRelatedDialog" persistent>
                 <q-card class="related-box">
-                  <q-card-section
-                    class="column sub-font-3 items-start"
-                    style="font-size: 16px; font-weight: 700"
-                  >
-                    Show Related Links
+                  <q-card-section class="dialog-header">
+                    <div class="sub-font-3" style="font-size: 18px; font-weight: 700">
+                      Related Links
+                    </div>
+                    <div class="text-caption text-grey-7 q-mt-xs">
+                      Changes will be saved when you save the document
+                    </div>
                   </q-card-section>
                   <q-separator />
                   <div v-if="loadingRelatedLinks" class="q-pa-md flex flex-center">
                     <q-spinner color="primary" size="40px" />
                   </div>
-                  <div v-else class="q-pt-md q-px-md column items-start">
+                  <div v-else class="links-container">
                     <!-- Links List with Drag and Edit -->
                     <div v-for="(link, index) in links" :key="link.id" class="full-width q-mb-sm">
                       <div v-if="editingLinkIndex === index" class="column q-gutter-sm q-pa-sm">
@@ -330,21 +332,17 @@
 
                       <div
                         v-else
-                        class="row items-center q-mb-xs full-width draggable-item"
+                        class="link-item draggable-item"
                         draggable="true"
                         @dragstart="dragStart(index)"
                         @dragover.prevent
                         @drop="drop(index)"
                       >
                         <!-- Drag handle -->
-                        <q-icon
-                          name="menu"
-                          class="q-mr-md cursor-pointer"
-                          size="xs"
-                          color="black"
-                        />
+                        <q-icon name="drag_indicator" class="drag-handle" size="sm" />
 
-                        <!-- Link Title (clickable) -->
+                        <!-- Link icon and title -->
+                        <q-icon name="link" size="18px" class="link-icon" />
                         <div class="link-style" @click="openLink(link.url)">
                           {{ link.title || link.url }}
                         </div>
@@ -432,7 +430,7 @@
                         style="color: #000000"
                         v-close-popup
                         no-caps
-                        @click="cancelChanges()"
+                        @click="cancelLinksChanges()"
                       />
                       <q-btn
                         flat
@@ -444,21 +442,12 @@
                           fetchRelatedLinks(
                             doc.metadata.title,
                             doc.metadata.author,
-                            doc.metadata.categories,
+                            editableCategories.join(','),
                             doc.metadata.date.slice(0, 4),
                           )
                         "
                       />
-                      <q-btn
-                        v-if="!savingRelatedLinks"
-                        label="Save"
-                        class="btn-save"
-                        flat
-                        @click="saveRelatedLinks"
-                      />
-                      <div v-if="savingRelatedLinks" class="q-pa-sm">
-                        <q-spinner-dots size="2em" color="primary" />
-                      </div>
+                      <q-btn label="Close" class="btn-save" flat v-close-popup />
                     </template>
                     <template v-else>
                       <q-btn
@@ -479,7 +468,7 @@
                           fetchRelatedLinks(
                             doc.metadata.title,
                             doc.metadata.author,
-                            doc.metadata.categories,
+                            editableCategories.join(','),
                             doc.metadata.date.slice(0, 4),
                           )
                         "
@@ -636,7 +625,10 @@ async function saveChanges() {
         categories: [...editableCategories.value],
         // extracted_text: editableData.value.extracted_text,
       },
-      related_links: [...links.value],
+      related_links: links.value.map((link) => ({
+        title: link.title || '',
+        url: link.url || '',
+      })),
     }
 
     let changes = getChanges(oldData, newData)
@@ -1123,7 +1115,6 @@ const showAddLinkForm = ref(false)
 const links = ref([])
 const hasChanges = ref(false)
 const loadingRelatedLinks = ref(false)
-const savingRelatedLinks = ref(false)
 let draggedIndex = null
 
 // Edit link state
@@ -1180,7 +1171,6 @@ async function fetchRelatedLinks(title, author, categories, date) {
       url: link.url || '',
     }))
 
-    hasChanges.value = true
     showRelatedDialog.value = true
   } catch (err) {
     console.error('Error fetching related links:', err)
@@ -1189,7 +1179,6 @@ async function fetchRelatedLinks(title, author, categories, date) {
       message: 'Failed to fetch related links. Please try again.',
     })
     links.value = []
-    hasChanges.value = false
   } finally {
     loadingRelatedLinks.value = false
   }
@@ -1234,50 +1223,10 @@ function drop(index) {
   hasChanges.value = true
 }
 
-async function saveRelatedLinks() {
-  savingRelatedLinks.value = true
-  try {
-    // Clean the links data before saving - remove the id field if it's just a timestamp
-    const cleanedLinks = links.value.map((link) => ({
-      title: link.title || '',
-      url: link.url || '',
-    }))
-
-    const { error } = await supabase
-      .from('documents_metadata')
-      .update({
-        related_links: cleanedLinks,
-      })
-      .eq('id', route.params.id)
-
-    if (error) throw error
-
-    // Update the local doc object
-    if (doc.value) {
-      doc.value.related_links = cleanedLinks
-    }
-
-    console.log('Related links saved successfully:', cleanedLinks)
-    $q.notify({ type: 'positive', message: 'Related links saved successfully' })
-    hasChanges.value = true
-    showRelatedDialog.value = false
-  } catch (err) {
-    console.error('Error saving related links:', err)
-    $q.notify({ type: 'negative', message: 'Failed to save related links' })
-  } finally {
-    savingRelatedLinks.value = false
-  }
-}
-
-async function cancelChanges() {
-  const { data } = await supabase
-    .from('documents_metadata')
-    .select('related_links')
-    .eq('id', route.params.id)
-    .single()
-
-  if (data && data.related_links && Array.isArray(data.related_links)) {
-    links.value = data.related_links.map((link, idx) => ({
+function cancelLinksChanges() {
+  // Reset links to the current document state
+  if (doc.value && doc.value.related_links && Array.isArray(doc.value.related_links)) {
+    links.value = doc.value.related_links.map((link, idx) => ({
       id: link.id || Date.now() + idx,
       title: link.title || '',
       url: link.url || '',
@@ -1288,7 +1237,6 @@ async function cancelChanges() {
 
   hasChanges.value = false
   showRelatedDialog.value = false
-  savingRelatedLinks.value = false
   showAddLinkForm.value = false
 }
 </script>
@@ -1370,34 +1318,76 @@ async function cancelChanges() {
   width: 17rem;
 }
 
-/* Related Links */
+/* Related Links Dialog */
+.related-box {
+  min-width: 500px;
+  max-width: 600px;
+  border-radius: 15px;
+  font-family: 'Poppins', sans-serif;
+  background-color: #fbf4d0;
+}
+
+.dialog-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 2px solid #e0dbc7;
+}
+
+.links-container {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+}
+
+.link-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.link-item:hover {
+  background-color: #f5f5f5;
+}
+
+.drag-handle {
+  color: #999;
+  cursor: move;
+  flex-shrink: 0;
+}
+
+.link-icon {
+  color: #880000;
+  flex-shrink: 0;
+}
+
 .link-style {
   cursor: pointer;
-  color: var(--q-primary);
+  color: #880000;
   text-decoration: none;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.link-style:hover {
+.link-item:hover .link-style {
   text-decoration: underline;
+  color: #560505;
 }
 
 .draggable-item {
-  padding: 8px;
-  border-radius: 4px;
   transition: background-color 0.2s;
 }
 
 .draggable-item:hover {
-  background-color: #ffffe9;
-}
-
-.related-box {
-  min-width: 500px;
-  max-width: 600px;
+  background-color: #f5f5f5;
 }
 
 /* Responsivesness */
