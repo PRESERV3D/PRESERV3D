@@ -908,11 +908,12 @@ async function uploadFileToStorage(file, fileName) {
 }
 
 async function generatePdfPreview(file) {
-  // Prefer the local worker shipped in /public (fallback to CDN removed to avoid 404)
+  // Prefer the local worker shipped in /public, fallback to CDN if error
   try {
     window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
   } catch (e) {
-    console.warn('Could not set pdf.worker path, pdf.js may not be available:', e)
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.mjs'
+    console.warn('Could not set local pdf.worker path, using CDN fallback:', e)
   }
 
   const arrayBuffer = await file.arrayBuffer()

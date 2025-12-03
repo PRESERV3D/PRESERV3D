@@ -22,6 +22,11 @@ from dateutil.parser import parse as date_parse
 app = FastAPI()
 load_dotenv()
 
+# Configuration for summarization mode
+# SUMMARY_MODE: 'extractive' (fast, low memory) or 'abstractive' (BART, high quality)
+SUMMARY_MODE = os.getenv("SUMMARY_MODE", "extractive").lower()
+print(f"Summary mode: {SUMMARY_MODE}")
+
 
 # CORS configuration
 app.add_middleware(
@@ -51,6 +56,7 @@ except Exception as e:
 
 _nlp = None
 _summarizer = None
+_textrank_summarizer = None
 
 def get_nlp():
     global _nlp
@@ -61,7 +67,7 @@ def get_nlp():
     return _nlp
 
 def get_summarizer():
-    """Get cached summarizer instance to avoid reloading model"""
+    """Get cached abstractive summarizer (DistilBART) - only loaded when needed"""
     global _summarizer
     if _summarizer is None:
         from transformers import pipeline
@@ -74,6 +80,16 @@ def get_summarizer():
         )
         print("Summarizer loaded and cached")
     return _summarizer
+
+def get_textrank_summarizer():
+    """Get cached TextRank extractive summarizer"""
+    global _textrank_summarizer
+    if _textrank_summarizer is None:
+        from sumy.summarizers.text_rank import TextRankSummarizer
+        print("Initializing TextRank summarizer...")
+        _textrank_summarizer = TextRankSummarizer()
+        print("TextRank summarizer ready")
+    return _textrank_summarizer
 
 def clear_memory():
     """Force garbage collection and clear unused memory"""
@@ -174,7 +190,67 @@ def extract_keywords_hf(text, top_n=10):
     
     return keywords[:top_n]
 
-def summarize_text_hf(text, max_length=200, min_length=50):
+def summarize_text_extractive(text, max_sentences=5):
+    """Fast extractive summarization using TextRank"""
+    try:
+        from sumy.parsers.plaintext import PlaintextParser
+        from sumy.nlp.tokenizers import Tokenizer
+        import gc
+        
+        # Get process for monitoring
+        process = psutil.Process()
+        
+        # Record initial state
+        start_time = time.time()
+        mem_before = process.memory_info().rss / 1024 / 1024  # MB
+        cpu_before = process.cpu_percent(interval=0.1)
+        
+        print("Using fast extractive summarization (TextRank)...")
+        print(f"Initial RAM: {mem_before:.2f} MB, CPU: {cpu_before:.1f}%")
+        
+        # Prepare text - use more content for extractive (it's fast)
+        input_text = text[:4000].strip()
+        
+        if len(input_text.split()) < 30:
+            print("Text too short for summarization")
+            raise Exception("Text too short")
+        
+        # Parse and summarize
+        parser = PlaintextParser.from_string(input_text, Tokenizer("english"))
+        summarizer = get_textrank_summarizer()
+        summary_sentences = summarizer(parser.document, max_sentences)
+        summary = " ".join(str(s) for s in summary_sentences)
+        
+        # Cleanup
+        del parser
+        gc.collect()
+        
+        # Record final state
+        end_time = time.time()
+        mem_after = process.memory_info().rss / 1024 / 1024  # MB
+        cpu_after = process.cpu_percent(interval=0.1)
+        
+        # Calculate metrics
+        duration = end_time - start_time
+        mem_used = mem_after - mem_before
+        mem_peak = mem_after if mem_after > mem_before else mem_before
+        cpu_avg = (cpu_before + cpu_after) / 2
+        
+        print(f"Extractive summary generated: {len(summary)} chars")
+        print(f"Resource usage - Duration: {duration:.2f}s, RAM: {mem_after:.2f} MB (Δ{mem_used:+.2f} MB, Peak: {mem_peak:.2f} MB), CPU: {cpu_avg:.1f}%")
+        
+        return summary
+        
+    except Exception as e:
+        print(f"Extractive summarization failed: {e}, using simple fallback")
+        # Simple sentence extraction fallback
+        sentences = re.split(r'[.!?]\s+', text[:2000])
+        sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
+        summary_sentences = sentences[:min(5, len(sentences))]
+        return ' '.join(summary_sentences) + '.'
+
+def summarize_text_abstractive(text, max_length=160, min_length=50):
+    """High-quality abstractive summarization using DistilBART (memory intensive)"""
     try:
         import gc
         import torch
@@ -187,10 +263,10 @@ def summarize_text_hf(text, max_length=200, min_length=50):
         mem_before = process.memory_info().rss / 1024 / 1024  # MB
         cpu_before = process.cpu_percent(interval=0.1)
         
-        print("Attempting lightweight summarization...")
+        print("Using abstractive summarization (DistilBART)...")
         print(f"Initial RAM: {mem_before:.2f} MB, CPU: {cpu_before:.1f}%")
         
-        # Check if we're approaching memory limit (1800 MB threshold for 2GB system)
+        # Check if we're approaching memory limit
         if mem_before > 1800:
             print(f"⚠️ High memory usage detected ({mem_before:.2f} MB), forcing cleanup...")
             gc.collect()
@@ -202,11 +278,11 @@ def summarize_text_hf(text, max_length=200, min_length=50):
         # Use cached summarizer (avoids reloading model each time)
         summarizer = get_summarizer()
         
-        # Prepare text - reduce to 2000 chars to lower memory usage
-        input_text = text[:2000].strip()
+        # Prepare text
+        input_text = text[:4000].strip()
         
         if len(input_text.split()) < 50:
-            print("Text too short for summarization, using extractive method")
+            print("Text too short for abstractive summarization")
             raise Exception("Text too short")
         
         # Generate summary with memory-efficient settings
@@ -217,7 +293,7 @@ def summarize_text_hf(text, max_length=200, min_length=50):
             do_sample=False,
             truncation=True,
             clean_up_tokenization_spaces=True,
-            batch_size=1  # Process one at a time to minimize memory
+            batch_size=1
         )
         
         summary = result[0]['summary_text'].strip()
@@ -237,7 +313,7 @@ def summarize_text_hf(text, max_length=200, min_length=50):
         mem_peak = mem_after if mem_after > mem_before else mem_before
         cpu_avg = (cpu_before + cpu_after) / 2
         
-        print(f"Summary generated: {len(summary)} chars")
+        print(f"Abstractive summary generated: {len(summary)} chars")
         print(f"Resource usage - Duration: {duration:.2f}s, RAM: {mem_after:.2f} MB (Δ{mem_used:+.2f} MB, Peak: {mem_peak:.2f} MB), CPU: {cpu_avg:.1f}%")
         
         # Warn if approaching limit
@@ -247,12 +323,8 @@ def summarize_text_hf(text, max_length=200, min_length=50):
         return summary
         
     except Exception as e:
-        print(f"Summarization failed: {e}, falling back to extractive method")
-        # Extractive fallback
-        sentences = re.split(r'[.!?]\s+', text[:2000])
-        sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
-        summary_sentences = sentences[:min(5, len(sentences))]
-        return ' '.join(summary_sentences) + '.'
+        print(f"Abstractive summarization failed: {e}")
+        raise
 
 @app.head("/health")
 @app.get("/health")
@@ -268,9 +340,11 @@ async def health_check():
         "memory_mb": round(mem_mb, 2),
         "memory_percent": round((mem_mb / 2048) * 100, 1),  # Assuming 2GB limit
         "cpu_percent": round(cpu_percent, 1),
+        "summary_mode": SUMMARY_MODE,
         "models_loaded": {
             "ner": _nlp is not None,
-            "summarizer": _summarizer is not None
+            "summarizer_bart": _summarizer is not None,
+            "summarizer_textrank": _textrank_summarizer is not None
         }
     }
 
@@ -280,7 +354,8 @@ async def root():
     return {
         "message": "PRESERV3D NLP Service",
         "status": "running",
-        "endpoints": ["/health", "/process-text", "/extract-text", "/check-relevance", "/related-links", "/rescan-metadata" ]
+        "summary_mode": SUMMARY_MODE,
+        "endpoints": ["/health", "/process-text", "/enhance-summary", "/extract-text", "/check-relevance", "/related-links", "/rescan-metadata" ]
     }
 
 @app.post("/process-text")
@@ -327,10 +402,16 @@ async def process_pdf(
                 print("Keyword extraction error:", e)
                 keywords = []
 
-            # Summarization with BART + relevance checking + improvement
+            # Summarization - use configured mode (extractive by default)
             try:
-                # Generate initial summary with BART
-                initial_summary = summarize_text_hf(cleaned_text[:4000])
+                if SUMMARY_MODE == "abstractive":
+                    # High-quality but resource-intensive
+                    print("Using abstractive mode (DistilBART)")
+                    initial_summary = summarize_text_abstractive(cleaned_text[:4000])
+                else:
+                    # Fast and memory-efficient (default)
+                    print("Using extractive mode (TextRank)")
+                    initial_summary = summarize_text_extractive(cleaned_text[:4000])
                 
                 if not initial_summary:
                     print("Summarizer returned no output")
@@ -349,9 +430,9 @@ async def process_pdf(
                     
                     if relevance_issue:
                         print(f"Relevance issue detected: {relevance_issue.get('issue')}")
-                        print("Attempting to improve summary with extractive method...")
+                        print("Attempting to improve summary with keyword-based extractive method...")
                         
-                        # Use extractive method as improvement
+                        # Use keyword-based extractive method as improvement
                         improved_summary = generate_summary(
                             text=cleaned_text,
                             title=metadata.get("title"),
@@ -374,13 +455,13 @@ async def process_pdf(
                         
                         # Use whichever is better
                         if not improved_issue:
-                            print("Extractive summary passed relevance check")
+                            print("Keyword-based extractive summary passed relevance check")
                             summary = improved_summary
                         else:
-                            print("Using original BART summary despite issues")
+                            print("Using original summary despite issues")
                             summary = initial_summary
                     else:
-                        print("BART summary passed relevance check")
+                        print("Summary passed relevance check")
                         summary = initial_summary
                         
             except Exception as e:
@@ -1263,6 +1344,74 @@ def download_file(file_url: str) -> bytes:
         return res.content
     else:
         raise ValueError(f"Unknown file storage provider for {file_url}")
+
+@app.post("/enhance-summary")
+async def enhance_summary(request: Request):
+    """
+    Generate high-quality abstractive summary using DistilBART.
+    Use this for manual enhancement when extractive summaries need improvement.
+    Warning: This is resource-intensive and may take 3-8 seconds.
+    """
+    try:
+        data = await request.json()
+        
+        text = data.get("text", "")
+        title = data.get("title", "")
+        keywords = data.get("keywords", [])
+        categories = data.get("categories", "")
+        author = data.get("author", "")
+        date = data.get("date", "")
+        
+        if not text or len(text.strip()) < 100:
+            return {
+                "success": False,
+                "error": "Text too short for enhancement (minimum 100 characters)"
+            }
+        
+        # Clean text
+        cleaned_text = clean_text(text)
+        
+        # Generate abstractive summary
+        try:
+            enhanced_summary = summarize_text_abstractive(cleaned_text[:4000], max_length=160, min_length=50)
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Enhancement failed: {str(e)}"
+            }
+        
+        if not enhanced_summary:
+            return {
+                "success": False,
+                "error": "Enhancement produced no output"
+            }
+        
+        # Check relevance of enhanced summary
+        relevance_issue = check_summary_relevance(
+            title=title,
+            summary=enhanced_summary,
+            keywords=keywords,
+            categories=categories,
+            author=author,
+            date=date,
+            extracted_text=cleaned_text[:1000]
+        )
+        
+        return {
+            "success": True,
+            "summary": enhanced_summary,
+            "relevance_check": {
+                "passed": not bool(relevance_issue),
+                "issue": relevance_issue if relevance_issue else None
+            }
+        }
+        
+    except Exception as e:
+        print(f"Enhancement error: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 @app.post("/check-relevance")
 async def check_relevance_endpoint(request: Request):

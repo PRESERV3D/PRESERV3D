@@ -16,6 +16,10 @@ spacy>=3.0.0,<4.0.0
 transformers==4.36.0
 sentence-transformers>=2.5.0
 
+# Summarization - extractive (fast) and abstractive (quality)
+nltk
+sumy
+
 # Utilities
 python-dotenv
 python-dateutil
