@@ -1866,7 +1866,7 @@ async function addCollection() {
   }
 
   .recently-viewed-item {
-    padding: 0 1.2rem;
+    padding: 0.5rem 1.2rem;
     min-height: 3.75rem;
 
   }
