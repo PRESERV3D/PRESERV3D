@@ -464,12 +464,6 @@ export default defineComponent({
       pagination: {
         rowsPerPage: 10,
       },
-      stats: {
-        total: 0,
-        screenshots: 0,
-        devTools: 0,
-        prints: 0,
-      },
       columns: [
         {
           name: 'timestamp',
@@ -541,6 +535,17 @@ export default defineComponent({
 
       return filtered
     },
+
+    stats() {
+      // Calculate stats based on filtered logs instead of all logs
+      const filtered = this.filteredLogs
+      return {
+        total: filtered.length,
+        screenshots: filtered.filter((log) => log.event_type === 'screenshot_attempt').length,
+        devTools: filtered.filter((log) => log.event_type === 'dev_tools_detected').length,
+        prints: filtered.filter((log) => log.event_type === 'print_attempt').length,
+      }
+    },
   },
 
   setup() {
@@ -550,7 +555,6 @@ export default defineComponent({
 
   mounted() {
     this.fetchLogs()
-    this.fetchStats()
   },
 
   methods: {
@@ -579,24 +583,6 @@ export default defineComponent({
         })
       } finally {
         this.loading = false
-      }
-    },
-
-    async fetchStats() {
-      try {
-        const { data, error } = await supabase.from('security_logs').select('event_type')
-
-        if (error) throw error
-
-        const logs = data || []
-        this.stats.total = logs.length
-        this.stats.screenshots = logs.filter(
-          (log) => log.event_type === 'screenshot_attempt',
-        ).length
-        this.stats.devTools = logs.filter((log) => log.event_type === 'dev_tools_detected').length
-        this.stats.prints = logs.filter((log) => log.event_type === 'print_attempt').length
-      } catch (error) {
-        console.error('Error fetching stats:', error)
       }
     },
 
