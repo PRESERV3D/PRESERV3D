@@ -191,11 +191,14 @@
 
 <script setup>
 import { ref, onMounted, onActivated } from 'vue'
+import { useQuasar } from 'quasar'
 import { supabase } from 'boot/supabase'
 import { uploadFileToR2 } from 'boot/r2'
 import { convertToWorkingUrl } from 'src/composables/useR2Url'
 import { preloadPreviews } from 'src/utils/urlCache'
 import { useUserStore } from 'stores/user'
+
+const $q = useQuasar()
 
 const user = ref({ first_name: '' })
 const collections = ref([])
@@ -396,13 +399,47 @@ async function addCollection() {
   const description = newCollectionDesc.value.trim()
 
   if (!title) {
-    console.warn('Collection title is required')
+    $q.dialog({
+      title: 'Validation Error',
+      message: 'Collection title is required.',
+      color: 'negative',
+    })
+    isGenerateCollectionLoading.value = false
     return
   }
 
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser()
+
+  // Check for duplicate collection name for this user (case-insensitive)
+  const { data: existingCollection, error: checkError } = await supabase
+    .from('collections')
+    .select('collection_id')
+    .eq('user_id', authUser.id)
+    .ilike('collection_name', title)
+    .maybeSingle()
+
+  if (checkError) {
+    console.error('Error checking collection name:', checkError)
+    $q.dialog({
+      title: 'Error',
+      message: 'Failed to verify collection name. Please try again.',
+      color: 'negative',
+    })
+    isGenerateCollectionLoading.value = false
+    return
+  }
+
+  if (existingCollection) {
+    $q.dialog({
+      title: 'Duplicate Collection Name',
+      message: 'You already have a collection with this name. Please choose a different name.',
+      color: 'warning',
+    })
+    isGenerateCollectionLoading.value = false
+    return
+  }
 
   let coverUrl = ''
 

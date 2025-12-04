@@ -90,7 +90,7 @@
                           v-model="form.time"
                           mask="h:mm A"
                           :options="hourOptions"
-                          :minute-options="[0, 15, 30, 45]"
+                          :minute-options="[0, 30]"
                         >
                           <div class="row items-center justify-end q-gutter-sm">
                             <q-btn v-close-popup label="Close" color="primary" flat />
@@ -193,6 +193,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
 import { useRouter, useRoute } from 'vue-router'
 import { supabase } from 'boot/supabase'
@@ -203,6 +204,7 @@ const loading = ref(false)
 const isBookLoading = ref(false)
 const showSuccessModal = ref(false)
 
+const $q = useQuasar()
 const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
@@ -384,6 +386,34 @@ async function submitBooking() {
     if (authError || !user) {
       console.error('Auth error:', authError)
       alert('Authentication error. Please log in again.')
+      return
+    }
+
+    // Check if there's already an approved appointment at this date and time
+    const { data: existingAppt, error: checkError } = await supabase
+      .from('appointment_booking')
+      .select('appointment_id, status')
+      .eq('date', date)
+      .eq('time', time)
+      .eq('status', 'Approved')
+      .maybeSingle()
+
+    if (checkError) {
+      console.error('Error checking existing appointments:', checkError)
+      $q.dialog({
+        title: 'Validation Error',
+        message: 'Failed to verify time slot availability. Please try again.',
+        color: 'negative',
+      })
+      return
+    }
+
+    if (existingAppt) {
+      $q.dialog({
+        title: 'Time Slot Unavailable',
+        message: 'This time slot is already booked. Please select a different date or time.',
+        color: 'warning',
+      })
       return
     }
 
