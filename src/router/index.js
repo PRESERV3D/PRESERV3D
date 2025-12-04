@@ -236,5 +236,17 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     }
   })
 
+  // Hard reload on every navigation to a new page
+  Router.afterEach((to, from) => {
+    // Only reload if navigating to a different page (not initial load)
+    if (from.name && to.path !== from.path) {
+      console.log('🔄 Navigating to new page, triggering reload...')
+      // Use setTimeout to allow the route to register before reload
+      setTimeout(() => {
+        window.location.reload()
+      }, 100)
+    }
+  })
+
   return Router
 })
