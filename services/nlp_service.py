@@ -9,6 +9,8 @@ import base64
 import json
 import requests
 import sys
+import psutil
+import time
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from datetime import datetime
@@ -16,9 +18,29 @@ from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from dateutil.parser import parse as date_parse
+import nltk
+
+# Configure NLTK data path to use virtual environment
+nltk_data_path = os.path.join(os.path.dirname(__file__), 'nltk_data')
+os.makedirs(nltk_data_path, exist_ok=True)
+nltk.data.path.insert(0, nltk_data_path)
+
+# Download required NLTK data
+try:
+    nltk.data.find('tokenizers/punkt_tab')
+    print("NLTK punkt_tab tokenizer already downloaded")
+except LookupError:
+    print("Downloading NLTK punkt_tab tokenizer...")
+    nltk.download('punkt_tab', download_dir=nltk_data_path, quiet=False)
+    print("NLTK punkt_tab downloaded successfully")
 
 app = FastAPI()
 load_dotenv()
+
+# Configuration for summarization mode
+# SUMMARY_MODE: 'extractive' (fast, low memory) or 'abstractive' (BART, high quality)
+SUMMARY_MODE = os.getenv("SUMMARY_MODE", "extractive").lower()
+print(f"Summary mode: {SUMMARY_MODE}")
 
 
 # CORS configuration
@@ -48,6 +70,8 @@ except Exception as e:
     print("Will use TF-IDF based similarity as fallback")
 
 _nlp = None
+_summarizer = None
+_textrank_summarizer = None
 
 def get_nlp():
     global _nlp
@@ -56,6 +80,40 @@ def get_nlp():
         _nlp = spacy.load("nlp_training/ner_model")
         print("Custom NER model loaded successfully")
     return _nlp
+
+def get_summarizer():
+    """Get cached abstractive summarizer (DistilBART) - only loaded when needed"""
+    global _summarizer
+    if _summarizer is None:
+        from transformers import pipeline
+        print("Loading DistilBART summarizer (one-time load)...")
+        _summarizer = pipeline(
+            "summarization",
+            model="sshleifer/distilbart-cnn-12-6",
+            device=-1,  # CPU only
+            framework="pt"
+        )
+        print("Summarizer loaded and cached")
+    return _summarizer
+
+def get_textrank_summarizer():
+    """Get cached TextRank extractive summarizer"""
+    global _textrank_summarizer
+    if _textrank_summarizer is None:
+        from sumy.summarizers.text_rank import TextRankSummarizer
+        print("Initializing TextRank summarizer...")
+        _textrank_summarizer = TextRankSummarizer()
+        print("TextRank summarizer ready")
+    return _textrank_summarizer
+
+def clear_memory():
+    """Force garbage collection and clear unused memory"""
+    import gc
+    gc.collect()
+    if hasattr(psutil.Process(), 'memory_info'):
+        process = psutil.Process()
+        mem_mb = process.memory_info().rss / 1024 / 1024
+        print(f"Memory after cleanup: {mem_mb:.2f} MB")
 
 def get_local_embeddings(text):
     """Get embeddings using local sentence-transformers model"""
@@ -147,49 +205,162 @@ def extract_keywords_hf(text, top_n=10):
     
     return keywords[:top_n]
 
-def summarize_text_hf(text, max_length=200, min_length=50):
+def summarize_text_extractive(text, max_sentences=5):
+    """Fast extractive summarization using TextRank"""
     try:
-        from transformers import pipeline
-        print("Attempting BART summarization...")
+        from sumy.parsers.plaintext import PlaintextParser
+        from sumy.nlp.tokenizers import Tokenizer
+        import gc
         
-        # Initialize summarizer (cached after first call)
-        summarizer = pipeline("summarization", model="facebook/bart-large-cnn", device=-1)
+        # Get process for monitoring
+        process = psutil.Process()
         
-        # Prepare text (BART works best with 512-1024 tokens)
-        input_text = text[:3000].strip()
+        # Record initial state
+        start_time = time.time()
+        mem_before = process.memory_info().rss / 1024 / 1024  # MB
+        cpu_before = process.cpu_percent(interval=0.1)
         
-        if len(input_text.split()) < 50:
-            print("Text too short for BART, using extractive method")
+        print("Using fast extractive summarization (TextRank)...")
+        print(f"Initial RAM: {mem_before:.2f} MB, CPU: {cpu_before:.1f}%")
+        
+        # Prepare text - use more content for extractive (it's fast)
+        input_text = text[:4000].strip()
+        
+        if len(input_text.split()) < 30:
+            print("Text too short for summarization")
             raise Exception("Text too short")
         
-        # Generate summary
-        result = summarizer(
-            input_text,
-            max_length=max_length,
-            min_length=min_length,
-            do_sample=False,
-            truncation=True
-        )
+        # Parse and summarize
+        parser = PlaintextParser.from_string(input_text, Tokenizer("english"))
+        summarizer = get_textrank_summarizer()
+        summary_sentences = summarizer(parser.document, max_sentences)
+        summary = " ".join(str(s) for s in summary_sentences)
         
-        summary = result[0]['summary_text'].strip()
-        print(f"BART summary generated: {len(summary)} chars")
+        # Cleanup
+        del parser
+        gc.collect()
+        
+        # Record final state
+        end_time = time.time()
+        mem_after = process.memory_info().rss / 1024 / 1024  # MB
+        cpu_after = process.cpu_percent(interval=0.1)
+        
+        # Calculate metrics
+        duration = end_time - start_time
+        mem_used = mem_after - mem_before
+        mem_peak = mem_after if mem_after > mem_before else mem_before
+        cpu_avg = (cpu_before + cpu_after) / 2
+        
+        print(f"Extractive summary generated: {len(summary)} chars")
+        print(f"Resource usage - Duration: {duration:.2f}s, RAM: {mem_after:.2f} MB (Δ{mem_used:+.2f} MB, Peak: {mem_peak:.2f} MB), CPU: {cpu_avg:.1f}%")
+        
         return summary
         
     except Exception as e:
-        print(f"BART summarization failed: {e}, falling back to extractive method")
-        # Extractive fallback
+        print(f"Extractive summarization failed: {e}, using simple fallback")
+        # Simple sentence extraction fallback
         sentences = re.split(r'[.!?]\s+', text[:2000])
         sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
         summary_sentences = sentences[:min(5, len(sentences))]
         return ' '.join(summary_sentences) + '.'
 
+def summarize_text_abstractive(text, max_length=160, min_length=50):
+    """High-quality abstractive summarization using DistilBART (memory intensive)"""
+    try:
+        import gc
+        import torch
+        
+        # Get process for monitoring
+        process = psutil.Process()
+        
+        # Record initial state
+        start_time = time.time()
+        mem_before = process.memory_info().rss / 1024 / 1024  # MB
+        cpu_before = process.cpu_percent(interval=0.1)
+        
+        print("Using abstractive summarization (DistilBART)...")
+        print(f"Initial RAM: {mem_before:.2f} MB, CPU: {cpu_before:.1f}%")
+        
+        # Check if we're approaching memory limit
+        if mem_before > 1800:
+            print(f"⚠️ High memory usage detected ({mem_before:.2f} MB), forcing cleanup...")
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            mem_before = process.memory_info().rss / 1024 / 1024
+            print(f"After cleanup: {mem_before:.2f} MB")
+        
+        # Use cached summarizer (avoids reloading model each time)
+        summarizer = get_summarizer()
+        
+        # Prepare text
+        input_text = text[:4000].strip()
+        
+        if len(input_text.split()) < 50:
+            print("Text too short for abstractive summarization")
+            raise Exception("Text too short")
+        
+        # Generate summary with memory-efficient settings
+        result = summarizer(
+            input_text,
+            max_length=max_length,
+            min_length=min_length,
+            do_sample=False,
+            truncation=True,
+            clean_up_tokenization_spaces=True,
+            batch_size=1
+        )
+        
+        summary = result[0]['summary_text'].strip()
+        
+        # Force cleanup after generation
+        del result
+        gc.collect()
+        
+        # Record final state
+        end_time = time.time()
+        mem_after = process.memory_info().rss / 1024 / 1024  # MB
+        cpu_after = process.cpu_percent(interval=0.1)
+        
+        # Calculate metrics
+        duration = end_time - start_time
+        mem_used = mem_after - mem_before
+        mem_peak = mem_after if mem_after > mem_before else mem_before
+        cpu_avg = (cpu_before + cpu_after) / 2
+        
+        print(f"Abstractive summary generated: {len(summary)} chars")
+        print(f"Resource usage - Duration: {duration:.2f}s, RAM: {mem_after:.2f} MB (Δ{mem_used:+.2f} MB, Peak: {mem_peak:.2f} MB), CPU: {cpu_avg:.1f}%")
+        
+        # Warn if approaching limit
+        if mem_after > 1700:
+            print(f"⚠️ Warning: Memory usage high ({mem_after:.2f} MB / 2048 MB limit)")
+        
+        return summary
+        
+    except Exception as e:
+        print(f"Abstractive summarization failed: {e}")
+        raise
+
 @app.head("/health")
 @app.get("/health")
 async def health_check():
+    process = psutil.Process()
+    mem_mb = process.memory_info().rss / 1024 / 1024
+    cpu_percent = process.cpu_percent(interval=0.1)
+    
     return {
         "status": "healthy",
         "service": "nlp_service",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
+        "memory_mb": round(mem_mb, 2),
+        "memory_percent": round((mem_mb / 2048) * 100, 1),  # Assuming 2GB limit
+        "cpu_percent": round(cpu_percent, 1),
+        "summary_mode": SUMMARY_MODE,
+        "models_loaded": {
+            "ner": _nlp is not None,
+            "summarizer_bart": _summarizer is not None,
+            "summarizer_textrank": _textrank_summarizer is not None
+        }
     }
 
 @app.head("/")
@@ -198,7 +369,8 @@ async def root():
     return {
         "message": "PRESERV3D NLP Service",
         "status": "running",
-        "endpoints": ["/health", "/process-text", "/generate-summary", "/extract-text", "/related-links", "/rescan-metadata" ]
+        "summary_mode": SUMMARY_MODE,
+        "endpoints": ["/health", "/process-text", "/enhance-summary", "/extract-text", "/check-relevance", "/related-links", "/rescan-metadata" ]
     }
 
 @app.post("/process-text")
@@ -245,10 +417,16 @@ async def process_pdf(
                 print("Keyword extraction error:", e)
                 keywords = []
 
-            # Summarization with BART + relevance checking + improvement
+            # Summarization - use configured mode (extractive by default)
             try:
-                # Generate initial summary with BART
-                initial_summary = summarize_text_hf(cleaned_text[:4000])
+                if SUMMARY_MODE == "abstractive":
+                    # High-quality but resource-intensive
+                    print("Using abstractive mode (DistilBART)")
+                    initial_summary = summarize_text_abstractive(cleaned_text[:4000])
+                else:
+                    # Fast and memory-efficient (default)
+                    print("Using extractive mode (TextRank)")
+                    initial_summary = summarize_text_extractive(cleaned_text[:4000])
                 
                 if not initial_summary:
                     print("Summarizer returned no output")
@@ -267,9 +445,9 @@ async def process_pdf(
                     
                     if relevance_issue:
                         print(f"Relevance issue detected: {relevance_issue.get('issue')}")
-                        print("Attempting to improve summary with extractive method...")
+                        print("Attempting to improve summary with keyword-based extractive method...")
                         
-                        # Use extractive method as improvement
+                        # Use keyword-based extractive method as improvement
                         improved_summary = generate_summary(
                             text=cleaned_text,
                             title=metadata.get("title"),
@@ -292,13 +470,13 @@ async def process_pdf(
                         
                         # Use whichever is better
                         if not improved_issue:
-                            print("Extractive summary passed relevance check")
+                            print("Keyword-based extractive summary passed relevance check")
                             summary = improved_summary
                         else:
-                            print("Using original BART summary despite issues")
+                            print("Using original summary despite issues")
                             summary = initial_summary
                     else:
-                        print("BART summary passed relevance check")
+                        print("Summary passed relevance check")
                         summary = initial_summary
                         
             except Exception as e:
@@ -502,8 +680,12 @@ def check_summary_relevance(title, summary, keywords=None, categories=None, auth
     
     # Semantic similarity check using embeddings or TF-IDF
     try:
+        print(f"\nDocument Title: {title}")
+
         context_emb = get_embeddings(context_text) or []
         summary_emb = get_embeddings(summary) or []
+
+        high_similarity = False
 
         if context_emb and summary_emb:
             similarity = cosine_similarity(context_emb, summary_emb)
@@ -524,6 +706,15 @@ def check_summary_relevance(title, summary, keywords=None, categories=None, auth
                     "suggestion": "Consider revising the summary to more closely match the document's key themes and topics.",
                     "severity": "medium"
                 }
+            else:
+                # High semantic similarity (>= 0.55) -> mark and only log keyword coverage as a note
+                high_similarity = True
+                print(f"High semantic similarity ({similarity:.3f}) - skipping strict keyword check")
+                if keywords and len(keywords) >= 3:
+                    summary_lower = summary.lower()
+                    keyword_matches = sum(1 for kw in keywords if kw and kw.lower() in summary_lower)
+                    keyword_coverage = keyword_matches / len(keywords)
+                    print(f"Note: Keyword coverage: {keyword_matches}/{len(keywords)} ({keyword_coverage:.1%})")
         else:
             # Use TF-IDF similarity as fallback
             print("Using TF-IDF similarity check as fallback")
@@ -545,11 +736,20 @@ def check_summary_relevance(title, summary, keywords=None, categories=None, auth
                     "suggestion": "Consider revising the summary to include more key terms from the document.",
                     "severity": "medium"
                 }
+            else:
+                # Good TF-IDF similarity (>= 0.25) -> mark and only log keyword coverage as a note
+                high_similarity = True
+                print(f"Good TF-IDF similarity ({similarity:.3f}) - skipping strict keyword check")
+                if keywords and len(keywords) >= 3:
+                    summary_lower = summary.lower()
+                    keyword_matches = sum(1 for kw in keywords if kw and kw.lower() in summary_lower)
+                    keyword_coverage = keyword_matches / len(keywords)
+                    print(f"Note: Keyword coverage: {keyword_matches}/{len(keywords)} ({keyword_coverage:.1%})")
     except Exception as e:
         print(f"Similarity check failed: {e}")
     
-    # Keyword overlap check
-    if keywords and len(keywords) >= 3:
+    # Keyword overlap check - only runs if similarity was LOW
+    if not high_similarity and keywords and len(keywords) >= 3:
         summary_lower = summary.lower()
         keyword_matches = sum(1 for kw in keywords if kw and kw.lower() in summary_lower)
         keyword_coverage = keyword_matches / len(keywords)
@@ -1005,9 +1205,29 @@ def clean_place(place):
 
 def generate_summary(text, title=None, author=None, date=None, keywords=None, categories=None, max_attempts=2):
     """Generate structured, readable extractive summary using keyword-based sentence scoring"""
+    import gc
+    
+    # Get process for monitoring
+    process = psutil.Process()
+    
+    # Record initial state
+    start_time = time.time()
+    mem_before = process.memory_info().rss / 1024 / 1024  # MB
+    cpu_before = process.cpu_percent(interval=0.1)
+    
     print("Generating extractive summary...")
+    print(f"Initial RAM: {mem_before:.2f} MB, CPU: {cpu_before:.1f}%")
+    
+    # Check memory threshold
+    if mem_before > 1800:
+        print(f"⚠️ High memory usage, forcing cleanup before extractive summary...")
+        gc.collect()
+        mem_before = process.memory_info().rss / 1024 / 1024
+        print(f"After cleanup: {mem_before:.2f} MB")
+    
     cleaned_text = clean_text(text)
-    input_text = cleaned_text[:3000]
+    # Reduce to 2500 chars to lower memory usage
+    input_text = cleaned_text[:2500]
     
     if len(input_text.strip()) < 100:
         return "Insufficient content for summary generation."
@@ -1102,137 +1322,29 @@ def generate_summary(text, title=None, author=None, date=None, keywords=None, ca
     # Clean up spacing
     summary = re.sub(r'\s+', ' ', summary).strip()
     
-    return summary
-
-@app.post("/generate-summary/{doc_id}")
-def generate_summary_endpoint(doc_id: str):
-    doc = supabase.table("documents_metadata").select("*").eq("id", doc_id).single().execute()
-    if not doc.data:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    metadata = doc.data.get("metadata") or {}
-    extracted_text = metadata.get("extracted_text")
-    file_url = doc.data.get("file_url")
-
-    if not extracted_text or extracted_text.strip() == "":
-        print("No extracted text found, downloading and extracting from file_url...")
-        try:
-            file_bytes = download_file(file_url)
-            extracted_result = extract_text(file_bytes, filename=file_url.split("/")[-1])            
-            cleaned_text = clean_text(extracted_result.get("text", ""))
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to download or extract file: {e}")
-
-        if isinstance(extracted_result, dict) and extracted_result.get("status") == "ocr_required":
-            return {
-                "id": doc_id,
-                "summary": None,
-                "ocr_required": True,
-                "pages": extracted_result["pages"],
-                "filename": extracted_result["filename"]
-            }
-
-        supabase.table("documents_metadata").update({
-            "metadata": {**metadata, "extracted_text": cleaned_text}
-        }).eq("id", doc_id).execute()
-
-        extracted_text = cleaned_text
-
-    # Get keywords for relevance checking
-    keywords = metadata.get("keywords", [])
-    if not keywords:
-        try:
-            keywords = extract_keywords_hf(extracted_text, top_n=10)
-        except Exception as e:
-            print(f"Keyword extraction error: {e}")
-            keywords = []
-
-    # Summarization with BART + relevance checking + improvement
-    initial_summary = None
-    improved_summary = None
-    initial_check = None
-    improved_check = None
-    summary_method = None
-    error_message = None
+    # Cleanup
+    del filtered_sentences, scored, top_scored
+    gc.collect()
     
-    try:
-        # Generate initial summary with BART
-        initial_summary = summarize_text_hf(extracted_text[:4000])
-        
-        if not initial_summary:
-            print("Summarizer returned no output")
-            error_message = "Failed to generate summary"
-        else:
-            # Check relevance of initial summary
-            initial_check = check_summary_relevance(
-                title=metadata.get("title"),
-                summary=initial_summary,
-                keywords=keywords,
-                categories=metadata.get("categories"),
-                author=metadata.get("author"),
-                date=metadata.get("date"),
-                extracted_text=extracted_text[:1000]
-            )
-            
-            if initial_check:
-                # Initial summary has issues, generate improved version
-                print(f"Relevance issue detected: {initial_check.get('issue')}")
-                print("Generating improved summary with extractive method...")
-                
-                improved_summary = generate_summary(
-                    text=extracted_text,
-                    title=metadata.get("title"),
-                    author=metadata.get("author"),
-                    date=metadata.get("date"),
-                    keywords=keywords,
-                    categories=metadata.get("categories")
-                )
-                
-                # Re-check improved summary
-                improved_check = check_summary_relevance(
-                    title=metadata.get("title"),
-                    summary=improved_summary,
-                    keywords=keywords,
-                    categories=metadata.get("categories"),
-                    author=metadata.get("author"),
-                    date=metadata.get("date"),
-                    extracted_text=extracted_text[:1000]
-                )
-                
-                summary_method = "extractive" if not improved_check else "bart"
-            else:
-                # Initial summary passed all checks
-                print("BART summary passed relevance check")
-                summary_method = "bart"
-                
-    except Exception as e:
-        print(f"Summarizer error: {e}")
-        error_message = str(e)
-        # Fallback to extractive method
-        try:
-            improved_summary = generate_summary(
-                text=extracted_text,
-                title=metadata.get("title"),
-                author=metadata.get("author"),
-                date=metadata.get("date"),
-                keywords=keywords,
-                categories=metadata.get("categories")
-            )
-            summary_method = "extractive"
-        except Exception as fallback_error:
-            print(f"Fallback summary error: {fallback_error}")
-            error_message = str(fallback_error)
-
-    # Return detailed response for frontend
-    return {
-        "id": doc_id,
-        "initial_summary": initial_summary,
-        "improved_summary": improved_summary,
-        "initial_check": initial_check if initial_check else {"passed": True},
-        "improved_check": improved_check if improved_check else {"passed": True},
-        "summary_method": summary_method,
-        "error": error_message
-    }
+    # Record final state
+    end_time = time.time()
+    mem_after = process.memory_info().rss / 1024 / 1024  # MB
+    cpu_after = process.cpu_percent(interval=0.1)
+    
+    # Calculate metrics
+    duration = end_time - start_time
+    mem_used = mem_after - mem_before
+    mem_peak = mem_after if mem_after > mem_before else mem_before
+    cpu_avg = (cpu_before + cpu_after) / 2
+    
+    print(f"Extractive summary complete")
+    print(f"Resource usage - Duration: {duration:.2f}s, RAM: {mem_after:.2f} MB (Δ{mem_used:+.2f} MB, Peak: {mem_peak:.2f} MB), CPU: {cpu_avg:.1f}%")
+    
+    # Warn if approaching limit
+    if mem_after > 1700:
+        print(f"⚠️ Warning: Memory usage high ({mem_after:.2f} MB / 2048 MB limit)")
+    
+    return summary
 
 def download_file(file_url: str) -> bytes:
     if "supabase.co" in file_url:
@@ -1247,6 +1359,74 @@ def download_file(file_url: str) -> bytes:
         return res.content
     else:
         raise ValueError(f"Unknown file storage provider for {file_url}")
+
+@app.post("/enhance-summary")
+async def enhance_summary(request: Request):
+    """
+    Generate high-quality abstractive summary using DistilBART.
+    Use this for manual enhancement when extractive summaries need improvement.
+    Warning: This is resource-intensive and may take 3-8 seconds.
+    """
+    try:
+        data = await request.json()
+        
+        text = data.get("text", "")
+        title = data.get("title", "")
+        keywords = data.get("keywords", [])
+        categories = data.get("categories", "")
+        author = data.get("author", "")
+        date = data.get("date", "")
+        
+        if not text or len(text.strip()) < 100:
+            return {
+                "success": False,
+                "error": "Text too short for enhancement (minimum 100 characters)"
+            }
+        
+        # Clean text
+        cleaned_text = clean_text(text)
+        
+        # Generate abstractive summary
+        try:
+            enhanced_summary = summarize_text_abstractive(cleaned_text[:4000], max_length=160, min_length=50)
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Enhancement failed: {str(e)}"
+            }
+        
+        if not enhanced_summary:
+            return {
+                "success": False,
+                "error": "Enhancement produced no output"
+            }
+        
+        # Check relevance of enhanced summary
+        relevance_issue = check_summary_relevance(
+            title=title,
+            summary=enhanced_summary,
+            keywords=keywords,
+            categories=categories,
+            author=author,
+            date=date,
+            extracted_text=cleaned_text[:1000]
+        )
+        
+        return {
+            "success": True,
+            "summary": enhanced_summary,
+            "relevance_check": {
+                "passed": not bool(relevance_issue),
+                "issue": relevance_issue if relevance_issue else None
+            }
+        }
+        
+    except Exception as e:
+        print(f"Enhancement error: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 @app.post("/check-relevance")
 async def check_relevance_endpoint(request: Request):
@@ -1354,7 +1534,8 @@ def detect_inconsistencies(metadata, source_type="document"):
             metadata.get("keywords"),
             metadata.get("categories"),
             metadata.get("author"),
-            metadata.get("date")
+            metadata.get("date"),
+            metadata.get("extracted_text", "")[:1000] if metadata.get("extracted_text") else ""
         )
         if summary_issue:
             issues.append(summary_issue)
@@ -1498,7 +1679,8 @@ async def rescan_metadata():
                         "date": metadata_json.get("date"),
                         "summary": metadata_json.get("summary"),
                         "keywords": metadata_json.get("keywords", []),
-                        "categories": metadata_json.get("categories", [])
+                        "categories": metadata_json.get("categories", []),
+                        "extracted_text": metadata_json.get("extracted_text", "")
                     },
                     supabase=supabase,
                     source_type=source["type"],
@@ -1522,39 +1704,65 @@ async def related_links(
     categories: str = "",
     date: str = ""
 ):
+    import time
+    start_time = time.time()
+    
     try:
+        print(f"\n{'='*60}")
+        print(f"[NLP Service] Related Links Request Started")
+        print(f"{'='*60}")
+        print(f"Title: {title}")
+        print(f"Author: {author or '(none)'}")
+        print(f"Categories: {categories or '(none)'}")
+        print(f"Date: {date or '(none)'}")
+        print(f"{'='*60}\n")
+        
         script_dir = os.path.dirname(os.path.abspath(__file__))
         script_path = os.path.join(script_dir, "web_scraper.js")
         
         # Verify script exists
         if not os.path.exists(script_path):
+            print(f"[ERROR] web_scraper.js not found at {script_path}")
             return {
                 "links": [], 
                 "error": f"web_scraper.js not found at {script_path}"
             }
         
+        print(f"[OK] Found web_scraper.js at: {script_path}")
+        
         # Prepare command
         cmd = ["node", "--expose-gc", script_path, title, author or "", categories or "", date or ""]
+        print(f"[CMD] Executing: {' '.join(cmd)}")
         
         # Set up environment
         env = os.environ.copy()
         env["NODE_ENV"] = "production"
         env["NODE_PATH"] = os.path.join(script_dir, 'node_modules')
         
-        # Run scraper with 2-minute timeout
+        print(f"[INFO] Starting subprocess with 180s timeout...")
+        subprocess_start = time.time()
+        
+        # Run scraper with 3-minute timeout
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             encoding='utf-8',
             errors='replace',
-            timeout=120,
+            timeout=180,
             cwd=script_dir,
             env=env
         )
         
+        subprocess_duration = time.time() - subprocess_start
+        print(f"[INFO] Subprocess completed in {subprocess_duration:.2f}s")
+        subprocess_duration = time.time() - subprocess_start
+        print(f"[INFO] Subprocess completed in {subprocess_duration:.2f}s")
+        
         # Handle errors
         if result.returncode != 0:
+            print(f"[ERROR] Subprocess failed with return code {result.returncode}")
+            print(f"[STDERR] {result.stderr[:1000] if result.stderr else '(empty)'}")
             error_msg = result.stderr or "Unknown error"
             try:
                 error_data = json.loads(result.stderr)
@@ -1568,33 +1776,58 @@ async def related_links(
                     "error": error_msg[:500]
                 }
         
+        print(f"[OK] Subprocess succeeded")
+        
         # Parse and return results
         if not result.stdout or result.stdout.strip() == "":
+            print(f"[ERROR] No output from scraper")
+            print(f"[STDERR] {result.stderr[:1000] if result.stderr else '(empty)'}")
             return {
                 "links": [], 
                 "error": "No output from scraper"
             }
         
+        print(f"[INFO] Parsing JSON output...")
+        print(f"[STDOUT LENGTH] {len(result.stdout)} characters")
+        
         try:
             data = json.loads(result.stdout)
+            links_count = len(data.get('links', []))
+            print(f"[SUCCESS] Parsed {links_count} links")
+            
+            total_duration = time.time() - start_time
+            print(f"\n{'='*60}")
+            print(f"[NLP Service] Related Links Request Complete")
+            print(f"Total Duration: {total_duration:.2f}s")
+            print(f"Links Returned: {links_count}")
+            print(f"{'='*60}\n")
+            
             return data
         except json.JSONDecodeError as e:
+            print(f"[ERROR] Invalid JSON from scraper: {str(e)}")
+            print(f"[STDOUT] {result.stdout[:500]}")
             return {
                 "links": [], 
                 "error": f"Invalid JSON from scraper: {str(e)}"
             }
             
     except subprocess.TimeoutExpired:
+        print(f"[ERROR] Subprocess timeout after 180 seconds")
+        print(f"[INFO] Total request time: {time.time() - start_time:.2f}s")
         return {
             "links": [], 
-            "error": "Search timeout after 120 seconds. The search service may be slow or unavailable."
+            "error": "Search timeout after 180 seconds. The search service may be slow or unavailable.",
+            "suggestion": "DuckDuckGo may be blocking automated requests. Try again in a few minutes."
         }
     except FileNotFoundError as e:
+        print(f"[ERROR] Node.js not found: {str(e)}")
         return {
             "links": [], 
             "error": f"Node.js not found: {str(e)}"
         }
     except Exception as e:
+        print(f"[ERROR] Unexpected error: {str(e)}")
+        print(f"[TRACEBACK] {traceback.format_exc()}")
         return {
             "links": [], 
             "error": f"Unexpected error: {str(e)}"

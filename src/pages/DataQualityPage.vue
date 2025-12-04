@@ -594,7 +594,6 @@ const deleteInconsistency = async (row) => {
 }
 
 onMounted(() => {
-  manualRescan()
   loadInconsistencies()
 })
 </script>
