@@ -7,6 +7,7 @@ import {
 } from 'vue-router'
 import routes from './routes'
 import { useUserStore } from 'src/stores/user'
+import { supabase } from 'boot/supabase'
 /*
  * If not building with SSR mode, you can
  * directly export the Router instantiation;
@@ -48,6 +49,13 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     const allowedRoles = to.meta.allowedRoles
 
     try {
+      // Skip auth checks if user is signing out
+      if (userStore.isSigningOut) {
+        console.log('🔒 User is signing out, allowing navigation')
+        next()
+        return
+      }
+
       // Fetch session if not already loaded (with 5s timeout)
       if (!userStore.session) {
         try {
@@ -81,6 +89,17 @@ export default defineRouter(function (/* { store, ssrContext } */) {
       }
 
       if (requiresAuth && !session) {
+        console.log('🔒 No session found for protected route, redirecting to landing')
+        // Double-check session hasn't just loaded
+        const {
+          data: { session: freshSession },
+        } = await supabase.auth.getSession()
+        if (freshSession) {
+          console.log('✅ Fresh session found, allowing navigation')
+          userStore.session = freshSession
+          next()
+          return
+        }
         next('/landing')
         return
       }
@@ -195,22 +214,24 @@ export default defineRouter(function (/* { store, ssrContext } */) {
       console.error('❌ Router guard error:', error)
       // On any unhandled error, try to continue navigation
       // This prevents the app from getting completely stuck
-      if (requiresAuth && !userStore.session) {
+      if (requiresAuth && !userStore.session && !userStore.isSigningOut) {
+        // Verify session one more time before redirecting
+        try {
+          const {
+            data: { session: freshSession },
+          } = await supabase.auth.getSession()
+          if (freshSession) {
+            console.log('✅ Session recovered after error')
+            userStore.session = freshSession
+            next()
+            return
+          }
+        } catch (sessionCheckError) {
+          console.error('Failed to verify session:', sessionCheckError)
+        }
         next('/landing')
       } else {
         next()
-      }
-    }
-  })
-
-  // Force component refresh on navigation
-  Router.afterEach((to, from) => {
-    // Only trigger refresh when navigating to a different page
-    if (to.path !== from.path) {
-      // Force component reload by updating router key
-      const app = Router.app
-      if (app && app.$forceUpdate) {
-        app.$forceUpdate()
       }
     }
   })
