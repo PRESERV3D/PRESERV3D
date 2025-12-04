@@ -1,5 +1,5 @@
 # Core FastAPI and HTTP dependencies
-fastapi==0.109.0
+fastapi
 uvicorn[standard]==0.27.0
 python-multipart
 
@@ -9,14 +9,20 @@ supabase
 # PDF processing
 PyMuPDF
 
-# Lightweight NLP with smaller models
+# NLP dependencies
 spacy>=3.0.0,<4.0.0
-
-# Lightweight transformers - CPU optimized, smaller models
 transformers==4.36.0
-sentence-transformers==2.2.2
+sentence-transformers>=2.5.0
+
+# Summarization
+nltk
+sumy
 
 # Utilities
 python-dotenv
 python-dateutil
 requests
+psutil
+
+
+

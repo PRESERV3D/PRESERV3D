@@ -7,6 +7,9 @@ export const useUserStore = defineStore('user', {
     profile: null, // Includes full profile + role
     isSigningOut: false, // Flag to prevent auth listener interference during logout
     pendingNotifications: [], // Queue for notifications to show after navigation
+    isLoadingProfile: false, // Track if profile is currently being fetched
+    isLoadingSession: false, // Track if session is currently being fetched
+    profileFetchPromise: null, // Store pending profile fetch promise to prevent duplicates
   }),
 
   actions: {
@@ -53,20 +56,36 @@ export const useUserStore = defineStore('user', {
     async fetchProfile(userId) {
       if (!userId) return
 
-      // Parallel queries for faster profile loading
-      const [
-        { data: userData, error: userError },
-        { data: facultyData, error: facultyError },
-        { data: adminData, error: adminError },
-        { data: visitorData, error: visitorError },
-      ] = await Promise.all([
-        supabase.from('registered_users').select('*').eq('id', userId),
-        supabase.from('registered_faculty').select('*').eq('id', userId),
-        supabase.from('registered_admins').select('*').eq('id', userId),
-        supabase
-          .from('approved_visitors')
-          .select(
-            `
+      // Prevent duplicate simultaneous calls
+      if (this.isLoadingProfile && this.profileFetchPromise) {
+        console.log('🔄 Profile fetch already in progress, reusing promise')
+        return this.profileFetchPromise
+      }
+
+      // If profile already loaded for this user, skip
+      if (this.profile && this.profile.id === userId) {
+        console.log('✅ Profile already loaded for user:', userId)
+        return
+      }
+
+      this.isLoadingProfile = true
+
+      // Store the promise so concurrent calls can reuse it
+      this.profileFetchPromise = (async () => {
+        try {
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 10000),
+          )
+
+          const fetchPromise = Promise.all([
+            supabase.from('registered_users').select('*').eq('id', userId),
+            supabase.from('registered_faculty').select('*').eq('id', userId),
+            supabase.from('registered_admins').select('*').eq('id', userId),
+            supabase
+              .from('approved_visitors')
+              .select(
+                `
             *,
             registration_visitors (
               first_name,
@@ -77,89 +96,107 @@ export const useUserStore = defineStore('user', {
               email
             )
           `,
-          )
-          .eq('user_id', userId),
-      ])
+              )
+              .eq('user_id', userId),
+          ])
 
-      // Check results in priority order
-      if (userData?.length > 0) {
-        this.profile = {
-          ...userData[0],
-          role: 'user',
-          user_type: userData[0].user_type || 'student',
-        }
-        return
-      } else if (userError) {
-        console.error('Error fetching user profile:', userError)
-      }
+          // Race between fetch and timeout
+          const [
+            { data: userData, error: userError },
+            { data: facultyData, error: facultyError },
+            { data: adminData, error: adminError },
+            { data: visitorData, error: visitorError },
+          ] = await Promise.race([fetchPromise, timeoutPromise])
 
-      if (facultyData?.length > 0) {
-        this.profile = {
-          ...facultyData[0],
-          role: 'user',
-          user_type: 'faculty',
-        }
-        return
-      }
-
-      if (facultyError) {
-        console.error('Error fetching faculty profile:', facultyError)
-      }
-
-      if (adminData?.length > 0) {
-        if (adminData[0].is_super_admin) {
-          this.profile = {
-            ...adminData[0],
-            role: 'admin',
-            user_type: 'super admin',
-            is_super_admin: true,
+          // Check results in priority order
+          if (userData?.length > 0) {
+            this.profile = {
+              ...userData[0],
+              role: 'user',
+              user_type: userData[0].user_type || 'student',
+            }
+            return
+          } else if (userError) {
+            console.error('Error fetching user profile:', userError)
           }
-        } else {
-          this.profile = {
-            ...adminData[0],
-            role: 'admin',
-            user_type: 'admin',
-            is_super_admin: false,
+
+          if (facultyData?.length > 0) {
+            this.profile = {
+              ...facultyData[0],
+              role: 'user',
+              user_type: 'faculty',
+            }
+            return
           }
+
+          if (facultyError) {
+            console.error('Error fetching faculty profile:', facultyError)
+          }
+
+          if (adminData?.length > 0) {
+            if (adminData[0].is_super_admin) {
+              this.profile = {
+                ...adminData[0],
+                role: 'admin',
+                user_type: 'super admin',
+                is_super_admin: true,
+              }
+            } else {
+              this.profile = {
+                ...adminData[0],
+                role: 'admin',
+                user_type: 'admin',
+                is_super_admin: false,
+              }
+            }
+            return
+          }
+
+          if (adminError) {
+            console.error('Error fetching admin profile:', adminError)
+          }
+
+          if (visitorData?.length > 0) {
+            const visitor = visitorData[0]
+            const registrationData = visitor.registration_visitors || {}
+
+            this.profile = {
+              ...visitor,
+              // Merge registration data into profile
+              first_name: registrationData.first_name,
+              last_name: registrationData.last_name,
+              contact: registrationData.contact,
+              institution: registrationData.institution,
+              purpose: registrationData.purpose,
+              email: registrationData.email || visitor.email,
+              // Keep approved_visitors data
+              approval_id: visitor.approval_id, // Important for extension requests
+              start_date: visitor.start_date,
+              end_date: visitor.end_date,
+              approved_at: visitor.approved_at,
+              approved_by: visitor.approved_by,
+              role: 'user',
+              user_type: 'visitor',
+            }
+            return
+          }
+
+          if (visitorError) {
+            console.error('Error fetching visitor profile:', visitorError)
+          }
+
+          // If all fail
+          console.warn('No matching profile found for user:', userId)
+        } catch (error) {
+          console.error('❌ Error fetching profile:', error)
+          throw error
+        } finally {
+          this.isLoadingProfile = false
+          this.profileFetchPromise = null
         }
-        return
-      }
+      })()
 
-      if (adminError) {
-        console.error('Error fetching admin profile:', adminError)
-      }
-
-      if (visitorData?.length > 0) {
-        const visitor = visitorData[0]
-        const registrationData = visitor.registration_visitors || {}
-
-        this.profile = {
-          ...visitor,
-          // Merge registration data into profile
-          first_name: registrationData.first_name,
-          last_name: registrationData.last_name,
-          contact: registrationData.contact,
-          institution: registrationData.institution,
-          purpose: registrationData.purpose,
-          email: registrationData.email || visitor.email,
-          // Keep approved_visitors data
-          approval_id: visitor.approval_id, // Important for extension requests
-          start_date: visitor.start_date,
-          end_date: visitor.end_date,
-          approved_at: visitor.approved_at,
-          approved_by: visitor.approved_by,
-          role: 'user',
-          user_type: 'visitor',
-        }
-        return
-      }
-
-      if (visitorError) {
-        console.error('Error fetching visitor profile:', visitorError)
-      }
-
-      // If all fail
-      console.warn('No matching profile found for user:', userId)
+      return this.profileFetchPromise
     },
 
     /**
@@ -175,14 +212,34 @@ export const useUserStore = defineStore('user', {
 
     // Manually fetch session + profile (e.g., on page reload)
     async fetchSession() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      if (this.isLoadingSession) {
+        console.log('🔄 Session fetch already in progress')
+        return
+      }
 
-      this.session = session
+      this.isLoadingSession = true
 
-      if (session?.user) {
-        await this.fetchProfile(session.user.id)
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Session fetch timeout')), 10000),
+        )
+
+        const sessionPromise = supabase.auth.getSession()
+
+        const {
+          data: { session },
+        } = await Promise.race([sessionPromise, timeoutPromise])
+
+        this.session = session
+
+        if (session?.user) {
+          await this.fetchProfile(session.user.id)
+        }
+      } catch (error) {
+        console.error('❌ Session fetch failed:', error)
+        this.session = null
+      } finally {
+        this.isLoadingSession = false
       }
     },
 

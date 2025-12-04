@@ -224,117 +224,72 @@
                 :input-style="{ minHeight: '8rem' }"
               />
 
-              <!-- Generate Summary Button -->
+              <!-- Check Summary Relevance Button -->
               <q-btn
                 flat
                 no-caps
                 dense
-                label="Generate"
+                label="Check Relevance"
                 class="q-ml-md find-more-info-btn"
-                style="margin-top: 1rem"
-                @click="generateSummary"
+                style="margin-top: 1rem; font-size: 0.75rem"
+                @click="checkSummaryRelevance"
+                :disable="!editableData.summary || !editableData.summary.trim()"
               />
 
               <q-dialog v-model="showSummaryDialog" persistent>
                 <q-card style="min-width: 400px; max-width: 600px; position: relative">
                   <q-card-section>
                     <div v-if="summaryLoading" style="text-align: center">
-                      <div style="font-weight: bold; margin-bottom: 5px">Simon Says</div>
-                      <div
-                        style="display: flex; justify-content: center; gap: 5px; flex-wrap: wrap"
-                      >
-                        <div
-                          v-for="color in colors"
-                          :key="color"
-                          :style="{
-                            background: color,
-                            width: '60px',
-                            height: '60px',
-                            borderRadius: '10px',
-                            opacity: activeColor === color ? 1 : 0.5,
-                            cursor: 'pointer',
-                          }"
-                          @click="handleColorClick(color)"
-                        ></div>
-                      </div>
-                      <div style="margin-top: 10px">Score: {{ simonScore }}</div>
-                      <div style="margin-top: 5px">Generating summary...</div>
+                      <q-spinner color="primary" size="50px" />
+                      <div style="margin-top: 10px">Checking summary relevance...</div>
                     </div>
 
                     <div v-else>
-                      <div class="text-h6 q-mb-md">Generated Summary</div>
-                      <q-input
-                        v-model="summary"
-                        type="textarea"
-                        outlined
-                        dense
-                        style="min-height: 120px"
-                      />
+                      <div class="text-h6 q-mb-md">Summary Relevance Check</div>
+
+                      <!-- Success Display -->
+                      <div
+                        v-if="!relevanceError"
+                        class="q-mt-sm q-pa-md"
+                        style="
+                          background-color: #e8f5e9;
+                          border-left: 4px solid #4caf50;
+                          border-radius: 4px;
+                        "
+                      >
+                        <div class="text-positive text-weight-medium" style="font-size: 14px">
+                          ✓ Summary passed all relevance checks!
+                        </div>
+                        <div class="text-caption text-grey-8 q-mt-xs">
+                          Your summary is well-aligned with the document content.
+                        </div>
+                      </div>
 
                       <!-- Relevance Error Display -->
                       <div
                         v-if="relevanceError"
-                        class="q-mt-sm q-pa-sm"
+                        class="q-mt-sm q-pa-md"
                         style="
                           background-color: #ffebee;
                           border-left: 4px solid #f44336;
                           border-radius: 4px;
                         "
                       >
-                        <div class="text-negative text-weight-medium" style="font-size: 13px">
+                        <div class="text-negative text-weight-medium" style="font-size: 14px">
                           {{ relevanceError.issue }}
                         </div>
-                        <div class="text-caption text-grey-8 q-mt-xs">
-                          Suggestion: {{ relevanceError.suggestion }}
+                        <div class="text-caption text-grey-8 q-mt-md">
+                          <strong>Suggestion:</strong> {{ relevanceError.suggestion }}
                         </div>
-                      </div>
-
-                      <!-- Action Buttons for Relevance Issues -->
-                      <div v-if="relevanceError" class="row q-gutter-sm q-mt-md">
-                        <q-btn
-                          flat
-                          dense
-                          label="Improve Summary"
-                          color="primary"
-                          icon="auto_fix_high"
-                          @click="improveSummary"
-                          :disable="summaryLoading"
-                        />
-                        <q-btn
-                          flat
-                          dense
-                          label="Re-check Relevance"
-                          color="secondary"
-                          icon="fact_check"
-                          @click="recheckRelevance"
-                          :disable="summaryLoading"
-                        />
-                      </div>
-
-                      <!-- Summary Method Indicator -->
-                      <div v-if="summaryMethod" class="q-mt-sm text-caption text-grey-7">
-                        Method:
-                        {{
-                          summaryMethod === 'bart' ? 'AI-Generated (BART)' : 'Extractive Summary'
-                        }}
+                        <div class="text-caption text-grey-7 q-mt-sm">
+                          Severity: {{ relevanceError.severity || 'medium' }}
+                        </div>
                       </div>
                     </div>
                   </q-card-section>
 
                   <q-card-actions align="right">
-                    <q-btn
-                      flat
-                      label="Cancel"
-                      color="negative"
-                      @click="showSummaryDialog = false"
-                    />
-                    <q-btn
-                      flat
-                      label="Save"
-                      color="primary"
-                      @click="saveSummary"
-                      :disable="summaryLoading"
-                    />
+                    <q-btn flat label="Close" color="primary" @click="showSummaryDialog = false" />
                   </q-card-actions>
                 </q-card>
               </q-dialog>
@@ -343,17 +298,19 @@
               <!-- Related Links Dialog -->
               <q-dialog v-model="showRelatedDialog" persistent>
                 <q-card class="related-box">
-                  <q-card-section
-                    class="column sub-font-3 items-start"
-                    style="font-size: 16px; font-weight: 700"
-                  >
-                    Show Related Links
+                  <q-card-section class="dialog-header">
+                    <div class="sub-font-3" style="font-size: 18px; font-weight: 700">
+                      Related Links
+                    </div>
+                    <div class="text-caption text-grey-7 q-mt-xs">
+                      Changes will be saved when you save the document
+                    </div>
                   </q-card-section>
                   <q-separator />
                   <div v-if="loadingRelatedLinks" class="q-pa-md flex flex-center">
                     <q-spinner color="primary" size="40px" />
                   </div>
-                  <div v-else class="q-pt-md q-px-md column items-start">
+                  <div v-else class="links-container">
                     <!-- Links List with Drag and Edit -->
                     <div v-for="(link, index) in links" :key="link.id" class="full-width q-mb-sm">
                       <div v-if="editingLinkIndex === index" class="column q-gutter-sm q-pa-sm">
@@ -375,21 +332,17 @@
 
                       <div
                         v-else
-                        class="row items-center q-mb-xs full-width draggable-item"
+                        class="link-item draggable-item"
                         draggable="true"
                         @dragstart="dragStart(index)"
                         @dragover.prevent
                         @drop="drop(index)"
                       >
                         <!-- Drag handle -->
-                        <q-icon
-                          name="menu"
-                          class="q-mr-md cursor-pointer"
-                          size="xs"
-                          color="black"
-                        />
+                        <q-icon name="drag_indicator" class="drag-handle" size="sm" />
 
-                        <!-- Link Title (clickable) -->
+                        <!-- Link icon and title -->
+                        <q-icon name="link" size="18px" class="link-icon" />
                         <div class="link-style" @click="openLink(link.url)">
                           {{ link.title || link.url }}
                         </div>
@@ -477,7 +430,7 @@
                         style="color: #000000"
                         v-close-popup
                         no-caps
-                        @click="cancelChanges()"
+                        @click="cancelLinksChanges()"
                       />
                       <q-btn
                         flat
@@ -489,21 +442,12 @@
                           fetchRelatedLinks(
                             doc.metadata.title,
                             doc.metadata.author,
-                            doc.metadata.categories,
+                            editableCategories.join(','),
                             doc.metadata.date.slice(0, 4),
                           )
                         "
                       />
-                      <q-btn
-                        v-if="!savingRelatedLinks"
-                        label="Save"
-                        class="btn-save"
-                        flat
-                        @click="saveRelatedLinks"
-                      />
-                      <div v-if="savingRelatedLinks" class="q-pa-sm">
-                        <q-spinner-dots size="2em" color="primary" />
-                      </div>
+                      <q-btn label="Close" class="btn-save" flat v-close-popup />
                     </template>
                     <template v-else>
                       <q-btn
@@ -524,7 +468,7 @@
                           fetchRelatedLinks(
                             doc.metadata.title,
                             doc.metadata.author,
-                            doc.metadata.categories,
+                            editableCategories.join(','),
                             doc.metadata.date.slice(0, 4),
                           )
                         "
@@ -611,7 +555,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch, nextTick } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useUserStore } from 'stores/user'
@@ -641,21 +585,10 @@ const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
-// Generate Summary
+// Check Summary Relevance
 const $q = useQuasar()
-const summary = ref('')
 const showSummaryDialog = ref(false)
-const docId = route.params.id
 const relevanceError = ref(null)
-const improvedSummaryAvailable = ref(false)
-const summaryMethod = ref(null)
-
-// Loading Mini Game
-const colors = ['red', 'green', 'blue', 'yellow']
-const simonSequence = ref([])
-const userSequence = ref([])
-const activeColor = ref(null)
-const simonScore = ref(0)
 
 // Reactive reference for all editable data
 const editableData = ref({
@@ -692,7 +625,10 @@ async function saveChanges() {
         categories: [...editableCategories.value],
         // extracted_text: editableData.value.extracted_text,
       },
-      related_links: [...links.value],
+      related_links: links.value.map((link) => ({
+        title: link.title || '',
+        url: link.url || '',
+      })),
     }
 
     let changes = getChanges(oldData, newData)
@@ -1095,119 +1031,38 @@ onMounted(async () => {
   }
 })
 
-// Generate Summary
-const generateSummary = async () => {
-  showSummaryDialog.value = true
-  summaryLoading.value = true
-  relevanceError.value = null
-  improvedSummaryAvailable.value = false
-
-  try {
-    const { data } = await axios.post(getNlpEndpoint(`/generate-summary/${docId}`))
-
-    // Display initial BART summary
-    summary.value = data.initial_summary || ''
-    summaryMethod.value = data.summary_method
-
-    // Check if relevance check failed
-    if (data.initial_check && !data.initial_check.passed) {
-      relevanceError.value = {
-        issue: data.initial_check.issue,
-        suggestion: data.initial_check.suggestion,
-        severity: data.initial_check.severity,
-      }
-
-      // If improved summary exists, make it available
-      if (data.improved_summary) {
-        improvedSummaryAvailable.value = true
-      }
-    }
-
-    // If error occurred, show message
-    if (data.error) {
-      $q.notify({
-        type: 'negative',
-        message: `Error: ${data.error}`,
-      })
-    }
-  } catch (err) {
-    console.error(err)
-    $q.notify({ type: 'negative', message: 'Failed to generate summary' })
-  } finally {
-    summaryLoading.value = false
-  }
-}
-
-const improveSummary = async () => {
-  summaryLoading.value = true
-
-  try {
-    const { data } = await axios.post(getNlpEndpoint(`/generate-summary/${docId}`))
-
-    if (data.improved_summary) {
-      summary.value = data.improved_summary
-      summaryMethod.value = 'extractive'
-
-      // Re-check improved summary
-      if (data.improved_check && !data.improved_check.passed) {
-        relevanceError.value = {
-          issue: data.improved_check.issue,
-          suggestion: data.improved_check.suggestion,
-          severity: data.improved_check.severity,
-        }
-      } else {
-        relevanceError.value = null
-        $q.notify({
-          type: 'positive',
-          message: 'Improved summary generated successfully',
-        })
-      }
-    }
-  } catch (err) {
-    console.error(err)
-    $q.notify({ type: 'negative', message: 'Failed to improve summary' })
-  } finally {
-    summaryLoading.value = false
-  }
-}
-
-const recheckRelevance = async () => {
-  if (!summary.value || !summary.value.trim()) {
+// Check Summary Relevance
+const checkSummaryRelevance = async () => {
+  if (!editableData.value.summary || !editableData.value.summary.trim()) {
     $q.notify({ type: 'warning', message: 'Please enter a summary first' })
     return
   }
 
+  showSummaryDialog.value = true
   summaryLoading.value = true
+  relevanceError.value = null
 
   try {
-    // Call backend to check relevance of edited summary
+    // Call backend to check relevance of current summary
     const endpoint = getNlpEndpoint('/check-relevance')
     const { data } = await axios.post(endpoint, {
-      title: doc.value.metadata.title,
-      summary: summary.value,
-      keywords: doc.value.metadata.keywords,
-      categories: doc.value.metadata.categories,
-      author: doc.value.metadata.author,
-      date: doc.value.metadata.date,
-      extracted_text: doc.value.metadata.extracted_text?.substring(0, 1000),
+      title: editableData.value.title,
+      summary: editableData.value.summary,
+      keywords: [], // Don't check keywords in manual check
+      categories: editableData.value.categories,
+      author: editableData.value.author,
+      date: editableData.value.date,
+      extracted_text: doc.value?.metadata?.extracted_text?.substring(0, 1000),
     })
 
     if (data.passed) {
       relevanceError.value = null
-      $q.notify({
-        type: 'positive',
-        message: 'Summary passed relevance check!',
-      })
     } else {
       relevanceError.value = {
         issue: data.issue,
         suggestion: data.suggestion,
         severity: data.severity,
       }
-      $q.notify({
-        type: 'warning',
-        message: 'Summary has relevance issues',
-      })
     }
   } catch (err) {
     console.error(err)
@@ -1219,75 +1074,6 @@ const recheckRelevance = async () => {
     summaryLoading.value = false
   }
 }
-
-const saveSummary = () => {
-  summaryLoading.value = true
-  try {
-    if (doc.value && doc.value.metadata) {
-      doc.value.metadata.summary = summary.value
-      editableData.value.summary = summary.value
-    }
-
-    $q.notify({ type: 'positive', message: 'Summary updated locally' })
-    showSummaryDialog.value = false
-    relevanceError.value = null
-    hasChanges.value = true
-  } catch (err) {
-    console.error(err)
-    $q.notify({ type: 'negative', message: 'Failed to update summary' })
-  } finally {
-    summaryLoading.value = false
-  }
-}
-
-// Loading Mini Game
-const nextSimonStep = () => {
-  const nextColor = colors[Math.floor(Math.random() * colors.length)]
-  simonSequence.value.push(nextColor)
-  playSequence()
-}
-
-const playSequence = async () => {
-  for (let c of simonSequence.value) {
-    activeColor.value = c
-    await new Promise((r) => setTimeout(r, 500))
-    activeColor.value = null
-    await new Promise((r) => setTimeout(r, 200))
-  }
-  userSequence.value = []
-}
-
-const handleColorClick = (color) => {
-  userSequence.value.push(color)
-  const currentIndex = userSequence.value.length - 1
-  if (userSequence.value[currentIndex] !== simonSequence.value[currentIndex]) {
-    // Game over
-    simonSequence.value = []
-    userSequence.value = []
-    simonScore.value = 0
-    nextSimonStep()
-  } else if (userSequence.value.length === simonSequence.value.length) {
-    simonScore.value += 1
-    nextSimonStep()
-  }
-}
-
-watch(
-  () => summaryLoading,
-  async (val) => {
-    if (val) {
-      simonSequence.value = []
-      userSequence.value = []
-      simonScore.value = 0
-      await nextTick()
-      nextSimonStep()
-    } else {
-      simonSequence.value = []
-      userSequence.value = []
-      simonScore.value = 0
-    }
-  },
-)
 
 watch(
   doc,
@@ -1329,7 +1115,6 @@ const showAddLinkForm = ref(false)
 const links = ref([])
 const hasChanges = ref(false)
 const loadingRelatedLinks = ref(false)
-const savingRelatedLinks = ref(false)
 let draggedIndex = null
 
 // Edit link state
@@ -1386,7 +1171,6 @@ async function fetchRelatedLinks(title, author, categories, date) {
       url: link.url || '',
     }))
 
-    hasChanges.value = true
     showRelatedDialog.value = true
   } catch (err) {
     console.error('Error fetching related links:', err)
@@ -1395,7 +1179,6 @@ async function fetchRelatedLinks(title, author, categories, date) {
       message: 'Failed to fetch related links. Please try again.',
     })
     links.value = []
-    hasChanges.value = false
   } finally {
     loadingRelatedLinks.value = false
   }
@@ -1440,50 +1223,10 @@ function drop(index) {
   hasChanges.value = true
 }
 
-async function saveRelatedLinks() {
-  savingRelatedLinks.value = true
-  try {
-    // Clean the links data before saving - remove the id field if it's just a timestamp
-    const cleanedLinks = links.value.map((link) => ({
-      title: link.title || '',
-      url: link.url || '',
-    }))
-
-    const { error } = await supabase
-      .from('documents_metadata')
-      .update({
-        related_links: cleanedLinks,
-      })
-      .eq('id', route.params.id)
-
-    if (error) throw error
-
-    // Update the local doc object
-    if (doc.value) {
-      doc.value.related_links = cleanedLinks
-    }
-
-    console.log('Related links saved successfully:', cleanedLinks)
-    $q.notify({ type: 'positive', message: 'Related links saved successfully' })
-    hasChanges.value = true
-    showRelatedDialog.value = false
-  } catch (err) {
-    console.error('Error saving related links:', err)
-    $q.notify({ type: 'negative', message: 'Failed to save related links' })
-  } finally {
-    savingRelatedLinks.value = false
-  }
-}
-
-async function cancelChanges() {
-  const { data } = await supabase
-    .from('documents_metadata')
-    .select('related_links')
-    .eq('id', route.params.id)
-    .single()
-
-  if (data && data.related_links && Array.isArray(data.related_links)) {
-    links.value = data.related_links.map((link, idx) => ({
+function cancelLinksChanges() {
+  // Reset links to the current document state
+  if (doc.value && doc.value.related_links && Array.isArray(doc.value.related_links)) {
+    links.value = doc.value.related_links.map((link, idx) => ({
       id: link.id || Date.now() + idx,
       title: link.title || '',
       url: link.url || '',
@@ -1494,7 +1237,6 @@ async function cancelChanges() {
 
   hasChanges.value = false
   showRelatedDialog.value = false
-  savingRelatedLinks.value = false
   showAddLinkForm.value = false
 }
 </script>
@@ -1576,34 +1318,76 @@ async function cancelChanges() {
   width: 17rem;
 }
 
-/* Related Links */
+/* Related Links Dialog */
+.related-box {
+  min-width: 500px;
+  max-width: 600px;
+  border-radius: 15px;
+  font-family: 'Poppins', sans-serif;
+  background-color: #fbf4d0;
+}
+
+.dialog-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 2px solid #e0dbc7;
+}
+
+.links-container {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+}
+
+.link-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.link-item:hover {
+  background-color: #f5f5f5;
+}
+
+.drag-handle {
+  color: #999;
+  cursor: move;
+  flex-shrink: 0;
+}
+
+.link-icon {
+  color: #880000;
+  flex-shrink: 0;
+}
+
 .link-style {
   cursor: pointer;
-  color: var(--q-primary);
+  color: #880000;
   text-decoration: none;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.link-style:hover {
+.link-item:hover .link-style {
   text-decoration: underline;
+  color: #560505;
 }
 
 .draggable-item {
-  padding: 8px;
-  border-radius: 4px;
   transition: background-color 0.2s;
 }
 
 .draggable-item:hover {
-  background-color: #ffffe9;
-}
-
-.related-box {
-  min-width: 500px;
-  max-width: 600px;
+  background-color: #f5f5f5;
 }
 
 /* Responsivesness */

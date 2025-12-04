@@ -22,6 +22,7 @@
   "license": "ISC",
   "dependencies": {
     "@puppeteer/browsers": "^2.4.1",
+    "cargo": "^0.8.0",
     "cheerio": "^1.0.0",
     "franc": "^6.2.0",
     "franc-min": "^6.2.0",
