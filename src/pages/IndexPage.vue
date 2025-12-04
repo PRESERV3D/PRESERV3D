@@ -47,7 +47,7 @@
             <div
               v-for="(item, index) in recentItems.slice(0, 3)"
               :key="index"
-              class="row items-center q-gutter-md recently-viewed-item"
+              class="row items-center recently-viewed-item"
             >
               <div class="circular-holder">
                 <q-img
@@ -1778,8 +1778,8 @@ async function addCollection() {
 }
 
 .recently-viewed-item {
-  padding: 0.25rem 0.375rem 1rem;
-  margin-bottom: 0.125rem;
+  padding: 0 0.375rem 1rem;
+  margin-bottom: -0.75rem;
   min-height: 2.5rem;
 }
 
@@ -1844,6 +1844,7 @@ async function addCollection() {
 
 .title-font-2 {
   font-size: 0.875rem;
+  margin-bottom: -0.75rem;
 }
 
 /* ========================
@@ -1865,8 +1866,9 @@ async function addCollection() {
   }
 
   .recently-viewed-item {
-    padding: 0.8rem 0.6rem;
+    padding: 0 1.2rem;
     min-height: 3.75rem;
+
   }
 
   .circular-holder {
@@ -1890,6 +1892,7 @@ async function addCollection() {
 
   .title-font-2 {
     font-size: 0.875rem;
+    margin-bottom: -0.25rem;
   }
 
   .my-card {
@@ -1935,7 +1938,7 @@ async function addCollection() {
   }
 
   .recently-viewed-item {
-    padding: 0.7rem 1.5rem;
+    padding: 0.95rem 1.5rem;
     min-height: 3.4375rem;
   }
 
@@ -1965,7 +1968,7 @@ async function addCollection() {
 
   .action-icons {
     display: flex;
-    gap: 0.2rem;
+    gap: 0.15rem;
   }
 
   .item-details {
@@ -1974,6 +1977,7 @@ async function addCollection() {
 
   .title-font-2 {
     font-size: 1.125rem;
+    margin-bottom: -0.15rem !important;
   }
 
   .my-card {
@@ -2003,7 +2007,7 @@ async function addCollection() {
   }
 
   .recently-viewed-item {
-    padding: 0.7rem 1.75rem;
+    padding: 0.4rem 1.75rem;
     min-height: 4.0625rem;
   }
 
@@ -2019,8 +2023,9 @@ async function addCollection() {
 
   .title-font-2 {
     font-size: 1.125rem;
-    margin-bottom: 1.2rem !important;
+    margin-bottom: 0.25rem !important;
   }
+
   .artifact-name {
     font-size: 0.875rem;
   }
@@ -2063,9 +2068,13 @@ async function addCollection() {
     font-size: 1.125rem;
   }
 
+  .title-font-2 {
+    margin-bottom: 0.25rem !important;
+  }
+
   .recently-viewed-item {
-    padding: 0.2rem 1.75rem;
-    min-height: 4.375rem;
+    padding: 0 1.75rem ;
+    margin-bottom: -0.75rem;
   }
 
   .circular-holder {
