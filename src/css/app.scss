@@ -1453,9 +1453,6 @@ document-title-2 {
 .logout-confirmation-dialog .q-btn {
   min-width: 4rem;
   height: 2rem;
-  border-radius: 5px;
-  background-color: #880000 !important;
-  color: #fbf4d0 !important;
   font-size: 12px;
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
@@ -1463,8 +1460,25 @@ document-title-2 {
   text-transform: uppercase;
 }
 
-.logout-confirmation-dialog .q-btn:hover {
+// Target the OK button (Logout) - red background with cream text
+.logout-confirmation-dialog .q-btn.q-dialog__ok {
+  background-color: #880000 !important;
+  color: #fbf4d0 !important;
+  border-radius: 5px;
+}
+
+.logout-confirmation-dialog .q-btn.q-dialog__ok:hover {
   background-color: #6d0000 !important;
+}
+
+// Target the Cancel button - red text with no background
+.logout-confirmation-dialog .q-btn.q-dialog__cancel {
+  background-color: transparent !important;
+  color: #880000 !important;
+}
+
+.logout-confirmation-dialog .q-btn.q-dialog__cancel:hover {
+  background-color: rgba(136, 0, 0, 0.1) !important;
 }
 
 .logout-confirmation-dialog .dialog-header {
@@ -1484,4 +1498,5 @@ document-title-2 {
 
 .logout-confirmation-dialog .q-card__actions {
   justify-content: center;
+  padding-bottom: 1rem;
 }

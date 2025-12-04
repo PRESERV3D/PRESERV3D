@@ -882,18 +882,16 @@ const handleLogout = async () => {
   try {
     // Show confirmation dialog using callback pattern to ensure proper blocking
     $q.dialog({
-      title: 'Confirm Logout',
+      title: 'Confirm Log Out',
       message: 'Are you sure you want to logout?',
       icon: 'warning',
       cancel: {
         label: 'Cancel',
-        color: 'primary',
         flat: true,
       },
       ok: {
-        label: 'Logout',
-        color: 'negative',
-        flat: true,
+        label: 'Log out',
+        color: 'primary',
       },
       persistent: true,
       class: 'logout-confirmation-dialog',
@@ -1405,7 +1403,6 @@ watch(
   padding: 10px;
   margin-top: auto;
 }
-
 
 /* ========================
    TEXT VISIBILITY IMPROVEMENTS
