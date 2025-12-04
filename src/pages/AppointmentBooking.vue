@@ -90,7 +90,7 @@
                           v-model="form.time"
                           mask="h:mm A"
                           :options="hourOptions"
-                          :minute-options="[0, 30]"
+                          :minute-options="minuteOptions"
                         >
                           <div class="row items-center justify-end q-gutter-sm">
                             <q-btn v-close-popup label="Close" color="primary" flat />
@@ -203,6 +203,7 @@ const activeTab = ref('information')
 const loading = ref(false)
 const isBookLoading = ref(false)
 const showSuccessModal = ref(false)
+const bookedTimeSlots = ref([])
 
 const $q = useQuasar()
 const userStore = useUserStore()
@@ -357,6 +358,34 @@ function formatTimeTo12Hour(timeString) {
   return `${formattedHour}:${minute.toString().padStart(2, '0')} ${ampm}`
 }
 
+// Fetch booked time slots for the selected date
+const fetchBookedTimeSlots = async (date) => {
+  if (!date) {
+    bookedTimeSlots.value = []
+    return
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('appointment_booking')
+      .select('time')
+      .eq('date', date)
+      .eq('status', 'Approved')
+
+    if (error) {
+      console.error('Error fetching booked time slots:', error)
+      bookedTimeSlots.value = []
+      return
+    }
+
+    // Store the booked times in 24-hour format (HH:MM:SS)
+    bookedTimeSlots.value = data.map((appt) => appt.time)
+  } catch (err) {
+    console.error('Unexpected error fetching booked time slots:', err)
+    bookedTimeSlots.value = []
+  }
+}
+
 const hourOptions = (hr) => {
   // Allow 8:00 to  11:45 AM
   if (hr >= 8 && hr <= 11) return true
@@ -365,6 +394,16 @@ const hourOptions = (hr) => {
   // Allow 1:00 to 7:45 PM
   if (hr >= 13 && hr <= 19) return true
   return false
+}
+
+// Minute options function that disables booked time slots
+const minuteOptions = (hr, min) => {
+  // Only allow 0 and 30 minutes
+  if (min !== 0 && min !== 30) return false
+
+  // Check if this specific time slot is already booked
+  const timeSlot = `${hr.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}:00`
+  return !bookedTimeSlots.value.includes(timeSlot)
 }
 
 async function submitBooking() {
@@ -519,6 +558,20 @@ watch(activeTab, (newTab) => {
     router.push({ path: '/appointment' })
   }
 })
+
+// Watch for date changes to fetch booked time slots
+watch(
+  () => form.value.date,
+  (newDate) => {
+    if (newDate) {
+      fetchBookedTimeSlots(newDate)
+      // Clear selected time when date changes to force re-selection
+      form.value.time = ''
+    } else {
+      bookedTimeSlots.value = []
+    }
+  },
+)
 
 function viewAppointments() {
   showSuccessModal.value = false
