@@ -395,7 +395,7 @@ const hourOptions = (hr) => {
     const slot30 = `${hr.toString().padStart(2, '0')}:30:00`
     const isSlot00Booked = bookedTimeSlots.value.includes(slot00)
     const isSlot30Booked = bookedTimeSlots.value.includes(slot30)
-    
+
     // Disable hour if both slots are booked
     return !(isSlot00Booked && isSlot30Booked)
   }
@@ -408,7 +408,7 @@ const hourOptions = (hr) => {
     const slot30 = `${hr.toString().padStart(2, '0')}:30:00`
     const isSlot00Booked = bookedTimeSlots.value.includes(slot00)
     const isSlot30Booked = bookedTimeSlots.value.includes(slot30)
-    
+
     // Disable hour if both slots are booked
     return !(isSlot00Booked && isSlot30Booked)
   }
