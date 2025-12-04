@@ -389,11 +389,29 @@ const fetchBookedTimeSlots = async (date) => {
 
 const hourOptions = (hr) => {
   // Allow 8:00 to  11:45 AM
-  if (hr >= 8 && hr <= 11) return true
+  if (hr >= 8 && hr <= 11) {
+    // Check if both 0 and 30 minute slots are available for this hour
+    const slot00 = `${hr.toString().padStart(2, '0')}:00:00`
+    const slot30 = `${hr.toString().padStart(2, '0')}:30:00`
+    const isSlot00Booked = bookedTimeSlots.value.includes(slot00)
+    const isSlot30Booked = bookedTimeSlots.value.includes(slot30)
+    
+    // Disable hour if both slots are booked
+    return !(isSlot00Booked && isSlot30Booked)
+  }
   // Block 12:00 PM hour
   if (hr === 12) return false
   // Allow 1:00 to 7:45 PM
-  if (hr >= 13 && hr <= 19) return true
+  if (hr >= 13 && hr <= 19) {
+    // Check if both 0 and 30 minute slots are available for this hour
+    const slot00 = `${hr.toString().padStart(2, '0')}:00:00`
+    const slot30 = `${hr.toString().padStart(2, '0')}:30:00`
+    const isSlot00Booked = bookedTimeSlots.value.includes(slot00)
+    const isSlot30Booked = bookedTimeSlots.value.includes(slot30)
+    
+    // Disable hour if both slots are booked
+    return !(isSlot00Booked && isSlot30Booked)
+  }
   return false
 }
 
