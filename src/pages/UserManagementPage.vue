@@ -2507,10 +2507,33 @@ async function confirmRegistrationAction() {
         }),
       ])
 
-      // Check critical operations
-      if (statusResult.status === 'rejected') throw statusResult.reason
-      if (visitorResult.status === 'rejected') throw visitorResult.reason
-      if (allUserResult.status === 'rejected') throw allUserResult.reason
+      // Check critical operations with detailed error logging
+      if (statusResult.status === 'rejected') {
+        console.error('Status update failed:', statusResult.reason)
+        throw statusResult.reason
+      }
+      if (visitorResult.status === 'rejected') {
+        console.error('Approved visitors insert failed:', visitorResult.reason)
+        throw visitorResult.reason
+      }
+      if (statusResult.value?.error) {
+        console.error('Status update error:', statusResult.value.error)
+        throw new Error(statusResult.value.error.message || 'Failed to update registration status')
+      }
+      if (visitorResult.value?.error) {
+        console.error('Approved visitors insert error:', visitorResult.value.error)
+        throw new Error(
+          visitorResult.value.error.message || 'Failed to create approved visitor record',
+        )
+      }
+      if (allUserResult.status === 'rejected') {
+        console.error('All users insert failed:', allUserResult.reason)
+        throw allUserResult.reason
+      }
+      if (allUserResult.value?.error) {
+        console.error('All users insert error:', allUserResult.value.error)
+        throw new Error(allUserResult.value.error.message || 'Failed to create all_users record')
+      }
 
       // Step 3: Send notification and email (non-blocking)
       const formatDate = (d) =>
