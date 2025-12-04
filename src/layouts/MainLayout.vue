@@ -1639,9 +1639,9 @@ watch(
 /* Ultra-wide screens */
 @media (min-width: 1920px) {
   .search-container {
-    width: 1060px !important;
-    min-width: 1060px !important;
-    max-width: 1060px !important;
+    width: 1130px !important;
+    min-width: 1130px !important;
+    max-width: 1130px !important;
   }
   /*  .toolbar-actions {
      gap: 100px;
