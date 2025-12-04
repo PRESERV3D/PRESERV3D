@@ -12,9 +12,12 @@ const route = useRoute()
 const routerKey = ref(0)
 
 // Force component refresh on route change
-watch(() => route.fullPath, () => {
-  routerKey.value++
-})
+watch(
+  () => route.fullPath,
+  () => {
+    routerKey.value++
+  },
+)
 
 onMounted(async () => {
   const userStore = useUserStore()
