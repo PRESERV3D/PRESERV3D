@@ -203,5 +203,17 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     }
   })
 
+  // Force component refresh on navigation
+  Router.afterEach((to, from) => {
+    // Only trigger refresh when navigating to a different page
+    if (to.path !== from.path) {
+      // Force component reload by updating router key
+      const app = Router.app
+      if (app && app.$forceUpdate) {
+        app.$forceUpdate()
+      }
+    }
+  })
+
   return Router
 })
