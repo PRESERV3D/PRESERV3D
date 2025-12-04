@@ -91,6 +91,7 @@
                           mask="h:mm A"
                           :options="hourOptions"
                           :minute-options="minuteOptions"
+                          :options-disabled="true"
                         >
                           <div class="row items-center justify-end q-gutter-sm">
                             <q-btn v-close-popup label="Close" color="primary" flat />
