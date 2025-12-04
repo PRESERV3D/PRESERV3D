@@ -405,6 +405,7 @@ async function submitBooking() {
         message: 'Failed to verify time slot availability. Please try again.',
         color: 'negative',
       })
+      isBookLoading.value = false
       return
     }
 
@@ -414,6 +415,7 @@ async function submitBooking() {
         message: 'This time slot is already booked. Please select a different date or time.',
         color: 'warning',
       })
+      isBookLoading.value = false
       return
     }
 
