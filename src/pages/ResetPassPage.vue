@@ -100,6 +100,7 @@ const resetSuccess = ref(false)
 const isResetLoading = ref(false)
 
 onMounted(async () => {
+  // Check for error codes in the hash
   const hash = window.location.hash
   const params = new URLSearchParams(hash.replace('#', ''))
 
@@ -111,20 +112,22 @@ onMounted(async () => {
     return
   }
 
-  // Check if there's an access_token in the URL (from password reset email)
-  const accessToken = params.get('access_token')
-  const refreshToken = params.get('refresh_token')
-  const type = params.get('type')
+  // For PKCE flow, Supabase automatically exchanges the token when the page loads
+  // We just need to verify the session was established
+  // Wait a moment for the auth state to update
+  await new Promise((resolve) => setTimeout(resolve, 500))
 
-  if (accessToken && type === 'recovery') {
-    // Set the session using the tokens from the URL
-    const { error } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    })
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  if (!session) {
+    // Check if there's an error in the URL
+    const error = params.get('error')
+    const errorDescription = params.get('error_description')
 
     if (error) {
-      console.error('Error setting session:', error)
+      console.error('Auth error:', error, errorDescription)
       message.value =
         'Session expired or invalid. Please request a new password reset link from the forgot password page.'
       resetSuccess.value = false
