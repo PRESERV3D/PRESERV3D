@@ -32,8 +32,7 @@
             lazy-rules
             :rules="[
               (val) => !!val || 'Please enter your email.',
-              (val) => val.includes('@pup.edu.ph') || 'Please use your PUP email only.',
-              // (val) => val.includes('@pup.edu.ph') || 'Please use your gmail only.',
+              // (val) => val.includes('@pup.edu.ph') || 'Please use your PUP email only.',
               checkEmailUnique,
             ]"
             class="text-box"
