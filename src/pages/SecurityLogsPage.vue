@@ -584,13 +584,7 @@ export default defineComponent({
 
     async fetchStats() {
       try {
-        // Get date range for stats (last 30 days)
-        const thirtyDaysAgo = date.subtractFromDate(new Date(), { days: 30 })
-
-        const { data, error } = await supabase
-          .from('security_logs')
-          .select('event_type')
-          .gte('timestamp', thirtyDaysAgo.toISOString())
+        const { data, error } = await supabase.from('security_logs').select('event_type')
 
         if (error) throw error
 
