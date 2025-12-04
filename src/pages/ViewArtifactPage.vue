@@ -535,6 +535,7 @@ import { useUserStore } from 'stores/user'
 import { useQuasar } from 'quasar'
 import { generateNarration } from '/services/narration_service.js'
 import { convertToWorkingUrl } from 'src/composables/useR2Url'
+import { getTtsEndpoint } from 'src/utils/ttsConfig'
 import axios from 'axios'
 import '@google/model-viewer'
 
@@ -631,7 +632,7 @@ const toggleTextToSpeech = async () => {
 
     // Call TTS service
     const response = await axios.post(
-      'http://localhost:8001/generate-tts',
+      getTtsEndpoint('/generate-tts'),
       {
         text: narration.text,
         language_code: 'en-US',
@@ -676,7 +677,7 @@ const toggleTextToSpeech = async () => {
       type: 'negative',
       message:
         error.response?.data?.detail ||
-        'Failed to generate speech. Make sure the TTS service is running on port 8001.',
+        'Failed to generate speech. Make sure the TTS service is running.',
       position: 'top',
     })
   } finally {
