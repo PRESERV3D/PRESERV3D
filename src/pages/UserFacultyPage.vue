@@ -284,10 +284,10 @@ async function validateStepOne() {
   // }
 
   // Only for checking
-  if (!email.includes('@pup.edu.ph')) {
-    showNotifyDialog('Invalid Email', 'Please use PUP email only.')
-    return
-  }
+  // if (!email.includes('@pup.edu.ph')) {
+  //   showNotifyDialog('Invalid Email', 'Please use PUP email only.')
+  //   return
+  // }
 
   const emailUnique = await checkEmailUnique(email)
   if (emailUnique !== true) {
