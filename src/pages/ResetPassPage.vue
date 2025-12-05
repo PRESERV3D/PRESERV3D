@@ -303,5 +303,9 @@ function handleDialogConfirm() {
     justify-content: center;
     padding: 2rem;
   }
+
+  .text-box-2 {
+    width: 20rem !important;
+  }
 }
 </style>
