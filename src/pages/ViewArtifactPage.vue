@@ -328,23 +328,29 @@
           </div>
           <q-dialog v-model="showRelatedDialog" persistent>
             <q-card class="related-box">
-              <q-card-section
-                class="column sub-font-3 items-start"
-                style="font-size: 16px; font-weight: 700"
-              >
-                Related Links
+              <q-card-section class="dialog-header">
+                <div class="sub-font-3" style="font-size: 18px; font-weight: 700">
+                  Related Links
+                </div>
               </q-card-section>
               <q-separator />
-              <q-card-section class="column items-start">
-                <div
-                  v-for="link in links"
-                  :key="link.id"
-                  class="row items-center q-mb-xs full-width"
-                  @click="openLink(link.url)"
-                >
-                  <div class="link-style" @click="openLink(link.url)">
-                    {{ link.title || link.url }}
+              <q-card-section class="links-container">
+                <div v-if="links.length > 0">
+                  <div
+                    v-for="link in links"
+                    :key="link.id"
+                    class="link-item"
+                    @click="openLink(link.url)"
+                  >
+                    <q-icon name="link" size="18px" class="link-icon" />
+                    <div class="link-style">
+                      {{ link.title || link.url }}
+                    </div>
                   </div>
+                </div>
+                <div v-else class="empty-state">
+                  <q-icon name="link_off" size="48px" color="grey-5" />
+                  <p class="empty-text">No related links available</p>
                 </div>
               </q-card-section>
               <q-card-actions align="right">
@@ -526,14 +532,18 @@ import { useRoute, useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useModelStore } from 'stores/modelStore'
 import { useUserStore } from 'stores/user'
+import { useQuasar } from 'quasar'
 import { generateNarration } from '/services/narration_service.js'
 import { convertToWorkingUrl } from 'src/composables/useR2Url'
+import { getTtsEndpoint } from 'src/utils/ttsConfig'
+import axios from 'axios'
 import '@google/model-viewer'
 
 const route = useRoute()
 const router = useRouter()
 const modelStore = useModelStore()
 const userStore = useUserStore()
+const $q = useQuasar()
 let modelLoadHandler = null
 
 // Safe profile accessors
@@ -588,97 +598,100 @@ function formatDate(dateStr) {
 }
 
 const isSpeaking = ref(false)
-let currentUtterance = null
-
-const initVoices = () => {
-  return new Promise((resolve) => {
-    let voices = window.speechSynthesis.getVoices()
-    if (voices.length > 0) {
-      resolve(voices)
-    } else {
-      window.speechSynthesis.onvoiceschanged = () => {
-        voices = window.speechSynthesis.getVoices()
-
-        resolve(voices)
-      }
-    }
-  })
-}
+let currentAudio = null
 
 const toggleTextToSpeech = async () => {
-  const { data: artifactData } = await supabase
-    .from('artifacts_metadata')
-    .select('*')
-    .eq('id', route.params.id)
-    .single()
-
-  if (isSpeaking.value) {
-    window.speechSynthesis.cancel()
+  // If already speaking, stop the audio
+  if (isSpeaking.value && currentAudio) {
+    currentAudio.pause()
+    currentAudio = null
     isSpeaking.value = false
     return
   }
 
-  const narration = generateNarration(artifactData)
-  if (!narration) return
+  try {
+    // Fetch artifact data
+    const { data: artifactData, error } = await supabase
+      .from('artifacts_metadata')
+      .select('*')
+      .eq('id', route.params.id)
+      .single()
 
-  // Create speech utterance
-  currentUtterance = new SpeechSynthesisUtterance(narration)
-  currentUtterance.lang = 'en-US'
-  currentUtterance.rate = 0.85
-  currentUtterance.pitch = 1.7
-  currentUtterance.volume = 1.0
+    if (error) throw error
 
-  const voices = window.speechSynthesis.getVoices()
+    // Generate narration text
+    const narration = generateNarration(artifactData)
+    if (!narration || !narration.text) {
+      $q.notify({
+        type: 'warning',
+        message: 'No narration text available',
+        position: 'top',
+      })
+      return
+    }
 
-  const femaleVoicePatterns = [
-    'Google US English Female',
-    'Microsoft Zira',
-    'Samantha',
-    'Victoria',
-    'Karen',
-    'Moira',
-    'Tessa',
-    'Google UK English Female',
-    'female',
-  ]
-
-  let selectedVoice = null
-  for (const pattern of femaleVoicePatterns) {
-    selectedVoice = voices.find(
-      (v) =>
-        v.lang.startsWith('en') &&
-        (v.name.toLowerCase().includes(pattern.toLowerCase()) ||
-          v.name.toLowerCase().includes('female')),
+    // Call TTS service
+    const response = await axios.post(
+      getTtsEndpoint('/generate-tts'),
+      {
+        text: narration.text,
+        language_code: 'en-US',
+        voice_name: 'en-US-Neural2-F', // Female voice
+        use_ssml: narration.isSSML || false,
+      },
+      {
+        responseType: 'blob',
+      },
     )
-    if (selectedVoice) break
-  }
 
-  // Fallback
-  if (!selectedVoice) {
-    selectedVoice = voices.find(
-      (v) => v.lang.startsWith('en') && v.name.toLowerCase().includes('female'),
-    )
-  }
+    // Create audio from blob
+    const audioBlob = new Blob([response.data], { type: 'audio/mpeg' })
+    const audioUrl = URL.createObjectURL(audioBlob)
+    currentAudio = new Audio(audioUrl)
 
-  if (selectedVoice) {
-    currentUtterance.voice = selectedVoice
-    console.log('Using voice:', selectedVoice.name)
-  } else {
-    console.log('No female voice found, using default')
-  }
+    // Set up event listeners
+    currentAudio.onended = () => {
+      isSpeaking.value = false
+      URL.revokeObjectURL(audioUrl)
+      currentAudio = null
+    }
 
-  currentUtterance.onend = () => {
-    isSpeaking.value = false
-  }
+    currentAudio.onerror = (error) => {
+      console.error('Audio playback error:', error)
+      isSpeaking.value = false
+      URL.revokeObjectURL(audioUrl)
+      currentAudio = null
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to play audio',
+        position: 'top',
+      })
+    }
 
-  currentUtterance.onerror = (event) => {
-    console.error('Speech synthesis error:', event)
-    isSpeaking.value = false
+    // Play the audio
+    await currentAudio.play()
+    isSpeaking.value = true
+  } catch (error) {
+    console.error('TTS error:', error)
+    $q.notify({
+      type: 'negative',
+      message:
+        error.response?.data?.detail ||
+        'Failed to generate speech. Make sure the TTS service is running.',
+      position: 'top',
+    })
+  } finally {
+    $q.loading.hide()
   }
-
-  window.speechSynthesis.speak(currentUtterance)
-  isSpeaking.value = true
 }
+
+// Cleanup on unmount
+onBeforeUnmount(() => {
+  if (currentAudio) {
+    currentAudio.pause()
+    currentAudio = null
+  }
+})
 
 // Help button click
 const toggleHelp = () => {
@@ -1021,7 +1034,6 @@ const showNotifyDialog = (title, message) => {
 }
 
 onMounted(async () => {
-  await initVoices()
   const { data, error } = await supabase
     .from('artifacts_metadata')
     .select('*')
@@ -1801,6 +1813,93 @@ model-viewer:-ms-fullscreen .control-buttons {
   color: #b0b0b0;
   font-style: italic;
   margin: 0.15rem 0;
+}
+
+/* Related Links Dialog */
+.related-box {
+  min-width: 500px;
+  max-width: 600px;
+  border-radius: 15px;
+  font-family: 'Poppins', sans-serif;
+  background-color: #fbf4d0;
+}
+
+.dialog-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 2px solid #e0dbc7;
+}
+
+.links-container {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+}
+
+.link-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.link-item:hover {
+  background-color: #f5f5f5;
+}
+
+.link-icon {
+  color: #880000;
+  flex-shrink: 0;
+}
+
+.link-style {
+  cursor: pointer;
+  color: #880000;
+  text-decoration: none;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-item:hover .link-style {
+  text-decoration: underline;
+  color: #560505;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.empty-text {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #666;
+  margin-top: 1rem;
+}
+
+.btn-save {
+  background: #560505;
+  color: white;
+  border-radius: 6px;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  padding: 8px 16px;
+}
+
+.btn-save:hover {
+  background: #6b0707;
 }
 
 /* Base responsive container improvements */

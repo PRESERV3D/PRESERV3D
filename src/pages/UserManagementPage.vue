@@ -995,8 +995,7 @@
                     dense
                     no-caps
                     color="primary"
-                    label="View Letter"
-                    icon="picture_as_pdf"
+                    label="Letter"
                     @click="viewLetter(props.row.letter)"
                     class="view-more-link"
                   />

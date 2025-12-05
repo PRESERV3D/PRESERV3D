@@ -21,6 +21,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       'X-Client-Info': 'preserv3d-web',
     },
   },
+  db: {
+    schema: 'public',
+  },
+  // Add retry configuration for network resilience
+  realtime: {
+    timeout: 10000, // 10 second timeout for realtime connections
+  },
 })
 
 // Create admin client with service role key (for admin operations only)

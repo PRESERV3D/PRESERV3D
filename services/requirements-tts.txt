@@ -1,0 +1,12 @@
+# TTS Service Requirements
+# Minimal dependencies for Google Cloud Text-to-Speech service
+
+# Core FastAPI and HTTP dependencies
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# Google Cloud Text-to-Speech
+google-cloud-texttospeech
+
+# Utilities
+python-dotenv
