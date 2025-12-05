@@ -309,10 +309,10 @@ function handleDialogConfirm() {
     padding: 1rem;
     overflow-y: auto;
   }
-
+  /*
   .text-box-2 {
     width: 20rem !important;
-  }
+  } */
 
   .page-background {
     padding: 0;
@@ -320,7 +320,6 @@ function handleDialogConfirm() {
   }
 
   .pad {
-    width: 100%;
     max-width: 100%;
   }
 
