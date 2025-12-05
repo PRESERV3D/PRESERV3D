@@ -291,6 +291,11 @@ function handleDialogConfirm() {
   display: none;
 }
 
+.page-background {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
 /* mobile responsive */
 @media (max-width: 48rem) {
   .reset-bigbox {
@@ -301,11 +306,37 @@ function handleDialogConfirm() {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
+    padding: 1rem;
+    overflow-y: auto;
   }
 
   .text-box-2 {
     width: 20rem !important;
+  }
+
+  .page-background {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .pad {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+  }
+
+  .text-box-2 {
+    width: 100% !important;
+    max-width: 100%;
+  }
+
+  .labelNames {
+    width: 100%;
   }
 }
 </style>
