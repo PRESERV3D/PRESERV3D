@@ -1899,7 +1899,6 @@ async function addCollection() {
   .recently-viewed-item {
     padding: 0.5rem 1.2rem;
     min-height: 3.75rem;
-
   }
 
   .circular-holder {
@@ -1971,7 +1970,7 @@ async function addCollection() {
   .recently-viewed-item {
     padding: 0.95rem 1.5rem;
     min-height: 3.4375rem;
-    margin-bottom: 2px
+    margin-bottom: 2px;
   }
 
   .circular-holder {
@@ -2041,7 +2040,7 @@ async function addCollection() {
   .recently-viewed-item {
     padding: 0.4rem 1.75rem;
     min-height: 4.0625rem;
-    margin-bottom: 0.025rem;
+    margin-bottom: -6px;
   }
 
   .circular-holder {
@@ -2069,7 +2068,7 @@ async function addCollection() {
 
   .view-icon,
   .star-icon {
-    font-size: 1.10rem;
+    font-size: 1.1rem;
   }
 
   .action-icons {
@@ -2106,7 +2105,7 @@ async function addCollection() {
   }
 
   .recently-viewed-item {
-    padding: 0 1.75rem ;
+    padding: 0 1.75rem;
     margin-bottom: -0.75rem;
   }
 
