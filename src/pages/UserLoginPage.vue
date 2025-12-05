@@ -1,6 +1,8 @@
 <template>
   <div>
-    <div class="q-pa-md form-container">
+    <MobileNotSupported />
+
+    <div class="q-pa-md form-container desktop-content">
       <div class="column items-center q-mb-md">
         <label class="form-title">LOG IN</label>
         <label class="subtitle-logsign">Access Your Account</label>
@@ -91,7 +93,7 @@
     </div>
 
     <!--  Footer -->
-    <footer class="login-footer">
+    <footer class="login-footer desktop-content">
       <div class="footer-content">
         <p class="footer-text">
           By using this service, you agree to the PUP Online Services
@@ -127,6 +129,7 @@ import { useRouter } from 'vue-router'
 import { supabase } from 'boot/supabase'
 import { useQuasar } from 'quasar'
 import { useUserStore } from 'src/stores/user'
+import MobileNotSupported from 'src/components/MobileNotSupported.vue'
 
 const $q = useQuasar()
 const router = useRouter()
@@ -384,6 +387,19 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ========================
+ DESKTOP CONTENT TOGGLE
+======================== */
+.desktop-content {
+  display: block;
+}
+
+@media (max-width: 48rem) {
+  .desktop-content {
+    display: none;
+  }
+}
+
 :deep(.login-text-box .q-field__control::before),
 :deep(.login-text-box .q-field__control::after) {
   display: none !important;
