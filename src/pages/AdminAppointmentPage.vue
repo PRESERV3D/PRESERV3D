@@ -895,7 +895,7 @@ function nextMonth() {
   letter-spacing: 3px;
   flex: 1;
   text-align: left;
-  padding-left: 0;
+  padding-left: 1.5rem;
 }
 
 .year-display {
@@ -905,6 +905,7 @@ function nextMonth() {
   color: white;
   text-align: right;
   flex: 1;
+  padding-right: 1.5rem;
 }
 
 .calendar-grid {
