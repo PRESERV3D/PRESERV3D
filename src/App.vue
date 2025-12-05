@@ -1,11 +1,23 @@
 <template>
-  <router-view />
+  <router-view :key="routerKey" />
 </template>
 
 <script setup>
 import { useUserStore } from 'src/stores/user'
 import { trackAuthChanges } from '/services/auth_service.js'
-import { onMounted, onErrorCaptured } from 'vue'
+import { onMounted, onErrorCaptured, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const routerKey = ref(0)
+
+// Force component refresh on route change
+watch(
+  () => route.fullPath,
+  () => {
+    routerKey.value++
+  },
+)
 
 onMounted(async () => {
   const userStore = useUserStore()

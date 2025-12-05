@@ -5,6 +5,7 @@ from fastapi.responses import StreamingResponse
 from google.cloud import texttospeech
 from google.oauth2 import service_account
 import io
+from datetime import datetime
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -29,7 +30,7 @@ app.add_middleware(
 )
 
 # --- Google Cloud TTS Configuration ---
-CREDENTIALS_PATH = "secrets/google-credentials.json"
+CREDENTIALS_PATH = "/etc/secrets/google-credentials.json"
 
 def get_google_credentials():
     """Authenticates with Google Cloud using service account credentials."""
@@ -57,6 +58,29 @@ class TTSRequest(BaseModel):
     language_code: str = 'en-US'
     voice_name: str = 'en-US-Neural2-A'
     use_ssml: bool = False  # Flag to indicate if text contains SSML markup
+
+@app.head("/health")
+@app.get("/health")
+async def health_check():
+    """Health check endpoint to verify TTS service is running"""
+    return {
+        "status": "healthy",
+        "service": "tts_service",
+        "timestamp": datetime.utcnow().isoformat(),
+        "tts_client_loaded": tts_client is not None,
+        "credentials_configured": tts_client is not None
+    }
+
+@app.head("/")
+@app.get("/")
+async def root():
+    """Root endpoint with service information"""
+    return {
+        "message": "PRESERV3D TTS Service",
+        "status": "running",
+        "tts_available": tts_client is not None,
+        "endpoints": ["/health", "/generate-tts"]
+    }
 
 @app.post("/generate-tts")
 async def generate_tts(request: TTSRequest):

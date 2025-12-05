@@ -895,7 +895,7 @@ function nextMonth() {
   letter-spacing: 3px;
   flex: 1;
   text-align: left;
-  padding-left: 0;
+  padding-left: 1.5rem;
 }
 
 .year-display {
@@ -905,6 +905,7 @@ function nextMonth() {
   color: white;
   text-align: right;
   flex: 1;
+  padding-right: 1.5rem;
 }
 
 .calendar-grid {
@@ -1027,19 +1028,19 @@ function nextMonth() {
 }
 
 .calendar-day .appointment-count.approved {
-  background: #560505;
+  background: #4caf50;
 }
 
 .calendar-day .appointment-count.pending {
-  background: #ff9800;
+  background: #9e9e9e;
 }
 
 .calendar-day.selected .appointment-count.approved {
-  background: #8d1c1c;
+  background: #4caf50;
 }
 
 .calendar-day.selected .appointment-count.pending {
-  background: #fb8c00;
+  background: #9e9e9e;
 }
 
 /* Responsive */

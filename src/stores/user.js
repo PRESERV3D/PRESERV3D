@@ -22,17 +22,42 @@ export const useUserStore = defineStore('user', {
         }
       })
 
-      supabase.auth.onAuthStateChange((_, session) => {
+      supabase.auth.onAuthStateChange((event, session) => {
         // Skip auth state changes during logout process
         if (this.isSigningOut) {
           console.log('🔒 Skipping auth state change during logout')
           return
         }
 
+        console.log('🔄 Auth state changed:', event)
+
+        // Handle specific auth events
+        if (event === 'SIGNED_OUT') {
+          console.log('👋 User signed out')
+          this.session = null
+          this.profile = null
+          return
+        }
+
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('🔄 Token refreshed successfully')
+          this.session = session
+          return
+        }
+
+        if (event === 'USER_UPDATED') {
+          console.log('👤 User updated')
+          this.session = session
+          return
+        }
+
+        // For SIGNED_IN and other events
         this.session = session
         if (session?.user) {
           this.fetchUserAndProfile()
-        } else {
+        } else if (!session && this.profile) {
+          // Only clear profile if session is null and we had a profile
+          console.warn('⚠️ Session lost unexpectedly')
           this.profile = null
         }
       })

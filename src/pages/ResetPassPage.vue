@@ -99,7 +99,7 @@ const resetSent = ref(false)
 const resetSuccess = ref(false)
 const isResetLoading = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
   const hash = window.location.hash
   const params = new URLSearchParams(hash.replace('#', ''))
 
@@ -108,6 +108,27 @@ onMounted(() => {
       'Your password reset link has expired. Please request a new password reset link from the forgot password page.'
     resetSuccess.value = false
     resetSent.value = true
+  }
+
+  // Check if there's an access_token in the URL (from password reset email)
+  const accessToken = params.get('access_token')
+  const refreshToken = params.get('refresh_token')
+  const type = params.get('type')
+
+  if (accessToken && type === 'recovery') {
+    // Set the session using the tokens from the URL
+    const { error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    })
+
+    if (error) {
+      console.error('Error setting session:', error)
+      message.value =
+        'Session expired or invalid. Please request a new password reset link from the forgot password page.'
+      resetSuccess.value = false
+      resetSent.value = true
+    }
   }
 })
 
