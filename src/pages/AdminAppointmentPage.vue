@@ -1035,11 +1035,11 @@ function nextMonth() {
 }
 
 .calendar-day.selected .appointment-count.approved {
-  background: #8d1c1c;
+  background: #4caf50;
 }
 
 .calendar-day.selected .appointment-count.pending {
-  background: #fb8c00;
+  background: #9e9e9e;
 }
 
 /* Responsive */
