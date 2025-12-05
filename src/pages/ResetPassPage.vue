@@ -290,4 +290,18 @@ function handleDialogConfirm() {
 :deep(.text-box-2 .q-field__control::after) {
   display: none;
 }
+
+/* mobile responsive */
+@media (max-width: 48rem) {
+  .reset-bigbox {
+    width: 100vw;
+    height: 95vh;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+}
 </style>
