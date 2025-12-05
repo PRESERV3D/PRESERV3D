@@ -1971,6 +1971,7 @@ async function addCollection() {
   .recently-viewed-item {
     padding: 0.95rem 1.5rem;
     min-height: 3.4375rem;
+    margin-bottom: 2px
   }
 
   .circular-holder {
@@ -2040,6 +2041,7 @@ async function addCollection() {
   .recently-viewed-item {
     padding: 0.4rem 1.75rem;
     min-height: 4.0625rem;
+    margin-bottom: 0.025rem;
   }
 
   .circular-holder {
