@@ -90,7 +90,7 @@
                           v-model="form.time"
                           mask="h:mm A"
                           :options="hourOptions"
-                          :minute-options="minuteOptions"
+                          :minute-options="[0, 30]"
                         >
                           <div class="row items-center justify-end q-gutter-sm">
                             <q-btn v-close-popup label="Close" color="primary" flat />
@@ -367,10 +367,10 @@ const hourOptions = (hr) => {
   return false
 }
 
-const minuteOptions = (hr, min) => {
-  // Only allow 0 and 30 minutes
-  return min === 0 || min === 30
-}
+// const minuteOptions = (hr, min) => {
+//   // Only allow 0 and 30 minutes
+//   if (min === 0 || min === 30) return min === 0 || min === 30
+// }
 
 async function submitBooking() {
   const { name, email, date, time, purpose, user_remarks } = form.value
