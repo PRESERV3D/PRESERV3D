@@ -18,7 +18,7 @@
             lazy-rules
             :rules="[
               (val) => !!val || 'Please enter your email.',
-              (val) => val.includes('@iskolarngbayan.pup.edu.ph') || 'Use your PUP email only.',
+              // (val) => val.includes('@iskolarngbayan.pup.edu.ph') || 'Use your PUP email only.',
             ]"
             class="login-text-box"
           />
