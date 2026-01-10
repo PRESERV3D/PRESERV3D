@@ -2,24 +2,7 @@
 <template>
   <div class="page-background">
     <!-- Mobile Not Supported Message -->
-    <div class="mobile-not-supported">
-      <div class="mobile-message-container">
-        <q-img
-          src="/img/logo.png"
-          alt="Logo"
-          class="mobile-logo"
-        />
-        <h3 class="text-tertiary q-mb-md font-benne mobile-brand">
-          PRESERV<span class="text-secondary">3D</span>
-        </h3>
-        <p class="text-white q-mb-md text-center">
-          Mobile view is not currently supported.
-        </p>
-        <p class="text-white text-center" style="opacity: 0.8; font-size: 0.875rem;">
-          Please access this site on a desktop or tablet device for the best experience.
-        </p>
-      </div>
-    </div>
+    <MobileNotSupported />
 
     <!-- Desktop Content -->
     <div class="desktop-content">
@@ -28,11 +11,7 @@
           <q-space />
 
           <div class="flex flex-center">
-            <q-img
-              src="/img/logo.png"
-              alt="Logo"
-              class="logo-img q-px-auto q-mt-sm"
-            />
+            <q-img src="/img/logo.png" alt="Logo" class="logo-img q-px-auto q-mt-sm" />
           </div>
           <q-space />
           <!-- Buttons -->
@@ -64,23 +43,11 @@
             </p>
           </div>
           <!-- Images -->
-          <q-img
-            src="/img/C-trophy.png"
-            alt="C Trophy"
-            class="trophy-center q-px-auto"
-          />
+          <q-img src="/img/C-trophy.png" alt="C Trophy" class="trophy-center q-px-auto" />
 
-          <q-img
-            src="/img/L-trophy.png"
-            alt="L Trophy"
-            class="trophy-left q-px-auto"
-          />
+          <q-img src="/img/L-trophy.png" alt="L Trophy" class="trophy-left q-px-auto" />
 
-          <q-img
-            src="/img/R-trophy.png"
-            alt="R Trophy"
-            class="trophy-right q-px-auto"
-          />
+          <q-img src="/img/R-trophy.png" alt="R Trophy" class="trophy-right q-px-auto" />
           <div class="q-pa-md"></div>
         </div>
       </div>
@@ -97,46 +64,26 @@
   </div>
 </template>
 
-<script setup>
-//
+<script>
+import MobileNotSupported from 'src/components/MobileNotSupported.vue'
+
+export default {
+  name: 'LandingPage',
+  components: {
+    MobileNotSupported,
+  },
+}
 </script>
 
 <style scoped>
 /* ========================
- MOBILE NOT SUPPORTED
+ DESKTOP CONTENT TOGGLE
 ======================== */
-.mobile-not-supported {
-  display: none;
-}
-
 .desktop-content {
   display: block;
 }
 
 @media (max-width: 48rem) {
-  .mobile-not-supported {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 2rem;
-  }
-
-  .mobile-message-container {
-    text-align: center;
-    max-width: 25rem;
-  }
-
-  .mobile-logo {
-    width: 5rem;
-    height: 5rem;
-    margin: 0 auto 1.5rem;
-  }
-
-  .mobile-brand {
-    letter-spacing: 0.2rem;
-  }
-
   .desktop-content {
     display: none;
   }
@@ -152,7 +99,7 @@
   background-position: center center;
   background-repeat: no-repeat;
   min-height: 100vh;
-  background-attachment: fixed
+  background-attachment: fixed;
 }
 
 .logo-img {
@@ -301,7 +248,6 @@
   }
 }
 
-
 @media (max-width: 90rem) {
   .trophy-left {
     right: 50rem;
@@ -377,7 +323,6 @@
   .trophy-right {
     display: none;
   }
-
 
   .bottom-shadow-overlay {
     height: 18rem;
@@ -460,7 +405,6 @@
     bottom: 5rem;
   }
 }
-
 
 /* Shorter screens - keep trophies closer */
 @media (max-height: 43.75rem) {
