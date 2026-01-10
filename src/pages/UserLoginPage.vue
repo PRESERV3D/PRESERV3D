@@ -213,6 +213,31 @@ async function loginUser() {
       return // Do not proceed to login
     }
 
+    // Check email verification for students, faculty, and admins
+    if (
+      profile.user_type === 'student' ||
+      profile.user_type === 'faculty' ||
+      profile.user_type === 'admin' ||
+      profile.user_type === 'super admin'
+    ) {
+      const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(profile.id)
+
+      if (authError) {
+        console.error('Auth user lookup failed:', authError.message)
+        showNotifyDialog('Verification Error', 'Unable to verify email status. Please try again.')
+        return
+      }
+
+      if (!authUser.user?.email_confirmed_at) {
+        showNotifyDialog(
+          'Email Verification Required',
+          'Please check your email for account authentication first before logging in.',
+        )
+        clearForm()
+        return
+      }
+    }
+
     // If visitor, check status before signing in
     if (profile.user_type === 'visitor') {
       const { data: visitorStatus, error: visitorError } = await supabase

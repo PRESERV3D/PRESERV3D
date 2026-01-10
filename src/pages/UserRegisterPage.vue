@@ -33,8 +33,8 @@
             :rules="[
               (val) => !!val || 'Please enter your email.',
               (val) =>
-                // val.includes('@iskolarngbayan.pup.edu.ph') || 'Please use your PUP email only.',
-                checkEmailUnique,
+                val.includes('@iskolarngbayan.pup.edu.ph') || 'Please use your PUP email only.',
+              checkEmailUnique,
             ]"
             class="text-box"
           />
@@ -392,10 +392,10 @@ async function validateStepOne() {
     return
   }
 
-  // if (!email.includes('@iskolarngbayan.pup.edu.ph')) {
-  //   showNotifyDialog('Invalid Email', 'Please use your PUP email only.')
-  //   return
-  // }
+  if (!email.includes('@iskolarngbayan.pup.edu.ph')) {
+    showNotifyDialog('Invalid Email', 'Please use your PUP email only.')
+    return
+  }
 
   const emailUnique = await checkEmailUnique(email)
   if (emailUnique !== true) {
