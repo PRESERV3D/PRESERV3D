@@ -438,9 +438,6 @@ const generateReport = async () => {
     $q.notify({
       type: 'warning',
       message: 'No data available for the selected date range.',
-      caption: 'Please select a different date or date range.',
-      position: 'top',
-      timeout: 3000,
     })
   } else {
     $q.notify({
