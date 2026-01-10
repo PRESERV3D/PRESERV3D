@@ -427,6 +427,32 @@ export async function generateMonthlyReport({
     (monthlyExistingDocumentsResult.data || []).map((d) => d.id),
   )
 
+  // Check if all metrics are zero or empty
+  const hasAnyData =
+    totalUsers > 0 ||
+    newUsers > 0 ||
+    activeUsers > 0 ||
+    totalAppointments > 0 ||
+    newAppointments > 0 ||
+    totalArtifacts > 0 ||
+    uploadedArtifacts > 0 ||
+    totalDocuments > 0 ||
+    uploadedDocuments > 0 ||
+    topArtifacts.length > 0 ||
+    topDocuments.length > 0 ||
+    departmentStats.length > 0 ||
+    facultyDepartmentStats.length > 0 ||
+    institutionStats.length > 0 ||
+    userTypeStats.length > 0
+
+  if (!hasAnyData) {
+    return {
+      success: false,
+      noData: true,
+      message: 'No data available for the selected date range',
+    }
+  }
+
   // Create monthly breakdown
   let currentMonth = new Date(start.getFullYear(), start.getMonth(), 1)
   const lastMonth = new Date(end.getFullYear(), end.getMonth(), 1)

@@ -405,9 +405,10 @@ const generateReport = async () => {
   const startDay = start.getDate()
   const startYear = start.getFullYear()
 
+  let result
   if (!isRange.value) {
     // Single Date Report
-    await generateMonthlyReport({
+    result = await generateMonthlyReport({
       startMonth: startMonth,
       startDay: startDay,
       startYear: startYear,
@@ -422,7 +423,7 @@ const generateReport = async () => {
     const endDay = end.getDate()
     const endYear = end.getFullYear()
 
-    await generateMonthlyReport({
+    result = await generateMonthlyReport({
       startMonth: startMonth,
       startDay: startDay,
       startYear: startYear,
@@ -431,10 +432,23 @@ const generateReport = async () => {
       endYear: endYear,
     })
   }
-  $q.notify({
-    type: 'positive',
-    message: 'Report generated successfully!',
-  })
+
+  // Check if there's no data
+  if (result?.noData) {
+    $q.notify({
+      type: 'warning',
+      message: 'No data available for the selected date range.',
+      caption: 'Please select a different date or date range.',
+      position: 'top',
+      timeout: 3000,
+    })
+  } else {
+    $q.notify({
+      type: 'positive',
+      message: 'Report generated successfully!',
+    })
+  }
+
   startDate.value = null
   endDate.value = null
   isGenerateReportLoading.value = false
