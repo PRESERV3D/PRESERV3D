@@ -444,12 +444,13 @@ const generateReport = async () => {
       type: 'positive',
       message: 'Report generated successfully!',
     })
+
+    reportDialog.value = false
   }
 
   startDate.value = null
   endDate.value = null
   isGenerateReportLoading.value = false
-  reportDialog.value = false
 }
 
 async function init() {
