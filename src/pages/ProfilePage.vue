@@ -326,12 +326,17 @@ const $q = useQuasar()
 const profileImage = ref(null)
 const showExtensionDialog = ref(false)
 const hasActiveExtension = ref(false)
+const hasExtendedBefore = ref(false)
+const previousExtensionOldEndDate = ref(null)
 const letterInput = ref(null)
 
 const extensionDurationDays = computed(() => {
   if (!extensionRequest.newEndDate || !visitorData.endDate) return 0
 
-  const currentEndDate = new Date(visitorData.endDate)
+  // For subsequent extensions, use the old_end_date from the previous approved extension
+  // For first-time extensions, use the original end date from visitor profile
+  const referenceDate = previousExtensionOldEndDate.value || visitorData.endDate
+  const currentEndDate = new Date(referenceDate)
   const newEndDate = new Date(extensionRequest.newEndDate)
   const diffTime = newEndDate - currentEndDate
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
@@ -344,6 +349,8 @@ const isExtensionWithinWeek = computed(() => {
 })
 
 const requiresLetterUpload = computed(() => {
+  // Both first-time and subsequent extensions:
+  // Only require letter if extension exceeds 7 days from the old end date
   return extensionDurationDays.value > 7
 })
 
@@ -458,7 +465,8 @@ onMounted(async () => {
 const checkPendingExtension = async (approvalId) => {
   if (!approvalId) return
 
-  const { data, error } = await supabase
+  // Check for pending extensions
+  const { data: pendingData, error: pendingError } = await supabase
     .from('account_extensions')
     .select('*')
     .eq('approval_id', approvalId)
@@ -467,14 +475,39 @@ const checkPendingExtension = async (approvalId) => {
     .limit(1)
     .maybeSingle()
 
-  if (error) {
-    console.error('Error checking extension status:', error)
+  if (pendingError) {
+    console.error('Error checking extension status:', pendingError)
     return
   }
 
-  if (data) {
+  if (pendingData) {
     hasActiveExtension.value = true
-    console.log('Pending extension found:', data)
+    console.log('Pending extension found:', pendingData)
+  }
+
+  // Check for any approved extensions (to determine if they've extended before)
+  // Get the most recent approved extension and use its old_end_date for calculating next extension
+  const { data: approvedData, error: approvedError } = await supabase
+    .from('account_extensions')
+    .select('old_end_date, extended_end_date')
+    .eq('approval_id', approvalId)
+    .eq('extension_status', 'Approved')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (approvedError) {
+    console.error('Error checking approved extensions:', approvedError)
+    return
+  }
+
+  if (approvedData) {
+    hasExtendedBefore.value = true
+    previousExtensionOldEndDate.value = approvedData.old_end_date
+    console.log(
+      'Previous approved extension found. Using old_end_date for calculation:',
+      approvedData.old_end_date,
+    )
   }
 }
 
@@ -536,6 +569,17 @@ const resetExtensionForm = () => {
 }
 
 const submitExtensionRequest = async () => {
+  // Check if there's already a pending extension
+  if (hasActiveExtension.value) {
+    $q.notify({
+      type: 'warning',
+      message: 'You already have a pending extension request. Please wait for approval.',
+      position: 'top',
+    })
+    showExtensionDialog.value = false
+    return
+  }
+
   if (!isExtensionFormValid.value) {
     $q.notify({
       type: 'negative',
@@ -552,6 +596,35 @@ const submitExtensionRequest = async () => {
       message: 'Unable to identify your account. Please try logging in again.',
       position: 'top',
     })
+    return
+  }
+
+  // Double-check for pending extension in database before submitting
+  const { data: pendingCheck, error: pendingCheckError } = await supabase
+    .from('account_extensions')
+    .select('id')
+    .eq('approval_id', profile.approval_id)
+    .eq('extension_status', 'Pending')
+    .maybeSingle()
+
+  if (pendingCheckError) {
+    console.error('Error checking pending extensions:', pendingCheckError)
+    $q.notify({
+      type: 'negative',
+      message: 'Unable to verify extension status. Please try again.',
+      position: 'top',
+    })
+    return
+  }
+
+  if (pendingCheck) {
+    hasActiveExtension.value = true
+    $q.notify({
+      type: 'warning',
+      message: 'You already have a pending extension request. Please wait for approval.',
+      position: 'top',
+    })
+    showExtensionDialog.value = false
     return
   }
 
