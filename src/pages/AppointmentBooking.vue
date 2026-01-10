@@ -367,6 +367,11 @@ const hourOptions = (hr) => {
   return false
 }
 
+// const minuteOptions = (hr, min) => {
+//   // Only allow 0 and 30 minutes
+//   if (min === 0 || min === 30) return min === 0 || min === 30
+// }
+
 async function submitBooking() {
   const { name, email, date, time, purpose, user_remarks } = form.value
 
@@ -405,6 +410,7 @@ async function submitBooking() {
         message: 'Failed to verify time slot availability. Please try again.',
         color: 'negative',
       })
+      isBookLoading.value = false
       return
     }
 
@@ -414,6 +420,7 @@ async function submitBooking() {
         message: 'This time slot is already booked. Please select a different date or time.',
         color: 'warning',
       })
+      isBookLoading.value = false
       return
     }
 

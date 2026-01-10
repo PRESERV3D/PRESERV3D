@@ -33,8 +33,8 @@
             :rules="[
               (val) => !!val || 'Please enter your email.',
               (val) =>
-                // val.includes('@iskolarngbayan.pup.edu.ph') || 'Please use your PUP email only.',
-                checkEmailUnique,
+                val.includes('@iskolarngbayan.pup.edu.ph') || 'Please use your PUP email only.',
+              checkEmailUnique,
             ]"
             class="text-box"
           />
