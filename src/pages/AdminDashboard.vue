@@ -78,16 +78,54 @@
             />
 
             <q-dialog v-model="reportDialog">
-              <q-card class="q-pa-md" style="min-width: 400px">
+              <q-card class="q-pa-md" style="min-width: 500px">
                 <q-card-section>
                   <div class="text-h6">Generate Usage Report</div>
                 </q-card-section>
 
                 <q-card-section>
-                  <!-- Date Range Selection -->
-                  <div class="row q-gutter-md q-mx-none">
-                    <!-- Date From -->
+                  <!-- User Type and College Filters in a Row -->
+                  <div class="row q-gutter-md q-mx-none q-mb-md">
+                    <!-- User Type Filter -->
                     <div class="col q-px-none q-pr-sm">
+                      <q-select
+                        outlined
+                        v-model="selectedUserType"
+                        :options="userTypeOptions"
+                        label="User Type"
+                      />
+                    </div>
+
+                    <!-- College Filter -->
+                    <div class="col q-px-none">
+                      <q-select
+                        outlined
+                        v-model="selectedCollege"
+                        :options="collegeOptions"
+                        label="College"
+                        @update:model-value="onCollegeChange"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Department Filter (conditionally shown)-->
+                  <div
+                    v-if="selectedCollege && selectedCollege !== 'All'"
+                    class="filter-grid q-mx-none q-mb-md"
+                  >
+                    <div class="filter-span-2 q-px-none q-pr-sm">
+                      <q-select
+                        outlined
+                        v-model="selectedDepartment"
+                        :options="departmentOptions"
+                        label="Department"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Date Selection (grid keeps width consistent when toggling range) -->
+                  <div class="date-grid q-mx-none q-mb-md">
+                    <div class="q-px-none q-pr-none" :class="{ 'date-span-2': !isRange }">
                       <q-input
                         outlined
                         v-model="startDate"
@@ -97,7 +135,6 @@
                       />
                     </div>
 
-                    <!-- Date To (only if range) -->
                     <div class="col q-px-none" v-if="isRange">
                       <q-input
                         outlined
@@ -360,6 +397,16 @@ const isValid = ref(false)
 const startDate = ref(null)
 const endDate = ref(null)
 
+// Filter options
+const selectedUserType = ref('All')
+const selectedCollege = ref('All')
+const selectedDepartment = ref('All')
+
+const userTypeOptions = ['All', 'student', 'faculty', 'visitor']
+const collegeOptions = ref(['All'])
+const departmentOptions = ref(['All'])
+const allDepartments = ref([])
+
 // Helper function to format date as YYYY-MM-DD
 function formatDate(date) {
   const year = date.getFullYear()
@@ -428,6 +475,9 @@ const generateReport = async () => {
       endMonth: startMonth,
       endDay: startDay,
       endYear: startYear,
+      userType: selectedUserType.value === 'All' ? null : selectedUserType.value,
+      college: selectedCollege.value === 'All' ? null : selectedCollege.value,
+      department: selectedDepartment.value === 'All' ? null : selectedDepartment.value,
     })
   } else {
     // Range Report
@@ -443,6 +493,9 @@ const generateReport = async () => {
       endMonth: endMonth,
       endDay: endDay,
       endYear: endYear,
+      userType: selectedUserType.value === 'All' ? null : selectedUserType.value,
+      college: selectedCollege.value === 'All' ? null : selectedCollege.value,
+      department: selectedDepartment.value,
     })
   }
 
@@ -463,7 +516,57 @@ const generateReport = async () => {
 
   startDate.value = null
   endDate.value = null
+  selectedUserType.value = 'All'
+  selectedCollege.value = 'All'
+  selectedDepartment.value = 'All'
   isGenerateReportLoading.value = false
+}
+
+// Fetch college and department options
+const fetchFilterOptions = async () => {
+  try {
+    // Fetch unique colleges and departments from both tables
+    const [studentsResult, facultyResult] = await Promise.all([
+      supabase.from('registered_users').select('college, department'),
+      supabase.from('registered_faculty').select('college, department'),
+    ])
+
+    const studentsData = studentsResult.data || []
+    const facultyData = facultyResult.data || []
+    const allData = [...studentsData, ...facultyData]
+
+    // Extract unique colleges
+    const colleges = new Set()
+    allData.forEach((row) => {
+      if (row.college) colleges.add(row.college)
+    })
+    collegeOptions.value = ['All', ...Array.from(colleges).sort()]
+
+    // Store all departments with their college associations
+    allDepartments.value = allData
+      .filter((row) => row.college && row.department)
+      .map((row) => ({ college: row.college, department: row.department }))
+  } catch (error) {
+    console.error('Error fetching filter options:', error)
+  }
+}
+
+// Handle college change to filter departments
+const onCollegeChange = (college) => {
+  selectedDepartment.value = 'All'
+  if (!college || college === 'All') {
+    departmentOptions.value = ['All']
+    return
+  }
+
+  // Filter departments based on selected college
+  const depts = new Set()
+  allDepartments.value
+    .filter((item) => item.college === college)
+    .forEach((item) => {
+      if (item.department) depts.add(item.department)
+    })
+  departmentOptions.value = ['All', ...Array.from(depts).sort()]
 }
 
 async function init() {
@@ -498,8 +601,9 @@ async function init() {
         .neq('user_type', 'admin'),
     ])
 
-    // Fetch recent uploads in parallel with chart initialization
+    // Fetch recent uploads and filter options in parallel with chart initialization
     const recentUploadsPromise = recentStore.fetchRecentUploads()
+    const filterOptionsPromise = fetchFilterOptions()
 
     // Initialize charts with fetched data
     if (usersPerMonth.value && usersData) {
@@ -517,8 +621,8 @@ async function init() {
     documents.value = documentsCountResult?.count || 0
     users.value = userCountResult?.count || 0
 
-    // Ensure recent uploads finish
-    await recentUploadsPromise
+    // Ensure recent uploads and filter options finish
+    await Promise.all([recentUploadsPromise, filterOptionsPromise])
   } catch (err) {
     console.error('Error initializing AdminDashboard:', err)
     $q.notify({
@@ -1393,6 +1497,32 @@ function imgProps(item) {
   padding: 0 !important;
   line-height: 1 !important;
   white-space: nowrap;
+}
+
+/* Date grid to keep single-date and range layouts aligned */
+.date-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 25px;
+  row-gap: 12px;
+  margin-left: 1rem;
+}
+
+.date-span-2 {
+  grid-column: 1 / span 2;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 25px;
+  row-gap: 12px;
+}
+
+.filter-span-2 {
+  grid-column: 1 / span 2;
+  margin-left: 1rem;
+  margin-right: -1rem;
 }
 
 /* ========================
