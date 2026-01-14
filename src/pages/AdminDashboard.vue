@@ -23,7 +23,7 @@
       <div class="q-mt-xs box-2">
         <p class="q-ml-lg title-font-2">Uploaded Archives</p>
         <div class="column">
-          <div class="row q-gutter-md q-ml-sm">
+          <div class="row q-gutter-md q-ml-sm items-center">
             <q-btn
               label="All"
               no-caps
@@ -44,6 +44,16 @@
               class="btn-1"
               :class="{ active: activeFilter === 'documents' }"
               @click="activeFilter = 'documents'"
+            />
+
+            <!-- Year Picker controlling analytics charts -->
+            <q-select
+              class="q-ml-md"
+              outlined
+              dense
+              v-model="selectedYear"
+              :options="yearOptions"
+              label="Year"
             />
           </div>
           <!-- Uploaded Archives Line Graph -->
@@ -312,6 +322,9 @@ const usersPerMonth = ref(null)
 const artifacts = ref(0)
 const documents = ref(0)
 const users = ref(0)
+// Year selection for analytics charts
+const selectedYear = ref(new Date().getFullYear())
+const yearOptions = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - i)
 const isGenerateReportLoading = ref(false)
 const monthLabels = Array.from({ length: 12 }, (_, i) =>
   new Date(2000, i).toLocaleString('default', { month: 'short' }),
@@ -470,8 +483,8 @@ async function init() {
       documentsCountResult,
       userCountResult,
     ] = await Promise.all([
-      prepareUsersData(),
-      prepareChartData(),
+      prepareUsersData(selectedYear.value),
+      prepareChartData(selectedYear.value),
       // Utilize idx_artifacts_view index with limit
       supabase.from('artifacts_view').select('*').limit(3),
       // Utilize idx_documents_view index with limit
@@ -568,15 +581,25 @@ function initChart(data) {
 }
 
 async function prepareChartData() {
+  // Default to current year if no explicit parameter is provided (backward safety)
+  const year = selectedYear.value || new Date().getFullYear()
+
+  const start = `${year}-01-01`
+  const end = `${year}-12-31`
+
   // Parallelize queries and utilize idx_artifacts_uploaded_at and idx_documents_uploaded_at indexes
   const [artifactsResult, documentsResult] = await Promise.all([
     supabase
       .from('artifacts_metadata')
       .select('uploaded_at')
+      .gte('uploaded_at', start)
+      .lte('uploaded_at', end)
       .order('uploaded_at', { ascending: true }),
     supabase
       .from('documents_metadata')
       .select('uploaded_at')
+      .gte('uploaded_at', start)
+      .lte('uploaded_at', end)
       .order('uploaded_at', { ascending: true }),
   ])
 
@@ -643,6 +666,13 @@ watch(activeFilter, async () => {
   updateChart(chartData)
 })
 
+// Refresh both charts when year changes
+watch(selectedYear, async (newYear) => {
+  const [chartData, usersData] = await Promise.all([prepareChartData(), prepareUsersData(newYear)])
+  updateChart(chartData)
+  updateUsersChart(usersData)
+})
+
 // Users Per Month Chart
 function initUsersPerMonthChart(data) {
   usersChartInstance = new Chart(usersPerMonth.value, {
@@ -676,11 +706,18 @@ function initUsersPerMonthChart(data) {
   updateUsersChart(data)
 }
 
-async function prepareUsersData() {
-  // Utilize idx_all_users_created_at index with ORDER BY
+async function prepareUsersData(yearParam) {
+  // Determine year range
+  const year = yearParam || selectedYear.value || new Date().getFullYear()
+  const start = `${year}-01-01`
+  const end = `${year}-12-31`
+
+  // Utilize idx_all_users_created_at index with ORDER BY and year range filtering
   const { data: users, error } = await supabase
     .from('all_users')
     .select('created_at, user_type')
+    .gte('created_at', start)
+    .lte('created_at', end)
     .order('created_at', { ascending: true })
 
   if (error) {
