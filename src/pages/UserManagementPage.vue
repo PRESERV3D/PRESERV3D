@@ -1851,7 +1851,7 @@ async function fetchAllUsers() {
       // Faculty - use indexed column (created_at DESC)
       supabase.from('registered_faculty').select('*').order('created_at', { ascending: false }),
 
-      // Visitors - use composite index (start_date + end_date)
+      // Visitors - get status from view
       supabase
         .from('approved_visitors_status')
         .select(
@@ -1863,10 +1863,6 @@ async function fetchAllUsers() {
             contact,
             institution,
             purpose
-          ),
-          approved_visitors!inner(
-            approved_by,
-            approved_at
           )
         `,
         )
@@ -1972,13 +1968,22 @@ async function fetchAllUsers() {
 
     if (abortController.signal.aborted) return
 
-    // Process visitors - only fetch login data
+    // Process visitors - fetch login data and approval info
     const visitorData = visitorResult.data || []
     if (visitorData.length > 0) {
       const visitorsWithLogin = await Promise.all(
         visitorData.map(async (visitor) => {
           if (abortController.signal.aborted) return null
-          const loginTime = await getLastLogin(visitor.user_id)
+
+          // Fetch login time and approval info in parallel
+          const [loginTime, approvalData] = await Promise.all([
+            getLastLogin(visitor.user_id),
+            supabase
+              .from('approved_visitors')
+              .select('approved_by, approved_at')
+              .eq('user_id', visitor.user_id)
+              .single(),
+          ])
 
           return {
             ...visitor,
@@ -1989,8 +1994,8 @@ async function fetchAllUsers() {
             institution: visitor.registration?.institution,
             purpose: visitor.registration?.purpose,
             last_login: loginTime || null,
-            approved_by: visitor.approved_visitors?.approved_by || 'N/A',
-            approved_at: visitor.approved_visitors?.approved_at || null,
+            approved_by: approvalData?.data?.approved_by || 'N/A',
+            approved_at: approvalData?.data?.approved_at || null,
           }
         }),
       )
