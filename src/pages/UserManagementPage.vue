@@ -1863,6 +1863,10 @@ async function fetchAllUsers() {
             contact,
             institution,
             purpose
+          ),
+          approved_visitors!inner(
+            approved_by,
+            approved_at
           )
         `,
         )
@@ -1985,6 +1989,8 @@ async function fetchAllUsers() {
             institution: visitor.registration?.institution,
             purpose: visitor.registration?.purpose,
             last_login: loginTime || null,
+            approved_by: visitor.approved_visitors?.approved_by || 'N/A',
+            approved_at: visitor.approved_visitors?.approved_at || null,
           }
         }),
       )
