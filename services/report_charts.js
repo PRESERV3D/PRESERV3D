@@ -25,6 +25,7 @@ export async function renderReportCharts({
   endMonth,
   endDay,
   endYear,
+  userIds = null,
 }) {
   // Register Chart.js components
   Chart.register(
@@ -81,16 +82,56 @@ export async function renderReportCharts({
       topArtifactsData,
       topDocumentsData,
     ] = await Promise.all([
-      prepareMonthlyUsersData(startMonth, startDay, startYear, endMonth, endDay, endYear),
+      prepareMonthlyUsersData(startMonth, startDay, startYear, endMonth, endDay, endYear, userIds),
       prepareMonthlyUploadsData(startMonth, startDay, startYear, endMonth, endDay, endYear),
-      prepareUserTypesData(endMonth, endDay, endYear, startMonth, startDay, startYear),
-      prepareMonthlyAppointmentsData(startMonth, startDay, startYear, endMonth, endDay, endYear),
-      prepareAppointmentStatusData(startMonth, startDay, startYear, endMonth, endDay, endYear),
-      prepareStudentDepartmentsData(endMonth, endDay, endYear, startMonth, startDay, startYear),
-      prepareFacultyDepartmentsData(endMonth, endDay, endYear, startMonth, startDay, startYear),
-      prepareVisitorInstitutionsData(endMonth, endDay, endYear, startMonth, startDay, startYear),
-      prepareTopArtifactsData(),
-      prepareTopDocumentsData(),
+      prepareUserTypesData(endMonth, endDay, endYear, startMonth, startDay, startYear, userIds),
+      prepareMonthlyAppointmentsData(
+        startMonth,
+        startDay,
+        startYear,
+        endMonth,
+        endDay,
+        endYear,
+        userIds,
+      ),
+      prepareAppointmentStatusData(
+        startMonth,
+        startDay,
+        startYear,
+        endMonth,
+        endDay,
+        endYear,
+        userIds,
+      ),
+      prepareStudentDepartmentsData(
+        endMonth,
+        endDay,
+        endYear,
+        startMonth,
+        startDay,
+        startYear,
+        userIds,
+      ),
+      prepareFacultyDepartmentsData(
+        endMonth,
+        endDay,
+        endYear,
+        startMonth,
+        startDay,
+        startYear,
+        userIds,
+      ),
+      prepareVisitorInstitutionsData(
+        endMonth,
+        endDay,
+        endYear,
+        startMonth,
+        startDay,
+        startYear,
+        userIds,
+      ),
+      prepareTopArtifactsData(userIds),
+      prepareTopDocumentsData(userIds),
     ])
 
     const charts = []
@@ -806,16 +847,30 @@ function getPieChartOptions(title) {
 }
 
 // Data preparation functions
-async function prepareMonthlyUsersData(startMonth, startDay, startYear, endMonth, endDay, endYear) {
+async function prepareMonthlyUsersData(
+  startMonth,
+  startDay,
+  startYear,
+  endMonth,
+  endDay,
+  endYear,
+  userIds = null,
+) {
   try {
     const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
     const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
 
-    const { data: users } = await supabase
+    let query = supabase
       .from('all_users')
       .select('created_at, user_type')
       .gte('created_at', startDate)
       .lte('created_at', endDate)
+
+    if (userIds && userIds.length > 0) {
+      query = query.in('id', userIds)
+    }
+
+    const { data: users } = await query
 
     // Generate month labels for the date range
     const monthLabels = []
@@ -929,16 +984,30 @@ async function prepareMonthlyUploadsData(
   }
 }
 
-async function prepareUserTypesData(endMonth, endDay, endYear, startMonth, startDay, startYear) {
+async function prepareUserTypesData(
+  endMonth,
+  endDay,
+  endYear,
+  startMonth,
+  startDay,
+  startYear,
+  userIds = null,
+) {
   try {
     const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
     const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
-    const { data: users } = await supabase
+    let query = supabase
       .from('all_users')
       .select('user_type')
       .gte('created_at', startDate)
       .lte('created_at', endDate)
       .neq('user_type', 'admin')
+
+    if (userIds && userIds.length > 0) {
+      query = query.in('id', userIds)
+    }
+
+    const { data: users } = await query
 
     const typeCount = {}
     users?.forEach((u) => {
@@ -962,16 +1031,23 @@ async function prepareMonthlyAppointmentsData(
   endMonth,
   endDay,
   endYear,
+  userIds = null,
 ) {
   try {
     const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
     const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
 
-    const { data: appointments } = await supabase
+    let query = supabase
       .from('appointment_booking')
       .select('created_at')
       .gte('created_at', startDate)
       .lte('created_at', endDate)
+
+    if (userIds && userIds.length > 0) {
+      query = query.in('user_id', userIds)
+    }
+
+    const { data: appointments } = await query
 
     // Generate month labels for the date range
     const monthLabels = []
@@ -1013,14 +1089,23 @@ async function prepareAppointmentStatusData(
   endMonth,
   endDay,
   endYear,
+  userIds = null,
 ) {
   try {
     const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
     const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
 
-    const { data: appointments } = await supabase
+    let query = supabase
       .from('appointment_booking')
       .select('status')
+      .gte('created_at', startDate)
+      .lte('created_at', endDate)
+
+    if (userIds && userIds.length > 0) {
+      query = query.in('user_id', userIds)
+    }
+
+    const { data: appointments } = await query
       .gte('created_at', startDate)
       .lte('created_at', endDate)
 
@@ -1048,15 +1133,22 @@ async function prepareStudentDepartmentsData(
   startMonth,
   startDay,
   startYear,
+  userIds = null,
 ) {
   try {
     const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
     const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
-    const { data: departments } = await supabase
+    let query = supabase
       .from('registered_users')
       .select('department')
       .gte('created_at', startDate)
       .lte('created_at', endDate)
+
+    if (userIds && userIds.length > 0) {
+      query = query.in('id', userIds)
+    }
+
+    const { data: departments } = await query
 
     const deptCount = {}
     departments?.forEach((u) => {
@@ -1087,15 +1179,22 @@ async function prepareFacultyDepartmentsData(
   startMonth,
   startDay,
   startYear,
+  userIds = null,
 ) {
   try {
     const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
     const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
-    const { data: departments } = await supabase
+    let query = supabase
       .from('registered_faculty')
       .select('department')
       .gte('created_at', startDate)
       .lte('created_at', endDate)
+
+    if (userIds && userIds.length > 0) {
+      query = query.in('id', userIds)
+    }
+
+    const { data: departments } = await query
 
     const deptCount = {}
     departments?.forEach((u) => {
@@ -1126,16 +1225,23 @@ async function prepareVisitorInstitutionsData(
   startMonth,
   startDay,
   startYear,
+  userIds = null,
 ) {
   try {
     const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0).toISOString()
     const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59).toISOString()
-    const { data: institutions } = await supabase
+    let query = supabase
       .from('registration_visitors')
-      .select('institution')
+      .select('institution, user_id')
       .eq('status', 'Approved')
       .gte('created_at', startDate)
       .lte('created_at', endDate)
+
+    if (userIds && userIds.length > 0) {
+      query = query.in('user_id', userIds)
+    }
+
+    const { data: institutions } = await query
 
     const instCount = {}
     institutions?.forEach((u) => {
@@ -1159,13 +1265,19 @@ async function prepareVisitorInstitutionsData(
   }
 }
 
-async function prepareTopArtifactsData() {
+async function prepareTopArtifactsData(userIds = null) {
   try {
-    const { data: artifactLogs } = await supabase
+    let query = supabase
       .from('user_activity_log')
       .select('item_id, user_id')
       .eq('item_type', 'artifact')
       .eq('action', 'view_artifact')
+
+    if (userIds && userIds.length > 0) {
+      query = query.in('user_id', userIds)
+    }
+
+    const { data: artifactLogs } = await query
 
     // Get admin user IDs to exclude from view counts
     const { data: adminUsers } = await supabase
@@ -1232,13 +1344,19 @@ async function prepareTopArtifactsData() {
   }
 }
 
-async function prepareTopDocumentsData() {
+async function prepareTopDocumentsData(userIds = null) {
   try {
-    const { data: documentLogs } = await supabase
+    let query = supabase
       .from('user_activity_log')
       .select('item_id, user_id')
       .eq('item_type', 'document')
       .eq('action', 'view_document')
+
+    if (userIds && userIds.length > 0) {
+      query = query.in('user_id', userIds)
+    }
+
+    const { data: documentLogs } = await query
 
     // Get admin user IDs to exclude from view counts
     const { data: adminUsers } = await supabase
