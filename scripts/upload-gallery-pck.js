@@ -19,8 +19,8 @@ function loadEnv() {
   const envPath = resolve(__dirname, '../.env')
   const envContent = readFileSync(envPath, 'utf-8')
   const env = {}
-  
-  envContent.split(/\r?\n/).forEach(line => {
+
+  envContent.split(/\r?\n/).forEach((line) => {
     const trimmed = line.trim()
     if (trimmed && !trimmed.startsWith('#')) {
       const eqIndex = trimmed.indexOf('=')
@@ -31,7 +31,7 @@ function loadEnv() {
       }
     }
   })
-  
+
   return env
 }
 
@@ -40,7 +40,8 @@ const envVars = loadEnv()
 // Get R2 credentials from environment variables
 const R2_ENDPOINT = envVars.VITE_R2_ENDPOINT || process.env.VITE_R2_ENDPOINT
 const R2_ACCESS_KEY_ID = envVars.VITE_R2_ACCESS_KEY_ID || process.env.VITE_R2_ACCESS_KEY_ID
-const R2_SECRET_ACCESS_KEY = envVars.VITE_R2_SECRET_ACCESS_KEY || process.env.VITE_R2_SECRET_ACCESS_KEY
+const R2_SECRET_ACCESS_KEY =
+  envVars.VITE_R2_SECRET_ACCESS_KEY || process.env.VITE_R2_SECRET_ACCESS_KEY
 const R2_BUCKET_NAME = envVars.VITE_R2_BUCKET_NAME || process.env.VITE_R2_BUCKET_NAME
 const R2_PUBLIC_URL = envVars.VITE_R2_PUBLIC_URL || process.env.VITE_R2_PUBLIC_URL
 
@@ -60,38 +61,37 @@ const s3Client = new S3Client({
   endpoint: R2_ENDPOINT,
   credentials: {
     accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY
-  }
+    secretAccessKey: R2_SECRET_ACCESS_KEY,
+  },
 })
 
 async function uploadGalleryPck() {
   try {
     const pckPath = resolve(__dirname, '../public/godot_gallery/Gallery.pck')
-    
+
     console.log(`📦 Reading Gallery.pck from: ${pckPath}`)
     const fileBuffer = readFileSync(pckPath)
     console.log(`✓ File size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB`)
 
     console.log(`\n🚀 Uploading to R2 bucket: ${R2_BUCKET_NAME}`)
-    
+
     const uploadParams = {
       Bucket: R2_BUCKET_NAME,
       Key: 'godot-gallery/Gallery.pck',
       Body: fileBuffer,
       ContentType: 'application/octet-stream',
-      CacheControl: 'public, max-age=3600'
+      CacheControl: 'public, max-age=3600',
     }
 
     const command = new PutObjectCommand(uploadParams)
     const response = await s3Client.send(command)
-    
+
     console.log(`✓ Upload successful!`)
     console.log(`✓ ETag: ${response.ETag}`)
-    
+
     const publicUrl = `${R2_PUBLIC_URL}/godot-gallery/Gallery.pck`
     console.log(`\n✅ Gallery.pck is now available at:`)
     console.log(`${publicUrl}`)
-    
   } catch (error) {
     console.error('❌ Upload failed:', error.message)
     if (error.Code) {
