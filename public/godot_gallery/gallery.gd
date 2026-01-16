@@ -6,6 +6,12 @@ extends Node3D
 @onready var http_pool: Array[HTTPRequest] = []
 var max_concurrent_downloads := 3
 
+# Decoration loading system
+const DECORATION_BASE_URL = "https://pub-8c8eb005cca947a7821974e5e66ea477.r2.dev/godot-gallery-decorations/"
+var decorations_to_load: Array[Dictionary] = []
+var decorations_loaded := 0
+var decorations_http: HTTPRequest
+
 # Cache system
 var cache_db: Dictionary = {}
 var cache_file_path := "user://model_cache.dat"
@@ -94,8 +100,106 @@ func _ready() -> void:
 	find_camera()
 	print("Godot scene ready, found %d pedestals" % pedestals.size())
 	
+	# Load decorations first (lighter, faster)
+	load_decorations()
+	
 	# Check for URLs from JavaScript with multiple attempts
 	check_for_urls_with_retry()
+
+func load_decorations():
+	"""Load only HEAVY decoration .glb files from R2 at runtime"""
+	print("Loading heavy decorations from R2...")
+	
+	# Only load heavy decorations from R2 (ceiling_light is 50MB!)
+	# Keep lighter decorations in the scene: plants, pots, table (< 15MB total)
+	decorations_to_load = [
+		# Ceiling light (50 MB - HEAVY, load from R2)
+		{"url": "Lights/ceiling_light.glb", "parent": "Gallery", "position": Vector3(0.033, -1.802, -1.628), "name": "ceiling_light"},
+
+		# Plants
+		{"url": "Plant/uploads_files_4053947_wall_plant.glb", "parent": "Gallery", "position": Vector3(-3.576, -0.691, 13.125), "name": "Wall-Plant"},
+		{"url": "Plant/uploads_files_4053947_wall_plant.glb", "parent": "Gallery", "position": Vector3(3.903, -0.691, 13.125), "name": "Wall-Plant2"},
+		{"url": "Plant/plants.glb", "parent": "Gallery", "position": Vector3(3.406, -2.005, 1.101), "name": "plant"},
+		{"url": "Plant/uploads_files_6114013_5c1cc184a0dfb7997efd53fef2f29809.glb", "parent": "Gallery", "position": Vector3(4.617, -2.384, 14.652), "name": "plant2"},
+		{"url": "Plant/uploads_files_6114013_5c1cc184a0dfb7997efd53fef2f29809.glb", "parent": "Gallery", "position": Vector3(4.617, -2.384, -18.18), "name": "plant3"},
+		{"url": "Plant/uploads_files_6114013_5c1cc184a0dfb7997efd53fef2f29809.glb", "parent": "Gallery", "position": Vector3(-4.639, -2.384, -18.18), "name": "plant4"},
+		{"url": "Plant/plant_final1.glb", "parent": "Gallery", "position": Vector3(-17.53, -3, -1.461), "name": "plant_final1"},
+		{"url": "Plant/plant_final1.glb", "parent": "Gallery", "position": Vector3(17.61, -3, -1.376), "name": "plant_final2"},
+		
+		# Ceiling fans (4x ~10-15MB each = 40-60MB total, load from R2)
+		{"url": "Lights/Ceiling_Fan.glb", "parent": "Gallery", "position": Vector3(12.8, 1.877, 12.643), "name": "Ceiling_Fan1"},
+		{"url": "Lights/Ceiling_Fan.glb", "parent": "Gallery", "position": Vector3(12.8, 1.877, -9.775), "name": "Ceiling_Fan2"},
+		{"url": "Lights/Ceiling_Fan.glb", "parent": "Gallery", "position": Vector3(-12.8, 1.877, -9.775), "name": "Ceiling_Fan3"},
+		{"url": "Lights/Ceiling_Fan.glb", "parent": "Gallery", "position": Vector3(-12.8, 1.877, 12.793), "name": "Ceiling_Fan4"},
+		
+		# Sofas (2x ~20-30MB each = 40-60MB total, load from R2)
+		{"url": "Chair/sofa.glb", "parent": "Gallery", "position": Vector3(-11.76, -2.971, -0.997), "name": "sofa"},
+		{"url": "Chair/sofa.glb", "parent": "Gallery", "position": Vector3(12.33, -2.971, -0.986), "name": "sofa2"}
+	]
+	
+	print("Heavy decorations: ceiling_light (50MB), 4x fans (~50MB), 2x sofas (~50MB)")
+	print("Light decorations kept in scene: wall plants, floor plants, pots, table (~10-15MB total)")
+	
+	# Create HTTP request for decorations
+	decorations_http = HTTPRequest.new()
+	add_child(decorations_http)
+	decorations_http.request_completed.connect(_on_decoration_downloaded)
+	
+	# Start loading first decoration
+	if decorations_to_load.size() > 0:
+		_download_next_decoration()
+
+func _download_next_decoration():
+	if decorations_loaded >= decorations_to_load.size():
+		print("✓ All decorations loaded (%d)" % decorations_loaded)
+		return
+	
+	var decor = decorations_to_load[decorations_loaded]
+	var url = DECORATION_BASE_URL + decor.url
+	print("Downloading decoration %d/%d: %s" % [decorations_loaded + 1, decorations_to_load.size(), decor.name])
+	decorations_http.request(url)
+
+func _on_decoration_downloaded(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray):
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		push_error("Failed to download decoration: %d" % response_code)
+		decorations_loaded += 1
+		_download_next_decoration()
+		return
+	
+	var decor = decorations_to_load[decorations_loaded]
+	
+	# Load GLB from memory
+	var gltf = GLTFDocument.new()
+	var state = GLTFState.new()
+	var error = gltf.append_from_buffer(body, "", state)
+	
+	if error != OK:
+		push_error("Failed to parse decoration GLB: %s" % decor.name)
+		decorations_loaded += 1
+		_download_next_decoration()
+		return
+	
+	# Generate scene from GLTF
+	var scene = gltf.generate_scene(state)
+	if scene:
+		scene.name = decor.name
+		
+		# Find parent node (Gallery or specific room)
+		var parent_node = get_node_or_null(decor.parent)
+		if not parent_node:
+			parent_node = self
+		
+		# Add to scene
+		parent_node.add_child(scene)
+		scene.position = decor.position
+		
+		print("✓ Loaded decoration: %s" % decor.name)
+	
+	decorations_loaded += 1
+	
+	# Small delay between downloads to avoid overwhelming the browser
+	await get_tree().create_timer(0.1).timeout
+	_download_next_decoration()
 
 func setup_http_pool():
 	# Create multiple HTTP request nodes for parallel downloads
