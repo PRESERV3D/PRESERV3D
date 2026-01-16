@@ -80,6 +80,8 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { supabase } from 'src/boot/supabase'
 import { convertToWorkingUrl } from 'src/composables/useR2Url'
 
+const MAX_GALLERY_MODELS = 6
+
 const modelUrls = ref([])
 const godotIframeSrc = ref('')
 const godotIframe = ref(null)
@@ -132,8 +134,10 @@ function cancelStartTour() {
 function launchGallery() {
   loading.value = true
 
+  const limitedModels = modelUrls.value.slice(0, MAX_GALLERY_MODELS)
+
   // Send optimized data to Godot
-  const optimizedData = modelUrls.value.map((model) => ({
+  const optimizedData = limitedModels.map((model) => ({
     url: model.url,
     title: model.title,
     author: model.author,
@@ -184,8 +188,10 @@ function sendURLsToGodot() {
     return
   }
 
+  const limitedModels = modelUrls.value.slice(0, MAX_GALLERY_MODELS)
+
   // Deep clone to remove Proxy wrappers
-  const cleanModelUrls = JSON.parse(JSON.stringify(modelUrls.value))
+  const cleanModelUrls = JSON.parse(JSON.stringify(limitedModels))
 
   console.log('Sending model URLs to Godot:', cleanModelUrls)
 
