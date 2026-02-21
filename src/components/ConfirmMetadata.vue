@@ -108,7 +108,7 @@ const saving = ref(false)
 const addingCategory = ref(false)
 const newCategory = ref('')
 
-// ✅ Month map for conversions
+// Month map for conversions
 const monthMap = {
   january: '01',
   jan: '01',
@@ -197,7 +197,7 @@ function addCategory() {
   cancelAddCategory()
 }
 
-// ✅ Normalize/convert month names to numbers on blur
+// Normalize/convert month names to numbers on blur
 function normalizeDate() {
   let input = localMetadata.date.trim()
   if (!input) return
