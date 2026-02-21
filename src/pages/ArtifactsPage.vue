@@ -805,8 +805,6 @@ async function logClick(itemId, itemType, action) {
 
       if (error) {
         throw error
-      } else {
-        console.log(`Click logged by ${userType.value} for ${action} action`)
       }
     } catch (err) {
       console.error('Error logging click:', err)
@@ -1025,38 +1023,6 @@ const metadata = ref({
   keywords: [],
   categories: [],
 })
-
-// function triggerFileInput() {
-//   fileInput.value?.click()
-// }
-
-// function handleFileChange(event) {
-//   const file = event.target.files[0]
-//   if (file) {
-//     selectedFile.value = file
-//   } else {
-//     selectedFile.value = null
-//   }
-// }
-
-// function onDragOver() {
-//   isDragging.value = true
-// }
-
-// function onDragLeave() {
-//   isDragging.value = false
-// }
-
-// function onFileDrop(e) {
-//   isDragging.value = false
-//   const files = e.dataTransfer.files
-//   console.log(files)
-//   if (files.length > 0 && files[0].name.endsWith('.glb')) {
-//     selectedFile.value = files[0]
-//   } else {
-//     alert('Only GLB files are allowed.')
-//   }
-// }
 
 // File selection handlers
 function onFileSelected(file) {
@@ -1401,7 +1367,6 @@ const handleUpload = async () => {
     }
 
     const item = insertedData[0]
-    console.log('Upload success', item)
 
     currentArtifactData.value = { ...item }
     metadata.value = { ...item }

@@ -36,20 +36,6 @@
             />
             <div v-if="isAdmin" class="edit-delete-btns row q-mb-md">
               <q-btn label="Cancel" class="q-mr-md sub-font-3" no-caps flat @click="goBack" />
-              <!-- <q-btn
-                flat
-                no-caps
-                dense
-                label="Find More Info"
-                class="find-more-info-btn"
-                @click="
-                  fetchRelatedLinks(
-                    doc.metadata.title,
-                    doc.metadata.author,
-                    doc.metadata.categories,
-                  )
-                "
-              /> -->
               <q-btn
                 flat
                 no-caps
@@ -69,9 +55,6 @@
           <div class="row items-center">
             <div class="q-ml-md sub-font-3 space" style="font-size: 16px">Tags:</div>
             <div class="tags">
-              <!-- <span class="tag-box" v-for="(category, i) in doc.metadata.categories" :key="i">
-                {{ category }}
-              </span> -->
               <template v-if="editableCategories && editableCategories.length > 0">
                 <q-chip
                   v-for="(category, i) in editableCategories"
@@ -87,27 +70,6 @@
                 <!-- Fallback placeholder category as there are no data yet -->
                 <q-chip class="q-mr-sm q-mt-xs tag-box"> Uncategorized </q-chip>
               </template>
-              <!-- Add Category Input: Change this to a pop up -->
-              <!-- <q-input
-                v-model="newCategory"
-                dense
-                borderless
-                placeholder="Add category"
-                class="add-category-input"
-                @keyup.enter="addCategory"
-                :class="{ 'input-hidden': !showCategoryInput }"
-                v-show="showCategoryInput"
-              >
-                <template v-slot:append>
-                  <q-btn
-                    flat
-                    dense
-                    icon="check"
-                    @click="addCategory"
-                    :disable="!newCategory.trim()"
-                  />
-                </template>
-              </q-input> -->
 
               <!-- Add category icon -->
               <q-btn
@@ -569,12 +531,8 @@ const router = useRouter()
 const doc = ref(null)
 const loading = ref(true)
 const summaryLoading = ref(false)
-
-// const dialog = ref(false)
-// const metadata = ref(null)
 const documentsStore = useDocumentsStore()
 const userStore = useUserStore()
-// const user = userStore.profile.first_name + ' ' + userStore.profile.last_name
 
 const userRole = computed(() => userStore.profile?.role ?? null)
 const isAdmin = computed(() => userRole.value === 'admin')
@@ -623,7 +581,6 @@ async function saveChanges() {
         author: editableData.value.author,
         summary: editableData.value.summary,
         categories: [...editableCategories.value],
-        // extracted_text: editableData.value.extracted_text,
       },
       related_links: links.value.map((link) => ({
         title: link.title || '',
@@ -673,9 +630,6 @@ async function saveChanges() {
 
     const storeDocument = documentsStore.documents.find((d) => d.id === doc.value.id)
     if (storeDocument) Object.assign(storeDocument, doc.value)
-
-    console.log('Changes saved: ', doc.value)
-    // router.push({ name: 'view-document', params: { id: route.params.id } })
     router.push(`/documents/${doc.value.id}`)
   } catch (err) {
     console.error('Error saving document changes:', err)
@@ -793,53 +747,13 @@ const goBack = () => {
   window.history.back()
 }
 
-//
-
-// const showCategoryDialog = ref(false)
-// const newCategory = ref('')
-
-// const showCategoryInput = ref(false)
-
 // Category management functions
-
 const showCategoriesDialog = ref(false)
 const categories = ref([])
 const newCategory = ref('')
 const editableCategories = ref([])
 
-// function addCategory() {
-//   const name = newCategory.value.trim()
-//   if (!name) return
-
-//   // prevent duplicate category names
-//   const exists = categories.value.some((c) => c.name.toLowerCase() === name.toLowerCase())
-//   if (!exists) {
-//     categories.value.push({
-//       id: Date.now(),
-//       name,
-//       selected: true, // auto-select when added
-//     })
-//   }
-
-//   newCategory.value = ''
-// }
-// const toggleCategoryInput = () => {
-//   showCategoryInput.value = true
-//   setTimeout(() => {
-//     const input = document.querySelector('.add-category-input input')
-//     if (input) input.focus()
-//   }, 100)
-// }
-
-// const addCategory = () => {
-//   if (newCategory.value.trim() && !editableCategories.value.includes(newCategory.value.trim())) {
-//     editableCategories.value.push(newCategory.value.trim())
-//     newCategory.value = ''
-//     showCategoryInput.value = false
-//   }
-// }
-
-// Add new category (save to DB + local list)
+// Add new category
 async function addCategory() {
   const name = newCategory.value.trim()
   if (!name) return
@@ -941,8 +855,6 @@ async function deleteCategory(categoryId) {
 
   // Remove from local categories list
   categories.value = categories.value.filter((c) => c.id !== categoryId)
-
-  // If it was selected for this document, remove it from editableCategories too
   editableCategories.value = editableCategories.value.filter((name) => name !== category.name)
 }
 
@@ -963,7 +875,6 @@ onMounted(async () => {
     if (error || !data) {
       console.error('Document not found from Supabase:', error)
       doc.value = documentsStore.documents.find((d) => d.id == route.params.id) || null
-      console.log('Fallback Document from Store:', doc.value)
     } else {
       doc.value = {
         ...data,
@@ -1100,7 +1011,6 @@ watch(
         title: '',
         author: '',
         summary: '',
-        // extracted_text: '',
       }
     }
   },
@@ -1148,9 +1058,7 @@ function cancelEditLink() {
 
 async function fetchRelatedLinks(title, author, categories, date) {
   try {
-    console.log('Fetching related links for:', title, author, categories, date)
     loadingRelatedLinks.value = true
-
     const endpoint = getNlpEndpoint('/related-links')
 
     const { data } = await axios.get(endpoint, {

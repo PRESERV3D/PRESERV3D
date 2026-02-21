@@ -180,15 +180,10 @@ async function resetPassword() {
     // Update is_temp_password based on user role - only on success
     const role = user.user_metadata?.role
     const userType = user.user_metadata?.type
-    console.log('=== Password Reset Debug Info ===')
-    console.log('User role:', role)
-    console.log('User type:', userType)
-    console.log('User ID:', user.id)
-    console.log('User metadata:', JSON.stringify(user.user_metadata))
 
     if (role === 'admin') {
       console.log('Updating admin temp password...')
-      const { data: updateData, error: adminError } = await supabase
+      const { error: adminError } = await supabase
         .from('registered_admins')
         .update({ is_temp_password: false })
         .eq('id', user.id)
@@ -196,22 +191,20 @@ async function resetPassword() {
 
       if (adminError) {
         console.error('Error updating admin temp password status:', adminError)
-      } else {
-        console.log('Admin temp password updated successfully:', updateData)
       }
     } else if (role === 'user' && userType === 'visitor') {
       console.log('Updating visitor temp password...')
-      // First, let's check if the record exists
-      const { data: existingRecord, error: checkError } = await supabase
+      // Check if the record exists
+      const { error: checkError } = await supabase
         .from('approved_visitors')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle()
 
-      console.log('Existing visitor record:', existingRecord)
+      console.log('Existing visitor record!')
       if (checkError) console.error('Check error:', checkError)
 
-      const { data: updateData, error: visitorError } = await supabase
+      const { error: visitorError } = await supabase
         .from('approved_visitors')
         .update({ is_temp_password: false })
         .eq('user_id', user.id)
@@ -220,14 +213,7 @@ async function resetPassword() {
       if (visitorError) {
         console.error('Error updating visitor temp password status:', visitorError)
         console.error('Full error object:', JSON.stringify(visitorError))
-      } else {
-        console.log('Visitor temp password updated successfully:', updateData)
-        console.log('Number of rows updated:', updateData?.length)
       }
-    } else {
-      console.log('No update performed - role/type mismatch')
-      console.log('Expected: role="admin" OR (role="user" AND type="visitor")')
-      console.log('Got: role="' + role + '", type="' + userType + '"')
     }
   }
 

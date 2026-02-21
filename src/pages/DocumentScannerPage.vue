@@ -133,20 +133,15 @@
 
       <!-- Buttons -->
       <div class="buttons-row">
-        <!-- RETAKE buttons moves to the left is result canva is shown -->
         <div class="left-buttons" v-if="showRetake && showSave">
           <q-btn label="RETAKE" class="btn2" @click="resetScan" />
         </div>
-
-        <!-- Center group: used when resultCanvas is hidden -->
         <div class="center-buttons" v-if="!showSave">
           <q-btn v-if="showTake" label="TAKE PHOTO" class="btn1" @click="takePhoto" />
           <q-btn v-if="showTake" label="CHOOSE IMAGES" class="btn2" @click="openFileInput" />
           <q-btn v-if="showTransform" label="TRANSFORM" class="btn1" @click="transformDocument" />
           <q-btn v-if="showRetake" label="RETAKE" class="btn2" @click="resetScan" />
         </div>
-
-        <!-- Right side is ROTATE & SAVE -->
         <div class="right-buttons" v-if="showSave">
           <q-btn label="ROTATE" flat color="primary" @click="rotateTransformedImage" />
           <q-btn label="SAVE" style="background-color: #408f4c; color: white" @click="saveImage" />
@@ -254,7 +249,7 @@ const {
   resumeExistingConnection,
 } = useWebRTC()
 
-// NEW: Camera mode state
+// Camera mode state
 const cameraMode = ref('webcam')
 const showPhoneSetup = ref(false)
 const qrCanvas = ref(null)
@@ -337,14 +332,13 @@ watch(scannedImages, () => {
   }
 })
 
-// Watch for ICE gathering completion to generate QR code
 watch(iceGatheringComplete, async (isComplete) => {
   if (isComplete && showPhoneSetup.value && qrCanvas.value) {
     await generateConnectionQR(qrCanvas.value, import.meta.env.DEV)
   }
 })
 
-// NEW: Camera mode switching with connection check
+// Camera mode switching with connection check
 async function switchCameraMode(mode) {
   if (mode === 'phone') {
     // Stop local camera before switching
@@ -363,7 +357,6 @@ async function switchCameraMode(mode) {
     }
   } else {
     // Switching to webcam camera
-    // Don't disconnect WebRTC - just pause the phone stream
     if (video.value && video.value.srcObject === remoteStream.value) {
       video.value.pause()
     }
@@ -374,9 +367,6 @@ async function switchCameraMode(mode) {
 
 async function setupPhoneConnection() {
   await initializeHostConnection(video.value)
-
-  // The QR code will be generated automatically when ICE gathering completes
-  // via the watch on iceGatheringComplete
 }
 
 // Watch for successful connection

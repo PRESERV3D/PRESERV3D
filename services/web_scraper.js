@@ -600,7 +600,6 @@ async function main() {
     logMemoryUsage('before output')
 
     logWithTimestamp('=== OUTPUTTING RESULTS TO STDOUT ===')
-    console.log(JSON.stringify({ links }))
     logWithTimestamp('✓ Results output complete')
 
     // Clear the hard timeout since we finished successfully

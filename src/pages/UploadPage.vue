@@ -156,7 +156,6 @@ async function fileExists(fileName) {
 async function saveMetadata(updatedMetadata) {
   const isPdf = metadata.value.file_name.endsWith('.pdf')
   const table = isPdf ? 'documents_metadata' : 'artifacts_metadata'
-  console.log('Saving metadata: ', updatedMetadata)
   try {
     const { error } = await supabase
       .from(table)

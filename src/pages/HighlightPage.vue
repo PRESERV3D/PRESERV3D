@@ -267,12 +267,6 @@ const toggleAuthorInfo = () => {
   authorInfoSelected.value = !authorInfoSelected.value
 }
 
-// const viewDocument = (documentId) => {
-//   // Just log or handle the document viewing without navigation
-//   console.log('Viewing document:', documentId)
-//   // You can add any other logic here without navigation
-// }
-
 const selectBook = (index) => {
   // Toggle selection: if already selected, deselect; otherwise select
   if (selectedBook.value === index) {
@@ -330,8 +324,6 @@ async function logClick(itemId, itemType, action) {
 
       if (error) {
         throw error
-      } else {
-        console.log(`Click logged by ${userType.value} for ${action} action`)
       }
     } catch (err) {
       console.error('Error logging click:', err)

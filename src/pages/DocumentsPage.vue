@@ -686,8 +686,6 @@ async function logClick(itemId, itemType, action) {
 
       if (error) {
         throw error
-      } else {
-        console.log(`Click logged by ${userType.value} for ${action} action`)
       }
     } catch (err) {
       console.error('Error logging click:', err)
@@ -952,27 +950,11 @@ async function processFileWithNLP(file, fileName) {
   formData.append('filename', fileName)
 
   const nlpUrl = getNlpEndpoint('/process-text')
-  console.log('[DocumentsPage] Calling NLP endpoint:', nlpUrl, 'filename:', fileName)
-
-  // Try to log FormData entries (note: file entries will show File objects)
-  try {
-    for (const entry of formData.entries()) {
-      // entry is [key, value]
-      const key = entry[0]
-      const val = entry[1]
-      // For File objects, log the name; otherwise log the value directly
-      console.log('[DocumentsPage] FormData:', key, val && val.name ? val.name : val)
-    }
-  } catch (err) {
-    console.warn('[DocumentsPage] Could not enumerate FormData entries:', err)
-  }
 
   try {
     const resp = await axios.post(nlpUrl, formData, {
       signal: nlpAbortController?.signal,
     })
-    console.log('[DocumentsPage] NLP response status:', resp.status)
-    console.log('[DocumentsPage] NLP response data:', resp.data)
     return resp
   } catch (err) {
     console.error(
@@ -983,33 +965,6 @@ async function processFileWithNLP(file, fileName) {
     throw err
   }
 }
-
-// async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData) {
-//   // Ensure the metadata object structure matches your database schema
-//   const metadataObject = {
-//     title: nlpData.title || '',
-//     author: nlpData.author || '',
-//     date: nlpData.date || '',
-//     summary: nlpData.summary || '',
-//     keywords: Array.isArray(nlpData.keywords) ? nlpData.keywords : [],
-//     categories: Array.isArray(nlpData.categories) ? nlpData.categories : [nlpData.categories],
-//     extracted_text: nlpData.extracted_text || '',
-//   }
-
-//   console.log('Inserting metadata:', metadataObject)
-
-//   return await supabase.from('documents_metadata').insert([
-//     {
-//       file_name: fileName,
-//       file_url: fileUrl,
-//       preview_url: previewUrl,
-//       metadata: metadataObject,
-//       uploaded_by: user,
-//       uploaded_at: new Date().toISOString(), // Use ISO string format
-//       updated_at: new Date().toISOString(),
-//     },
-//   ])
-// }
 
 async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData, user) {
   // Ensure the metadata object structure matches your database schema
@@ -1022,8 +977,6 @@ async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData, user) {
     categories: Array.isArray(nlpData.categories) ? nlpData.categories : [nlpData.categories],
     extracted_text: nlpData.extracted_text || '',
   }
-
-  console.log('Inserting metadata:', metadataObject)
 
   const { data, error } = await supabase
     .from('documents_metadata')
@@ -1075,23 +1028,6 @@ function handleCancel() {
   }
 }
 
-// async function handleCancelMetadata(cancelledData) {
-//   const fileName = cancelledData?.file_name
-//   if (!fileName) return
-
-//   try {
-//     const { error } = await supabase.from('documents_metadata').delete().eq('file_name', fileName)
-//     if (error) console.error('Error deleting cancelled metadata:', error)
-//     else console.log('Cancelled metadata removed.')
-//   } catch (err) {
-//     console.error('Failed to cancel and delete metadata:', err)
-//   } finally {
-//     dialog.value = false
-//     uploading.value = false
-//     uploadProgress.value = 0
-//   }
-// }
-
 async function handleCancelMetadata(cancelledData) {
   try {
     const itemId = cancelledData.id
@@ -1123,25 +1059,6 @@ async function handleCancelMetadata(cancelledData) {
     dialog.value = false
   }
 }
-
-// function normalizeValue(key, value) {
-//   if (value === '') return null
-
-//   if (Array.isArray(value)) {
-//     return value
-//   }
-
-//   return value
-// }
-
-// function normalizeObject(obj) {
-//   if (!obj || typeof obj !== 'object') return obj
-//   const normalized = {}
-//   for (const key in obj) {
-//     normalized[key] = normalizeValue(key, obj[key])
-//   }
-//   return normalized
-// }
 
 async function saveMetadata(updatedMetadata) {
   try {
@@ -1259,7 +1176,6 @@ const handleUpload = async () => {
     // NLP processing
     currentProcess.value = 'Processing document with NLP...'
     let response = await processFileWithNLP(compressedFile, fileName, nlpAbortController.signal)
-    console.log('NLP Response:', response)
 
     // Check if cancelled after NLP
     if (cancelRequested) {
@@ -1311,9 +1227,7 @@ const handleUpload = async () => {
     }
 
     const nlpData = response.data
-    console.log('NLP Response:', nlpData)
 
-    // Preview image (disabled for now to avoid worker issues)
     currentProcess.value = 'Skipping preview generation...'
     const preview = await generatePdfPreview(compressedFile)
     const previewFileName = fileName.replace(/\.[^/.]+$/, '') + '_preview.png'
@@ -1371,21 +1285,7 @@ const handleUpload = async () => {
       console.log('Upload cancelled before finalizing metadata')
       return
     }
-
     currentDocumentData.value = insertedData
-
-    // // Log data
-    // const newData = {
-    //   id: insertedData.id,
-    //   file_name: insertedData.file_name,
-    //   file_url: insertedData.file_url,
-    //   metadata: insertedData.metadata,
-    //   uploaded_at: insertedData.uploaded_at,
-    //   updated_at: insertedData.updated_at,
-    //   preview_url: insertedData.preview_url,
-    //   search_text: insertedData.search_text,
-    //   related_links: insertedData.related_links,
-    // }
 
     const changes = getChanges(null, insertedData)
 

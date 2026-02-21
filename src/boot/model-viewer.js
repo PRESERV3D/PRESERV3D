@@ -5,19 +5,14 @@ export default ({ app, router }) => {
   // Track if library is loaded
   let modelViewerLoaded = false
 
-  /**
-   * Load @google/model-viewer dynamically
-   */
   const loadModelViewer = async () => {
     if (modelViewerLoaded) return
 
     try {
-      console.log('🔄 Loading Model Viewer library...')
       await import('@google/model-viewer')
       modelViewerLoaded = true
-      console.log('✅ Model Viewer loaded')
     } catch (error) {
-      console.error('❌ Failed to load Model Viewer:', error)
+      console.error('Failed to load Model Viewer:', error)
       throw error
     }
   }
@@ -34,9 +29,6 @@ export default ({ app, router }) => {
     'testing-artifacts',
   ]
 
-  /**
-   * Load model-viewer before entering routes that need it
-   */
   router.beforeEach(async (to, from, next) => {
     const needsModelViewer = MODEL_VIEWER_ROUTES.includes(to.name)
 

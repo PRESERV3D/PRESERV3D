@@ -56,7 +56,6 @@
                 <q-chip class="q-mr-sm q-mt-xs category-tag"> Uncategorized </q-chip>
               </template>
 
-              <!-- Add category icon - Changed to open dialog -->
               <q-btn
                 flat
                 dense
@@ -148,20 +147,6 @@
                   </q-card-actions>
                 </q-card>
               </q-dialog>
-
-              <!-- Action icons -->
-              <div class="action-icons">
-                <!-- Bookmark functionality commented out for now -->
-                <!--
-                <q-icon
-                  :name="model.bookmarked ? 'bookmark' : 'bookmark_border'"
-                  class="bookmark-icon q-mr-md"
-                  :class="{ 'bookmarked': model.bookmarked }"
-                  size="sm"
-                  @click.stop="toggleBookmark(model.id)"
-                />
-                -->
-              </div>
             </div>
           </div>
 
@@ -467,14 +452,6 @@
             <div class="save-cancel-actions q-mt-lg">
               <q-btn flat no-caps dense label="Cancel" class="cancel-btn" @click="cancelChanges" />
               <div class="button-group">
-                <!-- <q-btn
-                  flat
-                  no-caps
-                  dense
-                  label="Find More Info"
-                  class="find-more-info-btn"
-                  @click="findMoreInfo"
-                /> -->
                 <q-btn
                   flat
                   no-caps
@@ -608,20 +585,6 @@ const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
-// function formatDate(dateStr) {
-//   const date = new Date(dateStr)
-//   return `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA', {
-//     hour: '2-digit',
-//     minute: '2-digit',
-//   })}`
-// }
-
-// function formatDateForInput(dateStr) {
-//   if (!dateStr) return ''
-//   const date = new Date(dateStr)
-//   return date.toISOString().slice(0, 16)
-// }
-
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
@@ -652,8 +615,8 @@ function formatDateForInput(dateStr) {
 
 function toUTC(dateStr) {
   if (!dateStr) return null
-  const localDate = new Date(dateStr) // PH local
-  return localDate.toISOString() // safe for timestamptz column
+  const localDate = new Date(dateStr)
+  return localDate.toISOString()
 }
 
 // Initialize editable data when model changes
@@ -699,15 +662,7 @@ const showCategoriesDialog = ref(false)
 const categories = ref([])
 const showDeleteErrorDialog = ref(false)
 const deleteErrorMessage = ref('')
-// const toggleCategoryInput = () => {
-//   showCategoryInput.value = true
-//   setTimeout(() => {
-//     const input = document.querySelector('.add-category-input input')
-//     if (input) input.focus()
-//   }, 100)
-// }
 
-// Add new category (save to DB + local list)
 async function addCategory() {
   const name = newCategory.value.trim()
   if (!name) return
@@ -721,7 +676,7 @@ async function addCategory() {
 
   const { data, error } = await supabase
     .from('categories')
-    .insert([{ type: 'artifact', category: name }]) // Changed from 'document' to 'artifact'
+    .insert([{ type: 'artifact', category: name }])
     .select()
 
   if (error) {
@@ -755,7 +710,7 @@ async function deleteCategory(categoryId) {
 
   // Check if any artifacts are using this category
   const { data: artifacts, error: artifactsError } = await supabase
-    .from('artifacts_metadata') // Changed from 'artifacts_metadata'
+    .from('artifacts_metadata')
     .select('id, metadata')
     .contains('metadata', { categories: [category.name] })
 
@@ -788,8 +743,6 @@ async function deleteCategory(categoryId) {
 
   // Remove from local categories list
   categories.value = categories.value.filter((c) => c.id !== categoryId)
-
-  // If it was selected for this artifact, remove it from editableCategories too
   editableCategories.value = editableCategories.value.filter((name) => name !== category.name)
 }
 
@@ -897,8 +850,6 @@ const saveChanges = async () => {
 
     const storeModel = modelStore.models.find((m) => m.id === model.value.id)
     if (storeModel) Object.assign(storeModel, model.value)
-
-    console.log('Changes saved:', model.value)
     router.push(`/artifacts/${model.value.id}`)
   } catch (err) {
     console.error('Unexpected error:', err)
@@ -962,56 +913,6 @@ async function logItemHistory({ itemId, itemType, action, oldData, newData, chan
     console.error('Unexpected error logging history:', err)
   }
 }
-
-// function normalizeDate(value) {
-//   if (!value) return value
-//   const d = new Date(value)
-//   return isNaN(d.getTime()) ? value : d.toISOString() // always UTC ISO
-// }
-
-// function getChanges(oldData, newData) {
-//   const changes = {}
-
-//   // Compare metadata field-by-field
-//   const metadataChanges = {}
-//   for (const field in newData.metadata) {
-//     let oldValue = oldData.metadata?.[field]
-//     let newValue = newData.metadata?.[field]
-
-//     // Normalize dates inside metadata (like "date")
-//     if (field.toLowerCase().includes('date')) {
-//       oldValue = normalizeDate(oldValue)
-//       newValue = normalizeDate(newValue)
-//     }
-
-//     if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
-//       metadataChanges[field] = { old: oldValue, new: newValue }
-//     }
-//   }
-//   if (Object.keys(metadataChanges).length > 0) {
-//     changes.metadata = metadataChanges
-//   }
-
-//   // Compare top-level fields
-//   for (const field of Object.keys(newData)) {
-//     if (field === 'metadata') continue
-
-//     let oldValue = oldData[field]
-//     let newValue = newData[field]
-
-//     // Normalize top-level date fields (like "date_received")
-//     if (field.toLowerCase().includes('date')) {
-//       oldValue = normalizeDate(oldValue)
-//       newValue = normalizeDate(newValue)
-//     }
-
-//     if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
-//       changes[field] = { old: oldValue, new: newValue }
-//     }
-//   }
-
-//   return changes
-// }
 
 function normalizeDate(value) {
   if (!value || (typeof value === 'string' && value.trim() === '')) return null
@@ -1088,69 +989,6 @@ function getChanges(oldData, newData) {
 
   return changes
 }
-
-// Commented out bookmark functionality for now
-// const toggleBookmark = async (modelId) => {
-//   if (!model.value) return
-//
-//   model.value.bookmarked = !model.value.bookmarked
-//
-//   const storeModel = modelStore.models.find(m => m.id === modelId)
-//   if (storeModel) {
-//     storeModel.bookmarked = model.value.bookmarked
-//   }
-//
-//   if (model.value.bookmarked) {
-//     openBookmarkDialog(model.value, 'artifact')
-//   }
-// }
-
-// Collection dialog methods
-// const openBookmarkDialog = async (modelItem, type = 'artifact') => {
-//   selectedModel.value = modelItem
-//   selectedItemType.value = type
-//   dialogOpen.value = true
-//
-//   await loadUserCollections()
-//
-//   const { data: existingItems, error } = await supabase
-//     .from('collection_items')
-//     .select('collection_id')
-//     .eq('item_id', modelItem.id)
-//     .eq('item_type', type)
-//
-//   if (error) {
-//     console.error('Error checking existing collections:', error)
-//     selectedCollections.value = []
-//     existingCollectionIds.value = []
-//     return
-//   }
-//
-//   const existingIds = existingItems.map((item) => item.collection_id)
-//   selectedCollections.value = [...existingIds]
-//   existingCollectionIds.value = [...existingIds]
-// }
-//
-// const loadUserCollections = async () => {
-//   const { data: authData, error: authError } = await supabase.auth.getUser()
-//   const userId = authData?.user?.id
-//
-//   if (authError || !userId) {
-//     console.error('Auth error loading collections:', authError)
-//     return
-//   }
-//
-//   const { data, error } = await supabase
-//     .from('collections')
-//     .select('collection_id, collection_name')
-//     .eq('user_id', userId)
-//
-//   if (!error) {
-//     userCollections.value = data
-//   } else {
-//     console.error('Failed to load collections:', error)
-//   }
-// }
 
 const saveToSelectedCollections = async () => {
   const modelItem = selectedModel.value
@@ -1334,7 +1172,6 @@ function cancelEditLink() {
 
 async function fetchRelatedLinks(title, author, categories, date) {
   try {
-    console.log('Fetching related links for:', title, author, categories, date)
     loadingRelatedLinks.value = true
 
     const endpoint = getNlpEndpoint('/related-links')

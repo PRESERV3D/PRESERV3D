@@ -314,7 +314,6 @@ export function generateNarration(model) {
   }
 
   const plainText = lines.join(' ')
-  console.log(plainText)
 
   // Wrap in SSML
   const ssml = `<speak>${plainText}</speak>`

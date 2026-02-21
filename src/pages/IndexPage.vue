@@ -928,8 +928,6 @@ async function logClick(itemId, itemType, action) {
 
     if (error) {
       throw error
-    } else {
-      console.log(`Click logged by ${userType.value} for ${action} action`)
     }
   } catch (err) {
     console.error('Error logging click:', err)

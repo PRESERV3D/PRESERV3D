@@ -546,7 +546,6 @@ const userStore = useUserStore()
 const $q = useQuasar()
 let modelLoadHandler = null
 
-// Safe profile accessors
 const userRole = computed(() => userStore.profile?.role ?? null)
 const user = `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
 const isAdmin = computed(() => userRole.value === 'admin')
@@ -576,14 +575,6 @@ const links = ref([])
 const artifactCard = ref(null)
 
 const hasValue = ref(false)
-
-// function formatDate(dateStr) {
-//   const date = new Date(dateStr)
-//   return `${date.toLocaleDateString('en-CA')} ${date.toLocaleTimeString('en-CA', {
-//     hour: '2-digit',
-//     minute: '2-digit',
-//   })}`
-// }
 
 function formatDate(dateStr) {
   if (!dateStr || dateStr.toString().trim() === '') {
@@ -722,9 +713,9 @@ function viewFullScreen() {
 
   // Check if in full screen
   if (
-    document.fullscreenElement || // Normal
-    document.webkitFullscreenElement || // Safari
-    document.msFullscreenElement // IE/Edge
+    document.fullscreenElement ||
+    document.webkitFullscreenElement ||
+    document.msFullscreenElement
   ) {
     // Exit fullscreen
     if (document.exitFullscreen) {
@@ -791,7 +782,6 @@ const toggleBookmark = async (modelId) => {
   openBookmarkDialog(model.value, 'artifact')
 }
 
-// FIXED: Toggle favorite
 const toggleFavorite = async (model, itemType = 'artifact') => {
   if (!model) return
 
@@ -1044,7 +1034,6 @@ onMounted(async () => {
     console.error('Artifact not found from Supabase:', error)
     // Fallback to modelStore if Supabase fails
     model.value = modelStore.models.find((m) => m.id == route.params.id) || null
-    console.log('Fallback Model from Store:', model.value)
     if (!model.value) {
       loading.value = false
       router.replace('/not-found')
@@ -1062,10 +1051,10 @@ onMounted(async () => {
     try {
       if (data.file_url) {
         workingModelUrl.value = await convertToWorkingUrl(data.file_url)
-        console.log('✅ Generated working URL for artifact')
+        console.log('Generated working URL for artifact')
       }
     } catch (urlError) {
-      console.error('⚠️ Could not generate working URL, using stored URL:', urlError)
+      console.error('Could not generate working URL, using stored URL:', urlError)
       workingModelUrl.value = data.file_url
     }
 
@@ -1137,7 +1126,7 @@ onMounted(async () => {
   await modelStore.fetchStarCounts()
   await modelStore.fetchViewCounts()
 
-  // ADDED: Wait for model to render & load
+  // Wait for model to render & load
   nextTick(() => {
     if (artifactViewer.value) {
       artifactViewer.value.addEventListener('load', () => {
@@ -1168,60 +1157,8 @@ function openLink(url) {
   window.open(url, '_blank')
 }
 
-// async function handleDelete() {
-//   try {
-//     console.log('Trying to soft-delete ID:', route.params.id)
-
-//     // Fetch the original record
-//     const { data: originalData, error: fetchError } = await supabase
-//       .from('artifacts_metadata')
-//       .select('*')
-//       .eq('id', route.params.id)
-//       .single()
-
-//     if (fetchError) {
-//       console.error('Error fetching original artifact:', fetchError)
-//       alert('Failed to fetch the artifact.')
-//       return
-//     }
-
-//     // Insert into deleted table
-//     const { error: deleteError } = await supabase.from('deleted_artifacts').insert({
-//       ...originalData,
-//       deleted_at: new Date().toISOString(), // Add timestamp
-//       deleted_by: user,
-//     })
-
-//     if (deleteError) {
-//       console.error('Error deleting artifact:', deleteError)
-//       alert('Failed to delete the artifact.')
-//       return
-//     }
-
-//     // Delete the original record
-//     const { error: delError } = await supabase
-//       .from('artifacts_metadata')
-//       .delete()
-//       .eq('id', route.params.id)
-
-//     if (delError) {
-//       console.error('Error deleting artifact:', delError)
-//       alert('Failed to delete the artifact.')
-//       return
-//     } else {
-//       console.log('Artifact soft-deleted successfully:', route.params.id)
-//       router.push('/artifacts')
-//     }
-//   } catch (err) {
-//     console.error('Unexpected error during soft delete:', err)
-//     alert('An unexpected error occurred.')
-//   }
-// }
-
 async function handleDelete() {
   try {
-    console.log('Trying to soft-delete ID:', route.params.id)
-
     // Fetch the original record
     const { data: originalData, error: fetchError } = await supabase
       .from('artifacts_metadata')
@@ -1268,7 +1205,6 @@ async function handleDelete() {
       changes: { new: null, old: originalData },
     })
 
-    console.log('Artifact soft-deleted successfully: ', route.params.id)
     router.push('/artifacts')
   } catch (err) {
     console.error('Unexpected error during soft delete:', err)

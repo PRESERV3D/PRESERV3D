@@ -69,13 +69,6 @@
       <div class="preview-container">
         <div class="box-view">
           <div class="row-1 items-center justify-between">
-            <!-- <q-btn
-              :href="doc.file_url"
-              target="_blank"
-              class="start-reading-btn"
-              no-caps
-              @click="logClick(doc.id, 'document', 'read')"
-            > -->
             <q-btn
               v-if="$q.screen.width > 570"
               class="start-reading-btn"
@@ -285,7 +278,6 @@ const doc = ref(null)
 const loading = ref(true)
 const showDialog = ref(false)
 const userStore = useUserStore()
-// Safe accessors for profile fields to avoid runtime errors when profile is not yet loaded
 const user = `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
 
 const userRole = computed(() => userStore.profile?.role ?? null)
@@ -321,19 +313,11 @@ function formatDate(dateStr) {
 }
 
 async function handleEdit() {
-  // metadata.value = {
-  //   ...doc.value.metadata,
-  //   file_name: doc.value.file_name,
-  // }
-
-  // dialog.value = true
   router.push({ name: 'edit-document', params: { id: doc.value.id } })
 }
 
 async function handleDelete() {
   try {
-    console.log('Trying to soft-delete ID:', route.params.id)
-
     // Fetch the original record
     const { data: originalData, error: fetchError } = await supabase
       .from('documents_metadata')
@@ -380,7 +364,6 @@ async function handleDelete() {
       changes: { new: null, old: originalData },
     })
 
-    console.log('Document soft-deleted successfully: ', route.params.id)
     router.push('/documents')
   } catch (err) {
     console.error('Unexpected error during soft delete:', err)
@@ -576,7 +559,7 @@ const showNotifyDialog = (title, message) => {
   notifyDialogOpen.value = true
 }
 
-// FIXED: Toggle favorite
+// Toggle favorite
 const toggleFavorite = async (doc, itemType = 'document') => {
   if (!doc) return
 
@@ -664,7 +647,7 @@ const toggleFavorite = async (doc, itemType = 'document') => {
       .eq('id', doc.id)
       .single()
 
-    // FIXED: Star count
+    // Star count
     if (!metaError && metaCheck) {
       const { data: starData } = await supabase
         .from('documents_star_count')
@@ -679,7 +662,7 @@ const toggleFavorite = async (doc, itemType = 'document') => {
         documentsStore.updateStarCount(doc.id, 0)
       }
     } else {
-      console.error('Model ID not found in artifacts_metadata:', metaError)
+      console.error('Document ID not found in documents_metadata:', metaError)
     }
   } catch (err) {
     console.error('Error toggling favorite:', err)
@@ -701,7 +684,6 @@ onMounted(async () => {
     if (error || !data) {
       console.error('Document not found from Supabase:', error)
       doc.value = documentsStore.documents.find((d) => d.id == route.params.id) || null
-      console.log('Fallback Document from Store:', doc.value)
     } else {
       // Initialize with default bookmark/star states
       doc.value = {
@@ -731,14 +713,12 @@ onMounted(async () => {
               doc.value.file_url = result.url
             } else if (result.type === 'preview') {
               doc.value.preview_url = result.url
-              // Preload preview image for instant display
               preloadPreviews([result.url])
             }
           })
         }
       } catch (urlError) {
         console.warn('Error converting URLs, using original:', urlError)
-        // Keep original URLs as fallback
       }
 
       if (data.related_links && Array.isArray(data.related_links)) {
@@ -810,14 +790,9 @@ function openLink(url) {
 }
 
 async function handleClickRead(doc) {
-  console.log('handleClickRead called with doc:', doc)
-
   if (doc && doc.file_url) {
-    console.log('Document file_url:', doc.file_url)
-
     try {
       await logClick(doc.id, 'document', 'read_document')
-      console.log('Click logged successfully')
     } catch (err) {
       console.error('Error logging view click:', err)
     }
@@ -826,15 +801,12 @@ async function handleClickRead(doc) {
     try {
       console.log('Converting URL...')
       currentPdfUrl.value = await convertToWorkingUrl(doc.file_url)
-      console.log('✅ Converted PDF URL:', currentPdfUrl.value)
     } catch (urlErr) {
       console.warn('Could not convert URL, using stored URL:', urlErr)
       currentPdfUrl.value = doc.file_url
     }
 
-    console.log('Opening PDF viewer with URL:', currentPdfUrl.value)
     showPdfViewer.value = true
-    console.log('showPdfViewer set to:', showPdfViewer.value)
   } else {
     console.error('No document or file_url found:', doc)
   }
@@ -864,8 +836,6 @@ async function logClick(itemId, itemType, action) {
 
       if (error) {
         throw error
-      } else {
-        console.log(`Click logged by ${userType.value} for ${action} action`)
       }
     } catch (err) {
       console.error('Error logging click:', err)

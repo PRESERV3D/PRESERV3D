@@ -689,15 +689,6 @@ const handleResize = () => {
 // Add a timeout to prevent rapid state changes
 let hoverTimeout = null
 
-// const onDrawerMouseEnter = () => {
-//   if (hoverTimeout) clearTimeout(hoverTimeout)
-//   isHovered.value = true
-//   // Only expand if currently in mini state
-//   if (miniState.value) {
-//     miniState.value = false
-//   }
-// }
-
 const onDrawerMouseLeave = () => {
   if (hoverTimeout) clearTimeout(hoverTimeout)
 
@@ -713,13 +704,7 @@ const hasSearchBar = ref(false)
 const noToolBar = ref(false)
 
 const setActiveItem = (itemName) => {
-  console.log('Setting active item to:', itemName)
   activeItem.value = itemName
-
-  // Close mobile drawer when navigating
-  // if ($q.screen.lt.md) {
-  //   drawer.value = false
-  // }
 
   if (itemName === 'home') {
     const role = session.user.user_metadata?.role

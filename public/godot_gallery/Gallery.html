@@ -141,12 +141,9 @@
 
       // Listen for messages from parent window (Vue component)
       window.addEventListener('message', function (event) {
-        console.log('Received message from parent:', event.data)
-
         // Expect full model metadata (URLs, titles, descriptions, etc.)
         if (event.data.type === 'load_models' && event.data.models) {
           pendingModelMetadata = event.data.models
-          console.log('Stored model metadata for Godot:', pendingModelMetadata)
 
           if (godotInstance) {
             sendMetadataToGodot()
@@ -157,8 +154,6 @@
       // Send model metadata to Godot once it's ready
       function sendMetadataToGodot() {
         if (!pendingModelMetadata || !godotInstance) return
-
-        console.log('Sending metadata to Godot:', pendingModelMetadata)
 
         try {
           // Store metadata globally for Godot to access
@@ -171,8 +166,6 @@
           } catch (e) {
             console.warn('localStorage unavailable:', e)
           }
-
-          console.log('Model metadata stored in window.latestModelDataJson')
 
           // Clear pending data since it's now stored
           pendingModelMetadata = null

@@ -13,8 +13,6 @@ async function processBatchWithOCR(images, options = {}) {
       signal = null,
     } = options
 
-    console.log(`Starting batch OCR: targeting ${minPages} pages or ${maxCharacters} characters`)
-
     let totalText = ''
     let processedPages = 0
     let successfulPages = 0
@@ -24,13 +22,11 @@ async function processBatchWithOCR(images, options = {}) {
     for (let i = 0; i < images.length; i += maxConcurrent) {
       // Check for cancellation
       if (signal && signal.aborted) {
-        console.log('OCR batch processing aborted via signal')
         return { success: false, canceled: true, message: 'OCR processing aborted' }
       }
 
       // Check if we've met our targets
       if (successfulPages >= minPages && totalText.length >= maxCharacters) {
-        console.log(`Target reached: ${successfulPages} pages, ${totalText.length} characters`)
         break
       }
 
@@ -40,8 +36,6 @@ async function processBatchWithOCR(images, options = {}) {
       const batchPromises = batch.map(async (imageData, batchIndex) => {
         const pageIndex = i + batchIndex
         try {
-          console.log(`Processing page ${pageIndex + 1}/${images.length}...`)
-
           // Check cancellation before processing each image
           if (signal && signal.aborted) {
             throw new Error('Aborted via signal')
@@ -56,7 +50,6 @@ async function processBatchWithOCR(images, options = {}) {
           return { pageIndex, result, success: !!result }
         } catch (error) {
           if (error.message.includes('Aborted')) {
-            console.log(`Page ${pageIndex + 1} processing cancelled`)
             return { pageIndex, result: null, success: false, cancelled: true }
           }
 
@@ -70,7 +63,6 @@ async function processBatchWithOCR(images, options = {}) {
       // Check if any page was cancelled
       const cancelledResult = batchResults.find((r) => r.cancelled)
       if (cancelledResult) {
-        console.log('OCR processing cancelled during batch')
         return { success: false, canceled: true, message: 'OCR processing cancelled' }
       }
 
@@ -88,39 +80,19 @@ async function processBatchWithOCR(images, options = {}) {
             confidence: result.confidence,
             characterCount: result.text.length,
           })
-
-          console.log(
-            `Page ${pageIndex + 1}: ${result.text.length} chars, confidence: ${result.confidence}%`,
-          )
-        } else {
-          console.log(`Page ${pageIndex + 1}: Failed`)
         }
 
         // Early exit check after each successful page
         if (successfulPages >= minPages && totalText.length >= maxCharacters) {
-          console.log(`Early completion: ${successfulPages} pages, ${totalText.length} characters`)
           break
         }
       }
-
-      // Progress update
-      console.log(
-        `Progress: ${successfulPages}/${minPages} pages, ${totalText.length}/${maxCharacters} characters`,
-      )
     }
 
     // Cancellation check before NLP
     if (signal && signal.aborted) {
-      console.log('OCR aborted before NLP processing')
       return { success: false, canceled: true, message: 'OCR processing aborted' }
     }
-
-    // Final summary
-    console.log(`\nOCR Batch Complete:`)
-    console.log(`- Processed: ${processedPages} pages`)
-    console.log(`- Successful: ${successfulPages} pages`)
-    console.log(`- Total text: ${totalText.length} characters`)
-    console.log(`- Success rate: ${Math.round((successfulPages / processedPages) * 100)}%`)
 
     // Check if file is blank
     if (totalText.trim().length === 0) {
@@ -180,7 +152,6 @@ async function processBatchWithOCR(images, options = {}) {
         }
       } catch (error) {
         if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
-          console.log('NLP processing cancelled')
           return { success: false, canceled: true, message: 'NLP processing cancelled' }
         }
         throw error
@@ -199,7 +170,6 @@ async function processBatchWithOCR(images, options = {}) {
     }
   } catch (error) {
     if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
-      console.log('OCR batch processing cancelled due to abort signal')
       return { success: false, canceled: true, message: 'OCR processing cancelled' }
     }
 
@@ -228,14 +198,10 @@ async function processImageFast(base64Image, fileName, options = {}) {
       `data:image/png;base64,${base64Image}`,
       ocrOptions.language,
       {
-        logger: (m) => {
+        logger: () => {
           // Check for cancellation during processing
           if (signal && signal.aborted) {
             throw new Error('Aborted via signal')
-          }
-
-          if (m.status === 'recognizing text' && m.progress % 0.2 === 0) {
-            console.log(`${fileName}: ${Math.round(m.progress * 100)}%`)
           }
         },
         tessedit_pageseg_mode: ocrOptions.tessedit_pageseg_mode,
@@ -261,7 +227,6 @@ async function processImageFast(base64Image, fileName, options = {}) {
     }
   } catch (error) {
     if (error.message.includes('Aborted')) {
-      console.log(`OCR cancelled for ${fileName}`)
       throw error
     }
 
@@ -348,11 +313,8 @@ export async function processImageWithOCR(input, fileNameOrOptions = {}, legacyO
       options = typeof fileNameOrOptions === 'object' ? fileNameOrOptions : {}
     }
 
-    console.log(`OCR Input processed: ${images.length} image(s) to process`)
-
     // For single image, use fast single processing
     if (images.length === 1) {
-      console.log(`Processing single image: ${images[0].fileName}`)
       const result = await processImageFast(images[0].base64, images[0].fileName, options)
 
       if (!result) {
@@ -387,7 +349,6 @@ export async function processImageWithOCR(input, fileNameOrOptions = {}, legacyO
     return await processBatchWithOCR(images, options)
   } catch (error) {
     if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
-      console.log('processImageWithOCR cancelled')
       return { success: false, canceled: true, message: 'OCR processing cancelled' }
     }
 
@@ -403,8 +364,6 @@ export async function processOCRPages(ocrResponse, options = {}) {
       throw new Error('Invalid OCR response format')
     }
 
-    console.log(`Processing ${ocrResponse.pages.length} pages from NLP service`)
-
     // Convert NLP response format
     const images = ocrResponse.pages.map((page) => ({
       base64: page.image_base64,
@@ -419,19 +378,14 @@ export async function processOCRPages(ocrResponse, options = {}) {
     })
 
     if (result.success) {
-      console.log(
-        `OCR completed: ${result.summary.pagesSuccessful} pages, ${result.summary.totalCharacters} characters`,
-      )
       return result
     } else if (result.canceled) {
-      console.log('OCR processing was cancelled')
       return result
     } else {
       throw new Error(`${result.error}`)
     }
   } catch (error) {
     if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
-      console.log('processOCRPages cancelled')
       return { success: false, canceled: true, message: 'OCR page processing cancelled' }
     }
 

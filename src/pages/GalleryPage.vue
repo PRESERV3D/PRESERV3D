@@ -57,7 +57,6 @@
     <!-- Godot Iframe Section -->
     <div v-if="showGodot" class="godot-section">
       <div class="godot-container">
-        <!-- X Button positioned in upper right -->
         <q-btn flat icon="close" @click="closeGallery" class="exit-btn" />
 
         <iframe
@@ -193,8 +192,6 @@ function sendURLsToGodot() {
   // Deep clone to remove Proxy wrappers
   const cleanModelUrls = JSON.parse(JSON.stringify(limitedModels))
 
-  console.log('Sending model URLs to Godot:', cleanModelUrls)
-
   iframe.postMessage(
     {
       type: 'load_models',
@@ -262,7 +259,6 @@ function cacheModelData(models) {
     localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
     localStorage.setItem(CACHE_VERSION_KEY, CACHE_VERSION)
     localStorage.setItem(CACHE_HASH_KEY, hash)
-    console.log('Models cached successfully with hash:', hash)
   } catch (error) {
     console.warn('Cache write error:', error)
   }
@@ -315,12 +311,6 @@ async function isCacheStillValid(cachedData) {
     const freshHash = generateModelsHash(processedFreshModels)
     const cacheIsValid = freshHash === cachedData.hash
 
-    if (!cacheIsValid) {
-      console.log('Cache invalidated - data has changed')
-      console.log('Cached hash:', cachedData.hash)
-      console.log('Fresh hash:', freshHash)
-    }
-
     return cacheIsValid
   } catch (error) {
     console.warn('Error validating cache:', error)
@@ -343,7 +333,6 @@ async function loadModelUrls() {
     if (cacheValid) {
       modelUrls.value = cachedData.models
       loading.value = false
-      console.log('Loaded', cachedData.models.length, 'models from valid cache')
       return
     } else {
       console.log('Cache invalidated, fetching fresh data...')

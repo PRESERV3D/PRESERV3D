@@ -4,12 +4,12 @@ import { supabase } from 'boot/supabase'
 export const useUserStore = defineStore('user', {
   state: () => ({
     session: null,
-    profile: null, // Includes full profile + role
-    isSigningOut: false, // Flag to prevent auth listener interference during logout
-    pendingNotifications: [], // Queue for notifications to show after navigation
-    isLoadingProfile: false, // Track if profile is currently being fetched
-    isLoadingSession: false, // Track if session is currently being fetched
-    profileFetchPromise: null, // Store pending profile fetch promise to prevent duplicates
+    profile: null,
+    isSigningOut: false,
+    pendingNotifications: [],
+    isLoadingProfile: false,
+    isLoadingSession: false,
+    profileFetchPromise: null,
   }),
 
   actions: {
@@ -33,20 +33,17 @@ export const useUserStore = defineStore('user', {
 
         // Handle specific auth events
         if (event === 'SIGNED_OUT') {
-          console.log('👋 User signed out')
           this.session = null
           this.profile = null
           return
         }
 
         if (event === 'TOKEN_REFRESHED') {
-          console.log('🔄 Token refreshed successfully')
           this.session = session
           return
         }
 
         if (event === 'USER_UPDATED') {
-          console.log('👤 User updated')
           this.session = session
           return
         }
@@ -89,7 +86,6 @@ export const useUserStore = defineStore('user', {
 
       // If profile already loaded for this user, skip
       if (this.profile && this.profile.id === userId) {
-        console.log('✅ Profile already loaded for user:', userId)
         return
       }
 
@@ -209,9 +205,6 @@ export const useUserStore = defineStore('user', {
           if (visitorError) {
             console.error('Error fetching visitor profile:', visitorError)
           }
-
-          // If all fail
-          console.warn('No matching profile found for user:', userId)
         } catch (error) {
           console.error('❌ Error fetching profile:', error)
           throw error
@@ -224,10 +217,6 @@ export const useUserStore = defineStore('user', {
       return this.profileFetchPromise
     },
 
-    /**
-     * Ensure profile is loaded for a user id. Safe to call repeatedly.
-     * Returns the profile or null.
-     */
     async ensureProfile(userId) {
       if (!userId) return null
       if (this.profile && this.profile.id === userId) return this.profile
@@ -235,7 +224,7 @@ export const useUserStore = defineStore('user', {
       return this.profile
     },
 
-    // Manually fetch session + profile (e.g., on page reload)
+    // Manually fetch session + profile
     async fetchSession() {
       if (this.isLoadingSession) {
         console.log('🔄 Session fetch already in progress')
@@ -300,7 +289,7 @@ export const useUserStore = defineStore('user', {
             key.startsWith('sb-') ||
             key.includes('supabase') ||
             key.includes('auth') ||
-            key.startsWith('vueuse'), // Clear any VueUse auth storage
+            key.startsWith('vueuse'),
         )
         authKeys.forEach((key) => {
           try {

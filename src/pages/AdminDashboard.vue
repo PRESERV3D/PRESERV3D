@@ -384,11 +384,6 @@ const userStore = useUserStore()
 const currentIndex = ref(0)
 const currentItem = computed(() => recentStore.recentItems[currentIndex.value])
 
-console.log(recentStore.recentItems)
-
-// const userStore = useUserStore()
-// const userProfile = computed(() => userStore.profile || {})
-
 // Report Generation
 const reportDialog = ref(false)
 const isRange = ref(false)
@@ -455,7 +450,6 @@ watch(
   { immediate: true },
 )
 
-// generate
 const generateReport = async () => {
   isGenerateReportLoading.value = true
 
@@ -588,11 +582,8 @@ async function init() {
     ] = await Promise.all([
       prepareUsersData(selectedYear.value),
       prepareChartData(selectedYear.value),
-      // Utilize idx_artifacts_view index with limit
       supabase.from('artifacts_view').select('*').limit(3),
-      // Utilize idx_documents_view index with limit
       supabase.from('documents_view').select('*').limit(3),
-      // Use indexed count queries (head: true avoids fetching data)
       supabase.from('artifacts_metadata').select('*', { count: 'exact', head: true }),
       supabase.from('documents_metadata').select('*', { count: 'exact', head: true }),
       supabase
@@ -691,7 +682,6 @@ async function prepareChartData() {
   const start = `${year}-01-01`
   const end = `${year}-12-31`
 
-  // Parallelize queries and utilize idx_artifacts_uploaded_at and idx_documents_uploaded_at indexes
   const [artifactsResult, documentsResult] = await Promise.all([
     supabase
       .from('artifacts_metadata')
@@ -816,7 +806,6 @@ async function prepareUsersData(yearParam) {
   const start = `${year}-01-01`
   const end = `${year}-12-31`
 
-  // Utilize idx_all_users_created_at index with ORDER BY and year range filtering
   const { data: users, error } = await supabase
     .from('all_users')
     .select('created_at, user_type')
@@ -1016,7 +1005,7 @@ function imgProps(item) {
   margin-left: 3rem;
   flex: 1;
   min-width: 0;
-  height: 35rem; /* ✅ Keep only this height declaration */
+  height: 35rem;
   box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
   justify-content: center;
 }

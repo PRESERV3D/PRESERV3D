@@ -116,7 +116,6 @@ async function deleteFileFromR2(folder, fileName) {
       }),
     )
 
-    console.log(`File deleted from R2: ${key}`)
     return { error: null }
   } catch (err) {
     console.error('Error deleting file from R2:', err)
