@@ -1,6 +1,3 @@
-// TTS Service Configuration
-// Centralized configuration for TTS backend URL
-
 /**
  * Get the TTS service base URL from environment variables
  * Falls back to localhost for development
@@ -22,8 +19,6 @@ export const getTtsServiceUrl = () => {
   // Use environment variable if available (deployed environments)
   const envUrl = import.meta.env.VITE_TTS_SERVICE_URL
   if (envUrl) {
-    // If we're running on localhost but an env URL is present and not forcing local,
-    // surface a clear console warning to help debugging where requests go.
     if (
       typeof window !== 'undefined' &&
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')

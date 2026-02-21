@@ -1,6 +1,3 @@
-/**
- * Measure page load performance
- */
 export function measurePageLoad() {
   if (!window.performance || !window.performance.timing) {
     console.warn('Performance API not supported')
@@ -37,9 +34,6 @@ export function measurePageLoad() {
   return metrics
 }
 
-/**
- * Format metrics for console display
- */
 function formatMetrics(metrics) {
   console.group('📊 PRESERV3D Performance Metrics')
   console.log('🔄 DNS Lookup:', `${metrics.dnsTime.toFixed(0)}ms`)
@@ -65,9 +59,6 @@ function formatMetrics(metrics) {
   }
 }
 
-/**
- * Measure bundle size from network requests
- */
 export function measureBundleSize() {
   if (!window.performance || !window.performance.getEntriesByType) {
     return null
@@ -105,9 +96,6 @@ export function measureBundleSize() {
   return bundles
 }
 
-/**
- * Format bundle sizes for console display
- */
 function formatBundleSize(bundles) {
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 B'
@@ -139,9 +127,6 @@ function formatBundleSize(bundles) {
   }
 }
 
-/**
- * Monitor specific API call performance
- */
 export function measureApiCall(name, promise) {
   const start = performance.now()
 
@@ -158,9 +143,6 @@ export function measureApiCall(name, promise) {
     })
 }
 
-/**
- * Track component render time
- */
 export function measureComponentRender(componentName) {
   const start = performance.now()
 
@@ -170,9 +152,6 @@ export function measureComponentRender(componentName) {
   }
 }
 
-/**
- * Start performance monitoring
- */
 export function startMonitoring() {
   // Only run in browser environment (not SSR)
   if (typeof window === 'undefined') {
@@ -207,9 +186,6 @@ export function startMonitoring() {
   })
 }
 
-/**
- * Create a performance observer for specific metrics
- */
 export function observePerformance(callback) {
   if (!window.PerformanceObserver) {
     console.warn('PerformanceObserver not supported')
@@ -227,9 +203,6 @@ export function observePerformance(callback) {
   return observer
 }
 
-/**
- * Mark custom performance milestones
- */
 export function markMilestone(name) {
   if (window.performance && window.performance.mark) {
     performance.mark(name)
@@ -237,9 +210,6 @@ export function markMilestone(name) {
   }
 }
 
-/**
- * Measure between two milestones
- */
 export function measureBetween(startMark, endMark, measureName) {
   if (window.performance && window.performance.measure) {
     try {
@@ -256,25 +226,3 @@ export function measureBetween(startMark, endMark, measureName) {
   }
   return null
 }
-
-// Example usage in components:
-/*
-import { measureComponentRender, markMilestone, measureBetween } from 'src/utils/performance'
-
-export default {
-  setup() {
-    const stopMeasure = measureComponentRender('ArtifactsPage')
-
-    onMounted(() => {
-      stopMeasure()
-
-      // Mark important events
-      markMilestone('artifacts-fetch-start')
-      fetchArtifacts().then(() => {
-        markMilestone('artifacts-fetch-end')
-        measureBetween('artifacts-fetch-start', 'artifacts-fetch-end', 'Artifacts Fetch Time')
-      })
-    })
-  }
-}
-*/

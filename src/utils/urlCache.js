@@ -1,25 +1,13 @@
-/**
- * Presigned URL Cache Manager
- * Caches presigned URLs in memory and localStorage to avoid regenerating them repeatedly
- */
-
 const CACHE_PREFIX = 'r2_presigned_'
 const CACHE_EXPIRY_MS = 6 * 24 * 60 * 60 * 1000 // 6 days (before 7-day expiration)
-const MAX_ENTRIES = 300 // Max cached presigned URLs to keep in localStorage (LRU-style eviction)
-
+const MAX_ENTRIES = 300 // Max cached presigned URLs to keep in localStorage
 // In-memory cache for fast access during session
 const memoryCache = new Map()
 
-/**
- * Generate cache key from R2 object key
- */
 function getCacheKey(key) {
   return `${CACHE_PREFIX}${key}`
 }
 
-/**
- * Check if cached URL is still valid (not expired)
- */
 function isCacheValid(cacheEntry) {
   if (!cacheEntry || !cacheEntry.url || !cacheEntry.timestamp) {
     return false
@@ -31,9 +19,6 @@ function isCacheValid(cacheEntry) {
   return age < CACHE_EXPIRY_MS
 }
 
-/**
- * Get URL from cache (memory first, then localStorage)
- */
 export function getCachedUrl(key) {
   // Try memory cache first (fastest)
   if (memoryCache.has(key)) {
@@ -67,9 +52,6 @@ export function getCachedUrl(key) {
   return null
 }
 
-/**
- * Save URL to cache (both memory and localStorage)
- */
 export function setCachedUrl(key, url) {
   const entry = {
     url,
@@ -95,10 +77,6 @@ export function setCachedUrl(key, url) {
   }
 }
 
-/**
- * Enforce MAX_ENTRIES by removing oldest cache entries when localStorage exceeds the limit.
- * This is a lightweight LRU-like eviction based on stored timestamp.
- */
 function enforceMaxEntries() {
   try {
     const keys = Object.keys(localStorage).filter((k) => k.startsWith(CACHE_PREFIX))
@@ -155,10 +133,6 @@ export async function preloadUrls(items, generateUrl) {
   )
 }
 
-/**
- * Preload image/preview URLs for immediate display
- * Uses link preload for browser optimization
- */
 export function preloadPreviews(urls) {
   if (!urls || urls.length === 0) return
 
@@ -174,9 +148,6 @@ export function preloadPreviews(urls) {
   })
 }
 
-/**
- * Batch fetch URLs with progress tracking
- */
 export async function batchFetchUrls(keys, generateUrl, onProgress) {
   const total = keys.length
   let completed = 0
@@ -208,9 +179,6 @@ export async function batchFetchUrls(keys, generateUrl, onProgress) {
   return results
 }
 
-/**
- * Clear expired cache entries
- */
 export function clearExpiredCache() {
   try {
     const keys = Object.keys(localStorage)
@@ -242,9 +210,6 @@ export function clearExpiredCache() {
   }
 }
 
-/**
- * Clear all cached URLs (useful for debugging)
- */
 export function clearAllCache() {
   memoryCache.clear()
 
@@ -261,9 +226,6 @@ export function clearAllCache() {
   }
 }
 
-/**
- * Get cache statistics
- */
 export function getCacheStats() {
   const memoryCount = memoryCache.size
 

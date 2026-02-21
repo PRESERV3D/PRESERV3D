@@ -1,8 +1,3 @@
-/**
- * Supabase Storage URL Cache Manager
- * Caches signed URLs from Supabase storage to avoid regenerating them repeatedly
- */
-
 import { supabase } from 'boot/supabase'
 import { getCachedUrl, setCachedUrl } from './urlCache'
 
@@ -81,9 +76,6 @@ export async function convertSupabaseUrl(url) {
   }
 
   try {
-    // Extract bucket and path from Supabase URL
-    // Format: https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path>
-    // or: https://<project>.supabase.co/storage/v1/object/<bucket>/<path>
     const urlObj = new URL(url)
     const pathname = urlObj.pathname
 
