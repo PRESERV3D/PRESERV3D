@@ -1,4 +1,3 @@
-// services/report_service.js
 import { supabase } from 'boot/supabase.js'
 import { renderReportCharts } from '/services/report_charts'
 import { useUserStore } from 'src/stores/user.js'
@@ -75,7 +74,7 @@ export async function generateMonthlyReport({
   // Helper function to build user ID filters
   const getUserIdsForFilters = async () => {
     if (!userType && !college && !department) {
-      return null // No filtering needed
+      return null
     }
 
     const userIds = new Set()
@@ -108,10 +107,9 @@ export async function generateMonthlyReport({
     return Array.from(userIds)
   }
 
-  // Get filtered user IDs if filters are applied
   const filteredUserIds = await getUserIdsForFilters()
 
-  // Generate charts first (this takes the longest) - pass filters to chart generation
+  // Generate charts first
   let chartImages = {}
   try {
     console.log('Generating charts...')
@@ -218,7 +216,6 @@ export async function generateMonthlyReport({
         .lte('created_at', endDate)
         .eq('status', 'Approved')
       if (userType && userType !== 'visitor') {
-        // If filtering by non-visitor type, return empty result
         return Promise.resolve({ data: [] })
       }
       return query
@@ -294,7 +291,7 @@ export async function generateMonthlyReport({
   const totalUsers = totalUsersResult.count
   const newUsers = newUsersResult.count
 
-  // Active users - validate that users still exist in the database and are not admins
+  // Active users
   const loginUserIds = (activeUsersResult.data || []).map((r) => r.user_id)
   const uniqueLoginUserIds = [...new Set(loginUserIds)]
 
@@ -346,7 +343,6 @@ export async function generateMonthlyReport({
   const totalDocuments = totalDocumentsResult.count
   const uploadedDocuments = uploadedDocumentsResult.count
 
-  // Get all admin and super admin user IDs to exclude from view counts
   const { data: adminUsers } = await supabase
     .from('all_users')
     .select('id')
@@ -354,8 +350,7 @@ export async function generateMonthlyReport({
 
   const adminUserIds = new Set((adminUsers || []).map((a) => a.id))
 
-  // Top artifacts and documents - only count views for items that still exist and exclude admin views
-  // First, get all unique artifact and document IDs from the logs
+  // Top artifacts and documents
   const artifactLogIds = [...new Set((artifactLogsResult.data || []).map((log) => log.item_id))]
   const documentLogIds = [...new Set((documentLogsResult.data || []).map((log) => log.item_id))]
 
@@ -425,11 +420,8 @@ export async function generateMonthlyReport({
     return { name: meta?.title ?? `Document ${id}`, views }
   })
 
-  // Process appointment statistics
   const totalAppointments = totalAppointmentsResult.count
   const newAppointments = appointmentLogsResult.data?.length || 0
-
-  // Process appointment status statistics
   let appointmentPendingCount = 0
   let appointmentApprovedCount = 0
   let appointmentRejectedCount = 0
@@ -511,7 +503,6 @@ export async function generateMonthlyReport({
   const monthlyAdminUserIds = new Set((monthlyAdminUsers || []).map((a) => a.id))
 
   // Validate that users, artifacts, and documents still exist in the database
-  // Exclude admin and super admin users from statistics
   const monthlyLoginUserIds = [...new Set((monthlyLoginsData.data || []).map((l) => l.user_id))]
   const monthlyArtifactIds = [
     ...new Set((monthlyArtifactViewsData.data || []).map((v) => v.item_id)),
@@ -646,7 +637,7 @@ export async function generateMonthlyReport({
       (a) => a.status === 'Rejected',
     ).length
 
-    // Content views this month - only count views for items that still exist and exclude admin views
+    // Content views this month
     const monthArtifactViews = (monthlyArtifactViewsData.data || []).filter((view) => {
       const viewDate = new Date(view.clicked_at)
       return (
@@ -1068,7 +1059,6 @@ export async function generateMonthlyReport({
   // Top Artifacts Table
   if (topArtifacts && topArtifacts.length > 0) {
     doc.setFontSize(12)
-    // doc.text('Top Artifacts by Views', pageWidth / 2, currentY, { align: 'center' })
     autoTable(doc, {
       ...tableOptions,
       startY: currentY + 5,
@@ -1094,7 +1084,6 @@ export async function generateMonthlyReport({
   // Top Documents Table
   if (topDocuments && topDocuments.length > 0) {
     doc.setFontSize(12)
-    // doc.text('Top Documents by Views', pageWidth / 2, currentY, { align: 'center' })
     autoTable(doc, {
       ...tableOptions,
       startY: currentY + 5,

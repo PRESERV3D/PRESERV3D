@@ -31,14 +31,8 @@ const hardTimeoutHandle = setTimeout(() => {
   process.exit(1)
 }, HARD_TIMEOUT_MS)
 
-/**
- * Wait utility function
- */
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-/**
- * Log with timestamp
- */
 function logWithTimestamp(message, data = null) {
   const timestamp = new Date().toISOString()
   if (data) {
@@ -48,9 +42,6 @@ function logWithTimestamp(message, data = null) {
   }
 }
 
-/**
- * Log memory usage
- */
 function logMemoryUsage(label = '') {
   const used = process.memoryUsage()
   console.error(`Memory ${label}:`, {
@@ -60,9 +51,6 @@ function logMemoryUsage(label = '') {
   })
 }
 
-/**
- * Find Chrome executable in browsers directory or system
- */
 function findChromeExecutable() {
   // Windows Chrome paths
   const windowsPaths = [
@@ -113,9 +101,6 @@ function findChromeExecutable() {
   return null
 }
 
-/**
- * Get appropriate Puppeteer launch options
- */
 function getPuppeteerConfig() {
   const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
 
@@ -136,8 +121,8 @@ function getPuppeteerConfig() {
       '--mute-audio',
       '--no-first-run',
       '--no-zygote',
-      '--single-process', // Critical for low memory environments
-      '--window-size=1280x720', // Reduced from 1920x1080
+      '--single-process',
+      '--window-size=1280x720',
       '--disable-web-security',
       '--disable-features=IsolateOrigins,site-per-process',
       '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -184,9 +169,6 @@ function getPuppeteerConfig() {
   )
 }
 
-/**
- * Get or create shared browser instance
- */
 async function getBrowser() {
   // Close browser if it's been idle too long
   if (browserInstance && Date.now() - browserLastUsed > BROWSER_IDLE_TIMEOUT) {
@@ -216,9 +198,6 @@ async function getBrowser() {
   return browserInstance
 }
 
-/**
- * Search DuckDuckGo for related links
- */
 async function searchDuckDuckGo(query, maxResults = 3) {
   let page
   const startTime = Date.now()
@@ -304,7 +283,7 @@ async function searchDuckDuckGo(query, maxResults = 3) {
 
     logWithTimestamp('✓ Page appears to be valid search results')
     logWithTimestamp('Waiting for page to settle (1s)...')
-    await wait(1000) // Reduced from 1500ms
+    await wait(1000)
 
     logWithTimestamp('Extracting search results from page...')
     const evalStartTime = Date.now()
@@ -373,9 +352,6 @@ async function searchDuckDuckGo(query, maxResults = 3) {
   }
 }
 
-/**
- * Scrape content from a URL
- */
 async function scrapeContent(url) {
   let page
   const startTime = Date.now()
@@ -398,7 +374,7 @@ async function scrapeContent(url) {
       }
     })
 
-    await page.setDefaultNavigationTimeout(20000) // Increased to 20s
+    await page.setDefaultNavigationTimeout(20000)
 
     try {
       logWithTimestamp(`Navigating to content page: ${url}`)
@@ -412,7 +388,7 @@ async function scrapeContent(url) {
       // Continue even if navigation fails - we'll return partial data
     }
 
-    await wait(500) // Reduced from 1000ms
+    await wait(500)
 
     const content = await page.content()
     await page.close()
@@ -435,7 +411,7 @@ async function scrapeContent(url) {
       title: title.trim(),
       description: description.trim(),
       content: cleanText.substring(0, 1500),
-      language: franc(cleanText.substring(0, 1000)) || 'und', // Check first 1000 chars instead of 300
+      language: franc(cleanText.substring(0, 1000)) || 'und',
     }
 
     logWithTimestamp(`>>> ✓ Scraped successfully: ${url} (took ${Date.now() - startTime}ms)`)
@@ -459,9 +435,6 @@ async function scrapeContent(url) {
   }
 }
 
-/**
- * Scrape content with concurrency control
- */
 async function scrapeAllContent(searchResults, concurrency = 2) {
   const results = []
   const totalBatches = Math.ceil(searchResults.length / concurrency)
@@ -500,9 +473,6 @@ async function scrapeAllContent(searchResults, concurrency = 2) {
   return results
 }
 
-/**
- * Filter results based on language
- */
 function filterByLanguage(results, preferredLang = 'eng') {
   logWithTimestamp('=== Language Filtering ===')
   logWithTimestamp(`Total results to filter: ${results.length}`)
@@ -547,9 +517,6 @@ function filterByLanguage(results, preferredLang = 'eng') {
   return finalResults
 }
 
-/**
- * Main function
- */
 async function main() {
   const totalStartTime = Date.now()
   try {
@@ -588,7 +555,7 @@ async function main() {
     } catch (searchError) {
       logWithTimestamp(`✗ Phase 1 failed: ${searchError.message}`)
 
-      // Return error with helpful message
+      // Return error with message
       const errorResponse = {
         links: [],
         error: `Search service unavailable: ${searchError.message}`,
@@ -609,7 +576,6 @@ async function main() {
     logWithTimestamp(`Found ${searchResults.length} search results`)
     logWithTimestamp('=== PHASE 2: Scraping content from URLs ===')
 
-    // Use controlled concurrency instead of Promise.all
     const scrapedResults = await scrapeAllContent(searchResults, 2)
     logWithTimestamp(`✓ Phase 2 complete: Scraped ${scrapedResults.length} pages`)
 

@@ -82,7 +82,6 @@ def get_nlp():
     return _nlp
 
 def get_summarizer():
-    """Get cached abstractive summarizer (DistilBART) - only loaded when needed"""
     global _summarizer
     if _summarizer is None:
         from transformers import pipeline
@@ -90,14 +89,13 @@ def get_summarizer():
         _summarizer = pipeline(
             "summarization",
             model="sshleifer/distilbart-cnn-12-6",
-            device=-1,  # CPU only
+            device=-1,
             framework="pt"
         )
         print("Summarizer loaded and cached")
     return _summarizer
 
 def get_textrank_summarizer():
-    """Get cached TextRank extractive summarizer"""
     global _textrank_summarizer
     if _textrank_summarizer is None:
         from sumy.summarizers.text_rank import TextRankSummarizer
@@ -107,7 +105,6 @@ def get_textrank_summarizer():
     return _textrank_summarizer
 
 def clear_memory():
-    """Force garbage collection and clear unused memory"""
     import gc
     gc.collect()
     if hasattr(psutil.Process(), 'memory_info'):
@@ -116,7 +113,6 @@ def clear_memory():
         print(f"Memory after cleanup: {mem_mb:.2f} MB")
 
 def get_local_embeddings(text):
-    """Get embeddings using local sentence-transformers model"""
     if _sentence_transformer is not None:
         try:
             # Truncate text to avoid memory issues
@@ -129,7 +125,6 @@ def get_local_embeddings(text):
     return None
 
 def get_tfidf_similarity(text1, text2):
-    """Simple TF-IDF based similarity as ultimate fallback"""
     from collections import Counter
     import re
     
@@ -168,7 +163,6 @@ def get_tfidf_similarity(text1, text2):
     return dot_product / (magnitude1 * magnitude2)
 
 def get_embeddings(text):
-    """Get embeddings using local model or fallback to TF-IDF"""
     # Try local sentence-transformers first
     emb = get_local_embeddings(text)
     if emb and isinstance(emb, list) and len(emb) > 0:
@@ -179,7 +173,6 @@ def get_embeddings(text):
     return []
 
 def extract_keywords_hf(text, top_n=10):
-    """Extract keywords using NER and capitalized phrases"""
     doc = get_nlp()(text[:2000])
     
     # Extract important entities as keywords
@@ -206,7 +199,6 @@ def extract_keywords_hf(text, top_n=10):
     return keywords[:top_n]
 
 def summarize_text_extractive(text, max_sentences=5):
-    """Fast extractive summarization using TextRank"""
     try:
         from sumy.parsers.plaintext import PlaintextParser
         from sumy.nlp.tokenizers import Tokenizer
@@ -223,7 +215,7 @@ def summarize_text_extractive(text, max_sentences=5):
         print("Using fast extractive summarization (TextRank)...")
         print(f"Initial RAM: {mem_before:.2f} MB, CPU: {cpu_before:.1f}%")
         
-        # Prepare text - use more content for extractive (it's fast)
+        # Prepare text - use more content for extractive
         input_text = text[:4000].strip()
         
         if len(input_text.split()) < 30:
@@ -265,7 +257,6 @@ def summarize_text_extractive(text, max_sentences=5):
         return ' '.join(summary_sentences) + '.'
 
 def summarize_text_abstractive(text, max_length=160, min_length=50):
-    """High-quality abstractive summarization using DistilBART (memory intensive)"""
     try:
         import gc
         import torch
@@ -407,7 +398,7 @@ async def process_pdf(
         if text and len(text.strip()) >= 100:
             cleaned_text = clean_text(text)
 
-            # NER-driven metadata extraction using YOUR custom model
+            # NER-driven metadata extraction using custom model
             metadata = extract_metadata_ner(cleaned_text, filename or (file.filename if file else None))
 
             # Keyword Extraction via HF API (with NER fallback)
@@ -1204,7 +1195,6 @@ def clean_place(place):
     return place
 
 def generate_summary(text, title=None, author=None, date=None, keywords=None, categories=None, max_attempts=2):
-    """Generate structured, readable extractive summary using keyword-based sentence scoring"""
     import gc
     
     # Get process for monitoring
@@ -1362,11 +1352,6 @@ def download_file(file_url: str) -> bytes:
 
 @app.post("/enhance-summary")
 async def enhance_summary(request: Request):
-    """
-    Generate high-quality abstractive summary using DistilBART.
-    Use this for manual enhancement when extractive summaries need improvement.
-    Warning: This is resource-intensive and may take 3-8 seconds.
-    """
     try:
         data = await request.json()
         
@@ -1430,10 +1415,6 @@ async def enhance_summary(request: Request):
 
 @app.post("/check-relevance")
 async def check_relevance_endpoint(request: Request):
-    """
-    Endpoint to check the relevance of a user-edited summary.
-    Returns validation results with passed status and any issues found.
-    """
     try:
         data = await request.json()
         

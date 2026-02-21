@@ -29,11 +29,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Google Cloud TTS Configuration ---
+# Google Cloud TTS Configuration
 CREDENTIALS_PATH = "/etc/secrets/google-credentials.json"
 
 def get_google_credentials():
-    """Authenticates with Google Cloud using service account credentials."""
     if not os.path.exists(CREDENTIALS_PATH):
         raise FileNotFoundError(
             "Google Cloud credentials file not found. "
@@ -57,12 +56,11 @@ class TTSRequest(BaseModel):
     text: str
     language_code: str = 'en-US'
     voice_name: str = 'en-US-Neural2-A'
-    use_ssml: bool = False  # Flag to indicate if text contains SSML markup
+    use_ssml: bool = False 
 
 @app.head("/health")
 @app.get("/health")
 async def health_check():
-    """Health check endpoint to verify TTS service is running"""
     return {
         "status": "healthy",
         "service": "tts_service",
@@ -74,7 +72,6 @@ async def health_check():
 @app.head("/")
 @app.get("/")
 async def root():
-    """Root endpoint with service information"""
     return {
         "message": "PRESERV3D TTS Service",
         "status": "running",
@@ -84,10 +81,6 @@ async def root():
 
 @app.post("/generate-tts")
 async def generate_tts(request: TTSRequest):
-    """
-    Generates speech from text using Google Cloud TTS.
-    Supports both plain text and SSML markup.
-    """
     if tts_client is None:
         raise HTTPException(
             status_code=503,
@@ -126,12 +119,10 @@ async def generate_tts(request: TTSRequest):
 @app.head("/health")
 @app.get("/health")
 def health_check():
-    """Health check endpoint to verify service status."""
     if tts_client:
         return {"status": "ok", "tts_service": "available"}
     return {"status": "error", "tts_service": "unavailable", "reason": "Client not initialized."}
 
 if __name__ == "__main__":
     import uvicorn
-    # Recommended to run with: uvicorn tts_service:app --reload --port 8001
     uvicorn.run(app, host="0.0.0.0", port=8001)

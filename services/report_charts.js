@@ -1,4 +1,3 @@
-// services/report_charts.js
 import { supabase } from 'boot/supabase.js'
 import {
   Chart,
