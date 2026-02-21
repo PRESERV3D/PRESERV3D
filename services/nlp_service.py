@@ -39,7 +39,7 @@ load_dotenv()
 
 # Configuration for summarization mode
 # SUMMARY_MODE: 'extractive' (fast, low memory) or 'abstractive' (BART, high quality)
-SUMMARY_MODE = os.getenv("SUMMARY_MODE", "extractive").lower()
+SUMMARY_MODE = os.getenv("SUMMARY_MODE", "abstractive").lower()
 print(f"Summary mode: {SUMMARY_MODE}")
 
 
