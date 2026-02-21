@@ -122,16 +122,6 @@ const routes = [
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
       {
-        path: 'training-data',
-        name: 'training-data',
-        component: () => import('pages/TrainingData.vue'),
-      },
-      {
-        path: 'extract-text',
-        name: 'extract-text',
-        component: () => import('pages/ExtractText.vue'),
-      },
-      {
         path: 'profile',
         name: 'profile',
         component: () => import('src/pages/ProfilePage.vue'),
@@ -233,6 +223,7 @@ const routes = [
       },
     ],
   },
+
   // Always leave this as last one,
   // but you can also remove it
   {
