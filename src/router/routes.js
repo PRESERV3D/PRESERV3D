@@ -215,12 +215,6 @@ const routes = [
         component: () => import('pages/AdminAppointmentPage.vue'),
         meta: { requiresAuth: true, allowedRoles: ['admin'] },
       },
-      {
-        path: 'appointments/details',
-        name: 'appointment-details',
-        component: () => import('pages/AdminAppointmentDetailsPage.vue'),
-        meta: { requiresAuth: true, allowedRoles: ['admin'] },
-      },
     ],
   },
 
