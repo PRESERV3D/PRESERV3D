@@ -171,11 +171,6 @@ const routes = [
   },
 
   {
-    path: '/admin/landing',
-    component: () => import('pages/AdminLandingPage.vue'), // Landing Page
-  },
-
-  {
     path: '/forgotpassword',
     name: 'forgotpassword',
     component: () => import('pages/ForgotPage.vue'),
