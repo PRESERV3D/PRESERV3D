@@ -184,23 +184,6 @@ const routes = [
 
   {
     path: '/admin',
-    component: () => import('layouts/LogInSignUpLayout.vue'),
-    children: [
-      {
-        path: 'register',
-        name: 'admin-register',
-        component: () => import('pages/AdminRegisterPage.vue'),
-      },
-      {
-        path: 'login',
-        name: 'admin-login',
-        component: () => import('pages/AdminLoginPage.vue'),
-      },
-    ],
-  },
-
-  {
-    path: '/admin',
     component: () => import('layouts/MainLayout.vue'),
     children: [
       // Admin appointments
