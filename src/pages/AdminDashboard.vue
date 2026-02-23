@@ -123,7 +123,6 @@
                     </div>
                   </div>
 
-                  <!-- Date Selection (grid keeps width consistent when toggling range) -->
                   <div class="date-grid q-mx-none q-mb-md">
                     <div class="q-px-none q-pr-none" :class="{ 'date-span-2': !isRange }">
                       <q-input
@@ -147,7 +146,6 @@
                     </div>
                   </div>
 
-                  <!-- Range toggle -->
                   <q-checkbox v-model="isRange" label="Select a date range" class="q-mt-md" />
                 </q-card-section>
 
@@ -1241,12 +1239,6 @@ function imgProps(item) {
   }
 }
 
-/* @media (max-width: 1185px) {
-  .trophies {
-    display: none;
-  }
-} */
-
 /* ========================
    WIDE DESKTOP (75rem / 1200px+)
 ======================== */
@@ -1349,7 +1341,6 @@ function imgProps(item) {
     padding: 1rem;
   }
 
-  /* Reset any left margins inside box-2 */
   .box-2 .q-ml-lg {
     margin-left: 0.5rem !important;
   }
@@ -1366,7 +1357,6 @@ function imgProps(item) {
     padding: 0.5rem;
   }
 
-  /* Make buttons stack vertically on very small screens */
   @media (max-width: 480px) {
     .row.q-ml-md.q-gutter-lg {
       flex-direction: column;
@@ -1400,17 +1390,15 @@ function imgProps(item) {
 ======================== */
 
 .box-4 {
-  margin-left: 0; /* Remove on mobile */
+  margin-left: 0;
 }
 
-/* Tablet (768px+) */
 @media (min-width: 48rem) {
   .box-4 {
     margin-left: 1rem;
   }
 }
 
-/* Desktop (1024px+) - */
 @media (min-width: 64rem) {
   .box-4 {
     margin-left: 3rem;
@@ -1434,12 +1422,11 @@ function imgProps(item) {
   }
 
   .btn-arrows {
-    width: 24px; /* Original value */
-    height: 24px; /* Original value */
+    width: 24px;
+    height: 24px;
   }
 }
 
-/* Large Desktop (1440px+) - keep originals */
 @media (min-width: 90rem) {
   .box-4 {
     margin-left: 3rem;
@@ -1457,7 +1444,6 @@ function imgProps(item) {
   }
 }
 
-/* Legend alignment fix */
 .legend-container {
   display: flex !important;
   align-items: center !important;
@@ -1469,7 +1455,7 @@ function imgProps(item) {
 .legend-item {
   display: inline-flex !important;
   flex-direction: row !important;
-  align-items: baseline !important; /* Changed to baseline */
+  align-items: baseline !important;
   gap: 0.5rem !important;
 }
 
@@ -1488,7 +1474,6 @@ function imgProps(item) {
   white-space: nowrap;
 }
 
-/* Date grid to keep single-date and range layouts aligned */
 .date-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1518,21 +1503,20 @@ function imgProps(item) {
  RESPONSIVE LAYOUT FOR REPORTS AND RECENTLY UPLOADED
 ======================== */
 
-/* Default layout (above 1200px) - side by side */
 .reports-recently-container {
   display: flex;
-  align-items: flex-start; /* Align tops of both boxes */
-  gap: 2rem; /* Increased gap for better spacing */
+  align-items: flex-start;
+  gap: 2rem;
   width: 100%;
 }
 
 .box-3 {
-  flex: 1 1 65%; /* Take 60% of available space */
+  flex: 1 1 65%;
   min-width: 0;
   border-radius: 15px;
   background: linear-gradient(127deg, #fff 0.9%, #fffce9 88.33%);
   box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
-  height: 35rem; /* Match box-4 height */
+  height: 35rem;
 }
 
 .box-4 {
@@ -1543,12 +1527,10 @@ function imgProps(item) {
   height: 35rem;
   box-shadow: 10px 4px 10px rgba(102, 102, 102, 0.25);
   justify-content: center;
-  margin-left: 0; /* Remove default margin */
+  margin-left: 0;
 }
 
-/* Stack layout (1200px and below) */
 @media (max-width: 75rem) {
-  /* 1200px */
   .reports-recently-container {
     flex-direction: column;
     gap: 2rem;
@@ -1556,18 +1538,17 @@ function imgProps(item) {
 
   .box-3 {
     width: 100%;
-    flex: none; /* Remove flex constraints */
-    height: auto; /* Allow height to adjust */
+    flex: none;
+    height: auto;
   }
 
   .box-4 {
     width: 100%;
-    flex: none; /* Remove flex constraints */
+    flex: none;
     margin-left: 0;
     margin-top: 0;
   }
 
-  /* Make box-3 content responsive */
   .box-3 .row.q-py-md {
     flex-direction: column;
     gap: 2rem;
@@ -1578,7 +1559,6 @@ function imgProps(item) {
     flex: none;
   }
 
-  /* Users per Month section responsive */
   .box-3 .users-graph {
     width: 100% !important;
     max-width: 100%;
@@ -1590,7 +1570,6 @@ function imgProps(item) {
     height: auto !important;
   }
 
-  /* Legend section responsive */
   .box-3 .row.q-py-lg.justify-center.q-gutter-md {
     flex-wrap: wrap;
     justify-content: flex-start !important;
@@ -1606,16 +1585,16 @@ function imgProps(item) {
 
   .box-3 .row.items-center.justify-between {
     align-items: center !important;
-    flex-wrap: nowrap !important; /* Force single line */
+    flex-wrap: nowrap !important;
     gap: 0.5rem;
   }
 
   .box-3 .row.q-mb-md.items-center.q-gutter-sm {
     flex: 1;
-    min-width: 0; /* Allow shrinking */
-    flex-wrap: nowrap !important; /* Keep number and title together */
-    align-items: center !important; /* Keep number and title aligned */
-    justify-content: flex-start !important; /* Keep number at start */
+    min-width: 0;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
   }
 
   .box-3 .number {
@@ -1629,17 +1608,15 @@ function imgProps(item) {
   }
 
   .box-3 .q-mr-md.sub-font-2 {
-    flex-shrink: 0; /* Don't shrink the view count */
-    white-space: nowrap; /* Keep view count on one line */
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
-  /* Adjust recently uploaded content for full width */
   .recent-box {
-    margin: 0 auto; /* Center the box */
+    margin: 0 auto;
   }
 }
 
-/* Responsive graph adjustments */
 @media (max-width: 768px) {
   .graph {
     width: 100% !important;
@@ -1686,7 +1663,6 @@ function imgProps(item) {
     height: 20px;
   }
 
-  /* Additional mobile responsive for box-3 */
   .box-3 {
     padding: 1rem !important;
   }
@@ -1720,7 +1696,6 @@ function imgProps(item) {
     margin-right: 0.25rem !important;
   }
 
-  /* Most viewed artifacts mobile adjustments */
   .box-3 .number {
     width: 20px;
     height: 20px;
@@ -1734,12 +1709,11 @@ function imgProps(item) {
   }
 
   .box-3 .fade-title-container {
-    max-width: 6rem !important; /* Even smaller on mobile */
+    max-width: 6rem !important;
     flex: 1 !important;
     min-width: 0 !important;
   }
 
-  /* Target the specific structure from your HTML */
   .box-3 div[class*='row items-center justify-between'] {
     display: flex !important;
     flex-direction: row !important;
@@ -1749,7 +1723,6 @@ function imgProps(item) {
     width: 100% !important;
   }
 
-  /* Target the left side (number + title) */
   .box-3 div[class*='row q-mb-md items-center q-gutter-sm'] {
     display: flex !important;
     flex-direction: row !important;
@@ -1759,40 +1732,36 @@ function imgProps(item) {
     margin-right: 1rem !important;
   }
 
-  /* Target the right side (views) specifically */
   .box-3 div[class*='q-mr-md sub-font-2'] {
     flex-shrink: 0 !important;
     margin-left: auto !important;
-    margin-right: 1rem !important; /* Add some space from the right edge */
+    margin-right: 1rem !important;
     white-space: nowrap !important;
   }
 
   .box-3 .fade-title-container {
-    max-width: 8rem !important; /* Smaller on mobile */
+    max-width: 8rem !important;
   }
 
-  /* Main container for each item row */
   .box-3 .row.items-center.justify-between {
     align-items: center !important;
-    flex-wrap: nowrap !important; /* Keep single line on mobile too */
+    flex-wrap: nowrap !important;
     display: flex !important;
-    justify-content: space-between !important; /* Keep views on the right */
+    justify-content: space-between !important;
   }
 
-  /* Left side: number + title container on mobile */
   .box-3 .row.q-mb-md.items-center.q-gutter-sm {
     gap: 0.5rem !important;
     flex-wrap: nowrap !important;
     align-items: center !important;
     justify-content: flex-start !important;
     display: flex !important;
-    flex-direction: row !important; /* Force horizontal layout */
+    flex-direction: row !important;
     text-align: left !important;
-    flex: 1 !important; /* Take available space but leave room for views */
-    min-width: 0 !important; /* Allow shrinking */
+    flex: 1 !important;
+    min-width: 0 !important;
   }
 
-  /* Ensure number stays on the left and aligned */
   .box-3 .number {
     flex-shrink: 0 !important;
     margin-right: 0 !important;
@@ -1802,7 +1771,6 @@ function imgProps(item) {
     justify-content: center !important;
   }
 
-  /* Override any centering from parent containers but keep items aligned */
   .box-3 .column {
     align-items: flex-start !important;
   }
@@ -1811,24 +1779,23 @@ function imgProps(item) {
     font-size: 11px !important;
     text-align: left !important;
     line-height: 1.2 !important;
-    display: inline !important; /* Keep inline */
+    display: inline !important;
   }
 
   .box-3 .fade-title-container {
-    display: inline-flex !important; /* Inline flex to stay beside number */
+    display: inline-flex !important;
     align-items: center !important;
     flex-direction: row !important;
     vertical-align: middle !important;
   }
 
-  /* Ensure view count stays on the right and aligned */
   .box-3 .q-mr-md.sub-font-2 {
     align-self: center !important;
     line-height: 1.2 !important;
-    margin-left: 0 !important; /* Reset margin */
+    margin-left: 0 !important;
     margin-right: 3rem !important;
     flex-shrink: 0 !important;
-    white-space: nowrap !important; /* Keep on one line */
+    white-space: nowrap !important;
   }
 }
 
@@ -1840,7 +1807,6 @@ function imgProps(item) {
   }
 }
 
-/* Reset graph to normal size on larger screens */
 @media (min-width: 769px) {
   .graph {
     width: 100% !important;
