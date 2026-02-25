@@ -43,12 +43,10 @@
       />
     </div>
 
-    <!-- Loading Spinner -->
     <div v-if="isLoading" class="text-center q-my-md">
       <q-spinner color="primary" size="lg" />
     </div>
 
-    <!-- Collection Display -->
     <div v-else>
       <div v-if="collections.length > 0" class="box-collections q-my-md">
         <div
@@ -65,7 +63,6 @@
               <div class="book-cover">
                 <div class="book-spine"></div>
                 <div class="book-content" :class="{ 'has-image': collection.cover_url }">
-                  <!-- Show uploaded image as background if available -->
                   <div v-if="collection.cover_url" class="book-image-overlay">
                     <img
                       :src="collection.cover_url"
@@ -73,7 +70,6 @@
                       class="book-background-image"
                     />
                   </div>
-                  <!-- Show default icon if no image -->
                   <div v-else class="book-title-section">
                     <div class="book-icon">
                       <q-icon name="collections_bookmark" size="2rem" color="white" />
@@ -90,7 +86,6 @@
               style="color: black; font-weight: 600; margin-left: 3rem"
             >
               {{ collection.collection_name }}
-              <!-- Pinned icon for Favorites -->
               <q-icon
                 v-if="collection.collection_name === 'Favorites'"
                 name="push_pin"
@@ -484,8 +479,6 @@ async function addCollection() {
 /* ========================
  RESPONSIVE BUTTON STYLES
 ======================== */
-
-/* Responsive styles for buttons */
 .subtitle-btn-row {
   display: flex;
   justify-content: space-between;
@@ -506,7 +499,6 @@ async function addCollection() {
   gap: 0.5rem;
 }
 
-/* Mobile styles (max-width: 767px) */
 @media (max-width: 767px) {
   .subtitle-btn-row {
     flex-direction: column;
@@ -527,7 +519,7 @@ async function addCollection() {
     min-width: 100px;
     margin: 0.25rem !important;
   }
-  /* Make filter dropdown responsive */
+
   .artifact-btn-style .q-list {
     width: 90vw !important;
     max-width: 400px !important;
@@ -546,7 +538,6 @@ async function addCollection() {
   }
 }
 
-/* Tablet styles (768px - 1023px) */
 @media (min-width: 768px) and (max-width: 1023px) {
   .subtitle-btn-row {
     align-items: center;
@@ -566,20 +557,17 @@ async function addCollection() {
     margin: 0.25rem !important;
   }
 
-  /* Adjust filter dropdown for tablets */
   .artifact-btn-style .q-list {
     width: 35rem !important;
   }
 }
 
-/* Small desktop styles (1024px - 1199px) */
 @media (min-width: 1024px) and (max-width: 1199px) {
   .artifact-btn-style {
     margin-left: 0.5rem !important;
   }
 }
 
-/* Additional responsive adjustments for very small screens */
 @media (max-width: 480px) {
   .title {
     font-size: 1.5rem;
@@ -628,7 +616,6 @@ async function addCollection() {
   color: inherit;
 }
 
-/* Book styling matching the details page */
 .book-container {
   position: relative;
   perspective: 1000px;
@@ -739,7 +726,6 @@ async function addCollection() {
   color: white;
 }
 
-/* Title styling */
 .fade-title-container {
   width: 220px;
   text-align: center;
@@ -779,8 +765,6 @@ async function addCollection() {
   opacity: 1;
   visibility: visible;
 }
-
-/* Upload box styling for dialog */
 
 .upload {
   font-family: 'Poppins', sans-serif;
@@ -831,9 +815,6 @@ async function addCollection() {
 /* ========================
  RESPONSIVE DESIGN
 ======================== */
-
-/* Hide collections based on screen size - similar to documents hiding */
-/* Desktop - show all collections */
 @media (min-width: 1025px) {
   .collection-item:nth-child(n) {
     display: flex;
@@ -844,7 +825,6 @@ async function addCollection() {
   }
 }
 
-/* Tablet view - limit collections display and center remaining */
 @media (max-width: 1024px) and (min-width: 769px) {
   .hide-on-tablet {
     display: none;
@@ -855,7 +835,6 @@ async function addCollection() {
   }
 }
 
-/* Mobile view - further limit collections and center remaining */
 @media (max-width: 768px) {
   .box-collections {
     justify-content: center;
@@ -881,7 +860,6 @@ async function addCollection() {
   }
 }
 
-/* Extra small screens - center remaining collections */
 @media (max-width: 480px) {
   .box-collections {
     padding: 1rem;
@@ -899,7 +877,6 @@ async function addCollection() {
   }
 }
 
-/* General responsive adjustments for larger screens */
 @media (max-width: 1200px) {
   .box-collections {
     gap: 2rem;
@@ -907,7 +884,6 @@ async function addCollection() {
   }
 }
 
-/* Add New button and other existing styles */
 .add-new-btn {
   border-radius: 8px;
   background: #560505;
@@ -922,7 +898,6 @@ async function addCollection() {
   box-shadow: 0 4px 12px rgba(86, 5, 5, 0.3);
 }
 
-/* Dialog styles */
 .add-collection-card {
   background-color: #fbf4d0;
   padding: 1rem;

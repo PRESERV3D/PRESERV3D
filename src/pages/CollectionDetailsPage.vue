@@ -2,16 +2,12 @@
 <template>
   <q-page class="q-pa-md">
     <div class="collection-container">
-      <!-- Left Side - Collection Details -->
       <div class="collection-details-section">
         <!-- Collection Title -->
         <div class="collection-title-section">
           <h4 class="collection-name">{{ collection.collection_name }}</h4>
         </div>
-
-        <!-- Collection Navigation -->
         <div class="collection-navigation">
-          <!-- Collection Cover -->
           <div class="collection-cover-container">
             <div class="book-container">
               <div class="big-book-cover">
@@ -25,7 +21,6 @@
                       class="book-background-image"
                     />
                   </div>
-                  <!-- Show default icon if no image -->
                   <div v-else class="book-title-section">
                     <div class="book-icon">
                       <q-icon name="collections_bookmark" size="2rem" color="white" />
@@ -37,12 +32,10 @@
           </div>
         </div>
 
-        <!-- Collection Description -->
         <div class="collection-description">
           <p>{{ collection.description }}</p>
         </div>
 
-        <!-- Action Buttons -->
         <div class="action-buttons">
           <q-btn @click="goBack" label="Back" class="action-btn back-btn" no-caps unelevated />
           <div class="right-actions">
@@ -66,9 +59,7 @@
         </div>
       </div>
 
-      <!-- Right Side - Combined Content -->
       <div class="content-section">
-        <!-- Combined Artifacts and Documents Section -->
         <div class="combined-content-section">
           <!-- Artifacts Section -->
           <div class="artifacts-subsection">
@@ -115,7 +106,6 @@
                           {{ artifact.metadata?.title || artifact.file_name }}
                         </div>
                       </router-link>
-                      <!-- ADDED: Action Icons with Counts -->
                       <div class="action-icons q-mr-md" style="margin-top: -3px">
                         <!-- View Icon with Count -->
                         <div class="icon-with-count">
@@ -124,7 +114,6 @@
                             modelStore.viewCounts[artifact.id] || 0
                           }}</span>
                         </div>
-                        <!-- Star Icon with Count -->
                         <div class="icon-with-count">
                           <q-icon
                             :name="artifact.starred ? 'star' : 'star_border'"
@@ -152,7 +141,6 @@
               </div>
             </div>
 
-            <!-- Artifacts Pagination -->
             <div v-if="totalArtifacts > artifactsPerPage" class="pagination-container">
               <div class="pagination-controls">
                 <q-btn
@@ -191,7 +179,6 @@
             <p v-if="!artifacts.length" class="text-grey">No artifacts in this collection.</p>
           </div>
 
-          <!-- Documents Section with Previews -->
           <div class="documents-subsection" style="margin-top: 2rem">
             <div class="section-header">
               <h5 class="section-title">Documents</h5>
@@ -221,7 +208,6 @@
                     class="document-link"
                     @click="logClick(document.id, 'document', 'view_document')"
                   >
-                    <!-- Document Preview Image -->
                     <div class="document-preview-container">
                       <q-img
                         :src="document.preview_url"
@@ -229,7 +215,6 @@
                         class="document-preview-image"
                         loading="lazy"
                       >
-                        <!-- Fallback if preview fails to load -->
                         <template v-slot:error>
                           <div class="document-preview-fallback">
                             <q-icon name="description" size="3rem" color="#560505" />
@@ -253,14 +238,12 @@
                         </div>
                       </router-link>
                       <div class="action-icons">
-                        <!-- View Icon with Count -->
                         <div class="icon-with-count">
                           <q-icon name="visibility" color="grey" size="16px" class="action-icon" />
                           <span class="count-text" style="font-size: 0.75rem">{{
                             documentsStore.viewCounts[document.id] || 0
                           }}</span>
                         </div>
-                        <!-- Star Icon with Count -->
                         <div
                           class="icon-with-count"
                           style="display: flex; align-items: center; gap: 1px"
@@ -296,7 +279,6 @@
               </div>
             </div>
 
-            <!-- Documents Pagination -->
             <div v-if="totalDocuments > documentsPerPage" class="pagination-container">
               <div class="pagination-controls">
                 <q-btn
@@ -421,7 +403,6 @@
       </q-card>
     </q-dialog>
 
-    <!-- Delete Confirm Dialog -->
     <q-dialog v-model="confirmDeleteOpen" persistent>
       <q-card class="confirmation-delete">
         <q-card-section class="column items-center">
@@ -452,7 +433,6 @@
       </q-card>
     </q-dialog>
 
-    <!-- Confirm Remove Item Dialog -->
     <q-dialog v-model="confirmRemoveOpen" persistent>
       <q-card class="confirmation-delete">
         <q-card-section class="column items-center">
@@ -468,7 +448,6 @@
       </q-card>
     </q-dialog>
 
-    <!-- Notify Dialog -->
     <q-dialog v-model="notifyDialogOpen">
       <q-card class="sucess-add-to-collection">
         <q-card-section class="sub-font-3" style="font-size: 20px; font-weight: 700">{{
@@ -1168,7 +1147,6 @@ function goToAddArtifact() {
 </script>
 
 <style scoped>
-/* Left Side - Collection Details */
 .collection-details-section {
   flex: 1;
   max-width: 400px;
@@ -1232,7 +1210,6 @@ function goToAddArtifact() {
   box-shadow: inset 2px 0 4px rgba(0, 0, 0, 0.3);
 }
 
-/* Collection Description */
 .collection-description {
   font-family: 'Poppins', sans-serif;
   color: #666;
@@ -1247,7 +1224,6 @@ function goToAddArtifact() {
   margin: 0;
 }
 
-/* Action Buttons */
 .action-buttons {
   display: flex;
   justify-content: space-between;
@@ -1334,7 +1310,6 @@ function goToAddArtifact() {
   font-size: 1.1rem;
 }
 
-/* Artifacts Grid */
 .two-artifacts-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1386,7 +1361,6 @@ function goToAddArtifact() {
   text-align: center;
 }
 
-/* Documents Grid - Now Responsive */
 .documents-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1494,7 +1468,6 @@ function goToAddArtifact() {
   white-space: nowrap;
 }
 
-/* Action Icons Styling - Fixed positioning */
 .action-icon {
   cursor: pointer;
   transition: color 0.2s ease;
@@ -1509,7 +1482,6 @@ function goToAddArtifact() {
   color: #560505;
 }
 
-/* Additional responsive fixes for action icons */
 @media (max-width: 768px) {
   .action-icons {
     gap: 0.125rem;
@@ -1540,7 +1512,6 @@ function goToAddArtifact() {
   }
 }
 
-/* Pagination Styles */
 .pagination-container {
   margin-top: 1.5rem;
   display: flex;
@@ -1608,8 +1579,6 @@ function goToAddArtifact() {
  RESPONSIVE DESIGN
 ======================== */
 
-/* Hide documents based on screen size */
-/* Tablet view - hide 4th document (index 3+) */
 @media (max-width: 1024px) and (min-width: 769px) {
   .documents-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -1620,7 +1589,6 @@ function goToAddArtifact() {
   }
 }
 
-/* Mobile view - hide 3rd and 4th documents */
 @media (max-width: 768px) {
   .documents-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -1670,7 +1638,6 @@ function goToAddArtifact() {
   }
 }
 
-/* Extra small screens */
 @media (max-width: 480px) {
   .documents-grid {
     grid-template-columns: 1fr;
@@ -1689,7 +1656,6 @@ function goToAddArtifact() {
   }
 }
 
-/* General responsive adjustments for larger screens */
 @media (max-width: 1200px) {
   .collection-container {
     flex-direction: column;
@@ -1700,7 +1666,6 @@ function goToAddArtifact() {
   }
 }
 
-/* Collection Image Styles - Seamless integration with book design */
 .book-content.has-image {
   background: none !important;
   padding: 0 !important;
@@ -1774,8 +1739,6 @@ function goToAddArtifact() {
   border-radius: 8px;
 }
 
-/* additional css */
-/* Dialog styles */
 .add-collection-card {
   background-color: #fbf4d0;
   padding: 1rem;
