@@ -424,18 +424,8 @@ const modelStore = useModelStore()
 const searchStore = useSearchStore()
 const userStore = useUserStore()
 
-// Reactive data
-// const searchQuery = ref('')
-// const categoryFilter = ref(null)
-// const authorFilter = ref(null)
-// const dateFilter = ref(null)
-// const sortOption = ref('Newest')
-// const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
-
 const sortLabel = computed(() => searchStore.getSortLabel(allSortOptions))
-// const itemsToShow = ref('all')
 
-// Filter options - will be populated from data
 const categoryOptions = ref([])
 const authorOptions = ref([])
 const dateOptions = ref([])
@@ -446,8 +436,6 @@ const selectedDates = ref(new Set())
 // Dialog for upload pop up
 const showDialog = ref(false)
 const selectedFile = ref(null)
-// const fileInput = ref(null)
-// const isDragging = ref(false)
 const dialog = ref(false)
 const loading = ref(false)
 const uploading = ref(false)
@@ -465,11 +453,6 @@ const existingCollectionIds = ref([])
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
-
-// Computed properties
-// const filteredModels = computed(() => {
-//   return searchStore.query ? searchStore.searchedModels : modelStore.filteredModels
-// })
 
 if (userStore.profile.role === undefined) {
   userStore.fetchProfile()
@@ -491,51 +474,6 @@ function stopRotate(e) {
   el.autoRotate = false
   el.cameraOrbit = '0deg 75deg 105%' // Reset back to original orientation
 }
-
-// const sortedModels = computed(() => {
-//   const models = [...filteredModels.value]
-
-//   return models.sort((a, b) => {
-//     let aValue, bValue
-
-//     switch (sortOption.value) {
-//       case 'Newest':
-//         aValue = new Date(a.uploaded_at || a.created_at || 0)
-//         bValue = new Date(b.uploaded_at || b.created_at || 0)
-//         return bValue - aValue
-//       case 'Oldest':
-//         aValue = new Date(a.uploaded_at || a.created_at || 0)
-//         bValue = new Date(b.uploaded_at || b.created_at || 0)
-//         return aValue - bValue
-//       case 'Title A-Z':
-//         aValue = (a.metadata?.title || a.file_name).toLowerCase()
-//         bValue = (b.metadata?.title || b.file_name).toLowerCase()
-//         return aValue.localeCompare(bValue)
-//       case 'Title Z-A':
-//         aValue = (a.metadata?.title || a.file_name).toLowerCase()
-//         bValue = (b.metadata?.title || b.file_name).toLowerCase()
-//         return bValue.localeCompare(aValue)
-//       default:
-//         return 0
-//     }
-//   })
-// })
-
-// const displayedModels = computed(() => {
-//   if (itemsToShow.value === 'all') {
-//     return sortedModels.value
-//   }
-//   return sortedModels.value.slice(0, itemsToShow.value)
-// })
-
-// const hasMoreItems = computed(() => {
-//   return itemsToShow.value !== 'all' && sortedModels.value.length > itemsToShow.value
-// })
-
-// // Methods
-// const setItemsToShow = (value) => {
-//   itemsToShow.value = value
-// }
 
 // Toggle favorite icon
 const toggleFavorite = async (model, itemType = 'artifact') => {
@@ -929,45 +867,6 @@ const fetchAllArtifacts = async () => {
   }
 }
 
-// // Watch for filter changes
-// watch(
-//   () => modelStore.filteredModels,
-//   (mods) => {
-//     const authors = new Set()
-//     const years = new Set()
-//     const categories = new Set()
-
-//     mods.forEach((mod) => {
-//       const meta = mod.metadata || {}
-
-//       if (meta.author) {
-//         meta.author.split(',').forEach((a) => authors.add(a.trim()))
-//       }
-
-//       if (meta.date) {
-//         const year = meta.date.slice(0, 4)
-//         years.add(year)
-//       }
-
-//       if (Array.isArray(meta.categories)) {
-//         meta.categories.forEach((cat) => categories.add(cat))
-//       }
-//     })
-
-//     authorOptions.value = [...authors].sort()
-//     categoryOptions.value = [...categories].sort()
-//     dateOptions.value = [...years].sort((a, b) => b - a)
-//   },
-//   { immediate: true },
-// )
-
-// // Watch for filter changes and reset items to show
-// watch([categoryFilter, authorFilter, dateFilter], () => {
-//   if (itemsToShow.value !== 'all') {
-//     itemsToShow.value = 'all'
-//   }
-// })
-
 // Initialize
 onMounted(async () => {
   loading.value = true
@@ -1007,11 +906,6 @@ onActivated(async () => {
   }
 })
 
-// Don't clear search when unmounting - keep search state persistent
-// onUnmounted(() => {
-//   searchStore.clear()
-// })
-
 // Upload
 const metadata = ref({
   file_name: '',
@@ -1041,256 +935,6 @@ function onFileDropped(file) {
 function sanitizeFileName(name) {
   return name.replace(/[^\w.-]/g, '_') // Replace all non-alphanumeric/underscore/dot/dash characters with _
 }
-
-// ADDED: Compress GLB
-// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-// import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
-// import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
-
-// const loader = new GLTFLoader()
-
-// // Setup DRACO loader
-// const dracoLoader = new DRACOLoader()
-// dracoLoader.setDecoderPath('/draco/') // Ensure you serve decoder files from this path
-// loader.setDRACOLoader(dracoLoader)
-
-// async function compressGLB(file) {
-//   return new Promise((resolve, reject) => {
-//     const reader = new FileReader()
-//     reader.onload = async (e) => {
-//       const arrayBuffer = e.target.result
-
-//       const loader = new GLTFLoader()
-
-//       // DRACO decoding setup
-//       const dracoLoader = new DRACOLoader()
-//       dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/') // CDN
-//       loader.setDRACOLoader(dracoLoader)
-
-//       loader.parse(
-//         arrayBuffer,
-//         '',
-//         (gltf) => {
-//           const exporter = new GLTFExporter()
-
-//           exporter.parse(
-//             gltf.scene,
-//             (result) => {
-//               const blob = new Blob([result], { type: 'model/gltf-binary' })
-//               resolve(blob)
-//             },
-//             {
-//               binary: true,
-//               embedImages: true,
-//               animations: gltf.animations,
-//               truncateDrawRange: true,
-//               includeCustomExtensions: true,
-//               dracoOptions: {
-//                 compressionLevel: 10,
-//               },
-//             },
-//           )
-//         },
-//         (error) => {
-//           reject(error)
-//         },
-//       )
-//     }
-
-//     reader.onerror = reject
-//     reader.readAsArrayBuffer(file)
-//   })
-// }
-
-// const handleUpload = async () => {
-//   const originalFile = selectedFile.value
-//   if (!originalFile) return
-
-//   const fileName = sanitizeFileName(originalFile.name)
-//   uploading.value = true
-//   uploadProgress.value = 0
-
-//   if (!fileName.endsWith('.glb')) {
-//     alert('Only .glb files are allowed.')
-//     uploading.value = false
-//     return
-//   }
-
-//   loading.value = true
-
-//   try {
-//     const alreadyExists = await fileExists(fileName)
-//     if (alreadyExists) {
-//       alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
-//       uploading.value = false
-//       loading.value = false
-//       return
-//     }
-
-//     console.log(`Starting GLB compression for: ${fileName}`)
-//     console.log(`GLB Original size: ${(originalFile.size / 1024).toFixed(2)} KB`)
-
-//     const compressedFile = await compressGLB(originalFile)
-
-//     console.log(`GLB Compression complete: ${fileName}`)
-//     console.log(`GLB Compressed size: ${(compressedFile.size / 1024).toFixed(2)} KB`)
-
-//     const saved = (originalFile.size - compressedFile.size) / 1024
-//     console.log(`GLB compression saved: ${saved.toFixed(2)} KB`)
-
-//     // Progress bar simulation
-//     const progressInterval = setInterval(() => {
-//       if (uploadProgress.value < 90) {
-//         uploadProgress.value += 1
-//       }
-//     }, 200)
-
-//     const { error: uploadError } = await supabase.storage
-//       .from('artifacts')
-//       .upload(fileName, compressedFile, {
-//         cacheControl: '3600',
-//         upsert: true,
-//         contentType: 'model/gltf-binary',
-//       })
-
-//     clearInterval(progressInterval)
-//     uploadProgress.value = 100
-
-//     if (uploadError) {
-//       console.error('Upload error:', uploadError)
-//       alert('Upload failed.')
-//       uploading.value = false
-//       loading.value = false
-//       return
-//     }
-
-//     const { data: urlData } = supabase.storage.from('artifacts').getPublicUrl(fileName)
-//     const fileUrl = urlData.publicUrl
-
-//     const insertData = {
-//       file_name: fileName,
-//       file_url: fileUrl,
-//       uploaded_at: new Date(),
-//       updated_at: new Date(),
-//     }
-
-//     const { error: dbError } = await supabase.from('artifacts_metadata').insert([insertData])
-//     if (dbError) {
-//       console.error('Supabase insert error:', dbError)
-//       alert('Upload succeeded but metadata failed to save.')
-//     } else {
-//       console.log('Upload Success')
-//     }
-
-//     setTimeout(() => {
-//       uploading.value = false
-//       uploadProgress.value = 0
-//     }, 1000)
-
-//     metadata.value = {
-//       file_name: fileName,
-//       file_url: fileUrl,
-//       title: '',
-//       author: '',
-//       date: '',
-//       summary: '',
-//       keywords: [],
-//       categories: [],
-//     }
-
-//     dialog.value = true
-//   } catch (err) {
-//     console.error('Upload failed:', err)
-//     alert('Upload failed. See console for details.')
-//   } finally {
-//     loading.value = false
-//   }
-// }
-
-// const handleUpload = async () => {
-//   const file = selectedFile.value
-//   const fileName = sanitizeFileName(file.name)
-//   uploading.value = true
-//   uploadProgress.value = 0
-
-//   if (!file || !fileName.endsWith('.glb')) {
-//     alert('Only .glb files are allowed.')
-//     return
-//   }
-
-//   loading.value = true
-
-//   try {
-//     const alreadyExists = await fileExists(fileName)
-
-//     if (alreadyExists) {
-//       alert(`A file named "${fileName}" already exists. Please rename or choose another file.`)
-//       return
-//     }
-
-//     // Fake progress bar animation
-//     const progressInterval = setInterval(() => {
-//       if (uploadProgress.value < 90) {
-//         uploadProgress.value += 1
-//       }
-//     }, 200)
-
-//     // Upload to R2 Storage
-//     const { uploadError } = await uploadFileToR2(file, 'artifacts', fileName)
-
-//     clearInterval(progressInterval)
-//     uploadProgress.value = 100
-
-//     const fileUrl = `${import.meta.env.VITE_R2_PUBLIC_URL}/artifacts/${encodeURIComponent(fileName)}`
-
-//     if (uploadError) {
-//       console.error('Upload error:', uploadError)
-//       alert('Upload failed.')
-//       return
-//     }
-
-//     // Save metadata
-//     const insertData = {
-//       file_name: fileName,
-//       file_url: fileUrl,
-//       uploaded_at: new Date(),
-//       updated_at: new Date(),
-//     }
-
-//     const { error: dbError } = await supabase.from('artifacts_metadata').insert([insertData])
-//     if (dbError) {
-//       console.error('Supabase insert error:', dbError)
-//       alert('Upload succeeded but metadata failed to save.')
-//       return
-//     } else {
-//       console.log('Upload Success')
-//     }
-
-//     setTimeout(() => {
-//       uploading.value = false
-//       uploadProgress.value = 0
-//     }, 1000)
-
-//     // Open metadata confirmation dialog
-//     metadata.value = {
-//       file_name: fileName,
-//       file_url: fileUrl,
-//       title: '',
-//       author: '',
-//       date: '',
-//       summary: '',
-//       keywords: [],
-//       categories: [],
-//     }
-
-//     dialog.value = true
-//   } catch (err) {
-//     console.error('Upload failed:', err)
-//     alert('Upload failed. See console for details.')
-//   } finally {
-//     loading.value = false
-//   }
-// }
 
 let currentArtifactData = ref(null)
 
@@ -1422,38 +1066,6 @@ async function fileExists(fileName) {
 
   return !!data
 }
-
-// async function saveMetadata(updatedMetadata) {
-//   console.log('Saving metadata: ', updatedMetadata)
-//   try {
-//     const { error } = await supabase
-//       .from('artifacts_metadata')
-//       .update({
-//         metadata: {
-//           title: updatedMetadata.title,
-//           author: updatedMetadata.author,
-//           date: updatedMetadata.date,
-//           summary: updatedMetadata.summary,
-//           keywords: updatedMetadata.keywords,
-//           categories: updatedMetadata.categories,
-//         },
-//         updated_at: new Date(),
-//       })
-//       .eq('file_name', metadata.value.file_name)
-
-//     if (error) {
-//       console.error('Failed to update metadata:', error)
-//       alert('Failed to update metadata.')
-//     } else {
-//       alert('Metadata saved successfully!')
-//       dialog.value = false
-//       router.push({ name: 'admin-home' })
-//     }
-//   } catch (err) {
-//     console.error('Error saving metadata:', err)
-//     alert('Unexpected error occurred.')
-//   }
-// }
 
 function normalizeValue(key, value) {
   if (value === '') return null
@@ -1802,12 +1414,10 @@ onBeforeUnmount(() => {
 })
 
 const getBaseModels = computed(() => {
-  // If there's an active search query, ONLY show search results (even if empty)
   if (searchStore.query) {
     return Array.isArray(searchStore.searchedModels) ? searchStore.searchedModels : []
   }
 
-  // Otherwise, show filtered models
   if (Array.isArray(modelStore.filteredModels) && modelStore.filteredModels.length > 0) {
     return modelStore.filteredModels
   }
@@ -1854,7 +1464,6 @@ const modelsTotalPages = computed(() => {
   return Math.max(1, Math.ceil(docs.length / modelsPerPage.value))
 })
 
-// pagination controls
 function nextModelsPage() {
   if (modelsCurrentPage.value < modelsTotalPages.value) {
     modelsCurrentPage.value++
