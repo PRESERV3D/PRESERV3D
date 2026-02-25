@@ -5,11 +5,9 @@
     </router-link>
 
     <div v-if="model" class="artifact-detail-container">
-      <!-- Artifact Name/Title at the top -->
       <h2 class="a-title q-mb-lg">{{ model.metadata.title }}</h2>
 
       <div class="main-content">
-        <!-- Left Side: 3D Model Viewer Card -->
         <div class="artifact-card">
           <model-viewer
             :src="model.file_url"
@@ -22,13 +20,10 @@
             class="large-artifacts"
           />
         </div>
-
-        <!-- Right Side: Information Panel -->
         <div class="info-section">
           <!-- Category Tag and Action Icons -->
           <div class="top-actions q-mb-lg">
             <div class="categories-container">
-              <!-- Show categories if they exist, otherwise show fallback -->
               <template v-if="model.metadata.categories && model.metadata.categories.length > 0">
                 <q-chip
                   v-for="(category, i) in model.metadata.categories"
@@ -39,7 +34,6 @@
                 </q-chip>
               </template>
               <template v-else>
-                <!-- Fallback placeholder category if no data yet -->
                 <q-chip class="q-mr-sm q-mt-xs category-tag"> Uncategorized </q-chip>
               </template>
 
@@ -69,8 +63,6 @@
             <h6 class="a-info-title q-mb-sm q-mt-sm">Summary</h6>
             <p class="a-info-text">{{ model.metadata.summary }}</p>
           </div>
-
-          <!-- Two-Column Section -->
           <div class="two-column-details q-mb-lg">
             <div class="detail-row q-mb-md">
               <div class="detail-label">
@@ -94,13 +86,11 @@
               </div>
             </div>
 
-            <!-- Single Column Section -->
             <div class="detail-item q-mb-md">
               <div class="a-info-title2">Data Source</div>
               <div class="a-info-subtitle">Student Affairs and Recognition Committee</div>
             </div>
 
-            <!-- USER: Info with side-by-side layout -->
             <div class="side-by-side-details q-mb-lg">
               <div class="detail-row q-mb-md">
                 <div class="detail-label">

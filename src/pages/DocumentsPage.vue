@@ -69,7 +69,6 @@
                   <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
                   <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
 
-                  <!-- Star Icon with Count -->
                   <q-icon
                     :name="doc.starred ? 'star' : 'star_border'"
                     :class="{ starred: doc.starred }"
@@ -79,7 +78,6 @@
                   />
                   <span class="count-text">{{ documentsStore.starCounts[doc.id] || 0 }}</span>
 
-                  <!-- Bookmark Icon -->
                   <q-icon
                     v-if="!isAdmin"
                     :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
@@ -132,7 +130,6 @@
               >
                 <q-list style="width: 40rem">
                   <div class="row q-pa-md">
-                    <!-- Authors Column (Left) -->
                     <div class="col q-pr-sm">
                       <div class="sub-font-3 q-mb-sm">Author</div>
                       <q-scroll-area style="height: 12rem; width: 12rem">
@@ -155,7 +152,6 @@
                           </q-item>
                         </q-list>
                       </q-scroll-area>
-                      <!-- Clear Authors -->
                       <q-btn
                         v-if="selectedAuthors.size > 0"
                         flat
@@ -166,7 +162,6 @@
                         class="q-mt-xs sub-font-3 full-width"
                       />
                     </div>
-                    <!-- Years Column (Right) -->
                     <div class="col">
                       <div class="sub-font-3 q-mb-sm">Year</div>
                       <q-scroll-area style="height: 12rem; width: 12rem">
@@ -189,7 +184,6 @@
                           </q-item>
                         </q-list>
                       </q-scroll-area>
-                      <!-- Clear Years -->
                       <q-btn
                         v-if="selectedDates.size > 0"
                         flat
@@ -200,7 +194,6 @@
                         class="q-mt-xs sub-font-3 full-width"
                       />
                     </div>
-                    <!-- Categories Column -->
                     <div class="col">
                       <div class="sub-font-3 q-mb-sm">Category</div>
                       <q-scroll-area style="height: 12rem; width: 12rem">
@@ -223,7 +216,6 @@
                           </q-item>
                         </q-list>
                       </q-scroll-area>
-                      <!-- Clear Categories -->
                       <q-btn
                         v-if="
                           selectedCategories.size > 0 &&
@@ -248,7 +240,6 @@
                   </q-item>
                 </q-list>
               </q-btn-dropdown>
-              <!-- Sort Section -->
               <q-btn-dropdown
                 outline
                 color="black"
@@ -282,7 +273,6 @@
             </div>
           </div>
           <div>
-            <!-- Category Section -->
             <div class="row q-mt-md q-gutter-sm">
               <q-btn
                 v-for="categoryOption in categoryOptions"
@@ -298,7 +288,6 @@
 
           <!-- Document in Categories -->
 
-          <!-- Loading State -->
           <div v-if="loading" class="loading-container">
             <q-spinner-dots size="4em" color="primary" />
             <p class="loading-text">Loading documents...</p>
@@ -321,12 +310,9 @@
                 </router-link>
 
                 <div class="q-py-xs doc-align-items">
-                  <!-- Visibility Icon (static) -->
-
                   <q-icon name="visibility" color="grey" size="xs" class="action-icon view-icon" />
                   <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
 
-                  <!-- Star Icon with Count -->
                   <q-icon
                     :name="doc.starred ? 'star' : 'star_border'"
                     :class="{ starred: doc.starred }"
@@ -336,7 +322,6 @@
                   />
                   <span class="count-text">{{ documentsStore.starCounts[doc.id] || 0 }}</span>
 
-                  <!-- Bookmark Icon -->
                   <q-icon
                     v-if="!isAdmin"
                     :name="doc.bookmarked ? 'bookmark' : 'bookmark_border'"
@@ -415,7 +400,6 @@
             </q-dialog>
           </div>
 
-          <!-- Empty State -->
           <div
             v-if="!loading && displayedDocuments.length === 0"
             class="text-center q-mt-xl q-pb-xl"
@@ -1886,23 +1870,6 @@ function goToDocumentsPage(page) {
   height: auto;
   box-shadow: 0 0 20px rgba(102, 102, 102, 0.3);
 }
-
-/* .doc-container {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 1rem;
-  justify-content: space-between;
-  gap: 1.5rem;
-} */
-
-/* .doc-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-  padding: 2rem;
-  max-width: 1920px;
-  justify-content: center;
-} */
 
 .doc-container {
   display: grid;

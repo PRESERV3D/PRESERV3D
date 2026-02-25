@@ -33,7 +33,6 @@
             :rules="[
               (val) => !!val || 'Please enter your email.',
               (val) => val.includes('@pup.edu.ph') || 'Please use your PUP email only.',
-              // (val) => val.includes('@pup.edu.ph') || 'Please use your gmail only.',
               checkEmailUnique,
             ]"
             class="text-box"
@@ -48,14 +47,6 @@
             class="text-box"
             @update:model-value="form.department = ''"
           />
-          <!-- <label class="labelNames">Contact Number</label>
-          <q-input
-            dense
-            v-model="form.contact"
-            lazy-rules
-            :rules="[(val) => !!val || 'Please enter your contact number.']"
-            class="text-box"
-          /> -->
 
           <div class="column items-center q-mt-xs">
             <q-btn

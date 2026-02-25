@@ -67,11 +67,9 @@
                 </q-chip>
               </template>
               <template v-else>
-                <!-- Fallback placeholder category as there are no data yet -->
                 <q-chip class="q-mr-sm q-mt-xs tag-box"> Uncategorized </q-chip>
               </template>
 
-              <!-- Add category icon -->
               <q-btn
                 flat
                 dense
@@ -93,20 +91,16 @@
                   </q-card-section>
                   <q-separator />
 
-                  <!-- Categories List -->
                   <div class="q-pt-md q-px-md column items-start full-width">
                     <div
                       v-for="category in categories"
                       :key="category.id"
                       class="row items-center justify-between full-width q-mb-xs"
                     >
-                      <!-- Left side: checkbox + name -->
                       <div class="row items-center">
                         <q-checkbox v-model="category.selected" color="primary" size="xs" />
                         <div class="category-style q-ml-sm">{{ category.name }}</div>
                       </div>
-
-                      <!-- Right side: delete button -->
                       <q-btn
                         flat
                         round
@@ -116,7 +110,6 @@
                         @click="deleteCategory(category.id)"
                       />
                     </div>
-
                     <!-- Add new category -->
                     <q-input
                       v-model="newCategory"
@@ -140,16 +133,13 @@
                       </template>
                     </q-input>
                   </div>
-                  <!-- Save or Cancel -->
                   <q-card-actions align="right">
                     <q-btn flat label="Close" color="black" v-close-popup no-caps />
                     <q-btn label="Save" class="btn-save" flat @click="saveCategories" />
-                    <!--need fixing in backend-->
                   </q-card-actions>
                 </q-card>
               </q-dialog>
 
-              <!-- Delete Category Error Dialog -->
               <q-dialog v-model="showDeleteErrorDialog">
                 <q-card>
                   <q-card-section class="text-h6 text-negative">
@@ -186,7 +176,6 @@
                 :input-style="{ minHeight: '8rem' }"
               />
 
-              <!-- Check Summary Relevance Button -->
               <q-btn
                 flat
                 no-caps
@@ -209,7 +198,6 @@
                     <div v-else>
                       <div class="text-h6 q-mb-md">Summary Relevance Check</div>
 
-                      <!-- Success Display -->
                       <div
                         v-if="!relevanceError"
                         class="q-mt-sm q-pa-md"
@@ -227,7 +215,6 @@
                         </div>
                       </div>
 
-                      <!-- Relevance Error Display -->
                       <div
                         v-if="relevanceError"
                         class="q-mt-sm q-pa-md"
@@ -300,17 +287,12 @@
                         @dragover.prevent
                         @drop="drop(index)"
                       >
-                        <!-- Drag handle -->
                         <q-icon name="drag_indicator" class="drag-handle" size="sm" />
-
-                        <!-- Link icon and title -->
                         <q-icon name="link" size="18px" class="link-icon" />
                         <div class="link-style" @click="openLink(link.url)">
                           {{ link.title || link.url }}
                         </div>
                         <q-space />
-
-                        <!-- Edit button -->
                         <q-btn
                           flat
                           round
@@ -319,8 +301,6 @@
                           size="sm"
                           @click="startEditLink(index)"
                         />
-
-                        <!-- Delete button -->
                         <q-btn
                           flat
                           round
@@ -368,8 +348,6 @@
                         />
                       </div>
                     </div>
-
-                    <!-- Add Link Button -->
                     <q-btn
                       v-if="!showAddLinkForm"
                       flat
@@ -381,8 +359,6 @@
                       @keyup.up="showAddLinkForm = true"
                     />
                   </div>
-
-                  <!-- Save and Cancel Actions -->
                   <q-card-actions align="right">
                     <template v-if="hasChanges">
                       <q-btn

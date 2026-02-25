@@ -16,10 +16,7 @@
             v-model="form.email"
             type="email"
             lazy-rules
-            :rules="[
-              (val) => !!val || 'Please enter your email.',
-              // (val) => val.includes('@iskolarngbayan.pup.edu.ph') || 'Use your PUP email only.',
-            ]"
+            :rules="[(val) => !!val || 'Please enter your email.']"
             class="login-text-box"
           />
           <label class="labelNames">Password</label>
@@ -48,7 +45,6 @@
         </div>
 
         <!-- Error message -->
-        <!-- Login attempt counter -->
         <div
           v-if="message"
           :class="messageType === 'error' ? 'text-red' : 'text-green'"
@@ -56,8 +52,6 @@
         >
           {{ message }}
         </div>
-
-        <!-- Cooldown Message -->
         <div v-if="cooldownActive" class="text-red text-center q-mt-sm">
           Too many failed attempts. Please wait {{ cooldownTime }} seconds before trying again.
         </div>
@@ -92,7 +86,6 @@
       </q-dialog>
     </div>
 
-    <!--  Footer -->
     <footer class="login-footer desktop-content">
       <div class="footer-content">
         <p class="footer-text">
