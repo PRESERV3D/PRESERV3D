@@ -91,7 +91,6 @@
               <q-icon name="menu_book" size="xs" />
             </q-btn>
 
-            <!-- Action icons -->
             <div class="row items-center q-gutter-sm">
               <q-icon name="visibility" color="grey" size="xs" class="action-icon" />
               <span class="count-text">{{ documentsStore.viewCounts[doc.id] || 0 }}</span>
