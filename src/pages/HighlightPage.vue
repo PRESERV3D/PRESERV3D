@@ -125,7 +125,7 @@
                       fit="cover"
                     />
                     <div class="book-overlay-gradient"></div>
-                    <!-- Only show text overlay on hover - but remove the hide class -->
+                    <!-- Only show text overlay on hover -->
                     <div v-if="hoveredBook === index" class="book-overlay-content">
                       <div class="book-title clickable-text" @click.stop="handleClickView(doc)">
                         {{ doc.metadata?.title || doc.file_name }}
@@ -238,7 +238,6 @@ const router = useRouter()
 const documentsStore = useDocumentsStore()
 const userStore = useUserStore()
 
-// Data
 const topDocuments = ref([])
 const dialogOpen = ref(false)
 const selectedDocument = ref(null)
@@ -252,13 +251,12 @@ const selectedBook = ref(null)
 
 const userRole = computed(() => userStore.profile?.role ?? null)
 const isAdmin = computed(() => userRole.value === 'admin')
-const userType = computed(() => userStore.profile?.user_type || 'Unknown') // from userstore because some users dont have usertype on auth
+const userType = computed(() => userStore.profile?.user_type || 'Unknown')
 
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
-// Methods
 const goBack = () => {
   router.back()
 }
@@ -268,7 +266,7 @@ const toggleAuthorInfo = () => {
 }
 
 const selectBook = (index) => {
-  // Toggle selection: if already selected, deselect; otherwise select
+  // Toggle selection
   if (selectedBook.value === index) {
     selectedBook.value = null
   } else {
@@ -442,7 +440,7 @@ onMounted(async () => {
     await userStore.fetchProfile(userStore.session.user.id)
   }
 
-  // Fetch top documents from your database (same as in your documents page)
+  // Fetch top documents
   const { data: topDocus } = await supabase.from('documents_view').select('*').limit(5)
 
   // Get user's favorites and bookmarks
@@ -507,7 +505,7 @@ onMounted(async () => {
 
     topDocuments.value = enhancedTopDocs
   } else {
-    // If no user or no documents, just set without properties
+    // If no user or no documents, set without properties
     topDocuments.value = (topDocus || []).map((doc) => ({
       ...doc,
       starred: false,

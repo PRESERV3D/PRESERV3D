@@ -193,38 +193,7 @@
               </q-input>
             </div>
           </div>
-          <!--End of Date Validation Field-->
 
-          <!-- <label class="labelNames">Password</label>
-          <q-input
-            dense
-            v-model="form.password"
-            type="password"
-            :hint="passwordStrength"
-            :color="passwordStrengthColor"
-            lazy-rules
-            :rules="[
-              (val) => !!val || 'Please enter your password.',
-              (val) => val.length >= 8 || 'Must be at least 8 characters long.',
-              (val) =>
-                (/[A-Z]/.test(val) && /[0-9]/.test(val) && /[^a-zA-Z0-9]/.test(val)) ||
-                'Must contain an uppercase letter, a number, and a special character.',
-            ]"
-            class="text-box"
-          />
-          <label class="labelNames">Confirm Password</label>
-          <q-input
-            dense
-            v-model="form.confirmPassword"
-            type="password"
-            lazy-rules
-            :rules="[
-              (val) => !!val || 'Please confirm your password.',
-              (val) => val === form.password || 'Passwords do not match.',
-            ]"
-            class="text-box"
-          /> -->
-          <!--Terms and Conditions Checkbox -->
           <div class="row items-center q-mb-md">
             <q-checkbox v-model="acceptedterms" dense label="" class="terms-checkbox" />
             <div class="terms-font q-ml-sm">
@@ -272,7 +241,7 @@
           </label>
         </div>
       </div>
-      <!-- STEP 3: Evaluating Profile Creation -->
+      <!-- Evaluating Profile Creation -->
       <div v-if="step === 3" class="column items-center q-my-md q-gutter-md">
         <q-img src="/img/hourglass.png" alt="Pending" class="trophies" style="max-width: 150px" />
 
@@ -313,7 +282,6 @@ import { supabase } from 'boot/supabase'
 import { uploadFileToR2, deleteFileFromR2 } from 'boot/r2'
 import UploadDialog from 'components/UploadDialog.vue'
 import { date } from 'quasar'
-// import { addMonths, differenceInCalendarDays } from 'date-fns'
 import { addMonths, startOfDay } from 'date-fns'
 
 const step = ref(1)
@@ -339,7 +307,6 @@ const form = ref({
 })
 
 // Allowed dates: 7 days from current date and within 6 months only
-// const today = new Date()
 const today = startOfDay(new Date())
 
 // Min selectable date: current date
@@ -349,14 +316,8 @@ const minDate = ref(date.formatDate(today, 'YYYY-MM-DD'))
 const maxDateObj = addMonths(today, 6)
 const maxDate = ref(date.formatDate(maxDateObj, 'YYYY-MM-DD'))
 
-// Allow only dates starting 7 days from today until 6 months later
+// Allow only dates starting 7 days from current day until 6 months later
 const startDateOptions = (val) => {
-  // const date = new Date(val) // convert string to Date
-  // const diff = differenceInCalendarDays(date, today)
-
-  // return diff >= 7 && diff <= differenceInCalendarDays(maxDateObj, today)
-
-  // Cant select dates later than the the chosen end date
   const d = startOfDay(new Date(val))
 
   if (form.value.end_date) {
@@ -367,22 +328,15 @@ const startDateOptions = (val) => {
   return d >= today && d <= maxDateObj
 }
 
-// // Same rule for end date
-// const endDateOptions = (val) => startDateOptions(val)
-
 const endDateOptions = (val) => {
   const d = startOfDay(new Date(val))
-  // Cant select dates earlier than the chosen start date
+  // Can not select dates earlier than the chosen start date
   if (form.value.start_date) {
     const start = startOfDay(new Date(form.value.start_date))
     return d >= today && d <= maxDateObj && d >= start
   }
   return d >= today && d <= maxDateObj
 }
-
-// No date restrictions for date options
-// const startDateOptions = () => true
-// const endDateOptions = () => true
 
 // Notification dialog helper
 const showNotifyDialog = (title, message) => {
@@ -395,22 +349,6 @@ const handleUploadClick = () => {
   showNotifyDialog('File Added', 'File has been added to your registration.')
   showDialog.value = false
 }
-// Password strength status
-// const passwordStrength = computed(() => {
-//   const pwd = form.value.password
-//   if (!pwd) return ''
-
-//   const hasUpper = /[A-Z]/.test(pwd)
-//   const hasNumber = /[0-9]/.test(pwd)
-//   const hasSpecial = /[^a-zA-Z0-9]/.test(pwd)
-//   const isLongEnough = pwd.length >= 8
-
-//   return hasUpper && hasNumber && hasSpecial && isLongEnough ? 'Strong' : 'Weak'
-// })
-
-// const passwordStrengthColor = computed(() =>
-//   passwordStrength.value === 'Strong' ? 'green' : 'red',
-// )
 
 // Validate step one inputs
 async function validateStepOne() {
@@ -439,7 +377,7 @@ const checkEmailUnique = async (val) => {
   if (!val) return true
 
   try {
-    // Check 1: Email exists in all_users (any user type)
+    // Email exists in all_users (any user type)
     const { data: existingUser, error: userError } = await supabase
       .from('all_users')
       .select('id, user_type')
@@ -452,7 +390,7 @@ const checkEmailUnique = async (val) => {
     }
 
     if (existingUser) {
-      // Check 2: If visitor, check their account status via approved_visitors_status view
+      // If visitor, check account status via approved_visitors_status view
       if (existingUser.user_type === 'visitor') {
         const { data: visitorStatus, error: statusError } = await supabase
           .from('approved_visitors_status')
@@ -510,7 +448,7 @@ const checkEmailUnique = async (val) => {
       }
     }
 
-    // Check 3: Email exists in pending visitor registrations
+    // Email exists in pending visitor registrations
     const { data: pendingRegistration, error: regError } = await supabase
       .from('registration_visitors')
       .select('status, created_at')
@@ -596,7 +534,7 @@ async function registerUser() {
     ])
 
     if (error) {
-      // If database insert fails and we uploaded a file, delete it from R2
+      // If database insert fails and file is uploaded, delete it from R2
       if (fileUrl) {
         const fileName = decodeURIComponent(fileUrl.split('/').pop())
         console.log('Database insert failed. Deleting uploaded file from R2:', fileName)
@@ -707,7 +645,7 @@ const prepareFile = async () => {
   form.value.pendingLetterFile = { file: compressedFile, name: fileName }
 }
 
-// Upload handler
+// Handle upload of files
 const handleUpload = async () => {
   if (!form.value.pendingLetterFile) {
     throw new Error('No file prepared for upload.')

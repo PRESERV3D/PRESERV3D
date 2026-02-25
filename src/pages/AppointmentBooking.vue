@@ -230,7 +230,6 @@ const columns = [
     label: 'Purpose of Visit',
     align: 'center',
     field: 'purpose',
-    // sortable: true,
   },
   {
     name: 'appointmentDate',
@@ -238,7 +237,6 @@ const columns = [
     label: 'Appointment Date',
     align: 'center',
     field: 'appointmentDate',
-    // sortable: true,
   },
   {
     name: 'time',
@@ -296,7 +294,7 @@ const fetchAppointments = async () => {
       return
     }
 
-    // Fetch appointments with indexed ORDER BY created_at
+    // Fetch appointments
     const { data, error } = await supabase
       .from('appointment_booking')
       .select('*')
@@ -339,10 +337,10 @@ const datePickerOptions = (date) => {
   const minDate = addBusinessDays(today, 3)
   const maxDate = addMonths(today, 3)
 
-  // Rule 1: must be within interval
+  // Date must be within allowed range
   const withinRange = isWithinInterval(selectedDate, { start: minDate, end: maxDate })
 
-  // Rule 2: weekends not allowed
+  // Weekends not allowed
   const notWeekend = !isWeekend(selectedDate)
 
   return withinRange && notWeekend
@@ -366,11 +364,6 @@ const hourOptions = (hr) => {
   if (hr >= 13 && hr <= 19) return true
   return false
 }
-
-// const minuteOptions = (hr, min) => {
-//   // Only allow 0 and 30 minutes
-//   if (min === 0 || min === 30) return min === 0 || min === 30
-// }
 
 async function submitBooking() {
   const { name, email, date, time, purpose, user_remarks } = form.value
@@ -504,8 +497,6 @@ function resetForm() {
   form.value.purpose = ''
   form.value.user_remarks = ''
 }
-
-// onMounted(fetchAppointments)
 
 onMounted(() => {
   if (route.query?.tab === 'status') {

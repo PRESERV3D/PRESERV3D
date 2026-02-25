@@ -26,10 +26,6 @@
 
 <script setup>
 import { ref } from 'vue'
-// const pagination = {
-//   page: 1,
-//   rowsPerPage: 8,
-// }
 
 const incompleteColumns = [
   {

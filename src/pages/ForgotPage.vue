@@ -50,7 +50,6 @@
               </q-card-section>
               <q-card-actions align="center">
                 <q-btn label="Confirm" class="btn-save" flat @click="handleDialogConfirm" />
-                <!-- add logic that must go back to log in (respective log in page: admin/user)-->
               </q-card-actions>
             </q-card>
           </q-dialog>
@@ -71,6 +70,7 @@ const message = ref('')
 const showDialog = ref(false)
 const emailSent = ref(false)
 const isSubmitLoading = ref(false)
+
 // Check if email exists
 async function checkEmail() {
   const { data, error } = await supabase

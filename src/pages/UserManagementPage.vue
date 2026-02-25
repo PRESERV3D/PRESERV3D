@@ -22,7 +22,7 @@
       />
     </div>
 
-    <!-- Tabs - Conditional based on admin type -->
+    <!-- Tabs - Based on admin type -->
     <q-tabs
       v-model="activeTab"
       dense
@@ -1540,7 +1540,7 @@ const $q = useQuasar()
 const userStore = useUserStore()
 const route = useRoute()
 
-// Helper: View letter with proper URL validation and error handling
+// View letter with proper URL validation and error handling
 function viewLetter(letterUrl) {
   if (!letterUrl) {
     $q.notify({
@@ -1553,7 +1553,7 @@ function viewLetter(letterUrl) {
 
   // Check if URL is valid
   try {
-    // If it's a relative path, construct full R2 URL
+    // If relative path, construct full R2 URL
     let fullUrl = letterUrl
     if (!letterUrl.startsWith('http://') && !letterUrl.startsWith('https://')) {
       // Construct R2 public URL
@@ -1577,13 +1577,13 @@ function viewLetter(letterUrl) {
   }
 }
 
-// Helper: get the most recent login timestamp from `logins` table for a user
+// Get the most recent login timestamp from logins table for a user
 async function getLastLogin(userId) {
   // Early return for invalid input
   if (!userId) return null
 
   try {
-    // Use composite index: idx_logins_user_recent (user_id, login_at DESC)
+    // Query logins table for the most recent login_at timestamp for the given user_id
     const { data, error } = await supabaseAdmin
       .from('logins')
       .select('login_at')
@@ -1592,7 +1592,6 @@ async function getLastLogin(userId) {
       .limit(1)
       .maybeSingle()
 
-    // Silent fail - return null on error (non-critical data)
     return error ? null : data?.login_at || null
   } catch (err) {
     console.error('Error fetching last login:', err)
@@ -1600,7 +1599,6 @@ async function getLastLogin(userId) {
   }
 }
 
-// Computed property to check if user is super admin
 const isSuperAdmin = computed(() => {
   return userStore.profile?.is_super_admin === true
 })
@@ -1814,7 +1812,7 @@ const extensionColumns = [
 ]
 
 onMounted(async () => {
-  // Set default tab first (before loading data)
+  // Set default tab first before loading data
   const tabParam = route.query.tab
   if (tabParam) {
     activeTab.value = tabParam
@@ -1823,17 +1821,16 @@ onMounted(async () => {
     activeTab.value = 'visitors'
   }
 
-  // Fetch data once (removed duplicate call)
   await fetchAllUsers()
 })
 
 async function fetchAllUsers() {
   loading.value = true
-  // AbortController for cleanup
+  // For cleanup
   const abortController = new AbortController()
 
   try {
-    // Fetch all data in parallel for maximum performance
+    // Fetch all data 
     const [
       adminResult,
       studentResult,
@@ -1842,16 +1839,16 @@ async function fetchAllUsers() {
       registrationResult,
       extensionResult,
     ] = await Promise.all([
-      // Admins - use indexed column (created_at DESC)
+      // Get Admins
       supabase.from('registered_admins').select('*').order('created_at', { ascending: false }),
 
-      // Students - use indexed column (created_at DESC)
+      // Get Students 
       supabase.from('registered_users').select('*').order('created_at', { ascending: false }),
 
-      // Faculty - use indexed column (created_at DESC)
+      // Get Faculty
       supabase.from('registered_faculty').select('*').order('created_at', { ascending: false }),
 
-      // Visitors - get status from view
+      // Get Visitors - get status from view
       supabase
         .from('approved_visitors_status')
         .select(
@@ -1868,10 +1865,10 @@ async function fetchAllUsers() {
         )
         .order('start_date', { ascending: false }),
 
-      // Registrations - already indexed on created_at
+      // Registrations 
       supabase.from('registration_visitors').select('*').order('created_at', { ascending: false }),
 
-      // Extensions - indexed on created_at
+      // Extensions
       supabase
         .from('account_extensions')
         .select(
@@ -1928,7 +1925,7 @@ async function fetchAllUsers() {
 
     if (abortController.signal.aborted) return
 
-    // Process students - only fetch login data (indexed query: user_id + login_at DESC)
+    // Process students - only fetch login data
     const studentData = studentResult.data || []
     if (studentData.length > 0) {
       const studentsWithLogin = await Promise.all(
@@ -1948,7 +1945,7 @@ async function fetchAllUsers() {
 
     if (abortController.signal.aborted) return
 
-    // Process faculty - only fetch login data (indexed query)
+    // Process faculty - only fetch login data 
     const facultyData = facultyResult.data || []
     if (facultyData.length > 0) {
       const facultyWithLogin = await Promise.all(
@@ -2006,7 +2003,7 @@ async function fetchAllUsers() {
 
     if (abortController.signal.aborted) return
 
-    // Process registrations - sort pending first (client-side)
+    // Process registrations
     registrations.value = sortRegistrations(registrationResult.data || [])
 
     // Process extensions
@@ -2039,14 +2036,13 @@ async function fetchAllUsers() {
     extensionRequests.value = []
   } finally {
     loading.value = false
-    // No need to abort here, just cleanup reference
   }
 
   // Return abort function for potential cleanup
   return () => abortController.abort()
 }
 
-// Sort registrations - Pending first, then by created_at
+// Sort registrations - Pending first then by created_at
 function sortRegistrations(data) {
   return data.sort((a, b) => {
     if (a.status === 'Pending' && b.status !== 'Pending') return -1
@@ -2068,14 +2064,6 @@ async function createAdmin() {
     })
     return
   }
-
-  // if (!newAdmin.value.email.includes('@iskolarngbayan.pup.edu.ph')) {
-  //   $q.notify({
-  //     type: 'warning',
-  //     message: 'Must use PUP email address',
-  //   })
-  //   return
-  // }
 
   creatingAdmin.value = true
 
@@ -2202,28 +2190,28 @@ async function deleteUser() {
     const config = tableConfig[deleteType.value]
     if (!config) throw new Error('Invalid user type')
 
-    // Step 1: Get user collections (indexed query: collections user_id)
+    //  Get user collections 
     const { data: userCollections } = await supabaseAdmin
       .from('collections')
       .select('collection_id')
       .eq('user_id', userId)
 
-    // Step 2: Delete all related records in parallel (all using indexed columns)
+    // Delete all related records in parallel 
     const cleanupOperations = [
-      // Delete collections (indexed: user_id)
+      // Delete collections 
       supabaseAdmin.from('collections').delete().eq('user_id', userId),
-      // Delete appointments (indexed: user_id)
+      // Delete appointments 
       supabaseAdmin.from('appointment_booking').delete().eq('user_id', userId),
-      // Delete notifications (indexed: receiver_id)
+      // Delete notifications
       supabaseAdmin.from('notifications').delete().eq('receiver_id', userId),
-      // Delete logins (indexed: user_id)
+      // Delete logins
       supabaseAdmin.from('logins').delete().eq('user_id', userId),
-      // Anonymize activity logs (indexed: user_id)
+      // Anonymize activity logs 
       supabaseAdmin
         .from('user_activity_log')
         .update({ user_type: 'deleted_user' })
         .eq('user_id', userId),
-      // Delete from all_users (indexed: id)
+      // Delete from all_users 
       supabase.from('all_users').delete().eq('id', userId),
     ]
 
@@ -2235,17 +2223,17 @@ async function deleteUser() {
       )
     }
 
-    // Execute all cleanup operations in parallel
+    // Execute all cleanup operations 
     const cleanupResults = await Promise.allSettled(cleanupOperations)
 
-    // Log any cleanup failures (non-critical)
+    // Log any cleanup failures
     cleanupResults.forEach((result, index) => {
       if (result.status === 'rejected') {
         console.warn(`Cleanup operation ${index} failed:`, result.reason)
       }
     })
 
-    // Step 3: Delete from user-specific table
+    // Delete from user-specific table
     const { error: deleteError } = await supabase
       .from(config.table)
       .delete()
@@ -2253,7 +2241,7 @@ async function deleteUser() {
 
     if (deleteError) throw deleteError
 
-    // Step 4: Delete from Supabase Auth (fire and forget if fails)
+    // Delete from Supabase Auth (fire and forget if fails)
     supabaseAdmin.auth.admin.deleteUser(userId).catch((authError) => {
       console.warn('Auth deletion failed:', authError)
     })
@@ -2419,7 +2407,7 @@ async function updateVisitorDates() {
 
     if (updateError) throw updateError
 
-    // Also update the registration_visitors table if registration_id exists
+    // Update the registration_visitors table if registration_id exists
     if (selectedVisitor.value.registration_id) {
       await supabase
         .from('registration_visitors')
@@ -2477,9 +2465,9 @@ async function confirmRegistrationAction() {
     const isApproved = action === 'Approved'
 
     if (isApproved) {
-      // === APPROVAL WORKFLOW ===
+      // Process if approved
 
-      // Step 1: Create auth user
+      // Create auth user
       const tempPassword = generateTempPassword()
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: row.email,
@@ -2497,7 +2485,7 @@ async function confirmRegistrationAction() {
       const userId = authData.user.id
       const now = new Date()
 
-      // Step 2: Create database records in parallel
+      // Create database records 
       const [statusResult, visitorResult, allUserResult] = await Promise.allSettled([
         supabase.from('registration_visitors').update({ status: action }).eq('id', row.id),
         supabase.from('approved_visitors').insert({
@@ -2518,7 +2506,7 @@ async function confirmRegistrationAction() {
         }),
       ])
 
-      // Check critical operations with detailed error logging
+      // Check operations with error logging
       if (statusResult.status === 'rejected') {
         console.error('Status update failed:', statusResult.reason)
         throw statusResult.reason
@@ -2546,7 +2534,7 @@ async function confirmRegistrationAction() {
         throw new Error(allUserResult.value.error.message || 'Failed to create all_users record')
       }
 
-      // Step 3: Send notification and email (non-blocking)
+      // Send notification and email 
       const formatDate = (d) =>
         d
           ? new Date(d).toLocaleDateString('en-US', {
@@ -2557,7 +2545,6 @@ async function confirmRegistrationAction() {
           : 'Not specified'
       const notificationMsg = `Welcome to PRESERV3D! Your visitor registration has been approved by ${adminName || 'the administrator'}. Access period: ${formatDate(row.start_date)} to ${formatDate(row.end_date)}. Please verify your email to complete your account setup.`
 
-      // Fire and forget - don't block on these
       Promise.allSettled([
         createNotification(userId, notificationMsg, 'visitor_registration'),
         supabase.functions.invoke('send-visitor-email', {
@@ -2584,7 +2571,7 @@ async function confirmRegistrationAction() {
         position: 'top',
       })
     } else {
-      // === REJECTION WORKFLOW ===
+      // Process if rejected
 
       // Update status
       const { error: updateError } = await supabase
@@ -2594,7 +2581,7 @@ async function confirmRegistrationAction() {
 
       if (updateError) throw updateError
 
-      // Send rejection email (fire and forget)
+      // Send rejection email
       supabase.functions
         .invoke('send-visitor-email', {
           body: {
@@ -2661,7 +2648,7 @@ async function processExtensionRequest() {
     const isApproved = action === 'Approved'
     const timestamp = new Date().toISOString()
 
-    // Fetch visitor data once upfront
+    // Fetch visitor data
     const { data: visitorData, error: visitorFetchError } = await supabase
       .from('approved_visitors')
       .select('user_id, end_date')
@@ -2670,9 +2657,8 @@ async function processExtensionRequest() {
 
     if (visitorFetchError) throw visitorFetchError
 
-    // Build parallel operations array
     const operations = [
-      // 1. Update extension status
+      // Update extension status
       supabase
         .from('account_extensions')
         .update({
@@ -2683,7 +2669,7 @@ async function processExtensionRequest() {
         .eq('id', row.id),
     ]
 
-    // 2. If approved, update visitor's end_date
+    // If approved, update visitor's end_date
     if (isApproved) {
       operations.push(
         supabase
@@ -2693,20 +2679,19 @@ async function processExtensionRequest() {
       )
     }
 
-    // Execute database operations in parallel
+    // Execute database operations
     const results = await Promise.all(operations)
 
     // Check for errors
     const dbError = results.find((r) => r.error)?.error
     if (dbError) throw dbError
 
-    // Create notification (fire and forget - don't wait for it)
+    // Create notification
     if (visitorData?.user_id) {
       const notificationMessage = isApproved
         ? `Your extension request has been approved by ${adminName || 'the administrator'}. Your new access period ends on ${new Date(row.extended_end_date).toLocaleDateString()}.`
         : `Your extension request has been rejected by ${adminName || 'the administrator'}.`
 
-      // Fire and forget - no await
       createNotification(visitorData.user_id, notificationMessage, 'visitor_registration').catch(
         (err) => console.error('Failed to create notification:', err),
       )

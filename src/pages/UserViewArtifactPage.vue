@@ -39,7 +39,7 @@
                 </q-chip>
               </template>
               <template v-else>
-                <!-- Fallback placeholder category as there are no data yet -->
+                <!-- Fallback placeholder category if no data yet -->
                 <q-chip class="q-mr-sm q-mt-xs category-tag"> Uncategorized </q-chip>
               </template>
 
@@ -69,15 +69,6 @@
             <h6 class="a-info-title q-mb-sm q-mt-sm">Summary</h6>
             <p class="a-info-text">{{ model.metadata.summary }}</p>
           </div>
-
-          <!-- WEBSCRAPE -->
-          <!-- Reference Link
-            <div class="reference-section q-mb-lg">
-              <a href="#" class="reference-link text-primary">
-                <q-icon name="link" class="q-mr-xs" />
-                Show Reference Links
-              </a>
-            </div> -->
 
           <!-- Two-Column Section -->
           <div class="two-column-details q-mb-lg">

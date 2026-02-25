@@ -239,13 +239,6 @@
                     </div>
                   </div>
                   <q-separator />
-                  <!-- <q-item clickable v-close-popup @click="applyFilters">
-                    <q-item-section class="flex items-center">
-                      <div class="sub-font-3" style="color: #008000; font-weight: 500">
-                        APPLY FILTERS
-                      </div>
-                    </q-item-section>
-                  </q-item> -->
                   <q-item clickable v-close-popup @click="clearFilters">
                     <q-item-section class="flex items-center">
                       <div class="sub-font-3" style="color: #880000; font-weight: 500">
@@ -515,8 +508,6 @@ const sortLabel = computed(() => searchStore.getSortLabel(allSortOptions))
 
 const scannedFile = ref(null)
 const topDocuments = ref([])
-// const sortOption = ref('Newest')
-// const sortOptions = ['Newest', 'Oldest', 'Title A-Z', 'Title Z-A']
 const categoryOptions = ref([])
 const authorOptions = ref([])
 const dateOptions = ref([])
@@ -536,7 +527,6 @@ const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
-// Ensure we never access `profile` when it's null. Use safe computed accessors.
 if (!userStore.profile && userStore.session?.user?.id) {
   userStore.fetchProfile(userStore.session.user.id)
 }
@@ -544,13 +534,13 @@ if (!userStore.profile && userStore.session?.user?.id) {
 // Safe profile-derived values
 const userRole = computed(() => userStore.profile?.role ?? null)
 const isAdmin = computed(() => userRole.value === 'admin')
-const userType = computed(() => userStore.profile?.user_type ?? 'Unknown') // from userstore because some users dont have usertype on auth
+const userType = computed(() => userStore.profile?.user_type ?? 'Unknown')
 
 onMounted(async () => {
   loading.value = true
   const { data: topDocus } = await supabase.from('documents_view').select('*').limit(3)
 
-  // Get user's favorites for top documents too
+  // Get user's favorites for top documents
   const { data: authData } = await supabase.auth.getUser()
   const userId = authData?.user?.id
 
@@ -631,10 +621,9 @@ onMounted(async () => {
   window.addEventListener('resize', updateDocumentsPerPage)
 })
 
-// Re-fetch documents when this component is re-activated (e.g. via back navigation)
+// Re-fetch documents when this component is re-activated
 onActivated(async () => {
   try {
-    // Only re-run the full fetch when there's no active search query.
     if (!searchStore.query) {
       loading.value = true
       await fetchAllDocuments()
@@ -650,11 +639,6 @@ onActivated(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateDocumentsPerPage)
 })
-
-// Don't clear search when unmounting - keep search state persistent
-// onUnmounted(() => {
-//   searchStore.clear()
-// })
 
 function showNotifyDialog(title, message) {
   notifyDialogTitle.value = title
@@ -724,7 +708,7 @@ const fetchAllDocuments = async () => {
       console.error('Error fetching favorite items:', favError)
     }
 
-    // Get ALL user collections (for bookmarked check)
+    // Get all user collections (for bookmarked check)
     const { data: allUserCollections, error: allCollError } = await supabase
       .from('collections')
       .select('collection_id, collection_name')
@@ -807,7 +791,7 @@ const fetchAllDocuments = async () => {
         authorList.forEach((a) => authors.add(a))
       }
 
-      if (doc.metadata?.date) years.add(doc.metadata.date?.slice(0, 4)) // get year part
+      if (doc.metadata?.date) years.add(doc.metadata.date?.slice(0, 4)) // Get year part
 
       if (Array.isArray(doc.metadata?.categories)) {
         doc.metadata.categories.forEach((cat) => categories.add(cat))
@@ -823,41 +807,6 @@ const fetchAllDocuments = async () => {
     loading.value = false
   }
 }
-
-// for populating filter options
-// watch(
-//   () => documentsStore.documents,
-//   (docs) => {
-//     const authors = new Set()
-//     const years = new Set()
-//     const categories = new Set(['All'])
-
-//     docs.forEach((doc) => {
-//       const meta = doc.metadata || {}
-
-//       // Author
-//       if (meta.author) {
-//         meta.author.split(',').forEach((a) => authors.add(a.trim()))
-//       }
-
-//       // Date
-//       if (meta.date) {
-//         const year = meta.date.slice(0, 4)
-//         years.add(year)
-//       }
-
-//       // Categories
-//       if (Array.isArray(meta.categories)) {
-//         meta.categories.forEach((cat) => categories.add(cat))
-//       }
-//     })
-
-//     authorOptions.value = [...authors].sort()
-//     categoryOptions.value = [...categories].sort()
-//     dateOptions.value = [...years].sort((a, b) => b - a) // descending
-//   },
-//   { immediate: true },
-// )
 
 const selectedFile = ref(null)
 const dialog = ref(false)
@@ -967,7 +916,6 @@ async function processFileWithNLP(file, fileName) {
 }
 
 async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData, user) {
-  // Ensure the metadata object structure matches your database schema
   const metadataObject = {
     title: nlpData.title || '',
     author: nlpData.author || '',
@@ -987,7 +935,7 @@ async function saveMetadataToDB(fileName, fileUrl, previewUrl, nlpData, user) {
         preview_url: previewUrl,
         metadata: metadataObject,
         uploaded_by: user,
-        uploaded_at: new Date(), // ISO string format
+        uploaded_at: new Date(),
       },
     ])
     .select()
@@ -1020,7 +968,7 @@ function handleCancel() {
   scannedFile.value = null
   showDialog.value = false
 
-  // If upload is in progress, this should trigger force cancel
+  // If upload is in progress, trigger force cancel
   if (uploading.value) {
     handleForceCancel()
   } else {
@@ -1578,21 +1526,6 @@ async function saveToSelectedCollections() {
       showNotifyDialog('Notice', message.trim())
     }
 
-    // // ADDED: Recheck if document is in any non-Favorites collection
-    // const { data: remainingItems, error: recheckError } = await supabase
-    //   .from('collection_items')
-    //   .select('collection_id, collections (collection_name)')
-    //   .eq('item_id', doc.id)
-    //   .eq('item_type', selectedItemType.value)
-
-    // if (!recheckError) {
-    //   doc.bookmarked = remainingItems.some(
-    //     (item) => item.collections?.collection_name !== 'Favorites',
-    //   )
-    // } else {
-    //   console.error('Error rechecking bookmark status:', recheckError)
-    // }
-
     dialogOpen.value = false
   } catch (err) {
     console.error('Unexpected error:', err)
@@ -1604,107 +1537,6 @@ function resetForm() {
   selectedCollections.value = []
   existingCollectionIds.value = []
 }
-
-// Toggle favorite icon
-// const toggleFavorite = async (doc, itemType = 'document') => {
-//   const { data: authData, error: authError } = await supabase.auth.getUser()
-//   const userId = authData?.user?.id
-
-//   if (authError || !userId) {
-//     console.error('Auth error:', authError)
-//     return
-//   }
-
-//   try {
-//     let { data: favoritesCollection } = await supabase
-//       .from('collections')
-//       .select('*')
-//       .eq('user_id', userId)
-//       .eq('collection_name', 'Favorites')
-//       .maybeSingle()
-
-//     if (!favoritesCollection) {
-//       const { data: newCollection, error: insertError } = await supabase
-//         .from('collections')
-//         .insert([
-//           {
-//             collection_name: 'Favorites',
-//             description: 'Items you marked as favorite will appear here.',
-//             user_id: userId,
-//             is_default: true,
-//             is_locked: true,
-//             created_at: new Date(),
-//             updated_at: new Date(),
-//             cover_url:
-//               'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers//favoritescover.png',
-//           },
-//         ])
-//         .select()
-//         .single()
-
-//       if (insertError) {
-//         console.error('Insert collection failed:', insertError)
-//       } else {
-//         favoritesCollection = newCollection
-//       }
-//     }
-
-//     const collectionId = favoritesCollection.collection_id
-//     const itemName = doc.metadata?.title || doc.file_name
-
-//     const { data: existing } = await supabase
-//       .from('collection_items')
-//       .select('*')
-//       .eq('collection_id', collectionId)
-//       .eq('item_id', doc.id)
-//       .eq('item_type', itemType)
-
-//     if (existing.length > 0) {
-//       await supabase
-//         .from('collection_items')
-//         .delete()
-//         .eq('collection_id', collectionId)
-//         .eq('item_id', doc.id)
-//         .eq('item_type', itemType)
-
-//       doc.starred = false
-//       showNotifyDialog('Notice', `"${itemName}" was removed from Favorites.`)
-//     } else {
-//       await supabase.from('collection_items').insert({
-//         collection_id: collectionId,
-//         item_id: doc.id,
-//         item_type: itemType,
-//       })
-
-//       doc.starred = true
-//       showNotifyDialog('Notice', `"${itemName}" was added to Favorites.`)
-//     }
-
-//     const { data: metaCheck, error: metaError } = await supabase
-//       .from('documents_metadata')
-//       .select('id')
-//       .eq('id', doc.id)
-//       .single()
-
-//     if (!metaError && metaCheck) {
-//       const { data: starData } = await supabase
-//         .from('documents_star_count')
-//         .select('star_count')
-//         .eq('item_id', doc.id)
-//         .maybeSingle()
-
-//       if (starData && starData.star_count !== undefined) {
-//         documentsStore.updateStarCount(doc.id, starData.star_count)
-//       } else {
-//         documentsStore.updateStarCount(doc.id, 0)
-//       }
-//     } else {
-//       console.error('Document ID not found in documents_metadata:', metaError)
-//     }
-//   } catch (err) {
-//     console.error('Error toggling favorite:', err)
-//   }
-// }
 
 const toggleFavorite = async (doc, itemType = 'document') => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
@@ -1790,7 +1622,7 @@ const toggleFavorite = async (doc, itemType = 'document') => {
 
     updateStarred(searchStore.searchedDocuments)
     updateStarred(documentsStore.filteredDocuments)
-    updateStarred(documentsStore.documents) // master list
+    updateStarred(documentsStore.documents) // Masterlist
 
     // Update star count
     const { data: starData } = await supabase
@@ -1903,7 +1735,6 @@ function toggleCategory(categoryOption) {
     }
   }
 
-  // selectedCategories.value = new Set(selectedCategories.value)
   applyFilters()
 }
 
@@ -1914,7 +1745,6 @@ function toggleAuthor(authorOption) {
     selectedAuthors.value.add(authorOption)
   }
 
-  // selectedAuthors.value = new Set(selectedAuthors.value)
   applyFilters()
 }
 
@@ -1924,7 +1754,6 @@ function toggleDate(dateOption) {
   } else {
     selectedDates.value.add(dateOption)
   }
-  // selectedDates.value = new Set(selectedDates.value)
   applyFilters()
 }
 
@@ -1943,23 +1772,6 @@ function clearCategories() {
   applyFilters()
 }
 
-// function applySort() {
-//   switch (sortOption.value) {
-//     case 'Newest':
-//       documentsStore.sortBy('uploaded_at', 'desc')
-//       break
-//     case 'Oldest':
-//       documentsStore.sortBy('uploaded_at', 'asc')
-//       break
-//     case 'Title A-Z':
-//       documentsStore.sortBy('title', 'desc')
-//       break
-//     case 'Title Z-A':
-//       documentsStore.sortBy('title', 'asc')
-//       break
-//   }
-// }
-
 function applySort(option) {
   documentsCurrentPage.value = 1
   if (documentsCurrentPage.value > documentsTotalPages.value) {
@@ -1976,7 +1788,7 @@ function applySort(option) {
   }
 }
 
-// pagination state
+// Pagination state
 const documentsCurrentPage = ref(1)
 const documentsPerPage = ref(12)
 
@@ -1998,36 +1810,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', updateDocumentsPerPage)
 })
 
-// computed for paginated documents
-// const displayedDocuments = computed(() => {
-//   const docs = searchStore.query ? searchStore.searchedDocuments : documentsStore.filteredDocuments
-
-//   const start = (documentsCurrentPage.value - 1) * documentsPerPage.value
-//   return docs.slice(start, start + documentsPerPage.value)
-// })
-
-// const getBaseDocuments = computed(() => {
-//   // Prefer search results if query exists
-//   if (
-//     searchStore.query &&
-//     Array.isArray(searchStore.searchedDocuments) &&
-//     searchStore.searchedDocuments.length > 0
-//   ) {
-//     return searchStore.searchedDocuments
-//   }
-
-//   // Otherwise, show all documents
-//   if (
-//     Array.isArray(documentsStore.filteredDocuments) &&
-//     documentsStore.filteredDocuments.length > 0
-//   ) {
-//     return documentsStore.filteredDocuments
-//   }
-
-//   // fallback
-//   return []
-// })
-
 const getBaseDocuments = computed(() => {
   // If there's an active search query, ONLY show search results (even if empty)
   if (searchStore.query) {
@@ -2042,7 +1824,7 @@ const getBaseDocuments = computed(() => {
     return documentsStore.filteredDocuments
   }
 
-  // fallback
+  // Fallback
   return []
 })
 
@@ -2051,7 +1833,7 @@ const getSortedDocuments = computed(() => {
 
   if (typeof searchStore.sortResults === 'function') {
     const sorted = searchStore.sortResults(baseDocs)
-    // ensure it returns a valid array
+    // Ensure it returns a valid array
     return Array.isArray(sorted) ? sorted : baseDocs
   }
 
@@ -2070,7 +1852,7 @@ const documentsTotalPages = computed(() => {
   return Math.max(1, Math.ceil(docs.length / documentsPerPage.value))
 })
 
-// pagination controls
+// Pagination controls
 function nextDocumentsPage() {
   if (documentsCurrentPage.value < documentsTotalPages.value) {
     documentsCurrentPage.value++

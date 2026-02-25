@@ -498,8 +498,6 @@ import { supabase } from 'boot/supabase'
 import { uid } from 'quasar'
 import '@google/model-viewer'
 
-// const isFavorites = computed(() => collection.value.collection_name === 'Favorites')
-
 const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
@@ -548,7 +546,7 @@ const editData = ref({
 })
 const editFileInput = ref(null)
 
-// PAGINATION FOR ADDED ARTIFACTS/COLLECTIONS
+// Pagination for added artifacts/documents
 const artifactsCurrentPage = ref(1)
 const documentsCurrentPage = ref(1)
 const artifactsPerPage = ref(2)
@@ -611,21 +609,19 @@ function goToDocumentsPage(page) {
   documentsCurrentPage.value = page
 }
 
-// Helper function to show message dialogs
 function showMessageDialog(title, content) {
   messageDialogTitle.value = title
   messageDialogContent.value = content
   messageDialogOpen.value = true
 }
 
-// Helper function to show notification dialogs
 const showNotifyDialog = (title, message) => {
   notifyDialogTitle.value = title
   notifyDialogMessage.value = message
   notifyDialogOpen.value = true
 }
 
-// Mount lifecycle - fetch data
+// Fetch data
 onMounted(async () => {
   await fetchCollectionInfo()
   await fetchCollectionItems()
@@ -663,7 +659,7 @@ async function fetchCollectionInfo() {
   }
 }
 
-// Fetch collection items (documents and artifacts) - Updated to include preview_url
+// Fetch collection items
 async function fetchCollectionItems() {
   const { data: authData } = await supabase.auth.getUser()
   const userId = authData?.user?.id
@@ -954,39 +950,12 @@ async function deleteCollection() {
   }
 }
 
-// Remove from collection (function for actual removal)
-// async function removeFromCollection(itemId, itemType) {
-//   const { error } = await supabase
-//     .from('collection_items')
-//     .delete()
-//     .match({ collection_id: collectionId, item_id: itemId, item_type: itemType })
-//
-//   if (error) {
-//     console.error('Remove failed:', error)
-//     showMessageDialog('Delete Failed', `Failed to remove ${itemType} from collection.`)
-//     return
-//   }
-//
-//   // Immediately remove item from display
-//   if (itemType === 'document') {
-//     documents.value = documents.value.filter((doc) => doc.id !== itemId)
-//   } else if (itemType === 'artifact') {
-//     artifacts.value = artifacts.value.filter((art) => art.id !== itemId)
-//   }
-//
-//   showMessageDialog(
-//     'Removed',
-//     `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} removed from collection.`,
-//   )
-// }
-
-// Toggle bookmark - unified approach with confirmation dialog
+// Toggle bookmark icon
 const toggleBookmark = (itemId, itemType) => {
   const list = itemType === 'document' ? documents.value : artifacts.value
   const item = list.find((el) => el.id === itemId)
 
   if (item && item.bookmarked) {
-    // Show confirmation dialog for removal
     itemToRemove.value = {
       id: itemId,
       type: itemType,
@@ -994,7 +963,6 @@ const toggleBookmark = (itemId, itemType) => {
     }
     confirmRemoveOpen.value = true
   } else {
-    // Just toggle the UI state (shouldn't happen in collection view)
     if (item) {
       item.bookmarked = !item.bookmarked
     }

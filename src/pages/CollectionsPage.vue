@@ -61,7 +61,6 @@
           }"
         >
           <router-link :to="`/collection/${collection.collection_id}`" class="collection-link">
-            <!-- Updated book styling to match collections design -->
             <div class="book-container">
               <div class="book-cover">
                 <div class="book-spine"></div>
@@ -218,7 +217,7 @@ const sortOptions = ['Alphabetical', 'Oldest to Newest', 'Newest to Oldest', 'Re
 // Load user and collections
 const userStore = useUserStore()
 
-// If there's an active session but profile is missing, fetch it to avoid null-access errors.
+// Fetch profile to avoid null-access errors if there's an active session with missing profile
 if (!userStore.profile && userStore.session?.user?.id) {
   userStore.fetchProfile(userStore.session.user.id)
 }
@@ -267,7 +266,7 @@ onActivated(async () => {
   }
 })
 
-// FIXED: Sorting
+// Sorting
 function applySorting() {
   if (!Array.isArray(collections.value)) return
 
@@ -314,7 +313,7 @@ function setSortOption(option) {
   applySorting()
 }
 
-// FIXED: Load collections from Supabase
+// Load collections from Supabase
 async function loadCollections(userId) {
   const { data, error } = await supabase
     .from('collections')

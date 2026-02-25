@@ -142,7 +142,7 @@
                       {{ model.metadata?.title || model.file_name }}
                     </div>
                   </router-link>
-                  <!-- FIXED: Action icons-->
+                  <!-- Action icons-->
                   <div class="action-icons">
                     <!-- View Icon with Count -->
                     <div class="icon-with-count">
@@ -179,7 +179,7 @@
       </div>
     </div>
 
-    <!-- Documents Section (Replacing Collections) -->
+    <!-- Documents Section -->
     <div class="layout-container q-my-lg">
       <div class="box-3 collections-section q-px-lg">
         <div class="row items-center justify-between q-mb-sm q-mt-sm">
@@ -420,11 +420,11 @@ const documentsStore = useDocumentsStore()
 
 // Reactive variables
 const collections = ref([])
-const documents = ref([]) // CHANGED: Added documents array
+const documents = ref([])
 const recentItems = ref([])
 const isLoading = ref(true)
 const isLoadingModels = ref(true)
-const isLoadingDocuments = ref(true) // CHANGED: Added loading state for documents
+const isLoadingDocuments = ref(true)
 const showDialog = ref(false)
 const fileInput = ref(null)
 const previewImage = ref(null)
@@ -452,7 +452,7 @@ const notifyDialogMessage = ref('')
 
 const userType = computed(() => userStore.profile?.user_type || 'Unknown')
 
-// Initialize page (extract to allow re-run on activation)
+// Initialize page
 async function init() {
   try {
     const {
@@ -471,7 +471,6 @@ async function init() {
       await userStore.fetchProfile(authUser.id)
     }
 
-    // Parallelize ALL independent data fetching operations for better performance
     await Promise.all([
       loadCollections(authUser.id),
       loadRecentViews(authUser.id),
@@ -483,7 +482,6 @@ async function init() {
       documentsStore.fetchStarCounts(),
     ])
 
-    // Load user collections after initial data (depends on collections being loaded)
     await loadUserCollections()
   } catch (err) {
     console.error('Error initializing page:', err)
@@ -493,7 +491,6 @@ async function init() {
 onMounted(() => init())
 onActivated(() => init())
 
-//COLLECTIONS
 const visibleCollections = computed(() => {
   const list = collections.value
   if ($q.screen.lt.sm) return list.slice(0, 2)
@@ -502,7 +499,6 @@ const visibleCollections = computed(() => {
   return list.slice(0, 5)
 })
 
-// CHANGED: Added visibleDocuments computed property
 const visibleDocuments = computed(() => {
   const list = documents.value
   if ($q.screen.lt.sm) return list.slice(0, 2)
@@ -530,7 +526,7 @@ const showNotifyDialog = (title, message) => {
   notifyDialogOpen.value = true
 }
 
-// Load collections from Supabase
+// Load collections
 async function loadCollections(userId) {
   isLoading.value = true
   try {
@@ -554,11 +550,9 @@ async function loadCollections(userId) {
   isLoading.value = false
 }
 
-// CHANGED: Added loadDocuments function
 async function loadDocuments() {
   isLoadingDocuments.value = true
   try {
-    // Utilize idx_documents_uploaded_at index with ORDER BY for better performance
     const { data, error } = await supabase
       .from('documents_metadata')
       .select('id, file_name, metadata, file_url, preview_url, uploaded_at, updated_at')
@@ -612,7 +606,6 @@ async function loadDocuments() {
 // Load recent views with proper database fields and error handling
 async function loadRecentViews(userId) {
   try {
-    // Utilize idx_user_activity_recent composite index (user_id + clicked_at DESC)
     const { data, error } = await supabase
       .from('user_activity_log')
       .select('item_id, item_type, clicked_at')
@@ -634,7 +627,6 @@ async function loadRecentViews(userId) {
     const artifactIds = data.filter((d) => d.item_type === 'artifact').map((d) => d.item_id)
     const documentIds = data.filter((d) => d.item_type === 'document').map((d) => d.item_id)
 
-    // Parallelize artifact, document, and favorites collection fetches
     const [artifactDataResult, documentDataResult, favoritesCollectionResult] = await Promise.all([
       artifactIds.length
         ? supabase
@@ -648,7 +640,6 @@ async function loadRecentViews(userId) {
             .select('id, file_name, metadata, file_url, preview_url, uploaded_at, updated_at')
             .in('id', documentIds)
         : Promise.resolve({ data: [] }),
-      // Utilize idx_collections_user_id and idx_collections_user_name composite indexes
       supabase
         .from('collections')
         .select('collection_id')
@@ -663,7 +654,6 @@ async function loadRecentViews(userId) {
 
     let favoriteKeySet = new Set()
     if (favoritesCollection) {
-      // Utilize idx_collection_items_collection composite index
       const { data: favItems, error: favItemsError } = await supabase
         .from('collection_items')
         .select('item_id, item_type')
@@ -736,10 +726,8 @@ async function loadRecentViews(userId) {
 async function loadModels() {
   isLoadingModels.value = true
   try {
-    // Parallelize auth check and model fetch
     const [authDataResult, modelsResult] = await Promise.all([
       supabase.auth.getUser(),
-      // Utilize idx_artifacts_uploaded_at index with ORDER BY
       supabase
         .from('artifacts_metadata')
         .select('id, file_name, metadata, file_url, uploaded_at, updated_at')
@@ -758,7 +746,6 @@ async function loadModels() {
     }
 
     if (!userId) {
-      // If no user, just set models without favorites
       const enhancedModels = await Promise.all(
         (data || []).map(async (model) => {
           let workingUrl = model.file_url
@@ -779,9 +766,7 @@ async function loadModels() {
       return
     }
 
-    // Parallelize Favorites collection fetch and all user collections fetch
     const [favoritesCollectionResult, allUserCollectionsResult] = await Promise.all([
-      // Utilize idx_collections_user_id and idx_collections_user_name composite indexes
       supabase
         .from('collections')
         .select('collection_id')
@@ -797,11 +782,9 @@ async function loadModels() {
     let favoriteIds = []
     let bookmarkedIds = []
 
-    // Parallelize favorite items and bookmarked items fetches
     const collectionItemsPromises = []
 
     if (favoritesCollection) {
-      // Utilize idx_collection_items_collection composite index
       collectionItemsPromises.push(
         supabase
           .from('collection_items')
@@ -867,7 +850,7 @@ async function loadModels() {
   }
 }
 
-// Time ago helper function
+// Time ago helper
 function timeAgo(dateString) {
   if (!dateString) return 'unknown time'
 
@@ -934,7 +917,7 @@ async function logClick(itemId, itemType, action) {
   }
 }
 
-// View item with proper error handling from INDEX page
+// View item with proper error handling from index page
 async function viewItem(item) {
   try {
     if (item.item_type === 'artifact') {
@@ -971,12 +954,10 @@ async function viewItem(item) {
   }
 }
 
-// CHANGED: Added goToDocumentDetailsPage function
 function goToDocumentDetailsPage(documentId) {
   router.push(`/documents/${documentId}`)
 }
 
-// ADDED: Collection dialog methods
 const openBookmarkDialog = async (model, type = 'artifact') => {
   selectedModel.value = model
   selectedItemType.value = type
@@ -1442,7 +1423,6 @@ const toggleFavoriteRecents = async (item, itemType) => {
     }
 
     // Get star count
-
     let metadataTable, starCountTable, store
 
     if (itemType === 'artifact') {
@@ -1484,12 +1464,6 @@ const toggleFavoriteRecents = async (item, itemType) => {
   }
 }
 
-// // Navigation functions
-// function goToCollectionDetailsPage(collectionId) {
-//   router.push(`/collection/${collectionId}`)
-// }
-
-// Collection management
 function triggerFileInput() {
   fileInput.value.click()
 }

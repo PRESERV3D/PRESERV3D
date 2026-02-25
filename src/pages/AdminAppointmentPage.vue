@@ -408,15 +408,15 @@ async function confirmAction() {
     `${userStore.profile?.first_name || ''} ${userStore.profile?.last_name || ''}`.trim()
 
   try {
-    // If approving, check if there's already an approved appointment at this date and time
+    // Check if there's already an approved appointment at this date and time
     if (action === 'Approved') {
       const { data: existingAppt, error: checkError } = await supabase
         .from('appointment_booking')
         .select('appointment_id, status')
         .eq('date', row.date)
-        .eq('time', row.rawTime) // Use raw time format for comparison
+        .eq('time', row.rawTime)
         .eq('status', 'Approved')
-        .neq('appointment_id', row.appointment_id) // Exclude current appointment
+        .neq('appointment_id', row.appointment_id)
         .maybeSingle()
 
       if (checkError) {
@@ -511,10 +511,9 @@ async function userNotification(receiverId, notifMessage) {
   }
 }
 
-// Fetch appointments from DB
+// Fetch appointments
 async function fetchAppointments() {
   try {
-    // Utilize idx_appointment_booking_created_at index with ORDER BY
     const { data, error } = await supabase
       .from('appointment_booking')
       .select('*')
@@ -538,9 +537,9 @@ async function fetchAppointments() {
       user_type: a.user_type,
       purpose: a.purpose,
       appointmentDate: a.date,
-      date: a.date, // Raw date for validation
+      date: a.date,
       time: formatTimeTo12Hour(a.time),
-      rawTime: a.time, // Raw time for validation
+      rawTime: a.time,
       status: a.status,
       user_remarks: a.user_remarks,
       admin_remarks: a.admin_remarks || '',
