@@ -135,7 +135,6 @@ const form = ref({
 
 const showPassword = ref(false)
 
-// ADDED: Login attempt tracking
 const message = ref('')
 const messageType = ref('')
 const loginAttempts = ref(0)
@@ -145,7 +144,6 @@ const maxAttempts = 3
 const remainingAttempts = computed(() => maxAttempts - loginAttempts.value)
 let cooldownInterval = null
 
-// Notification dialog state
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
@@ -330,7 +328,7 @@ async function loginUser() {
       await userStore.signOut()
     }
 
-    // Ensure Favorites collection exists
+    // Ensure Favorites collection exists, create if none 
     const { data: favoritesCollection } = await supabase
       .from('collections')
       .select('*')

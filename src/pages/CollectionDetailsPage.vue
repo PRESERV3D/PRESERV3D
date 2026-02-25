@@ -489,27 +489,22 @@ const userType = computed(() => userStore.profile?.user_type || 'Unknown')
 // Get collection ID from route params
 const collectionId = route.params.id
 
-// Loading states
 const isGenerateCollectionLoading = ref(false)
 
-// Data refs
 const collection = ref({})
 const documents = ref([])
 const artifacts = ref([])
 
-// Dialog states
 const editDialogOpen = ref(false)
 const confirmDeleteOpen = ref(false)
 const messageDialogOpen = ref(false)
 const messageDialogTitle = ref('')
 const messageDialogContent = ref('')
 
-// Notify dialog states
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
-// Confirm remove dialog states
 const confirmRemoveOpen = ref(false)
 const itemToRemove = ref({
   id: null,
@@ -517,7 +512,6 @@ const itemToRemove = ref({
   name: '',
 })
 
-// Edit dialog data
 const editData = ref({
   collection_name: '',
   description: '',

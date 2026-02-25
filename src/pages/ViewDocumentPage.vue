@@ -294,7 +294,6 @@ const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
-//added for related links
 const showRelatedDialog = ref(false)
 const links = ref([])
 

@@ -547,7 +547,6 @@ const userStore = useUserStore()
 const model = ref(null)
 const loading = ref(true)
 
-// Editing logic from Artifacts page
 const newCategory = ref('')
 const editableCategories = ref([])
 const showCategoryInput = ref(false)
@@ -572,7 +571,6 @@ const editableData = ref({
   dateReceived: '',
 })
 
-// Collection dialog state
 const dialogOpen = ref(false)
 const selectedModel = ref(null)
 const selectedItemType = ref('artifact')
@@ -580,7 +578,6 @@ const userCollections = ref([])
 const selectedCollections = ref([])
 const existingCollectionIds = ref([])
 
-// Notification dialog state
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
@@ -598,7 +595,7 @@ function formatDate(dateStr) {
   )}`
 }
 
-// Format value for <input type="datetime-local"> (PH local)
+// Format value for datetime-local input
 function formatDateForInput(dateStr) {
   if (!dateStr) return ''
   const date = new Date(dateStr)

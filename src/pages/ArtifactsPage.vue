@@ -433,7 +433,6 @@ const selectedCategories = ref(new Set(['All']))
 const selectedAuthors = ref(new Set())
 const selectedDates = ref(new Set())
 
-// Dialog for upload pop up
 const showDialog = ref(false)
 const selectedFile = ref(null)
 const dialog = ref(false)
@@ -441,7 +440,6 @@ const loading = ref(false)
 const uploading = ref(false)
 const uploadProgress = ref(0)
 
-// Collection dialog state
 const dialogOpen = ref(false)
 const selectedModel = ref(null)
 const selectedItemType = ref('artifact')
@@ -449,7 +447,6 @@ const userCollections = ref([])
 const selectedCollections = ref([])
 const existingCollectionIds = ref([])
 
-// Notification dialog state
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
@@ -561,7 +558,7 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
 
     updateStarred(searchStore.searchedModels)
     updateStarred(modelStore.filteredModels)
-    updateStarred(modelStore.models) // master list
+    updateStarred(modelStore.models) // Master list
 
     // Update star count
     const { data: starData } = await supabase
@@ -818,7 +815,6 @@ const fetchAllArtifacts = async () => {
         }
       }
 
-      // Add some mock data for demonstration compatibility
       const enhancedModels = await Promise.all(
         data.map(async (model) => {
           let workingUrl = model.file_url
@@ -881,7 +877,7 @@ onMounted(async () => {
     await modelStore.fetchViewCounts()
     await modelStore.fetchStarCounts()
 
-    // Apply sort if there’s an active option
+    // Apply sort if there is an active option
     if (searchStore.sortBy) {
       searchStore.sortResults(searchStore.searchedModels)
     }
@@ -892,7 +888,7 @@ onMounted(async () => {
   }
 })
 
-// Re-fetch when navigated back to the page (keep-alive/reactivation scenarios)
+// Re-fetch when navigated back to the page
 onActivated(async () => {
   try {
     if (!searchStore.query) {
@@ -1146,7 +1142,6 @@ async function saveMetadata(updatedMetadata) {
   }
 }
 
-// getChanges function
 function getChanges(oldData = {}, newData = {}) {
   const changes = {}
 
@@ -1301,7 +1296,6 @@ function applyFilters() {
   }
   console.log('Applying filters:', filterData)
 
-  // Updated to include the active sort
   modelStore.filterBy(filterData, {
     sortBy: searchStore.sortBy,
     sortOrder: searchStore.sortOrder,
@@ -1332,7 +1326,6 @@ function toggleCategory(categoryOption) {
     }
   }
 
-  // selectedCategories.value = new Set(selectedCategories.value)
   applyFilters()
 }
 
@@ -1343,7 +1336,6 @@ function toggleAuthor(authorOption) {
     selectedAuthors.value.add(authorOption)
   }
 
-  // selectedAuthors.value = new Set(selectedAuthors.value)
   applyFilters()
 }
 
@@ -1353,7 +1345,6 @@ function toggleDate(dateOption) {
   } else {
     selectedDates.value.add(dateOption)
   }
-  // selectedDates.value = new Set(selectedDates.value)
   applyFilters()
 }
 
@@ -1388,7 +1379,7 @@ function applySort(option) {
   }
 }
 
-// pagination state
+// Pagination state
 const modelsCurrentPage = ref(1)
 const modelsPerPage = ref(12)
 
@@ -1430,14 +1421,14 @@ const getSortedModels = computed(() => {
 
   if (typeof searchStore.sortResults === 'function') {
     const sorted = searchStore.sortResults(baseModels)
-    // ensure it returns a valid array
+    // Ensure it returns a valid array
     return Array.isArray(sorted) ? sorted : baseModels
   }
 
   return baseModels
 })
 
-// Helper function to ensure URLs have protocol
+// Ensure URLs have protocol
 function normalizeFileUrl(url) {
   if (!url) return ''
   // If URL doesn't start with http:// or https://, add https://

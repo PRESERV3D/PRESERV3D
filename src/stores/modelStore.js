@@ -48,23 +48,6 @@ export const useModelStore = defineStore('modelStore', {
         return acc
       }, {})
     },
-    // sortBy(field, order = 'asc') {
-    //   const getValue = (mod) => {
-    //     if (field === 'title') return mod.metadata.title.toLowerCase() || ''
-    //     if (field === 'uploaded_at') return new Date(mod.uploaded_at)
-    //     return mod[field]
-    //   }
-
-    //   this.filteredModels = [...this.filteredModels].sort((a, b) => {
-    //     const valA = getValue(a)
-    //     const valB = getValue(b)
-
-    //     if (valA < valB) return order === 'asc' ? -1 : 1
-    //     if (valA > valB) return order === 'asc' ? 1 : -1
-    //     return 0
-    //   })
-    // },
-
     filterBy({ categories, authors, dates }, currentSort) {
       this.filteredModels = this.models.filter((mod) => {
         const meta = mod.metadata || {}
@@ -149,7 +132,7 @@ export const useModelStore = defineStore('modelStore', {
 
     async getModelById(id) {
       try {
-        //get title from metadata if available
+        // Get title from metadata if available
         const { data } = await supabase
           .from('artifacts_metadata')
           .select('metadata->>title')

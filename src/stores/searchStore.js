@@ -67,13 +67,13 @@ export const useSearchStore = defineStore('search', {
             : 'id, file_name, file_url, metadata, uploaded_at, updated_at, search_text, data_source, donated_by, date_received',
         )
 
-      // exact phrase search on all text (wrapped in "") - working
+      // Exact phrase search on all text (wrapped in "")
       const exactMatch = query.match(/"(.*?)"/)
       if (exactMatch) {
         supabaseQuery = supabaseQuery.ilike('search_text', `%${exactMatch[1]}%`)
       }
 
-      // boolean AND - working
+      // Boolean AND
       else if (query.includes('AND')) {
         const terms = query.split('AND').map((t) => t.trim())
         for (const term of terms) {
@@ -81,29 +81,29 @@ export const useSearchStore = defineStore('search', {
         }
       }
 
-      // boolean OR - working
+      // Boolean OR
       else if (query.includes('OR')) {
         const terms = query.split('OR').map((t) => t.trim())
         const orConditions = terms.map((term) => `search_text.ilike.%${term}%`).join(',')
         supabaseQuery = supabaseQuery.or(orConditions)
       }
 
-      // intitle: keyword (matches exact word on metadata.title) - exact word match only
+      // "intitle: keyword" on search field (matches exact word only on metadata.title)
       else if (query.includes('intitle:')) {
         const titleTerm = query.match(/intitle:([^\n\r]+)/)?.[1]?.trim()
         if (titleTerm) {
-          // Build OR condition to match exact word with spaces, punctuation, or at boundaries
+          // OR condition to match exact word with spaces, punctuation, or at boundaries
           const orConditions = [
-            `metadata->>title.ilike.${titleTerm} %`, // word at start
-            `metadata->>title.ilike.% ${titleTerm}`, // word at end
-            `metadata->>title.ilike.% ${titleTerm} %`, // word in middle
-            `metadata->>title.eq.${titleTerm}`, // exact match (single word)
+            `metadata->>title.ilike.${titleTerm} %`, // Word at start
+            `metadata->>title.ilike.% ${titleTerm}`, // Word at end
+            `metadata->>title.ilike.% ${titleTerm} %`, // Word in middle
+            `metadata->>title.eq.${titleTerm}`, // Exact match (single word)
           ].join(',')
           supabaseQuery = supabaseQuery.or(orConditions)
         }
       }
 
-      // author: keyword (matches any author with the keyword on metadata.author) - working
+      // "author: keyword" (matches any author with the keyword on metadata.author)
       else if (query.includes('author:')) {
         const authorTerm = query.match(/author:([^\n\r]+)/)?.[1]?.trim()
         if (authorTerm) {
@@ -111,18 +111,18 @@ export const useSearchStore = defineStore('search', {
         }
       }
 
-      // date search range (e.g. 2020...2023 / YYYY-MM-DD...YYYY-MM-DD) on metadata.date - working
+      // Date search range (e.g. 2020...2023 / YYYY-MM-DD...YYYY-MM-DD) on metadata.date
       else if (query.match(/\d{4}(-\d{2}-\d{2})?\.\.\.\d{4}(-\d{2}-\d{2})?/)) {
         let [start, end] = query.split('...')
 
-        // if only year given, expand to start and end of year
+        // If only year given, expand to start and end of year
         if (/^\d{4}$/.test(start)) start = `${start}-01-01`
         if (/^\d{4}$/.test(end)) end = `${end}-12-31`
 
         supabaseQuery = supabaseQuery.gte('metadata->>date', start).lte('metadata->>date', end)
       }
 
-      // truncation (e.g. objecti*) → match word stems - working all text including summary tho working on "objecti" "*objecti"
+      // Truncation search type (matches word stems on all text)
       else if (query.endsWith('*')) {
         const stem = query.slice(0, -1)
         supabaseQuery = supabaseQuery.ilike('search_text', `%${stem}%`)
@@ -130,12 +130,12 @@ export const useSearchStore = defineStore('search', {
 
       // Fallback to exact word match on search_text
       else {
-        // Build OR condition to match exact word with spaces, punctuation, or at boundaries
+        // OR condition to match exact word with spaces, punctuation, or at boundaries
         const orConditions = [
-          `search_text.ilike.${query} %`, // word at start
-          `search_text.ilike.% ${query}`, // word at end
-          `search_text.ilike.% ${query} %`, // word in middle
-          `search_text.eq.${query}`, // exact match (single word)
+          `search_text.ilike.${query} %`, // Word at start
+          `search_text.ilike.% ${query}`, // Word at end
+          `search_text.ilike.% ${query} %`, // Word in middle
+          `search_text.eq.${query}`, // Exact match (single word)
         ].join(',')
         supabaseQuery = supabaseQuery.or(orConditions)
       }
@@ -222,7 +222,7 @@ export const useSearchStore = defineStore('search', {
         return []
       }
 
-      // Get bookmarked item IDs (from non-Favorites collections)
+      // Get bookmarked item IDs from non-Favorites collections
       const nonFavoritesCollections = allUserCollections.filter(
         (col) => col.collection_name !== 'Favorites',
       )
@@ -254,15 +254,6 @@ export const useSearchStore = defineStore('search', {
       this.searchedModels = []
       this.searchedDocuments = []
       console.log('[Store.clear] State cleared. Type is:', this.type)
-
-      // try {
-      //   const favs = await this.fetchFavorites(this.type)
-      //   console.log('[Store.clear] Favorites fetched:', favs)
-      //   return favs
-      // } catch (err) {
-      //   console.error('[Store.clear] Error fetching favorites:', err)
-      //   return []
-      // }
     },
     async clearAll() {
       console.log('[Store.clearAll] Hard clearing all search data...')
@@ -315,13 +306,6 @@ export const useSearchStore = defineStore('search', {
         }
       }
 
-      // results.sort((a, b) => {
-      //   const valA = getValue(a)
-      //   const valB = getValue(b)
-
-      //   if (sortBy === 'title') return valA.localeCompare(valB) * (sortOrder === 'asc' ? 1 : -1)
-      //   else return (valA - valB) * (sortOrder === 'asc' ? 1 : -1)
-      // })
       return [...results].sort((a, b) => {
         const valA = getValue(a)
         const valB = getValue(b)
@@ -348,25 +332,13 @@ export const useSearchStore = defineStore('search', {
 
       const categories = new Map()
 
-      // data.forEach((row) => {
-      //   const meta = row.metadata
-      //   if (meta && Array.isArray(meta.categories)) {
-      //     meta.categories.forEach((cat) => {
-      //       const standardized = cat.trim().toLowerCase()
-      //       if (!categories.has(standardized)) {
-      //         categories.set(standardized, cat.trim())
-      //       }
-      //     })
-      //   }
-      // })
-
       data.forEach((row) => {
         const meta = row.metadata
         if (meta && Array.isArray(meta.categories)) {
           meta.categories.forEach((cat) => {
             const trimmed = cat.trim()
             if (!categories.has(trimmed)) {
-              categories.set(trimmed, trimmed) // use exact value for both key & label
+              categories.set(trimmed, trimmed) // Exact value for both key & label
             }
           })
         }
@@ -394,7 +366,7 @@ export const useSearchStore = defineStore('search', {
       const column = fieldToColumn(params.field)
       console.log('[AdvancedSearch] Using field:', params.field, '→ column:', column)
 
-      // Match Type Handling
+      // Handle match types
       if (params.query && column) {
         if (params.matchType === 'exactMatch') {
           supabaseQuery = supabaseQuery.filter(column, 'ilike', params.query)
@@ -428,7 +400,7 @@ export const useSearchStore = defineStore('search', {
 
         if (validCategories.length > 0) {
           const orConditions = validCategories
-            .map((cat) => `metadata->categories.cs.["${cat}"]`) // exact match
+            .map((cat) => `metadata->categories.cs.["${cat}"]`) // Exact match
             .join(',')
 
           console.log('[AdvancedSearch] Category filter OR:', orConditions)
@@ -479,27 +451,6 @@ export const useSearchStore = defineStore('search', {
         else this.searchedModels = []
         return
       }
-
-      // // ---------------- RELEVANCE SORTING (star_count) ----------------
-      // // sort by on page and sort by on dialog not in sync yet
-      // if (params.sortBy === 'relevance' && params.type === 'documents') {
-      //   const { data: stars, error: starsError } = await supabase
-      //     .from('documents_star_count')
-      //     .select('item_id, star_count')
-
-      //   if (starsError) {
-      //     console.error('[AdvancedSearch] Error fetching star counts:', starsError)
-      //   } else {
-      //     const starMap = Object.fromEntries(stars.map((s) => [s.item_id, s.star_count]))
-
-      //     data = data.map((doc) => ({
-      //       ...doc,
-      //       star_count: starMap[doc.id] || 0,
-      //     }))
-
-      //     data.sort((a, b) => b.star_count - a.star_count)
-      //   }
-      // }
 
       // Fetch favorites and bookmarks
       const [favoriteIds, bookmarkedIds] = await Promise.all([

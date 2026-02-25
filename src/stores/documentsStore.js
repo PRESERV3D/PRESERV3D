@@ -48,33 +48,6 @@ export const useDocumentsStore = defineStore('documentsStore', {
         return acc
       }, {})
     },
-    // sortBy(field, order) {
-    //   this.filteredDocuments = [...this.filteredDocuments]
-
-    //   const getValue = (doc) => {
-    //     if (field === 'title') {
-    //       return (doc.metadata?.title || '').trim().toLowerCase()
-    //     }
-    //     if (field === 'uploaded_at') {
-    //       return new Date(doc.uploaded_at || 0)
-    //     }
-    //     return doc[field]
-    //   }
-
-    //   this.filteredDocuments.sort((a, b) => {
-    //     const valA = getValue(a)
-    //     const valB = getValue(b)
-
-    //     if (field === 'title') {
-    //       return (
-    //         valA.localeCompare(valB, undefined, { sensitivity: 'base' }) *
-    //         (order === 'asc' ? 1 : -1)
-    //       )
-    //     } else if (field === 'uploaded_at') {
-    //       return (valA - valB) * (order === 'desc' ? 1 : -1)
-    //     }
-    //   })
-    // },
     filterBy({ categories, authors, dates }, currentSort) {
       this.filteredDocuments = this.documents.filter((doc) => {
         const meta = doc.metadata || {}
@@ -127,27 +100,6 @@ export const useDocumentsStore = defineStore('documentsStore', {
       }
     },
     sortDocuments(sortOption) {
-      // const { field, order } = this.sortSettings(sortOption.label || sortOption)
-      // if (!field) return
-
-      // console.log('Sorting by:', field, order)
-
-      // this.filteredDocuments = [...this.filteredDocuments].sort((a, b) => {
-      //   const valA =
-      //     field === 'title'
-      //       ? (a.metadata?.title || '').trim().toLowerCase()
-      //       : new Date(a[field] || 0)
-      //   const valB =
-      //     field === 'title'
-      //       ? (b.metadata?.title || '').trim().toLowerCase()
-      //       : new Date(b[field] || 0)
-
-      //   if (field === 'title') {
-      //     return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA)
-      //   }
-      //   return order === 'asc' ? valA - valB : valB - valA
-      // })
-
       const { field, order } = this.sortSettings(sortOption.label || sortOption)
       if (!field) return
 
@@ -179,7 +131,7 @@ export const useDocumentsStore = defineStore('documentsStore', {
     },
     async getDocById(id) {
       try {
-        //get title from metadata if available
+        // Get title from metadata if available
         const { data } = await supabase
           .from('documents_metadata')
           .select('metadata->>title')

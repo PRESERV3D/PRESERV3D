@@ -9,14 +9,6 @@
               <q-avatar size="150px">
                 <img :src="profileImage || 'https://cdn.quasar.dev/img/avatar.png'" />
               </q-avatar>
-              <!--              <q-btn-->
-              <!--                round-->
-              <!--                color="primary"-->
-              <!--                icon="camera_alt"-->
-              <!--                size="sm"-->
-              <!--                class="camera-btn"-->
-              <!--                @click="changeProfilePicture"-->
-              <!--              />-->
             </div>
             <!-- Extension Request Button for Visitors -->
             <div v-if="userType === 'visitor'" class="extension-section q-mt-md">
@@ -333,8 +325,8 @@ const letterInput = ref(null)
 const extensionDurationDays = computed(() => {
   if (!extensionRequest.newEndDate || !visitorData.endDate) return 0
 
-  // For subsequent extensions, use the old_end_date from the previous approved extension
-  // For first-time extensions, use the original end date from visitor profile
+  // For subsequent extensions, end date from the previous approved extension will be used
+  // For first-time extensions, original end date from visitor profile will be used
   const referenceDate = previousExtensionOldEndDate.value || visitorData.endDate
   const currentEndDate = new Date(referenceDate)
   const newEndDate = new Date(extensionRequest.newEndDate)
@@ -349,8 +341,7 @@ const isExtensionWithinWeek = computed(() => {
 })
 
 const requiresLetterUpload = computed(() => {
-  // Both first-time and subsequent extensions:
-  // Only require letter if extension exceeds 7 days from the old end date
+  // Require letter if extension exceeds 7 days from the old end date (first-time and subsequent extensions)
   return extensionDurationDays.value > 7
 })
 
@@ -485,7 +476,7 @@ const checkPendingExtension = async (approvalId) => {
     console.log('Pending extension found:', pendingData)
   }
 
-  // Check for any approved extensions (to determine if they've extended before)
+  // Check for any approved extensions to determine if they have extended before
   // Get the most recent approved extension and use its old_end_date for calculating next extension
   const { data: approvedData, error: approvedError } = await supabase
     .from('account_extensions')
@@ -757,14 +748,6 @@ const formatDate = (dateString) => {
   const date = new Date(dateString)
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 }
-
-// const changeProfilePicture = () => {
-//   $q.notify({
-//     type: 'info',
-//     message: 'Profile picture upload functionality',
-//     position: 'top',
-//   })
-// }
 </script>
 
 <style scoped>

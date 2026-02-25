@@ -519,7 +519,6 @@ const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')
 
-// Check Summary Relevance
 const $q = useQuasar()
 const showSummaryDialog = ref(false)
 const relevanceError = ref(null)

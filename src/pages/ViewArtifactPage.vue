@@ -869,7 +869,7 @@ const toggleFavorite = async (model, itemType = 'artifact') => {
       .eq('id', model.id)
       .single()
 
-    // FIXED: Star count
+    // Star count
     if (!metaError && metaCheck) {
       const { data: starData } = await supabase
         .from('artifacts_star_count')
@@ -933,7 +933,7 @@ const loadUserCollections = async () => {
     .eq('user_id', userId)
 
   if (!error) {
-    // Exclude "Favorites" from the list
+    // Exclude Favorites from the list
     userCollections.value = data.filter((c) => c.collection_name !== 'Favorites')
   } else {
     console.error('Failed to load collections:', error)
@@ -1040,7 +1040,6 @@ onMounted(async () => {
       return
     }
   } else {
-    // Add some default values for compatibility
     model.value = {
       ...data,
       bookmarked: false,

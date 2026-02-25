@@ -1,4 +1,3 @@
-<!--USER LANDING PAGE-->
 <template>
   <div class="page-background">
     <!-- Mobile Not Supported Message -->

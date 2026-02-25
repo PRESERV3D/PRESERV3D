@@ -198,7 +198,6 @@ const form = ref({
   first_name: '',
   last_name: '',
   email: '',
-  // contact: '',
   college: '',
   department: '',
   password: '',
@@ -262,20 +261,13 @@ const passwordStrengthColor = computed(() =>
 
 // Validate step one inputs
 async function validateStepOne() {
-  const { first_name, last_name, email, college } = form.value //remove contact here
+  const { first_name, last_name, email, college } = form.value
 
   if (!first_name || !last_name || !email || !college) {
-    //remove contact here
     showNotifyDialog('Missing Information', 'Please fill out all required fields.')
     return
   }
 
-  // if (!email.includes('@pup.edu.ph')) {
-  //   alert('Please use your PUP email only.')
-  //   return
-  // }
-
-  // Only for checking
   if (!email.includes('@pup.edu.ph')) {
     showNotifyDialog('Invalid Email', 'Please use PUP email only.')
     return
@@ -324,7 +316,7 @@ const checkEmailUnique = async (val) => {
 // Register user
 async function registerUser() {
   const { first_name, last_name, email, college, department, password, confirmPassword } =
-    form.value //remove contact here
+    form.value
 
   const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/
   if (!passwordRegex.test(password)) {
@@ -372,7 +364,6 @@ async function registerUser() {
           first_name,
           last_name,
           email,
-          // contact,
           college,
           department,
           created_at: new Date(),
@@ -435,7 +426,6 @@ async function createFavoritesCollection(userId) {
         is_default: true,
         is_locked: true,
         created_at: new Date(),
-        // updated_at: now,
         cover_url:
           'https://jruqvzpclhwjkttxhhtt.supabase.co/storage/v1/object/public/collection-covers/favoritescover.png',
       },

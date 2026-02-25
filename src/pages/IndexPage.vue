@@ -437,7 +437,6 @@ const featuredModels = computed(() => {
   return modelStore.models.slice(0, 3)
 })
 
-// Collection dialog state
 const dialogOpen = ref(false)
 const selectedModel = ref(null)
 const selectedItemType = ref('artifact')
@@ -445,7 +444,6 @@ const userCollections = ref([])
 const selectedCollections = ref([])
 const existingCollectionIds = ref([])
 
-// Notification dialog state
 const notifyDialogOpen = ref(false)
 const notifyDialogTitle = ref('')
 const notifyDialogMessage = ref('')

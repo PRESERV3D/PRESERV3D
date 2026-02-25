@@ -249,7 +249,6 @@ const {
   resumeExistingConnection,
 } = useWebRTC()
 
-// Camera mode state
 const cameraMode = ref('webcam')
 const showPhoneSetup = ref(false)
 const qrCanvas = ref(null)
@@ -265,13 +264,11 @@ let draggingPointIndex = null
 let cleanImage = null
 let localStream = null // Store local camera stream
 
-// Button visibility states
 const showTake = ref(true)
 const showTransform = ref(false)
 const showRetake = ref(false)
 const showSave = ref(false)
 
-// Export dialog
 const showExportDialog = ref(false)
 const pdfFileName = ref('scanned-document')
 const formattedPdfSize = ref('Calculating...')

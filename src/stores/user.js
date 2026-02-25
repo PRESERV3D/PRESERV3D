@@ -94,7 +94,7 @@ export const useUserStore = defineStore('user', {
       // Store the promise so concurrent calls can reuse it
       this.profileFetchPromise = (async () => {
         try {
-          // Add timeout to prevent hanging
+          // Timeout to prevent hanging
           const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Profile fetch timeout')), 10000),
           )
@@ -190,8 +190,8 @@ export const useUserStore = defineStore('user', {
               institution: registrationData.institution,
               purpose: registrationData.purpose,
               email: registrationData.email || visitor.email,
-              // Keep approved_visitors data
-              approval_id: visitor.approval_id, // Important for extension requests
+              // Keep approved_visitors data for refencextension requests
+              approval_id: visitor.approval_id,
               start_date: visitor.start_date,
               end_date: visitor.end_date,
               approved_at: visitor.approved_at,
@@ -224,7 +224,7 @@ export const useUserStore = defineStore('user', {
       return this.profile
     },
 
-    // Manually fetch session + profile
+    // Manually fetch session and profile
     async fetchSession() {
       if (this.isLoadingSession) {
         console.log('🔄 Session fetch already in progress')
